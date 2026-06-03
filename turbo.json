@@ -21,10 +21,10 @@
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^build", "^lint"]
     },
     "lint:fix": {
-      "dependsOn": ["^lint:fix"]
+      "dependsOn": ["^build", "^lint:fix"]
     },
     "test": {
       "dependsOn": ["^build"]
