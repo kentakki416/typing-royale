@@ -41,13 +41,13 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### ローカル環境
 
-- [ ] `docker-compose.yaml` を確認・更新（PostgreSQL + Redis のローカル起動）
-- [ ] `.env.example` 作成（必須環境変数の一覧、ローカル用デフォルト値）
-- [ ] `apps/api` の Dockerfile 作成（dev / prod 両対応のマルチステージ）
-- [ ] `apps/crawler/` ディレクトリ作成・`package.json`・Dockerfile（クローラ + ランキングバッチを兼ねる）
+- [x] `docker-compose.yaml` を確認・更新（PostgreSQL + Redis のローカル起動）
+- [x] `.env.example` 作成（必須環境変数の一覧、ローカル用デフォルト値）
+- [x] `apps/api` の Dockerfile 作成（dev / prod 両対応のマルチステージ）
+- [x] `apps/crawler/` ディレクトリ作成・`package.json`・Dockerfile（クローラ + ランキングバッチを兼ねる）
 - [ ] `pnpm dev` で web / api / Postgres / Redis が同時起動できることを確認
-- [ ] Sentry のローカルダミー DSN 設定（本番接続は Phase 9）
-- [ ] `apps/api` に `/healthz` エンドポイント追加
+- [x] Sentry のローカルダミー DSN 設定（本番接続は Phase 9）
+- [x] `apps/api` に `/healthz` エンドポイント追加
 
 ### GitHub 連携の最小準備（ローカルテスト用）
 

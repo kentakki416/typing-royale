@@ -46,6 +46,7 @@ export const PUBLIC_PATHS: readonly string[] = [
   "/api/auth/refresh",
   "/api/health",
   "/api/memo",
+  "/healthz",
   ...DEV_ONLY_PUBLIC_PATHS,
 ]
 
@@ -56,4 +57,5 @@ export const PUBLIC_PATHS: readonly string[] = [
 export const LOG_EXCLUDE_PATHS = [
   "/api/health",
   "/api/health/ready",
+  "/healthz",
 ] as const

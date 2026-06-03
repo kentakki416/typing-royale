@@ -108,6 +108,12 @@ app.use(
     readiness: healthReadinessController,
   })
 )
+/**
+ * /healthz: ALB / ECS / k8s 互換のシンプルな liveness エイリアス
+ * （/api/health と同じだが、認証ミドルウェアの PUBLIC_PATHS とプレフィックス無しの
+ *  ヘルスチェック規約を満たすためにトップレベルにも公開する）
+ */
+app.get("/healthz", (req, res) => healthLivenessController.execute(req, res))
 app.use(
   "/api/auth",
   authRouter({
