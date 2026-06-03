@@ -27,55 +27,60 @@ afterAll(async () => {
 })
 
 describe("GET /api/auth/me", () => {
-  it("認証済みユーザーの場合、200 とユーザー情報を返す", async () => {
-    const user = await testPrisma.user.create({
-      data: {
-        avatarUrl: "https://example.com/avatar.jpg",
+  describe("正常系", () => {
+    it("認証済みユーザーの場合、200 とユーザー情報を返す", async () => {
+      const user = await testPrisma.user.create({
+        data: {
+          avatarUrl: "https://example.com/avatar.jpg",
+          displayName: "Test User",
+          email: "test@example.com",
+        },
+      })
+
+      const token = generateAccessToken(user.id)
+
+      const res = await request(app)
+        .get("/api/auth/me")
+        .set("Authorization", `Bearer ${token}`)
+
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual({
+        avatar_url: "https://example.com/avatar.jpg",
+        created_at: expect.any(String),
+        display_name: "Test User",
         email: "test@example.com",
-        name: "Test User",
-      },
-    })
-
-    const token = generateAccessToken(user.id)
-
-    const res = await request(app)
-      .get("/api/auth/me")
-      .set("Authorization", `Bearer ${token}`)
-
-    expect(res.status).toBe(200)
-    expect(res.body).toEqual({
-      avatar_url: "https://example.com/avatar.jpg",
-      created_at: expect.any(String),
-      email: "test@example.com",
-      id: user.id,
-      name: "Test User",
+        id: user.id,
+        public_ranking: true,
+      })
     })
   })
 
-  it("ユーザーが存在しない場合、404 を返す", async () => {
-    const token = generateAccessToken(999999)
+  describe("異常系", () => {
+    it("ユーザーが存在しない場合、404 を返す", async () => {
+      const token = generateAccessToken(999999)
 
-    const res = await request(app)
-      .get("/api/auth/me")
-      .set("Authorization", `Bearer ${token}`)
+      const res = await request(app)
+        .get("/api/auth/me")
+        .set("Authorization", `Bearer ${token}`)
 
-    expect(res.status).toBe(404)
-    expect(res.body).toEqual({ error: expect.any(String), status_code: 404 })
-  })
+      expect(res.status).toBe(404)
+      expect(res.body).toEqual({ error: expect.any(String), status_code: 404 })
+    })
 
-  it("トークンがない場合、401 を返す", async () => {
-    const res = await request(app).get("/api/auth/me")
+    it("トークンがない場合、401 を返す", async () => {
+      const res = await request(app).get("/api/auth/me")
 
-    expect(res.status).toBe(401)
-    expect(res.body).toEqual({ error: expect.any(String), status_code: 401 })
-  })
+      expect(res.status).toBe(401)
+      expect(res.body).toEqual({ error: expect.any(String), status_code: 401 })
+    })
 
-  it("無効なトークンの場合、401 を返す", async () => {
-    const res = await request(app)
-      .get("/api/auth/me")
-      .set("Authorization", "Bearer invalid-token")
+    it("無効なトークンの場合、401 を返す", async () => {
+      const res = await request(app)
+        .get("/api/auth/me")
+        .set("Authorization", "Bearer invalid-token")
 
-    expect(res.status).toBe(401)
-    expect(res.body).toEqual({ error: expect.any(String), status_code: 401 })
+      expect(res.status).toBe(401)
+      expect(res.body).toEqual({ error: expect.any(String), status_code: 401 })
+    })
   })
 })

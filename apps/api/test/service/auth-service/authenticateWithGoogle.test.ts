@@ -69,135 +69,135 @@ describe("authenticateWithGoogle", () => {
     vi.clearAllMocks()
   })
 
-  it("既存ユーザーの場合、isNewUser=false で Access/Refresh Token を発行する", async () => {
-    const mockGoogleUser: GoogleUserInfo = {
-      email: "test@example.com",
-      id: "google-123",
-      name: "Test User",
-      picture: "https://example.com/avatar.jpg",
-    }
+  describe("正常系", () => {
+    it("既存ユーザーの場合、isNewUser=false で Access/Refresh Token を発行する", async () => {
+      const mockGoogleUser: GoogleUserInfo = {
+        email: "test@example.com",
+        id: "google-123",
+        name: "Test User",
+        picture: "https://example.com/avatar.jpg",
+      }
 
-    const mockExistingUser: User = {
-      avatarUrl: "https://example.com/avatar.jpg",
-      createdAt: new Date(),
-      email: "test@example.com",
-      id: 1,
-      name: "Test User",
-      updatedAt: new Date(),
-    }
+      const mockExistingUser: User = {
+        avatarUrl: "https://example.com/avatar.jpg",
+        createdAt: new Date(),
+        displayName: "Test User",
+        email: "test@example.com",
+        id: 1,
+        publicRanking: true,
+        updatedAt: new Date(),
+      }
 
-    const mockExistingAccount: AuthAccountWithUser = {
-      accessToken: null,
-      createdAt: new Date(),
-      expiresAt: null,
-      id: 1,
-      idToken: null,
-      provider: "google",
-      providerAccountId: "google-123",
-      refreshToken: null,
-      scope: null,
-      tokenType: null,
-      updatedAt: new Date(),
-      user: mockExistingUser,
-      userId: 1,
-    }
-
-    mockGetUserInfo.mockResolvedValue(mockGoogleUser)
-    mockFindByProvider.mockResolvedValue(mockExistingAccount)
-
-    const result = await authenticateWithGoogle(
-      { code: "auth-code", redirectUri: REDIRECT_URI },
-      mockRepository,
-      mockGoogleOAuthClient,
-      mockTokenGenerators
-    )
-
-    expect(result.ok).toBe(true)
-    if (result.ok) {
-      expect(result.value).toEqual({
-        accessToken: "access.jwt",
-        isNewUser: false,
-        refreshToken: "refresh.jwt",
-        user: mockExistingUser,
-      })
-    }
-    expect(mockGetUserInfo).toHaveBeenCalledWith("auth-code", REDIRECT_URI)
-    /** 既存ユーザーなのでトランザクションは走らない */
-    expect(mockTransactionRunner.run).not.toHaveBeenCalled()
-    expect(mockUserCreate).not.toHaveBeenCalled()
-    expect(mockAuthAccountCreate).not.toHaveBeenCalled()
-    expect(mockRefreshTokenSave).toHaveBeenCalledWith("uuid-1", 1, expect.any(Number))
-  })
-
-  it("新規ユーザーの場合、tx 内で User + AuthAccount を作成し Access/Refresh Token を発行する", async () => {
-    const mockGoogleUser: GoogleUserInfo = {
-      email: "newuser@example.com",
-      id: "google-456",
-      name: "New User",
-      picture: "https://example.com/new-avatar.jpg",
-    }
-
-    const mockNewUser: User = {
-      avatarUrl: "https://example.com/new-avatar.jpg",
-      createdAt: new Date(),
-      email: "newuser@example.com",
-      id: 2,
-      name: "New User",
-      updatedAt: new Date(),
-    }
-
-    mockGetUserInfo.mockResolvedValue(mockGoogleUser)
-    mockFindByProvider.mockResolvedValue(null)
-    mockUserCreate.mockResolvedValue(mockNewUser)
-    mockAuthAccountCreate.mockResolvedValue(undefined)
-
-    const result = await authenticateWithGoogle(
-      { code: "auth-code", redirectUri: REDIRECT_URI },
-      mockRepository,
-      mockGoogleOAuthClient,
-      mockTokenGenerators
-    )
-
-    expect(result.ok).toBe(true)
-    if (result.ok) {
-      expect(result.value).toEqual({
-        accessToken: "access.jwt",
-        isNewUser: true,
-        refreshToken: "refresh.jwt",
-        user: mockNewUser,
-      })
-    }
-    expect(mockTransactionRunner.run).toHaveBeenCalledTimes(1)
-    /** fake runner は tx として undefined を渡すので、第2引数は undefined */
-    expect(mockUserCreate).toHaveBeenCalledWith(
-      {
-        avatarUrl: "https://example.com/new-avatar.jpg",
-        email: "newuser@example.com",
-        name: "New User",
-      },
-      undefined,
-    )
-    expect(mockAuthAccountCreate).toHaveBeenCalledWith(
-      {
+      const mockExistingAccount: AuthAccountWithUser = {
+        createdAt: new Date(),
+        id: 1,
         provider: "google",
-        providerAccountId: "google-456",
-        userId: 2,
-      },
-      undefined,
-    )
-    expect(mockRefreshTokenSave).toHaveBeenCalledWith("uuid-1", 2, expect.any(Number))
-  })
+        providerAccountId: "google-123",
+        updatedAt: new Date(),
+        user: mockExistingUser,
+        userId: 1,
+      }
 
-  it("Google 認証エラー時に例外が伝播する", async () => {
-    mockGetUserInfo.mockRejectedValue(new Error("network"))
+      mockGetUserInfo.mockResolvedValue(mockGoogleUser)
+      mockFindByProvider.mockResolvedValue(mockExistingAccount)
 
-    await expect(
-      authenticateWithGoogle(
-        { code: "invalid", redirectUri: REDIRECT_URI },
+      const result = await authenticateWithGoogle(
+        { code: "auth-code", redirectUri: REDIRECT_URI },
         mockRepository,
         mockGoogleOAuthClient,
         mockTokenGenerators
       )
-    ).rejects.toThrow()
+
+      expect(result.ok).toBe(true)
+      if (result.ok) {
+        expect(result.value).toEqual({
+          accessToken: "access.jwt",
+          isNewUser: false,
+          refreshToken: "refresh.jwt",
+          user: mockExistingUser,
+        })
+      }
+      expect(mockGetUserInfo).toHaveBeenCalledWith("auth-code", REDIRECT_URI)
+      /** 既存ユーザーなのでトランザクションは走らない */
+      expect(mockTransactionRunner.run).not.toHaveBeenCalled()
+      expect(mockUserCreate).not.toHaveBeenCalled()
+      expect(mockAuthAccountCreate).not.toHaveBeenCalled()
+      expect(mockRefreshTokenSave).toHaveBeenCalledWith("uuid-1", 1, expect.any(Number))
+    })
+
+    it("新規ユーザーの場合、tx 内で User + AuthAccount を作成し Access/Refresh Token を発行する", async () => {
+      const mockGoogleUser: GoogleUserInfo = {
+        email: "newuser@example.com",
+        id: "google-456",
+        name: "New User",
+        picture: "https://example.com/new-avatar.jpg",
+      }
+
+      const mockNewUser: User = {
+        avatarUrl: "https://example.com/new-avatar.jpg",
+        createdAt: new Date(),
+        displayName: "New User",
+        email: "newuser@example.com",
+        id: 2,
+        publicRanking: true,
+        updatedAt: new Date(),
+      }
+
+      mockGetUserInfo.mockResolvedValue(mockGoogleUser)
+      mockFindByProvider.mockResolvedValue(null)
+      mockUserCreate.mockResolvedValue(mockNewUser)
+      mockAuthAccountCreate.mockResolvedValue(undefined)
+
+      const result = await authenticateWithGoogle(
+        { code: "auth-code", redirectUri: REDIRECT_URI },
+        mockRepository,
+        mockGoogleOAuthClient,
+        mockTokenGenerators
+      )
+
+      expect(result.ok).toBe(true)
+      if (result.ok) {
+        expect(result.value).toEqual({
+          accessToken: "access.jwt",
+          isNewUser: true,
+          refreshToken: "refresh.jwt",
+          user: mockNewUser,
+        })
+      }
+      expect(mockTransactionRunner.run).toHaveBeenCalledTimes(1)
+      /** fake runner は tx として undefined を渡すので、第2引数は undefined */
+      expect(mockUserCreate).toHaveBeenCalledWith(
+        {
+          avatarUrl: "https://example.com/new-avatar.jpg",
+          displayName: "New User",
+          email: "newuser@example.com",
+        },
+        undefined,
+      )
+      expect(mockAuthAccountCreate).toHaveBeenCalledWith(
+        {
+          provider: "google",
+          providerAccountId: "google-456",
+          userId: 2,
+        },
+        undefined,
+      )
+      expect(mockRefreshTokenSave).toHaveBeenCalledWith("uuid-1", 2, expect.any(Number))
+    })
+  })
+
+  describe("異常系", () => {
+    it("Google 認証エラー時に例外が伝播する", async () => {
+      mockGetUserInfo.mockRejectedValue(new Error("network"))
+
+      await expect(
+        authenticateWithGoogle(
+          { code: "invalid", redirectUri: REDIRECT_URI },
+          mockRepository,
+          mockGoogleOAuthClient,
+          mockTokenGenerators
+        )
+      ).rejects.toThrow()
+    })
   })
 })

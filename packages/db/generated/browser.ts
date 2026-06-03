@@ -19,7 +19,12 @@ export * as $Enums from './enums.js'
 export * from './enums.js';
 /**
  * Model AuthAccount
- * 
+ * *
+ *  * 認証アカウント（複数プロバイダー対応）
+ *  *
+ *  * アクセストークン / リフレッシュトークン等は OAuth プロバイダ側で発行・管理し、
+ *  * 本アプリでは保持しない（OAuth Token は 1 回使い切りで、以降は内部 JWT で完結）。
+ *  * 詳細は docs/spec/github-auth/README.md の「アクセストークン非保存方針」参照。
  */
 export type AuthAccount = Prisma.AuthAccountModel
 /**
@@ -29,6 +34,11 @@ export type AuthAccount = Prisma.AuthAccountModel
 export type Memo = Prisma.MemoModel
 /**
  * Model User
- * 
+ * *
+ *  * ユーザー（認証プロバイダー非依存）
+ *  *
+ *  * displayName は GitHub username 等を初期値に持つ、ユーザー表示用の名前。
+ *  * publicRanking が false の場合はランキング集計から完全に除外される（順位そのものが計算されない）。
+ *  * email は dev-login や将来のメール連絡用にオプショナルで保持（MVP の GitHub OAuth では収集しない）。
  */
 export type User = Prisma.UserModel

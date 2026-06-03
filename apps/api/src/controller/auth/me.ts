@@ -36,9 +36,10 @@ export class AuthMeController {
     const response = authMeResponseSchema.parse({
       avatar_url: result.value.avatarUrl,
       created_at: result.value.createdAt.toISOString(),
+      display_name: result.value.displayName,
       email: result.value.email,
       id: result.value.id,
-      name: result.value.name,
+      public_ranking: result.value.publicRanking,
     })
 
     return res.status(200).json(response)

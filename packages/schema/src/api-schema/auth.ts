@@ -1,5 +1,21 @@
 import { z } from "zod"
 
+/**
+ * 共通の user オブジェクトスキーマ
+ *
+ * 各 auth エンドポイントのレスポンスで共通利用する。
+ * display_name は GitHub username 等を初期値に持つ表示名。
+ * public_ranking が false の場合はランキング集計対象から除外される。
+ */
+const authUserSchema = z.object({
+  avatar_url: z.string().nullable(),
+  created_at: z.string(),
+  display_name: z.string().nullable(),
+  email: z.string().nullable(),
+  id: z.number(),
+  public_ranking: z.boolean(),
+})
+
 // ========================================================
 // POST /api/auth/google - Google OAuth 認証コードの検証
 // ========================================================
@@ -23,13 +39,7 @@ export const authGoogleResponseSchema = z.object({
   access_token: z.string(),
   is_new_user: z.boolean(),
   refresh_token: z.string(),
-  user: z.object({
-    avatar_url: z.string().nullable(),
-    email: z.string().nullable(),
-    id: z.number(),
-    name: z.string().nullable(),
-    created_at: z.string(),
-  }),
+  user: authUserSchema,
 })
 
 export type AuthGoogleResponse = z.infer<typeof authGoogleResponseSchema>
@@ -41,13 +51,7 @@ export type AuthGoogleResponse = z.infer<typeof authGoogleResponseSchema>
 /**
  * ユーザー情報取得のレスポンススキーマ
  */
-export const authMeResponseSchema = z.object({
-  avatar_url: z.string().nullable(),
-  email: z.string().nullable(),
-  id: z.number(),
-  name: z.string().nullable(),
-  created_at: z.string(),
-})
+export const authMeResponseSchema = authUserSchema
 
 export type AuthMeResponse = z.infer<typeof authMeResponseSchema>
 
@@ -99,13 +103,7 @@ export type AuthDevLoginRequest = z.infer<typeof authDevLoginRequestSchema>
 export const authDevLoginResponseSchema = z.object({
   access_token: z.string(),
   refresh_token: z.string(),
-  user: z.object({
-    avatar_url: z.string().nullable(),
-    email: z.string().nullable(),
-    id: z.number(),
-    name: z.string().nullable(),
-    created_at: z.string(),
-  }),
+  user: authUserSchema,
 })
 
 export type AuthDevLoginResponse = z.infer<typeof authDevLoginResponseSchema>

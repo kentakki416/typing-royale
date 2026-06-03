@@ -57,131 +57,138 @@ afterAll(async () => {
 })
 
 describe("POST /api/auth/google", () => {
-  it("新規ユーザーの場合、200 と Access/Refresh Token を返し、DB にユーザーが作成され Redis に Refresh Token が保存される", async () => {
-    mockGetUserInfo.mockResolvedValue({
-      email: "new@example.com",
-      id: "google-456",
-      name: "New User",
-      picture: "https://example.com/new-avatar.jpg",
-    })
-
-    const res = await request(app)
-      .post("/api/auth/google")
-      .send({ code: "auth-code", redirect_uri: REDIRECT_URI })
-
-    /** API レスポンス契約を全フィールドで検証 */
-    expect(res.status).toBe(200)
-    expect(res.body).toEqual({
-      access_token: expect.any(String),
-      is_new_user: true,
-      refresh_token: expect.any(String),
-      user: {
-        avatar_url: "https://example.com/new-avatar.jpg",
-        created_at: expect.any(String),
+  describe("正常系", () => {
+    it("新規ユーザーの場合、200 と Access/Refresh Token を返し、DB にユーザーが作成され Redis に Refresh Token が保存される", async () => {
+      mockGetUserInfo.mockResolvedValue({
         email: "new@example.com",
-        id: expect.any(Number),
+        id: "google-456",
         name: "New User",
-      },
-    })
+        picture: "https://example.com/new-avatar.jpg",
+      })
 
-    /** Postgres に User が作成されている（id/timestamp は省略） */
-    const createdUser = await testPrisma.user.findUnique({
-      where: { email: "new@example.com" },
-    })
-    expect(createdUser).toMatchObject({
-      avatarUrl: "https://example.com/new-avatar.jpg",
-      email: "new@example.com",
-      name: "New User",
-    })
+      const res = await request(app)
+        .post("/api/auth/google")
+        .send({ code: "auth-code", redirect_uri: REDIRECT_URI })
 
-    /** Postgres に AuthAccount が作成され、User と同じトランザクションで紐付いている */
-    const createdAuthAccount = await testPrisma.authAccount.findFirst({
-      where: { provider: "google", providerAccountId: "google-456" },
-    })
-    expect(createdAuthAccount).toMatchObject({
-      provider: "google",
-      providerAccountId: "google-456",
-      userId: createdUser!.id,
-    })
+      /** API レスポンス契約を全フィールドで検証 */
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual({
+        access_token: expect.any(String),
+        is_new_user: true,
+        refresh_token: expect.any(String),
+        user: {
+          avatar_url: "https://example.com/new-avatar.jpg",
+          created_at: expect.any(String),
+          display_name: "New User",
+          email: "new@example.com",
+          id: expect.any(Number),
+          public_ranking: true,
+        },
+      })
 
-    /** Redis に Refresh Token が保存され、userId が紐付いている */
-    const payload = verifyRefreshToken(res.body.refresh_token)
-    expect(payload).not.toBeNull()
-    expect(await refreshTokenRepository.findUserId(payload!.jti)).toBe(createdUser!.id)
-  })
+      /** Postgres に User が作成されている（id/timestamp は省略） */
+      const createdUser = await testPrisma.user.findUnique({
+        where: { email: "new@example.com" },
+      })
+      expect(createdUser).toMatchObject({
+        avatarUrl: "https://example.com/new-avatar.jpg",
+        displayName: "New User",
+        email: "new@example.com",
+        publicRanking: true,
+      })
 
-  it("既存ユーザーの場合、200 と is_new_user=false で Token を返し Redis に新しい Refresh Token が保存される", async () => {
-    const user = await testPrisma.user.create({
-      data: {
-        avatarUrl: "https://example.com/avatar.jpg",
-        email: "test@example.com",
-        name: "Test User",
-      },
-    })
-    await testPrisma.authAccount.create({
-      data: {
+      /** Postgres に AuthAccount が作成され、User と同じトランザクションで紐付いている */
+      const createdAuthAccount = await testPrisma.authAccount.findFirst({
+        where: { provider: "google", providerAccountId: "google-456" },
+      })
+      expect(createdAuthAccount).toMatchObject({
         provider: "google",
-        providerAccountId: "google-123",
-        userId: user.id,
-      },
+        providerAccountId: "google-456",
+        userId: createdUser!.id,
+      })
+
+      /** Redis に Refresh Token が保存され、userId が紐付いている */
+      const payload = verifyRefreshToken(res.body.refresh_token)
+      expect(payload).not.toBeNull()
+      expect(await refreshTokenRepository.findUserId(payload!.jti)).toBe(createdUser!.id)
     })
 
-    mockGetUserInfo.mockResolvedValue({
-      email: "test@example.com",
-      id: "google-123",
-      name: "Test User",
-      picture: "https://example.com/avatar.jpg",
-    })
+    it("既存ユーザーの場合、200 と is_new_user=false で Token を返し Redis に新しい Refresh Token が保存される", async () => {
+      const user = await testPrisma.user.create({
+        data: {
+          avatarUrl: "https://example.com/avatar.jpg",
+          displayName: "Test User",
+          email: "test@example.com",
+        },
+      })
+      await testPrisma.authAccount.create({
+        data: {
+          provider: "google",
+          providerAccountId: "google-123",
+          userId: user.id,
+        },
+      })
 
-    const res = await request(app)
-      .post("/api/auth/google")
-      .send({ code: "auth-code", redirect_uri: REDIRECT_URI })
-
-    expect(res.status).toBe(200)
-    expect(res.body).toEqual({
-      access_token: expect.any(String),
-      is_new_user: false,
-      refresh_token: expect.any(String),
-      user: {
-        avatar_url: "https://example.com/avatar.jpg",
-        created_at: expect.any(String),
+      mockGetUserInfo.mockResolvedValue({
         email: "test@example.com",
-        id: user.id,
+        id: "google-123",
         name: "Test User",
-      },
+        picture: "https://example.com/avatar.jpg",
+      })
+
+      const res = await request(app)
+        .post("/api/auth/google")
+        .send({ code: "auth-code", redirect_uri: REDIRECT_URI })
+
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual({
+        access_token: expect.any(String),
+        is_new_user: false,
+        refresh_token: expect.any(String),
+        user: {
+          avatar_url: "https://example.com/avatar.jpg",
+          created_at: expect.any(String),
+          display_name: "Test User",
+          email: "test@example.com",
+          id: user.id,
+          public_ranking: true,
+        },
+      })
+
+      const payload = verifyRefreshToken(res.body.refresh_token)
+      expect(payload).not.toBeNull()
+      expect(await refreshTokenRepository.findUserId(payload!.jti)).toBe(user.id)
+    })
+  })
+
+  describe("異常系", () => {
+    it("code が無い場合、400 を返す", async () => {
+      const res = await request(app)
+        .post("/api/auth/google")
+        .send({ redirect_uri: REDIRECT_URI })
+
+      expect(res.status).toBe(400)
+      expect(res.body).toEqual({ error: expect.any(String), status_code: 400 })
     })
 
-    const payload = verifyRefreshToken(res.body.refresh_token)
-    expect(payload).not.toBeNull()
-    expect(await refreshTokenRepository.findUserId(payload!.jti)).toBe(user.id)
-  })
+    it("redirect_uri が URL でない場合、400 を返す", async () => {
+      const res = await request(app)
+        .post("/api/auth/google")
+        .send({ code: "auth-code", redirect_uri: "not-a-url" })
 
-  it("code が無い場合、400 を返す", async () => {
-    const res = await request(app)
-      .post("/api/auth/google")
-      .send({ redirect_uri: REDIRECT_URI })
+      expect(res.status).toBe(400)
+      expect(res.body).toEqual({ error: expect.any(String), status_code: 400 })
+    })
 
-    expect(res.status).toBe(400)
-    expect(res.body).toEqual({ error: expect.any(String), status_code: 400 })
-  })
+    it("Google 認証エラー時、グローバルエラーハンドラが 500 を返す", async () => {
+      mockGetUserInfo.mockRejectedValue(new Error("Google authentication failed"))
 
-  it("redirect_uri が URL でない場合、400 を返す", async () => {
-    const res = await request(app)
-      .post("/api/auth/google")
-      .send({ code: "auth-code", redirect_uri: "not-a-url" })
+      const res = await request(app)
+        .post("/api/auth/google")
+        .send({ code: "invalid-code", redirect_uri: REDIRECT_URI })
 
-    expect(res.status).toBe(400)
-    expect(res.body).toEqual({ error: expect.any(String), status_code: 400 })
-  })
-
-  it("Google 認証エラー時、グローバルエラーハンドラが 500 を返す", async () => {
-    mockGetUserInfo.mockRejectedValue(new Error("Google authentication failed"))
-
-    const res = await request(app)
-      .post("/api/auth/google")
-      .send({ code: "invalid-code", redirect_uri: REDIRECT_URI })
-
-    expect(res.status).toBe(500)
-    expect(res.body).toEqual({ error: expect.any(String), status_code: 500 })
+      expect(res.status).toBe(500)
+      expect(res.body).toEqual({ error: expect.any(String), status_code: 500 })
+    })
   })
 })

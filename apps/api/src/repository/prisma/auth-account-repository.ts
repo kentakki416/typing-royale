@@ -1,4 +1,4 @@
-import { PrismaClient , Prisma as PrismaTypes } from "@repo/db"
+import { PrismaClient, Prisma as PrismaTypes } from "@repo/db"
 
 import { AuthAccount, AuthAccountWithUser, User } from "../../types/domain"
 
@@ -6,16 +6,13 @@ import { TransactionContext } from "./transaction-runner"
 
 /**
  * 認証アカウント作成時の入力
+ *
+ * provider は "google" | "github" | "dev" の文字列を受ける（schema 側は String 型）。
+ * OAuth トークン系は本アプリでは保持しないため input に含めない。
  */
 export type CreateAuthAccountInput = {
-    accessToken?: string
-    expiresAt?: number
-    idToken?: string
     provider: string
     providerAccountId: string
-    refreshToken?: string
-    scope?: string
-    tokenType?: string
     userId: number
 }
 
@@ -72,14 +69,8 @@ export class PrismaAuthAccountRepository implements AuthAccountRepository {
     const client = tx ?? this._prisma
     const prismaAuthAccount = await client.authAccount.create({
       data: {
-        accessToken: data.accessToken,
-        expiresAt: data.expiresAt,
-        idToken: data.idToken,
         provider: data.provider,
         providerAccountId: data.providerAccountId,
-        refreshToken: data.refreshToken,
-        scope: data.scope,
-        tokenType: data.tokenType,
         userId: data.userId,
       },
     })
@@ -88,15 +79,16 @@ export class PrismaAuthAccountRepository implements AuthAccountRepository {
   }
 
   /**
-     * Prismaの型 → ドメインの型に変換
-     */
+   * Prismaの型 → ドメインの型に変換
+   */
   private _toDomainUser(prismaUser: PrismaTypes.UserGetPayload<{}>): User {
     return {
       avatarUrl: prismaUser.avatarUrl,
       createdAt: prismaUser.createdAt,
+      displayName: prismaUser.displayName,
       email: prismaUser.email,
       id: prismaUser.id,
-      name: prismaUser.name,
+      publicRanking: prismaUser.publicRanking,
       updatedAt: prismaUser.updatedAt,
     }
   }
@@ -105,16 +97,10 @@ export class PrismaAuthAccountRepository implements AuthAccountRepository {
     prismaAuthAccount: PrismaTypes.AuthAccountGetPayload<{}>
   ): AuthAccount {
     return {
-      accessToken: prismaAuthAccount.accessToken,
       createdAt: prismaAuthAccount.createdAt,
-      expiresAt: prismaAuthAccount.expiresAt,
       id: prismaAuthAccount.id,
-      idToken: prismaAuthAccount.idToken,
       provider: prismaAuthAccount.provider,
       providerAccountId: prismaAuthAccount.providerAccountId,
-      refreshToken: prismaAuthAccount.refreshToken,
-      scope: prismaAuthAccount.scope,
-      tokenType: prismaAuthAccount.tokenType,
       updatedAt: prismaAuthAccount.updatedAt,
       userId: prismaAuthAccount.userId,
     }

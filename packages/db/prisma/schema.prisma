@@ -10,25 +10,18 @@ datasource db {
     provider = "postgresql"
 }
 
-// 認証プロバイダー
-enum Provider {
-    GOOGLE
-    GITHUB
-    CREDENTIALS
-}
-
-// 認証アカウント（複数プロバイダー対応）
+/**
+ * 認証アカウント（複数プロバイダー対応）
+ *
+ * アクセストークン / リフレッシュトークン等は OAuth プロバイダ側で発行・管理し、
+ * 本アプリでは保持しない（OAuth Token は 1 回使い切りで、以降は内部 JWT で完結）。
+ * 詳細は docs/spec/github-auth/README.md の「アクセストークン非保存方針」参照。
+ */
 model AuthAccount {
     id                Int      @id @default(autoincrement())
     userId            Int      @map("user_id")
-    provider          String   // "google", "github", "credentials" など
+    provider          String // "google" | "github" | "dev"
     providerAccountId String   @map("provider_account_id") // プロバイダー側のユーザーID
-    accessToken       String?  @map("access_token") @db.Text
-    refreshToken      String?  @map("refresh_token") @db.Text
-    expiresAt         Int?     @map("expires_at")
-    tokenType         String?  @map("token_type")
-    scope             String?
-    idToken           String?  @map("id_token") @db.Text
     createdAt         DateTime @default(now()) @map("created_at")
     updatedAt         DateTime @updatedAt @map("updated_at")
 
@@ -50,14 +43,21 @@ model Memo {
     @@map("memos")
 }
 
-// ユーザー（認証プロバイダー非依存）
+/**
+ * ユーザー（認証プロバイダー非依存）
+ *
+ * displayName は GitHub username 等を初期値に持つ、ユーザー表示用の名前。
+ * publicRanking が false の場合はランキング集計から完全に除外される（順位そのものが計算されない）。
+ * email は dev-login や将来のメール連絡用にオプショナルで保持（MVP の GitHub OAuth では収集しない）。
+ */
 model User {
-    id        Int      @id @default(autoincrement())
-    email     String?  @unique
-    name      String?
-    avatarUrl String?  @map("avatar_url")
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
+    id            Int      @id @default(autoincrement())
+    email         String?  @unique
+    displayName   String?  @map("display_name")
+    avatarUrl     String?  @map("avatar_url")
+    publicRanking Boolean  @default(true) @map("public_ranking")
+    createdAt     DateTime @default(now()) @map("created_at")
+    updatedAt     DateTime @updatedAt @map("updated_at")
 
     accounts AuthAccount[]
 

@@ -63,9 +63,10 @@ export class AuthDevLoginController {
       user: {
         avatar_url: user.avatarUrl,
         created_at: user.createdAt.toISOString(),
+        display_name: user.displayName,
         email: user.email,
         id: user.id,
-        name: user.name,
+        public_ranking: user.publicRanking,
       },
     })
 
