@@ -12,6 +12,7 @@ const DEV_ONLY_PUBLIC_PATHS = process.env.NODE_ENV !== "production"
 
 const PUBLIC_PATHS = [
   "/sign-in",
+  "/api/auth/callback/github",
   "/api/auth/callback/google",
   ...DEV_ONLY_PUBLIC_PATHS,
 ]
