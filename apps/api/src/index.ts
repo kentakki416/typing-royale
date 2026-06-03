@@ -196,6 +196,7 @@ process.on("uncaughtException", (error) => {
 })
 
 process.on("unhandledRejection", (reason) => {
-  logger.error("Unhandled rejection", reason as Error)
+  const error = reason instanceof Error ? reason : new Error(String(reason))
+  logger.error("Unhandled rejection", error)
   process.exit(1)
 })
