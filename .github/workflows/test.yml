@@ -5,6 +5,11 @@ on:
     paths:
       - 'apps/**'
       - 'packages/**'
+      - 'turbo.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      - '.pnpmfile.cjs'
       - '.github/workflows/test.yml'
   workflow_dispatch:
 
