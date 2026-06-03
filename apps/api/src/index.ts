@@ -5,8 +5,10 @@ import { createPrismaClient } from "@repo/db"
 import { logger } from "@repo/logger"
 import { createRedisClient } from "@repo/redis"
 
+import { GithubOAuthClient } from "./client/github-oauth"
 import { GoogleOAuthClient } from "./client/google-oauth"
 import { AuthDevLoginController } from "./controller/auth/dev-login"
+import { AuthGithubController } from "./controller/auth/github"
 import { AuthGoogleController } from "./controller/auth/google"
 import { AuthLogoutController } from "./controller/auth/logout"
 import { AuthRefreshController } from "./controller/auth/refresh"
@@ -60,6 +62,7 @@ const refreshTokenRepository = new IoRedisRefreshTokenRepository(redis)
  * 外部 SaaS client の DI assembly
  */
 const googleOAuthClient = new GoogleOAuthClient(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET)
+const githubOAuthClient = new GithubOAuthClient(env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET)
 
 /**
  * Health Controller のインスタンス化
@@ -76,6 +79,13 @@ const authGoogleController = new AuthGoogleController(
   refreshTokenRepository,
   transactionRunner,
   googleOAuthClient,
+)
+const authGithubController = new AuthGithubController(
+  authAccountRepository,
+  userRepository,
+  refreshTokenRepository,
+  transactionRunner,
+  githubOAuthClient,
 )
 const authRefreshController = new AuthRefreshController(refreshTokenRepository)
 const authLogoutController = new AuthLogoutController(refreshTokenRepository)
@@ -145,6 +155,7 @@ app.use(
   "/api/auth",
   authRouter({
     devLogin: authDevLoginController,
+    github: authGithubController,
     google: authGoogleController,
     logout: authLogoutController,
     refresh: authRefreshController,
