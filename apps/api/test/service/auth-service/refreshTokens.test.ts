@@ -6,6 +6,7 @@ const mockFindUserId = vi.fn<(_0: string) => Promise<number | null>>()
 const mockSave = vi.fn<(_0: string, _1: number, _2: number) => Promise<void>>()
 const mockRefreshTokenRepository: RefreshTokenRepository = {
   delete: mockDelete,
+  deleteAllByUserId: vi.fn(),
   findUserId: mockFindUserId,
   save: mockSave,
 }

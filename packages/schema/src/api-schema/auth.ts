@@ -1,10 +1,13 @@
 import { z } from "zod"
 
 /**
- * 共通の user オブジェクトスキーマ（各 auth エンドポイントのレスポンスで共通利用）
+ * 認証フロー（Google/GitHub OAuth）のレスポンスに含める user オブジェクト
  *
  * - display_name: GitHub username 等を初期値に持つ表示名
  * - can_public_ranking: false でランキング集計対象から完全除外（順位そのものを計算しない）
+ *
+ * GET/PATCH /api/user のスキーマと同形だが、依存方向を user.ts → auth.ts にしないため
+ * 重複定義（互換性が必要になれば共通ファイルに切り出す）。
  */
 const authUserSchema = z.object({
   avatar_url: z.string().nullable(),
@@ -42,17 +45,6 @@ export const authGoogleResponseSchema = z.object({
 })
 
 export type AuthGoogleResponse = z.infer<typeof authGoogleResponseSchema>
-
-// ========================================================
-// GET /api/auth/me
-// ========================================================
-
-/**
- * ユーザー情報取得のレスポンススキーマ
- */
-export const authMeResponseSchema = authUserSchema
-
-export type AuthMeResponse = z.infer<typeof authMeResponseSchema>
 
 // ========================================================
 // POST /api/auth/refresh - Access/Refresh Token のローテーション

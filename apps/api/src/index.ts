@@ -9,7 +9,6 @@ import { GoogleOAuthClient } from "./client/google-oauth"
 import { AuthDevLoginController } from "./controller/auth/dev-login"
 import { AuthGoogleController } from "./controller/auth/google"
 import { AuthLogoutController } from "./controller/auth/logout"
-import { AuthMeController } from "./controller/auth/me"
 import { AuthRefreshController } from "./controller/auth/refresh"
 import { HealthLivenessController } from "./controller/health/liveness"
 import { HealthReadinessController } from "./controller/health/readiness"
@@ -18,6 +17,9 @@ import { MemoDeleteController } from "./controller/memo/delete"
 import { MemoDetailController } from "./controller/memo/detail"
 import { MemoListController } from "./controller/memo/list"
 import { MemoUpdateController } from "./controller/memo/update"
+import { UserDeleteController } from "./controller/user/delete"
+import { UserGetController } from "./controller/user/get"
+import { UserUpdateController } from "./controller/user/update"
 import { env } from "./env"
 import { authMiddleware } from "./middleware/auth"
 import { errorHandler } from "./middleware/error-handler"
@@ -33,6 +35,7 @@ import { IoRedisHealthRepository, IoRedisRefreshTokenRepository } from "./reposi
 import { authRouter } from "./routes/auth-router"
 import { healthRouter } from "./routes/health-router"
 import { memoRouter } from "./routes/memo-router"
+import { userRouter } from "./routes/user-router"
 
 /**
  * インフラ client の生成 (プロセス起動時に 1 回だけ)
@@ -74,9 +77,15 @@ const authGoogleController = new AuthGoogleController(
   transactionRunner,
   googleOAuthClient,
 )
-const authMeController = new AuthMeController(userRepository)
 const authRefreshController = new AuthRefreshController(refreshTokenRepository)
 const authLogoutController = new AuthLogoutController(refreshTokenRepository)
+
+/**
+ * User Controller のインスタンス化（認証中ユーザー自身の取得・更新・削除）
+ */
+const userGetController = new UserGetController(userRepository)
+const userUpdateController = new UserUpdateController(userRepository)
+const userDeleteController = new UserDeleteController(userRepository, refreshTokenRepository)
 
 /**
  * dev-login Controller は production 以外でのみ生成する
@@ -138,8 +147,15 @@ app.use(
     devLogin: authDevLoginController,
     google: authGoogleController,
     logout: authLogoutController,
-    me: authMeController,
     refresh: authRefreshController,
+  })
+)
+app.use(
+  "/api/user",
+  userRouter({
+    delete: userDeleteController,
+    get: userGetController,
+    update: userUpdateController,
   })
 )
 app.use(

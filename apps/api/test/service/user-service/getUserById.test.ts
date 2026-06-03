@@ -6,8 +6,10 @@ const mockFindById = vi.fn<(_0: number) => Promise<User | null>>()
 
 const mockUserRepository: UserRepository = {
   create: vi.fn(),
+  delete: vi.fn(),
   findByEmail: vi.fn(),
   findById: mockFindById,
+  update: vi.fn(),
 }
 
 describe("getUserById", () => {
