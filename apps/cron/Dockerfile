@@ -14,22 +14,22 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 
-COPY apps/crawler/package.json ./apps/crawler/
+COPY apps/cron/package.json ./apps/cron/
 COPY packages/schema/package.json ./packages/schema/
 
 RUN pnpm install --frozen-lockfile
 
 COPY packages/schema/tsconfig.json ./packages/schema/
-COPY apps/crawler/tsconfig.json apps/crawler/tsconfig.build.json ./apps/crawler/
+COPY apps/cron/tsconfig.json apps/cron/tsconfig.build.json ./apps/cron/
 
 COPY packages/schema/src/ ./packages/schema/src/
-COPY apps/crawler/src/ ./apps/crawler/src/
+COPY apps/cron/src/ ./apps/cron/src/
 
 RUN pnpm --filter @repo/api-schema build
-RUN pnpm --filter crawler build
+RUN pnpm --filter cron build
 
 # 本番用依存のみを抽出
-RUN pnpm deploy --filter crawler --prod /app/deploy
+RUN pnpm deploy --filter cron --prod /app/deploy
 
 # ==============================================================================
 # Stage 3: runner - 本番実行用の軽量イメージ
@@ -43,7 +43,7 @@ WORKDIR /app
 
 COPY --chown=node:node --from=builder /app/deploy/node_modules ./node_modules
 COPY --chown=node:node --from=builder /app/deploy/package.json ./package.json
-COPY --chown=node:node --from=builder /app/apps/crawler/dist ./dist
+COPY --chown=node:node --from=builder /app/apps/cron/dist ./dist
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 

@@ -13,13 +13,16 @@ Turborepo + pnpm monorepo を使用したフルスタック構成。
 
 ## 目次
 
-- [プロジェクト構成図](#プロジェクト構成図)
+- [プロジェクト構成](#プロジェクト構成)
+  - [ディレクトリ構造](#ディレクトリ構造)
+  - [モノレポ依存関係](#モノレポ依存関係)
+  - [デプロイ・アーキテクチャ](#デプロイアーキテクチャ)
+- [主要機能](#主要機能)
 - [技術スタック](#技術スタック)
-- [ドキュメント](#ドキュメント)
-- [使い方](#使い方)
+- [クイックリファレンス](#クイックリファレンス)
+- [テンプレートの使い方](#テンプレートの使い方)
   - [1. プロジェクトのコピー](#1-プロジェクトのコピー)
   - [2. 環境変数の設定](#2-環境変数の設定)
-  - [3. セットアップ](#3-セットアップ)
 - [Claude Code（MCP設定）](#claude-codemcp設定)
 - [開発ルール](#開発ルール)
   - [1. 命名規則](#1-命名規則)
@@ -28,40 +31,131 @@ Turborepo + pnpm monorepo を使用したフルスタック構成。
   - [4. 環境変数の管理コマンド](#4-環境変数の管理コマンド)
   - [5. Docker環境の起動コマンド](#5-docker環境の起動コマンド)
 
-## プロジェクト構成図
+## プロジェクト構成
+
+### ディレクトリ構造
+
+```
+typing-royale/
+├── apps/
+│   ├── web/                 # Next.js 16 — ユーザー向け Web（Vercel デプロイ、port 3000）
+│   ├── admin/               # Next.js 16 — 運営管理ダッシュボード（port 3030）
+│   ├── mobile/              # Expo / React Native — モバイルアプリ（将来拡張用）
+│   ├── api/                 # Express 5 — REST API（ECS Fargate Service、port 8080）
+│   └── cron/                # GitHub 週次クローラ + 月次ライセンス再検証 + 毎時ランキング集計（ECS Scheduled Task）
+├── packages/
+│   ├── schema/              # @repo/api-schema — Zod スキーマ・型定義（全アプリ共有）
+│   └── db/                  # @repo/db — Prisma スキーマ / Client / Repository（api・cron で共有）
+├── infra/
+│   └── terraform/           # AWS Infrastructure as Code（RDS / ElastiCache / ECS / ALB / EventBridge / S3）
+├── docs/
+│   ├── README.md            # プロダクト全体像（ペルソナ・MVP スコープ・体験フロー）
+│   ├── infra.md             # インフラ設計（サービス選定・コスト試算）
+│   ├── auth.md              # 認証設計
+│   ├── mcp.md               # MCP サーバー一覧
+│   └── spec/                # 機能別設計書（typing-engine / problem-pool / ghost-battle …）
+├── scripts/                 # テンプレートコピー・シークレット投入スクリプト
+├── docker-compose.yaml      # ローカル開発用 Postgres 16 + Redis 7
+└── turbo.json               # Turborepo パイプライン定義
+```
+
+> **api / cron を分離する理由**：両者は責務（HTTP 処理 / 定期実行）も実行モデル（常駐サービス / Scheduled Task）も異なる。Docker image と ECR リポジトリを分けることで、cron が必要とする AST パーサ等の重い依存を api バンドルに混ぜずに済み、CI とデプロイも独立化できる。cron はクローラ・ライセンス再検証・ランキング集計をまとめた 1 つの Image で、ECS Task Definition の `command` で実行する CLI を切り替える。Prisma スキーマと Repository 層は `packages/db` で共有して DRY を保つ。
+
+### モノレポ依存関係
+
+`packages/schema`（Zod）と `packages/db`（Prisma + Repository）を共有し、api と cron が同じデータモデルで動作する。
 
 ```mermaid
-graph TB
-    subgraph Apps
-        Web["apps/web<br/>Next.js 16 :3000"]
-        Admin["apps/admin<br/>Next.js 16 :3030"]
-        Mobile["apps/mobile<br/>Expo / React Native"]
-        API["apps/api<br/>Express 5 :8080"]
-    end
+graph LR
+    Schema["packages/schema<br/>@repo/api-schema"]
+    DB["packages/db<br/>@repo/db<br/>Prisma + Repository"]
 
-    subgraph Packages
-        Schema["packages/schema<br/>Zod スキーマ / 型定義"]
-    end
+    Schema --> Web["apps/web"]
+    Schema --> Admin["apps/admin"]
+    Schema --> Mobile["apps/mobile"]
+    Schema --> API["apps/api"]
+    Schema --> Cron["apps/cron"]
 
-    subgraph Infra
-        Terraform["infra/terraform<br/>AWS IaC"]
-    end
+    DB --> API
+    DB --> Cron
 
-    subgraph Infrastructure
-        PostgreSQL[(PostgreSQL 16)]
-        Redis[(Redis 7)]
-    end
-
-    Web --> API
-    Admin --> API
-    Mobile --> API
-    API --> PostgreSQL
-    API --> Redis
-    Schema --> Web
-    Schema --> Admin
-    Schema --> Mobile
-    Schema --> API
+    Web -->|REST| API
+    Admin -->|REST /api/admin| API
+    Mobile -->|REST| API
 ```
+
+### デプロイ・アーキテクチャ
+
+web のみ **Vercel**、それ以外（API・cron・DB・Redis・S3）は **AWS 単一 VPC** に集約。cron は EventBridge から呼び出される ECS Scheduled Task で、週次クローラ / 月次ライセンス再検証 / 毎時ランキング集計を `command` で切り替える。詳細は [`docs/infra.md`](docs/infra.md) を参照。
+
+```mermaid
+flowchart TB
+    User["👤 ユーザー<br/>Browser / Mobile"]
+
+    subgraph Vercel["☁️ Vercel"]
+        WebHost["apps/web<br/>Next.js 16 (SSR + Route Handler)"]
+    end
+
+    subgraph AWS["☁️ AWS（infra/terraform）"]
+        Route53["Route 53<br/>DNS"]
+        ALB["Application Load Balancer"]
+        ECSApi["ECS Fargate Service<br/>apps/api (Express)"]
+        ECSCron["ECS Scheduled Task<br/>apps/cron<br/>週次クローラ・月次ライセンス再検証・毎時ランキング集計"]
+        EventBridge["EventBridge<br/>cron スケジューラ"]
+        RDS[("RDS PostgreSQL<br/>db.t4g.micro")]
+        Redis[("ElastiCache Redis<br/>cache.t4g.micro")]
+        S3[("S3<br/>達成カード PNG / アバター")]
+        CloudFront["CloudFront<br/>S3 配信 + 動的 SVG バッジ"]
+        Secrets["Secrets Manager"]
+    end
+
+    subgraph External["🌐 外部サービス"]
+        GitHub["GitHub<br/>OAuth + Search/Tree API"]
+        AdSense["Google AdSense"]
+        Sentry["Sentry"]
+    end
+
+    User --> Route53
+    Route53 -->|app.example.com| WebHost
+    Route53 -->|api.example.com| ALB
+    Route53 -->|cdn.example.com| CloudFront
+
+    WebHost -->|REST| ALB
+    ALB --> ECSApi
+    CloudFront --> S3
+
+    ECSApi --> RDS
+    ECSApi --> Redis
+    ECSApi --> S3
+    ECSApi --> Secrets
+    ECSApi -->|OAuth| GitHub
+
+    EventBridge --> ECSCron
+    ECSCron -->|Search / Tree API| GitHub
+    ECSCron --> RDS
+    ECSCron --> Redis
+    ECSCron --> Secrets
+
+    WebHost -.広告.-> AdSense
+    WebHost -.エラー.-> Sentry
+    ECSApi -.エラー.-> Sentry
+    ECSCron -.エラー.-> Sentry
+```
+
+## 主要機能
+
+ユーザージャーニーは [`docs/README.md`](docs/README.md)、各機能の詳細仕様は [`docs/spec/`](docs/spec/README.md) を参照。
+
+| 機能 | 概要 | 詳細 |
+|---|---|---|
+| typing-engine | 120 秒制限・関数の連続出題・入力判定・スコア計算 | [docs/spec/typing-engine](docs/spec/typing-engine/README.md) |
+| problem-pool | 週次 cron で GitHub Star 上位の寛容ライセンス OSS をクロールし AST で関数本体を抽出 | [docs/spec/problem-pool](docs/spec/problem-pool/README.md) |
+| github-auth | GitHub OAuth 読み取り最小スコープでのログイン | [docs/spec/github-auth](docs/spec/github-auth/README.md) |
+| score-ranking | 言語別全期間トップ 1000・**エンジニアグレード**（Intern → Fellow の 8 段階） | [docs/spec/score-ranking](docs/spec/score-ranking/README.md) |
+| ghost-battle | 「神々に挑戦」モード — トップ 10 ランダム選定で同じ問題シーケンスを併走 | [docs/spec/ghost-battle](docs/spec/ghost-battle/README.md) |
+| replay-viewer | トップ 10 入賞プレイのキーストローク再描画（動画ファイル不要） | [docs/spec/replay-viewer](docs/spec/replay-viewer/README.md) |
+| rewards | 動的 SVG バッジ / 達成カード PNG / 3D アイコン / Hall of Fame | [docs/spec/rewards](docs/spec/rewards/README.md) |
+| adsense | プレイ中非表示の Google AdSense ディスプレイ広告 | [docs/spec/adsense](docs/spec/adsense/README.md) |
 
 ## 技術スタック
 

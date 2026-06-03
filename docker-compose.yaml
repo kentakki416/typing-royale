@@ -70,14 +70,15 @@ services:
     networks:
       - app-network
 
-  # Crawler / Batch (週次 / 毎時のスケジュール起動を想定。ローカルでは pnpm crawler:run で都度実行)
-  crawler:
+  # Cron (週次クローラ / 月次ライセンス再検証 / 毎時ランキング集計をまとめたコンテナ。
+  # 本番は ECS Scheduled Task。ローカルでは pnpm crawler:run などで都度実行)
+  cron:
     build:
       context: .
-      dockerfile: apps/crawler/Dockerfile
-    container_name: typing-royale-crawler
+      dockerfile: apps/cron/Dockerfile
+    container_name: typing-royale-cron
     profiles:
-      - crawler
+      - cron
     environment:
       NODE_ENV: local
       DATABASE_URL: postgresql://postgres:password@postgres:5432/typing_royale_dev

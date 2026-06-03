@@ -1,6 +1,6 @@
-# apps/crawler
+# apps/cron
 
-GitHub 上の OSS コードから関数単位でタイピング問題を抽出するクローラと、毎時のランキング集計バッチを兼ねるサービス。本番では ECS Scheduled Task として EventBridge から起動される。
+cron / EventBridge から定期実行されるタスク群（GitHub クローラ・ライセンス再検証・ランキング集計）を 1 つの Node.js ワーカーにまとめたサービス。本番では ECS Scheduled Task として起動される。
 
 詳細仕様は以下を参照:
 

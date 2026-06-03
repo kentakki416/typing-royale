@@ -217,7 +217,7 @@ type RepoInfo = {
 #### スケジュールと実行環境
 
 - **スケジュール**：毎週月曜 03:00 JST。GitHub API の負荷が比較的低い時間帯。
-- **実行環境**：API サーバとは別プロセス（`apps/crawler-ts` のような言語別の独立ワーカー想定）。Kubernetes CronJob / AWS EventBridge + Lambda / 単純な Node プロセス + node-cron など、インフラに応じて選択。
+- **実行環境**：API サーバとは別プロセス（`apps/cron` パッケージ内の `pnpm crawler:run` CLI として実装）。本番は AWS EventBridge → ECS Scheduled Task で起動。
 - **実行時間目安**：1 repo の処理は数秒〜数分（メタ取得 + ファイル取得 + AST 走査）。タイムアウトは 10 分に設定。
 
 #### 1 回の処理内容
