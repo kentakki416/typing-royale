@@ -1,4 +1,4 @@
-import { logger } from "../log"
+import { logger } from "@repo/logger"
 
 /**
  * 週次クローラ CLI のエントリポイント（Phase 2 で本実装）。

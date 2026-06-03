@@ -1,4 +1,4 @@
-import { logger } from "../log"
+import { logger } from "@repo/logger"
 
 /**
  * 月次ライセンス再検証 CLI のエントリポイント（Phase 2 で本実装）。

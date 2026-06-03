@@ -1,13 +1,13 @@
 import { Request, Response } from "express"
 
 import { authRefreshRequestSchema, authRefreshResponseSchema, ErrorResponse } from "@repo/api-schema"
+import { logger } from "@repo/logger"
 
 import {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
 } from "../../lib/jwt"
-import { logger } from "../../log"
 import { RefreshTokenRepository } from "../../repository/redis"
 import * as service from "../../service"
 

@@ -1,36 +1,9 @@
 {
+  "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
-    // コンパイルターゲット: ES2020にコンパイル
-    "target": "ES2020",
-    // モジュールシステム: CommonJS（Node.js標準）
-    "module": "node16",
-    // 使用するライブラリ: ES2020の標準ライブラリ
-    "lib": ["ES2020"],
-    // 出力ディレクトリ: コンパイル後のファイル出力先
     "outDir": "./dist",
-    // ソースコードのルートディレクトリ
-    "rootDir": "./src",
-    // 型定義ファイル（.d.ts）を生成
-    "declaration": true,
-    // 型定義ファイルのソースマップを生成
-    "declarationMap": true,
-    // デバッグ用のソースマップを生成
-    "sourceMap": true,
-    // 厳格な型チェックを有効化
-    "strict": true,
-    // ESモジュールとCommonJSの相互運用性を有効化
-    "esModuleInterop": true,
-    // ライブラリの型チェックをスキップ（ビルド時間短縮）
-    "skipLibCheck": true,
-    // ファイル名の大文字小文字の一貫性を強制
-    "forceConsistentCasingInFileNames": true,
-    // モジュール解決方法: Node.js方式
-    "moduleResolution": "node16",
-    // JSONファイルをモジュールとしてインポート可能にする
-    "resolveJsonModule": true
+    "rootDir": "./src"
   },
-  // コンパイル対象のファイル
   "include": ["src/**/*"],
-  // コンパイル対象から除外するディレクトリ
   "exclude": ["node_modules", "dist"]
 }

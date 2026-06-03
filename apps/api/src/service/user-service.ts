@@ -1,7 +1,8 @@
-import { logger } from "../log"
+import { err, notFoundError, ok, Result } from "@repo/errors"
+import { logger } from "@repo/logger"
+
 import { UserRepository } from "../repository/prisma"
 import { User } from "../types/domain"
-import { err, notFoundError, ok, Result } from "../types/result"
 
 /**
  * ユーザーIDからユーザー情報を取得

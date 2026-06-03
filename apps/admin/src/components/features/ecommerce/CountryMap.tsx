@@ -51,8 +51,8 @@ export default function CountryMap({ mapColor }: CountryMapProps) {
           initial: {
             fill: "#465FFF",
             r: 4, // Custom radius for markers
-          }, // Type assertion to bypass strict CSS property checks
-        } as MarkerStyle
+          },
+        } satisfies MarkerStyle
       }
       markersSelectable={true}
       markers={

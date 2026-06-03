@@ -1,4 +1,4 @@
-import { logger } from "../log"
+import { logger } from "@repo/logger"
 
 /**
  * 毎時ランキング集計バッチ CLI のエントリポイント（Phase 4 で本実装）。

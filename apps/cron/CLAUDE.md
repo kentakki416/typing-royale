@@ -29,12 +29,13 @@ apps/cron/
 │   │   ├── run.ts            # 週次クローラ
 │   │   ├── license-recheck.ts
 │   │   └── ranking-batch.ts
-│   ├── log/                  # 共通ロガー (pino)
 │   └── index.ts              # pnpm dev のエントリ（起動確認用）
-├── Dockerfile                # 本番用 (builder / runner)
+├── Dockerfile                # 本番用 (turbo prune + installer-builder + runner)
 ├── package.json
 └── tsconfig.json
 ```
+
+ロガーは `@repo/logger` を、それ以外の共通インフラは `@repo/db` / `@repo/redis` / `@repo/errors` / `@repo/config` を必要に応じて使う。
 
 実処理は Phase 2 / Phase 4 で追加する。設計詳細は [`docs/spec/problem-pool/`](../../docs/spec/problem-pool/) と [`docs/spec/score-ranking/`](../../docs/spec/score-ranking/) を参照。
 

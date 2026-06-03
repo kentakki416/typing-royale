@@ -1,4 +1,4 @@
-import Redis from "ioredis"
+import type { Redis } from "@repo/redis"
 
 /**
  * Redisのヘルスチェック用リポジトリのインターフェース

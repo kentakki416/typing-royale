@@ -6,20 +6,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Turborepo + pnpm モノレポ。
 
+### Apps
+
 - **apps/web**: Next.js 16 web application (port 3000)
 - **apps/admin**: Next.js 16 admin dashboard (port 3030)
 - **apps/mobile**: Expo/React Native mobile application
 - **apps/api**: Express.js API server (port 8080)
+
+### Packages
+
 - **packages/schema**: Shared Zod schemas (`@repo/api-schema`)
+- **packages/db**: Prisma schema / migrations / generated client + `createPrismaClient` factory (`@repo/db`)
+- **packages/logger**: `ILogger` + pino/winston/console/silent + AsyncLocalStorage context (`@repo/logger`)
+- **packages/errors**: `Result<T>` + `ApiError` + 業務エラー生成ヘルパ (`@repo/errors`)
+- **packages/config**: Zod ベース env スキーマ検証 + `loadEnv` (`@repo/config`)
+- **packages/redis**: `createRedisClient` factory（BullMQ / Pub/Sub 対応）(`@repo/redis`)
+
+共通パッケージの設計詳細は [`docs/spec/shared-packages/`](docs/spec/shared-packages/README.md) を参照。新規 server-side app (cron / worker / batch) を追加する場合は同設計書に沿って `@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/config` / `@repo/redis` を依存に追加し、各 app の `src/index.ts` で client を生成して Repository に DI する。
+
+### Infra
+
 - **infra/terraform**: AWS Infrastructure as Code
 
+### CLAUDE.md の参照
+
 各ディレクトリでの作業時は **対応する `CLAUDE.md` を参照してください**:
-- API → `apps/api/CLAUDE.md`（レイヤードアーキテクチャ / Result型 / テスト戦略 / dotenvx / Admin方針）
+
+- API → `apps/api/CLAUDE.md`（レイヤードアーキテクチャ / Result型 / テスト戦略 / dotenvx / Admin方針 / DI assembly）
 - Web → `apps/web/CLAUDE.md`
 - Admin → `apps/admin/CLAUDE.md`
 - Mobile → `apps/mobile/CLAUDE.md`
 - スキーマ → `packages/schema/CLAUDE.md`（スキーマ命名規則）
 - Terraform → `infra/terraform/CLAUDE.md`
+- 共通パッケージ設計 → [`docs/spec/shared-packages/README.md`](docs/spec/shared-packages/README.md)（`@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/config` / `@repo/redis` の仕様・設計・移行手順）
 
 ## Common Commands (root)
 
@@ -106,3 +125,4 @@ ESLint v9 flat config (`eslint.config.{js,mjs}`)。**全アプリ共通ルール
 - スキーマパッケージは依存アプリより先にビルドする必要がある
 - スキーマ変更時は `cd packages/schema && pnpm build`
 - Terraform state は S3 + DynamoDB ロック（bootstrap で構成済み）
+- **共通パッケージの設計方針**: `packages/db` / `logger` / `errors` / `config` / `redis` は server-side app 横断で利用される共通基盤。Prisma / Redis は **factory のみを export** し、各 app の `src/index.ts` で 1 回呼んで Repository に DI する。詳細は [`docs/spec/shared-packages/README.md`](docs/spec/shared-packages/README.md) を参照

@@ -1,8 +1,11 @@
 import cors from "cors"
 import express from "express"
 
+import { createPrismaClient } from "@repo/db"
+import { logger } from "@repo/logger"
+import { createRedisClient } from "@repo/redis"
+
 import { GoogleOAuthClient } from "./client/google-oauth"
-import { redis } from "./client/redis"
 import { AuthDevLoginController } from "./controller/auth/dev-login"
 import { AuthGoogleController } from "./controller/auth/google"
 import { AuthLogoutController } from "./controller/auth/logout"
@@ -15,11 +18,10 @@ import { MemoDeleteController } from "./controller/memo/delete"
 import { MemoDetailController } from "./controller/memo/detail"
 import { MemoListController } from "./controller/memo/list"
 import { MemoUpdateController } from "./controller/memo/update"
-import { logger } from "./log"
+import { env } from "./env"
 import { authMiddleware } from "./middleware/auth"
 import { errorHandler } from "./middleware/error-handler"
 import { requestLogger } from "./middleware/request-logger"
-import { prisma } from "./prisma/prisma.client"
 import {
   PrismaAuthAccountRepository,
   PrismaDatabaseHealthRepository,
@@ -32,15 +34,17 @@ import { authRouter } from "./routes/auth-router"
 import { healthRouter } from "./routes/health-router"
 import { memoRouter } from "./routes/memo-router"
 
-const app = express()
-const PORT = process.env.PORT || 8080
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000"
+/**
+ * インフラ client の生成 (プロセス起動時に 1 回だけ)
+ * - createPrismaClient: DATABASE_URL / DATABASE_REPLICA_URL を読んで PrismaClient を生成
+ * - createRedisClient: REDIS_URL を最優先で読んで Redis を生成
+ */
+const prisma = createPrismaClient()
+const redis = createRedisClient()
 
-// 環境変数（未設定の場合はダミー値で起動する。認証機能は動作しないがヘルスチェック等は応答可能）
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "dummy"
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "dummy"
-
-// Repository のインスタンス化
+/**
+ * Repository の DI assembly
+ */
 const userRepository = new PrismaUserRepository(prisma)
 const authAccountRepository = new PrismaAuthAccountRepository(prisma)
 const transactionRunner = new PrismaTransactionRunner(prisma)
@@ -49,14 +53,20 @@ const databaseHealthRepository = new PrismaDatabaseHealthRepository(prisma)
 const redisHealthRepository = new IoRedisHealthRepository(redis)
 const refreshTokenRepository = new IoRedisRefreshTokenRepository(redis)
 
-// Client のインスタンス化
-const googleOAuthClient = new GoogleOAuthClient(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
+/**
+ * 外部 SaaS client の DI assembly
+ */
+const googleOAuthClient = new GoogleOAuthClient(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET)
 
-// Health Controller のインスタンス化
+/**
+ * Health Controller のインスタンス化
+ */
 const healthLivenessController = new HealthLivenessController()
 const healthReadinessController = new HealthReadinessController(databaseHealthRepository, redisHealthRepository)
 
-// Auth Controller のインスタンス化
+/**
+ * Auth Controller のインスタンス化
+ */
 const authGoogleController = new AuthGoogleController(
   authAccountRepository,
   userRepository,
@@ -76,31 +86,45 @@ const authDevLoginController = process.env.NODE_ENV !== "production"
   ? new AuthDevLoginController(userRepository, refreshTokenRepository)
   : undefined
 
-// Memo Controller のインスタンス化
+/**
+ * Memo Controller のインスタンス化
+ */
 const memoListController = new MemoListController(memoRepository)
 const memoDetailController = new MemoDetailController(memoRepository)
 const memoCreateController = new MemoCreateController(memoRepository)
 const memoUpdateController = new MemoUpdateController(memoRepository)
 const memoDeleteController = new MemoDeleteController(memoRepository)
 
-// cors設定のミドルウェア
+const app = express()
+
+/**
+ * cors設定のミドルウェア
+ */
 app.use(
   cors({
     credentials: true,
-    origin: FRONTEND_URL,
+    origin: env.FRONTEND_URL,
   })
 )
 
-// jsonを変換するミドルウェア
+/**
+ * jsonを変換するミドルウェア
+ */
 app.use(express.json())
 
-// 認証ミドルウェア
+/**
+ * 認証ミドルウェア
+ */
 app.use(authMiddleware)
 
-// リクエストのロギングミドルウェア
+/**
+ * リクエストのロギングミドルウェア
+ */
 app.use(requestLogger)
 
-// ルーティング
+/**
+ * ルーティング
+ */
 app.use(
   "/api/health",
   healthRouter({
@@ -129,36 +153,49 @@ app.use(
   })
 )
 
-// グローバルエラーハンドラ（ルーティング定義の最後に登録する必要がある）
+/**
+ * グローバルエラーハンドラ（ルーティング定義の最後に登録する必要がある）
+ */
 app.use(errorHandler)
 
-// サーバー起動
-app.listen(PORT, () => {
+/**
+ * サーバー起動
+ */
+const server = app.listen(env.PORT, () => {
   logger.info("API server running", {
-    environment: process.env.NODE_ENV || "development",
-    port: PORT,
-    url: `http://localhost:${PORT}`,
+    environment: env.NODE_ENV,
+    port: env.PORT,
+    url: `http://localhost:${env.PORT}`,
   })
 })
 
-// Graceful shutdown
-process.on("SIGTERM", async () => {
-  logger.info("SIGTERM signal received: closing HTTP server")
-  await Promise.all([
-    prisma.$disconnect(),
-    redis.quit(),
-  ])
-  logger.info("Database and Redis connections closed")
-  process.exit(0)
-})
+/**
+ * Graceful shutdown
+ * SIGTERM / SIGINT を受けたら HTTP server を閉じてから DB / Redis を切断
+ */
+const shutdown = async (signal: string): Promise<void> => {
+  logger.info("Shutdown initiated", { signal })
+  server.close(async () => {
+    await Promise.all([
+      prisma.$disconnect(),
+      redis.quit(),
+    ])
+    logger.info("Shutdown completed")
+    process.exit(0)
+  })
+}
+process.on("SIGTERM", () => void shutdown("SIGTERM"))
+process.on("SIGINT", () => void shutdown("SIGINT"))
 
-// 予期しない例外をキャッチ（念のため）
+/**
+ * 予期しない例外をキャッチ（念のため）
+ */
 process.on("uncaughtException", (error) => {
   logger.error("Uncaught exception", error)
   process.exit(1)
 })
 
 process.on("unhandledRejection", (reason) => {
-  logger.error("Unhandled rejection", reason as Error )
+  logger.error("Unhandled rejection", reason as Error)
   process.exit(1)
 })

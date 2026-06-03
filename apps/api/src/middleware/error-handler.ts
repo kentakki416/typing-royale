@@ -1,8 +1,7 @@
 import { NextFunction, Request, Response } from "express"
 
 import { ErrorResponse } from "@repo/api-schema"
-
-import { logger } from "../log"
+import { logger } from "@repo/logger"
 
 /**
  * ZodError かどうかを判定する（zod パッケージを直接依存せずに判定するため name チェック）

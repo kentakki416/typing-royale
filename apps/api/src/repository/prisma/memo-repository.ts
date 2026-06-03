@@ -1,4 +1,5 @@
-import { Prisma as PrismaTypes, PrismaClient } from "../../prisma/generated/client"
+import { Prisma as PrismaTypes, PrismaClient } from "@repo/db"
+
 import { Memo } from "../../types/domain"
 
 /**

@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from "../../prisma/generated/client"
+import { Prisma, PrismaClient } from "@repo/db"
 
 /**
  * トランザクション内で実行される Prisma client。

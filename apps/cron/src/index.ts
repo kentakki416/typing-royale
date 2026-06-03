@@ -1,7 +1,7 @@
-import { logger } from "./log"
+import { logger } from "@repo/logger"
 
 /**
- * crawler パッケージのデフォルトエントリポイント。
+ * cron パッケージのデフォルトエントリポイント。
  *
  * 実際のクローラ / バッチ処理は `src/cli/` 配下の CLI コマンドから呼び出す:
  *   - `pnpm crawler:run`            : 週次クローラ（Phase 2）
@@ -11,7 +11,7 @@ import { logger } from "./log"
  * このファイルは `pnpm dev` で起動した際のエントリ。Phase 0 では起動確認のみ。
  */
 const main = () => {
-  logger.info({ env: process.env.NODE_ENV ?? "local" }, "crawler package booted")
+  logger.info("cron package booted", { env: process.env.NODE_ENV ?? "local" })
 }
 
 main()
