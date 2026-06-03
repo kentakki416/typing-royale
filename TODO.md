@@ -47,7 +47,7 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 - [x] `apps/crawler/` ディレクトリ作成・`package.json`・Dockerfile（クローラ + ランキングバッチを兼ねる）
 - [ ] `pnpm dev` で web / api / Postgres / Redis が同時起動できることを確認
 - [x] Sentry のローカルダミー DSN 設定（本番接続は Phase 9）
-- [x] `apps/api` に `/healthz` エンドポイント追加
+- [x] `apps/api` に `/healthz` エンドポイント追加 ← 既存の `GET /api/health` (liveness) と `GET /api/health/ready` (readiness) で要件充足。ALB / ECS のヘルスチェックパスは Phase 9 でターゲットグループ設定時にこちらを指定する
 
 ### GitHub 連携の最小準備（ローカルテスト用）
 
