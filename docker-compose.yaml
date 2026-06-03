@@ -1,0 +1,80 @@
+## TODO: container_name と DB_NAME の "project-template" 部分をプロジェクト名に変更してください
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: project-template-postgres # TODO: プロジェクト名に変更
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: project-template_dev # TODO: プロジェクト名に変更（DB名はアンダースコア推奨）
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      TZ: Asia/Tokyo
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: project-template-redis # TODO: プロジェクト名に変更
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  # API Server
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: project-template-api # TODO: プロジェクト名に変更
+    restart: unless-stopped
+    environment:
+      NODE_ENV: local
+      PORT: 8080
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/project-template_dev
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CORS_ORIGIN: http://localhost:3000
+      JWT_SECRET: your-secret-key-change-in-production
+      JWT_EXPIRATION: 7d
+      GOOGLE_CLIENT_ID: google-client-id
+      GOOGLE_CLIENT_SECRET: google-client-secret
+      GOOGLE_CALLBACK_URL: http://localhost/google
+    ports:
+      - '8080:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge

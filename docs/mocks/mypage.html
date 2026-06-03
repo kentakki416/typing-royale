@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>マイページ - CodeType</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="./top.html" class="logo"><span class="accent">code</span>type</a>
+    <div class="topbar-nav">
+      <a href="./top.html">ホーム</a>
+      <a href="./ranking.html">ランキング</a>
+      <a href="./hall-of-fame.html">Hall of Fame</a>
+      <a href="./mypage.html" class="active">マイページ</a>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <a href="./mypage.html" class="user-chip auth" title="マイページ">
+      <span class="avatar">YK</span>
+      <span class="user-name">@yuki-kano</span>
+      <svg class="github-mark" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    </a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="flex gap-16 mb-24" style="align-items:center;">
+    <span class="avatar lg">YK</span>
+    <div style="flex:1;">
+      <h1 style="margin-bottom:4px;">@yuki-kano</h1>
+      <div class="text-muted text-sm mb-8">参加: 2026-02-14 · 連続 <strong style="color: var(--success);">5 日</strong></div>
+      <span class="badge-grade staff" data-level="5">Staff Engineer</span>
+      <span class="text-sm text-muted" style="margin-left:8px;">2026-05-28 達成</span>
+    </div>
+    <a href="./mypage-settings.html" class="btn">⚙ 設定</a>
+  </div>
+
+  <div class="tabs">
+    <a href="./mypage.html" class="tab active">概要</a>
+    <a href="./mypage-rewards.html" class="tab">特典</a>
+    <a href="#" class="tab">プレイ履歴</a>
+    <a href="./mypage-settings.html" class="tab">設定</a>
+  </div>
+
+  <div class="row">
+    <div class="col">
+
+      <div class="stat-row">
+        <div class="stat">
+          <div class="stat-value accent">732</div>
+          <div class="stat-label">ベストスコア</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">47,128</div>
+          <div class="stat-label">累計文字数</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">62</div>
+          <div class="stat-label">総プレイ数</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value success">96.4%</div>
+          <div class="stat-label">平均正確率</div>
+        </div>
+      </div>
+
+      <div class="card mb-16" style="border-color: rgba(189, 147, 249, 0.3);">
+        <div class="card-header">
+          <div class="card-title">⚡ エンジニアグレード進捗</div>
+          <span class="badge-grade staff" data-level="5">Staff Engineer</span>
+        </div>
+        <div class="text-sm mb-8">
+          <div class="flex-between mb-8"><span class="text-muted">現在のベストスコア（全言語通算）</span><span class="text-mono">732 pts</span></div>
+          <div class="flex-between"><span class="text-muted">次の <strong style="color: var(--gold-light);">Principal Engineer</strong> まで</span><span class="text-mono" style="color: var(--gold);">あと 68 pts</span></div>
+        </div>
+        <div class="progress mb-8" style="height: 14px;">
+          <div class="progress-fill" style="width: 66%; background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, transparent 45%, rgba(0,0,0,0.15) 100%), linear-gradient(180deg, #d8b9ff 0%, #9659e8 100%);"></div>
+        </div>
+        <div class="text-sm text-muted text-center">Staff 600 ← <strong style="color: var(--text-primary);">732</strong> → 800 Principal</div>
+      </div>
+
+      <div class="card mb-16">
+        <div class="card-header">
+          <div class="card-title">📈 全期間ランキング</div>
+          <a href="./ranking.html" class="text-sm">ランキング →</a>
+        </div>
+        <table class="table">
+          <thead>
+            <tr><th>言語</th><th class="numeric">ベスト</th><th class="numeric">順位</th><th>状態</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge accent">TypeScript</span></td>
+              <td class="numeric"><strong>732</strong></td>
+              <td class="numeric"><strong style="color:var(--accent);">#87</strong></td>
+              <td><span class="badge success">圏内</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge warning">JavaScript</span></td>
+              <td class="numeric">487</td>
+              <td class="numeric text-muted">—</td>
+              <td><span class="badge warning">圏外</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="text-sm text-muted mt-8">
+          ⏱ snapshot 14 分前 · 言語別トップ 1000 位までを集計
+        </div>
+      </div>
+
+      <div class="card mb-16">
+        <div class="card-header">
+          <div class="card-title">📜 最近のプレイ</div>
+          <a href="#" class="text-sm">すべて →</a>
+        </div>
+        <table class="table">
+          <thead><tr><th>日時</th><th>言語</th><th>スコア</th><th>文字数</th><th>正確率</th><th></th></tr></thead>
+          <tbody>
+            <tr><td class="text-sm">数分前</td><td><span class="badge accent">TS</span></td><td class="numeric"><strong>732</strong></td><td class="numeric">752</td><td class="numeric">97.4%</td><td><a href="./replay.html" class="badge accent">▶</a></td></tr>
+            <tr><td class="text-sm">1 時間前</td><td><span class="badge accent">TS</span></td><td class="numeric">614</td><td class="numeric">641</td><td class="numeric">95.8%</td><td><a href="./replay.html" class="badge accent">▶</a></td></tr>
+            <tr><td class="text-sm">昨日</td><td><span class="badge warning">JS</span></td><td class="numeric">543</td><td class="numeric">578</td><td class="numeric">94.1%</td><td><a href="./replay.html" class="badge accent">▶</a></td></tr>
+            <tr><td class="text-sm">2 日前</td><td><span class="badge accent">TS</span></td><td class="numeric">521</td><td class="numeric">541</td><td class="numeric">96.3%</td><td><a href="./replay.html" class="badge accent">▶</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <aside class="col-sidebar">
+      <div class="card mb-16">
+        <div class="card-header">
+          <div class="card-title">🏷 README バッジ</div>
+          <a href="./badge-customize.html" class="text-sm">カスタマイズ</a>
+        </div>
+        <div style="background: var(--bg-base); padding:16px; border-radius:6px; text-align:center; border:1px solid var(--border);">
+          <svg width="240" height="28" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100" height="28" fill="#21262d" rx="4 0 0 4"/>
+            <rect x="100" width="140" height="28" fill="#bd93f9"/>
+            <text x="50" y="18" fill="#e6edf3" font-family="monospace" font-size="11" text-anchor="middle">CodeType</text>
+            <text x="170" y="18" fill="#1a0a30" font-family="monospace" font-size="11" font-weight="700" text-anchor="middle">Staff · 732</text>
+          </svg>
+        </div>
+        <input type="text" value="![CodeType](https://codetype.app/badge/yuki-kano.svg)" readonly style="width:100%; margin-top:12px; font-family: var(--font-mono); font-size:11px; background:var(--bg-base); border:1px solid var(--border); color:var(--text-secondary); padding:6px 8px; border-radius:4px;" />
+        <button class="btn btn-block mt-8">URL をコピー</button>
+      </div>
+
+      <div class="card mb-16">
+        <div class="card-header"><div class="card-title">🎁 特典 (3 / 7)</div></div>
+        <div class="text-sm">
+          <div class="mb-8">✨ 動的 SVG バッジ <span class="badge success">解放済</span></div>
+          <div class="mb-8">🏅 累計 5,000 文字 <span class="badge success">獲得</span></div>
+          <div class="mb-8">🔥 7 日連続プレイ <span class="badge warning">5/7 日</span></div>
+          <div class="mb-8 text-muted">🏆 全期間トップ 10 <span class="badge">未達</span></div>
+          <div class="mb-8 text-muted">🎨 3D アイコン <span class="badge">未達</span></div>
+        </div>
+        <a href="./mypage-rewards.html" class="btn btn-block mt-8">すべての特典 →</a>
+      </div>
+
+      <div class="ad-slot">Sponsored · 300×250</div>
+    </aside>
+  </div>
+</div>
+
+<div class="footer"><a href="./index.html">モック一覧</a></div>
+</body>
+</html>

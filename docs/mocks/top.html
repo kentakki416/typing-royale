@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>トップ - CodeType</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-left">
+    <div class="logo"><span class="accent">code</span>type</div>
+    <div class="topbar-nav">
+      <a href="./top.html" class="active">ホーム</a>
+      <a href="./ranking.html">ランキング</a>
+      <a href="./hall-of-fame.html">Hall of Fame</a>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <a href="./modal-login.html" class="user-chip guest" title="ログインで記録を保存">
+      <span class="guest-avatar">👤</span>
+      <span class="user-name">ゲスト</span>
+      <span class="user-status">未保存</span>
+    </a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>Type real <span class="accent">OSS code</span>.<br/>Get a fancier README.</h1>
+  <p>OSS の実コードを 120 秒で打鍵するエンジニア向けタイピングゲーム。スコアに応じて README に貼れる動的バッジ・達成カード・3D アイコンがもらえる。</p>
+  <div class="flex-center gap-12 mt-24" style="justify-content:center;">
+    <a href="./language-select.html" class="btn btn-primary btn-play btn-large">▶ ゲストでプレイ</a>
+    <a href="./modal-login.html" class="btn btn-large">GitHub で記録を残す</a>
+  </div>
+  <div class="text-sm text-muted mt-16">ログインなしでも遊べます · 記録を残したいときだけ GitHub 連携</div>
+</div>
+
+<div class="container">
+
+  <div class="row">
+    <div class="col">
+
+      <div class="card god-frame mb-24">
+        <div class="card-header">
+          <div class="card-title" style="color: var(--gold-light); text-shadow: 0 1px 0 rgba(0,0,0,0.5), 0 0 16px rgba(255, 213, 74, 0.5);">⚡ 神々に挑戦モード</div>
+          <span class="badge gold">特別モード</span>
+        </div>
+        <div class="flex-between" style="align-items:center;">
+          <div style="flex:1;">
+            <p class="text-sm">サーバーがオールタイムトップ 10 から <strong>ランダムに 1 人</strong> を選定。その神と同じ問題シーケンスで 120 秒の併走戦。</p>
+          </div>
+          <a href="./language-select.html" class="btn btn-gold">挑戦する →</a>
+        </div>
+      </div>
+
+      <div class="card mb-24">
+        <div class="card-header">
+          <div class="card-title">🏆 全期間トップ</div>
+          <a href="./ranking.html" class="text-sm">すべて見る →</a>
+        </div>
+        <div class="flex-between mb-16">
+          <div class="pills">
+            <a href="#" class="pill active">TypeScript</a>
+            <a href="#" class="pill">JavaScript</a>
+          </div>
+          <span class="text-sm text-muted text-mono">snapshot 14分前</span>
+        </div>
+        <table class="table">
+          <tbody>
+            <tr>
+              <td style="width:48px;"><span class="rank-badge gold">#1</span></td>
+              <td><div class="player-cell"><span class="avatar sm">SK</span><a href="./player-detail.html">@sakurai_dev</a></div></td>
+              <td><span class="badge-grade fellow" data-level="8">Fellow</span></td>
+              <td class="numeric">1,490</td>
+              <td style="width:80px;"><a href="./replay.html" class="badge accent">▶ 再生</a></td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge silver">#2</span></td>
+              <td><div class="player-cell"><span class="avatar sm">YT</span><a href="./player-detail.html">@yuta_tanaka</a></div></td>
+              <td><span class="badge-grade fellow" data-level="8">Fellow</span></td>
+              <td class="numeric">1,436</td>
+              <td><a href="./replay.html" class="badge accent">▶ 再生</a></td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge bronze">#3</span></td>
+              <td><div class="player-cell"><span class="avatar sm">NM</span><a href="./player-detail.html">@nmoritan</a></div></td>
+              <td><span class="badge-grade fellow" data-level="8">Fellow</span></td>
+              <td class="numeric">1,377</td>
+              <td><a href="./replay.html" class="badge accent">▶ 再生</a></td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">#4</span></td>
+              <td><div class="player-cell"><span class="avatar sm">KO</span><a href="./player-detail.html">@kotapan</a></div></td>
+              <td><span class="badge-grade fellow" data-level="8">Fellow</span></td>
+              <td class="numeric">1,287</td>
+              <td><a href="./replay.html" class="badge accent">▶ 再生</a></td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">#5</span></td>
+              <td><div class="player-cell"><span class="avatar sm">HJ</span><a href="./player-detail.html">@hjvm</a></div></td>
+              <td><span class="badge-grade fellow" data-level="8">Fellow</span></td>
+              <td class="numeric">1,210</td>
+              <td><a href="./replay.html" class="badge accent">▶ 再生</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card mb-24">
+        <div class="card-header">
+          <div class="card-title">なぜ CodeType か</div>
+        </div>
+        <div class="row gap-16">
+          <div class="col">
+            <h3>📦 リアル OSS のコード</h3>
+            <p class="text-sm text-muted">週次クローラが GitHub Star 上位の寛容ライセンス OSS から AST で関数を自動抽出。手で選別されたカスタム問題ではないリアル。</p>
+          </div>
+          <div class="col">
+            <h3>🏆 言語別ランキング</h3>
+            <p class="text-sm text-muted">日 / 週 / 月 / 全期間 で言語ごとのトップ 10。リプレイ視聴と「神々に挑戦」モードで観戦も可能。</p>
+          </div>
+          <div class="col">
+            <h3>✨ GitHub に映える特典</h3>
+            <p class="text-sm text-muted">動的 SVG バッジ・達成カード・3D アイコン・Hall of Fame。README が豪華になる。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="col-sidebar">
+      <div class="card mb-16">
+        <div class="card-header"><div class="card-title">統計</div></div>
+        <div style="display:grid; gap:12px;">
+          <div class="flex-between"><span class="text-muted text-sm">今日のプレイ数</span><span class="text-mono">12,488</span></div>
+          <div class="flex-between"><span class="text-muted text-sm">登録ユーザー</span><span class="text-mono">3,109</span></div>
+          <div class="flex-between"><span class="text-muted text-sm">問題プール</span><span class="text-mono">2,841 関数</span></div>
+          <div class="flex-between"><span class="text-muted text-sm">クロール済み repo</span><span class="text-mono">85</span></div>
+        </div>
+      </div>
+      <div class="ad-slot mb-16" style="padding: 60px 16px;">Sponsored<br/>ad slot 300×250</div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">対応言語</div></div>
+        <div class="flex gap-8" style="flex-wrap:wrap;">
+          <span class="badge accent">TypeScript</span>
+          <span class="badge warning">JavaScript</span>
+          <span class="badge">Python (近日)</span>
+          <span class="badge">Go (近日)</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="ad-slot mb-24">Display ad · footer leaderboard 728×90</div>
+</div>
+
+<div class="footer">
+  <a href="./index.html">モック一覧</a> ·
+  <a href="#">利用規約</a> ·
+  <a href="#">プライバシー</a> ·
+  <a href="#">ライセンス一覧</a> ·
+  <a href="#">GitHub</a>
+</div>
+</body>
+</html>

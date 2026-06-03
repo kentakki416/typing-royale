@@ -1,0 +1,31 @@
+# 機能仕様クイックリファレンス
+
+このプロジェクトで実装されている / 設計中の機能の一覧です。プロダクト全体像は [`../README.md`](../README.md) を参照してください。各機能の詳細は `./{feature}/README.md` を参照してください。
+
+このファイルは `design-feature` skill で新機能を設計するたびに更新されます。
+
+## 機能一覧
+
+| 機能名 | ステータス | 概要 | リンク |
+|---|---|---|---|
+| typing-engine | ✅ | タイピングコアエンジン。120 秒制限・関数の連続出題・入力判定・スコア計算 | [./typing-engine/README.md](./typing-engine/README.md) |
+| problem-pool | ✅ | 問題プール。週次 cron で GitHub Star 上位の寛容ライセンス OSS をクロールし AST で関数本体を抽出 | [./problem-pool/README.md](./problem-pool/README.md) |
+| github-auth | ✅ | GitHub OAuth。読み取り最小スコープでのログイン・アカウント管理 | [./github-auth/README.md](./github-auth/README.md) |
+| score-ranking | ✅ | スコア記録・ランキング集計（言語×全期間トップ 1000）。**エンジニアグレード**（Intern → Fellow の 8 段階）で個人成長を可視化 | [./score-ranking/README.md](./score-ranking/README.md) |
+| ghost-battle | ✅ | ゴースト併走（「神々に挑戦」モード）。言語選択画面のボタンからランダムなトップ 10 と同じ問題シーケンスで対戦 | [./ghost-battle/README.md](./ghost-battle/README.md) |
+| replay-viewer |　✅ | リプレイ閲覧。トップ 10 入賞プレイのキーストローク再描画 | [./replay-viewer/README.md](./replay-viewer/README.md) |
+| rewards | ✅ | 特典（リワード）。SVG バッジ・達成カード・3D アイコン・Hall of Fame | [./rewards/README.md](./rewards/README.md) |
+| adsense | ✅ | 広告配信。Google AdSense のディスプレイ広告 | [./adsense/README.md](./adsense/README.md) |
+| dev-login | ✅ | 開発用ログイン（既存） | [./dev-login/README.md](./dev-login/README.md) |
+
+## ステータスの定義
+
+- **設計中**: `docs/spec/{feature}/README.md` および `step*.md` を作成中。実装には未着手
+- **実装中**: 設計が完了し、コードを実装中。一部の step が完了している場合もこのステータス
+- **完了**: 全 step が実装され、テストが通っている
+
+## 運用ルール
+
+- 新機能を作るときは `design-feature` skill を使い、このファイルにエントリを必ず追加する
+- ステータスが変わったらこのファイルも更新する
+- 不要になった機能は削除し、過去の経緯を `docs/spec/{feature}/README.md` に記録してから機能ディレクトリ自体をアーカイブ（必要に応じて）

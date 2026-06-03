@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>オンボーディング - CodeType</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="./top.html" class="logo"><span class="accent">code</span>type</a>
+  </div>
+  <div class="topbar-right">
+    <a href="./mypage.html" class="user-chip auth" title="マイページ">
+      <span class="avatar">YK</span>
+      <span class="user-name">@yuki-kano</span>
+      <svg class="github-mark" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    </a>
+  </div>
+</nav>
+
+<div class="container container-narrow">
+  <div class="text-center mt-32">
+    <div style="font-size:48px;">👋</div>
+    <h1>ようこそ、@yuki-kano さん！</h1>
+    <p class="text-muted">いくつかの初期設定を確認します（あとから変更できます）</p>
+  </div>
+
+  <div class="card mt-24 mb-16">
+    <div class="card-header">
+      <div class="card-title">1. 表示名</div>
+      <span class="badge">ランキング掲載名</span>
+    </div>
+    <div class="flex-center gap-12 mb-16">
+      <span class="avatar lg">YK</span>
+      <div style="flex:1;">
+        <div class="form-group" style="margin:0;">
+          <input type="text" value="yuki-kano" />
+        </div>
+        <div class="text-sm text-muted mt-8">GitHub username を初期値に使用しています</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-16">
+    <div class="card-header"><div class="card-title">2. ローカル履歴のマージ</div></div>
+    <p class="text-sm text-muted mb-16">ログイン前にゲストとしてプレイしたスコアが <strong style="color: var(--text-primary);">3 件</strong> 見つかりました。アカウントに紐付けますか？</p>
+
+    <div style="display:grid; gap:8px;" class="text-sm">
+      <div class="flex-between"><span>TS · 5,210 pts</span><span class="text-muted">10 分前</span></div>
+      <div class="flex-between"><span>TS · 6,142 pts</span><span class="text-muted">15 分前</span></div>
+      <div class="flex-between"><span>JS · 4,838 pts</span><span class="text-muted">22 分前</span></div>
+    </div>
+
+    <label class="toggle on mt-16">
+      <span class="toggle-switch"></span>
+      <span class="text-sm">マージしてランキングに反映する</span>
+    </label>
+  </div>
+
+  <div class="card mb-16">
+    <div class="card-header"><div class="card-title">3. プライバシー設定</div></div>
+    <div class="flex-between mb-8">
+      <div>
+        <div>ランキングに表示名を公開</div>
+        <div class="text-sm text-muted">OFF にすると順位は計算されますがボード上は "Anonymous" になります</div>
+      </div>
+      <label class="toggle on"><span class="toggle-switch"></span></label>
+    </div>
+    <div class="flex-between">
+      <div>
+        <div>GitHub アバターを表示</div>
+        <div class="text-sm text-muted">OFF にするとイニシャルアイコンで表示</div>
+      </div>
+      <label class="toggle on"><span class="toggle-switch"></span></label>
+    </div>
+  </div>
+
+  <div class="card mb-16" style="border-color: rgba(88,166,255,0.4); background: rgba(88,166,255,0.04);">
+    <div class="flex-center gap-12">
+      <div style="font-size:24px;">🔒</div>
+      <div>
+        <div class="mb-8"><strong>取得しているスコープ</strong></div>
+        <div class="text-sm text-muted">
+          <code class="inline">read:user</code> 公開プロフィール取得のみ。<br/>
+          GitHub への書き込み権限は要求していません（バッジは手動で README に貼ります）。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center mt-24">
+    <a href="./mypage.html" class="btn btn-primary btn-large">CodeType を始める →</a>
+  </div>
+</div>
+
+<div class="footer"><a href="./index.html">モック一覧</a></div>
+</body>
+</html>

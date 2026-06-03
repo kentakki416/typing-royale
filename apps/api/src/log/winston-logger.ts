@@ -1,0 +1,81 @@
+import { createLogger, format, transports } from "winston"
+
+import { NODE_ENV, LOG_LEVEL } from "../const"
+
+import { logContext } from "./context"
+import type { ILogger, LogMetadata } from "./interface"
+
+type NodeEnv = typeof NODE_ENV[keyof typeof NODE_ENV]
+
+const { combine, timestamp, errors, json, simple, colorize } = format
+
+/**
+ * Winston Logger
+ */
+export class WinstonLogger implements ILogger {
+  private logger: ReturnType<typeof createLogger>
+
+  constructor() {
+    const env = (process.env.NODE_ENV || NODE_ENV.DEV) as NodeEnv
+    const logLevel = env === NODE_ENV.PRD ? LOG_LEVEL.INFO : LOG_LEVEL.DEBUG
+
+    /**
+     * 開発環境: 可読性の高いフォーマット
+     * 本番環境: JSON 形式（CloudWatch Logs などで処理しやすい）
+     */
+    const consoleFormat =
+      env === NODE_ENV.PRD
+        ? combine(errors({ stack: true }), timestamp(), json())
+        : combine(errors({ stack: true }), timestamp({ format: "YYYY-MM-DD HH:mm:ss" }), colorize(), simple())
+
+    this.logger = createLogger({
+      exitOnError: false,
+      format: combine(errors({ stack: true }), timestamp()),
+      level: logLevel,
+      transports: [
+        /**
+         * Console 出力（stdout/stderr）
+         * クラウド環境では自動的に収集される
+         */
+        new transports.Console({
+          format: consoleFormat,
+        }),
+      ],
+    })
+  }
+
+  /**
+   * コンテキスト（requestId, userId）を含むchild loggerを取得
+   */
+  private getLogger(): ReturnType<typeof createLogger> {
+    const context = logContext.getStore()
+    if (context) {
+      return this.logger.child(context)
+    }
+    return this.logger
+  }
+
+  debug(message: string, metadata?: LogMetadata): void {
+    this.getLogger().debug(message, metadata)
+  }
+
+  info(message: string, metadata?: LogMetadata): void {
+    this.getLogger().info(message, metadata)
+  }
+
+  warn(message: string, metadata?: LogMetadata): void {
+    this.getLogger().warn(message, metadata)
+  }
+
+  error(message: string, error?: Error, metadata?: LogMetadata): void {
+    if (error) {
+      this.getLogger().error(message, {
+        error: error.message,
+        stack: error.stack,
+        ...metadata,
+      })
+    } else {
+      this.getLogger().error(message, metadata)
+    }
+  }
+}

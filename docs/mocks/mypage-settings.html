@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>マイページ：設定 - CodeType</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="./top.html" class="logo"><span class="accent">code</span>type</a>
+    <div class="topbar-nav">
+      <a href="./top.html">ホーム</a>
+      <a href="./ranking.html">ランキング</a>
+      <a href="./hall-of-fame.html">Hall of Fame</a>
+      <a href="./mypage.html" class="active">マイページ</a>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <a href="./mypage.html" class="user-chip auth" title="マイページ">
+      <span class="avatar">YK</span>
+      <span class="user-name">@yuki-kano</span>
+      <svg class="github-mark" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    </a>
+  </div>
+</nav>
+
+<div class="container container-narrow">
+  <h1>⚙ アカウント設定</h1>
+
+  <div class="tabs">
+    <a href="./mypage.html" class="tab">概要</a>
+    <a href="./mypage-rewards.html" class="tab">特典</a>
+    <a href="#" class="tab">プレイ履歴</a>
+    <a href="./mypage-settings.html" class="tab active">設定</a>
+  </div>
+
+  <div class="card mb-16">
+    <div class="card-header"><div class="card-title">プロフィール</div></div>
+    <div class="flex-center gap-16 mb-16">
+      <span class="avatar lg">YK</span>
+      <div>
+        <div class="text-mono">@yuki-kano</div>
+        <div class="text-sm text-muted">GitHub と連携済み</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>表示名（ランキング掲載名）</label>
+      <input type="text" value="yuki-kano" />
+    </div>
+    <button class="btn btn-primary">保存</button>
+  </div>
+
+  <div class="card mb-16">
+    <div class="card-header"><div class="card-title">プライバシー</div></div>
+    <div class="flex-between mb-16" style="padding-bottom:12px; border-bottom:1px solid var(--border-muted);">
+      <div>
+        <div>ランキングに表示名を公開</div>
+        <div class="text-sm text-muted">OFF にすると順位は計算されますがボード上は "Anonymous"</div>
+      </div>
+      <label class="toggle on"><span class="toggle-switch"></span></label>
+    </div>
+    <div class="flex-between mb-16" style="padding-bottom:12px; border-bottom:1px solid var(--border-muted);">
+      <div>
+        <div>GitHub アバターを表示</div>
+        <div class="text-sm text-muted">OFF にするとイニシャルアイコン</div>
+      </div>
+      <label class="toggle on"><span class="toggle-switch"></span></label>
+    </div>
+    <div class="flex-between">
+      <div>
+        <div>リプレイの公開</div>
+        <div class="text-sm text-muted">トップ 10 入賞時に他ユーザーがリプレイを閲覧可能</div>
+      </div>
+      <label class="toggle on"><span class="toggle-switch"></span></label>
+    </div>
+  </div>
+
+  <div class="card mb-16">
+    <div class="card-header"><div class="card-title">連携</div></div>
+    <div class="flex-between">
+      <div class="flex-center gap-12">
+        <div style="font-size:24px;">🔗</div>
+        <div>
+          <div>GitHub</div>
+          <div class="text-sm text-muted">scope: <code class="inline">read:user</code> · 連携日: 2026-02-14</div>
+        </div>
+      </div>
+      <button class="btn btn-danger">連携解除</button>
+    </div>
+  </div>
+
+  <div class="card mb-16">
+    <div class="card-header"><div class="card-title">通知</div></div>
+    <div class="flex-between mb-16" style="padding-bottom:12px; border-bottom:1px solid var(--border-muted);">
+      <div>特典獲得時にメールで通知</div>
+      <label class="toggle"><span class="toggle-switch"></span></label>
+    </div>
+    <div class="flex-between">
+      <div>トップ 10 入賞時に通知</div>
+      <label class="toggle on"><span class="toggle-switch"></span></label>
+    </div>
+  </div>
+
+  <div class="card" style="border-color: rgba(248,81,73,0.4);">
+    <div class="card-header"><div class="card-title" style="color: var(--error);">⚠ 危険な操作</div></div>
+    <div class="flex-between">
+      <div>
+        <div>アカウントを削除</div>
+        <div class="text-sm text-muted">スコア・キーストロークログ・特典履歴・Hall of Fame 掲載がすべて削除されます</div>
+      </div>
+      <button class="btn btn-danger">アカウント削除</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer"><a href="./index.html">モック一覧</a></div>
+</body>
+</html>

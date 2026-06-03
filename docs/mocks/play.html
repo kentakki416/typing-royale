@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>プレイ中 - CodeType</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="play-screen tier-4">
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="./top.html" class="logo"><span class="accent">code</span>type</a>
+    <span class="badge accent">TypeScript</span>
+    <span class="badge">通常モード</span>
+  </div>
+  <div class="topbar-right">
+    <a href="./modal-login.html" class="user-chip guest" title="ログインで記録を保存">
+      <span class="guest-avatar">👤</span>
+      <span class="user-name">ゲスト</span>
+      <span class="user-status">未保存</span>
+    </a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="play-hud">
+    <div class="hud-cell">
+      <div class="hud-label">残り時間</div>
+      <div class="hud-value error">87s</div>
+    </div>
+    <div class="hud-cell">
+      <div class="hud-label">累計文字数</div>
+      <div class="hud-value accent">412</div>
+    </div>
+    <div class="hud-cell">
+      <div class="hud-label">正確率</div>
+      <div class="hud-value success">96.8%</div>
+    </div>
+    <div class="hud-cell">
+      <div class="hud-label">完走 / 出題</div>
+      <div class="hud-value">2 / 3</div>
+    </div>
+  </div>
+
+  <div class="tier-bar">
+    <div class="tier-indicator">
+      <span class="text-muted">累計 412</span>
+      <span class="tier-name crimson">🔴 紅</span>
+      <span class="tier-arrow">→ あと 88 文字で</span>
+      <span class="tier-name gold">🟡 金</span>
+    </div>
+  </div>
+
+  <div class="progress">
+    <div class="progress-fill error" style="width: 72.5%;"></div>
+  </div>
+
+  <div class="editor-area">
+    <div class="code-block-source">
+      <span>📦 vercel/next.js · packages/next/src/server/lib/router-utils/route-resolver.ts</span>
+      <span>MIT · <code>resolveDynamicRoute</code> · 7a3f9c1 · 問題内 285 / 712 文字</span>
+    </div>
+<pre class="code-block"><span class="typed"><span class="keyword">export</span> <span class="keyword">const</span> <span class="function">resolveDynamicRoute</span> = (
+  pathname: <span class="type">string</span>,
+  routes: <span class="type">DynamicRoute</span>[],
+  locale?: <span class="type">string</span>
+): <span class="type">ResolvedRoute</span> | <span class="keyword">null</span> =&gt; {
+  <span class="keyword">if</span> (!pathname || routes.length === 0) <span class="keyword">return</span> <span class="keyword">null</span>
+  <span class="keyword">const</span> normalized = pathname.<span class="function">replace</span>(/\/+$/, <span class="string">""</span>) || <span class="string">"/"</span>
+  <span class="keyword">const</span> segments = normalized.<span class="function">split</span>(<span class="string">"/"</span>).<span class="function">filter</span>(<span class="type">Boolean</span>)
+
+  <span class="keyword">for</span> (<span class="keyword">const</span> route <span class="keyword">of</span> routes) {</span>
+<span class="typed">    <span class="keyword">const</span> match = <span class="function">matchRoute</span>(segments, route.pattern)
+    <span class="keyword">if</span> (!match)</span><span class="typed"> </span><span class="current">c</span><span class="untyped">ontinue
+    <span class="keyword">const</span> params = <span class="function">extractParams</span>(match, route.paramNames)
+    <span class="keyword">if</span> (route.locale &amp;&amp; locale &amp;&amp; route.locale !== locale) {
+      <span class="keyword">continue</span>
+    }
+    <span class="keyword">return</span> {
+      route,
+      params,
+      pathname: normalized,
+      locale: route.locale ?? locale ?? <span class="string">"default"</span>,
+    }
+  }
+  <span class="keyword">return</span> <span class="keyword">null</span>
+}</span></pre>
+  </div>
+
+  <div class="play-foot">
+    💡 ペースト無効 · スキップなし · 未解決型はそのまま打鍵 · 画面は自動スクロール
+  </div>
+</div>
+
+</body>
+</html>

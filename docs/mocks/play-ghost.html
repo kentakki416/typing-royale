@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>神々に挑戦 - CodeType</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="play-screen tier-6">
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="./top.html" class="logo"><span class="accent">code</span>type</a>
+    <span class="badge accent">TypeScript</span>
+    <span class="badge gold">⚡ 神々に挑戦 · vs @sakurai_dev</span>
+  </div>
+  <div class="topbar-right">
+    <a href="./modal-login.html" class="user-chip guest" title="ログインで記録を保存">
+      <span class="guest-avatar">👤</span>
+      <span class="user-name">ゲスト</span>
+      <span class="user-status">未保存</span>
+    </a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="play-hud">
+    <div class="hud-cell">
+      <div class="hud-label">残り時間</div>
+      <div class="hud-value error">38s</div>
+    </div>
+    <div class="hud-cell">
+      <div class="hud-label">あなた</div>
+      <div class="hud-value accent">712</div>
+    </div>
+    <div class="hud-cell">
+      <div class="hud-label">神</div>
+      <div class="hud-value" style="color: var(--ghost);">791</div>
+    </div>
+    <div class="hud-cell">
+      <div class="hud-label">差</div>
+      <div class="hud-value error">−79</div>
+    </div>
+  </div>
+
+  <div class="tier-bar">
+    <div class="tier-indicator">
+      <span class="text-muted">累計 712</span>
+      <span class="tier-name rainbow">🌈 虹</span>
+      <span class="tier-arrow">最高段到達！</span>
+    </div>
+  </div>
+
+  <div class="race">
+    <div class="race-row">
+      <div class="race-label"><span class="race-dot"></span>あなた</div>
+      <div class="race-bar"><div class="race-bar-fill" style="width: 47.4%;"></div></div>
+      <div class="race-percent">712 文字</div>
+    </div>
+    <div class="race-row">
+      <div class="race-label"><span class="race-dot ghost"></span>神</div>
+      <div class="race-bar"><div class="race-bar-fill ghost" style="width: 52.7%;"></div></div>
+      <div class="race-percent">791 文字</div>
+    </div>
+  </div>
+
+  <div class="row gap-16">
+    <div class="col">
+      <div class="editor-area">
+        <div class="code-block-source">
+          <span>📦 prisma/prisma · packages/client/src/runtime/utils/deepGet.ts</span>
+          <span>Apache-2.0 · <code>deepGet</code> · 7a3f9c1</span>
+        </div>
+<pre class="code-block"><span class="typed"><span class="keyword">export</span> <span class="keyword">const</span> <span class="function">deepGet</span> = (
+  obj: <span class="type">Record</span>&lt;<span class="type">string</span>, <span class="type">unknown</span>&gt;,
+  path: <span class="type">string</span>[]
+): <span class="type">unknown</span> =&gt; {
+  <span class="keyword">if</span> (path.length === 0) <span class="keyword">return</span> obj</span>
+<span class="typed">  <span class="keyword">const</span> [</span><span class="current">h</span><span class="untyped">ead, ...rest] = path
+  <span class="keyword">const</span> next = obj[head]
+  <span class="keyword">if</span> (next === undefined) <span class="keyword">return</span> undefined
+  <span class="keyword">return</span> <span class="function">deepGet</span>(next <span class="keyword">as</span> any, rest)
+}</span></pre>
+      </div>
+    </div>
+    <aside class="col-sidebar">
+      <div class="card god-frame">
+        <div class="card-header"><div class="card-title" style="color: var(--gold-light);">⚡ 今回の神</div></div>
+        <div class="flex-center gap-12 mb-8">
+          <span class="avatar">SK</span>
+          <div>
+            <div class="player-name">@sakurai_dev</div>
+            <div class="text-sm text-muted">TS オールタイム #3</div>
+          </div>
+        </div>
+        <div class="text-mono text-sm" style="color: var(--ghost);">問題 5 / 7 行目を打鍵中</div>
+        <div class="text-mono text-sm text-muted">正確率 98.2%</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">出題シーケンス</div></div>
+        <div style="display:grid; gap:6px;" class="text-sm">
+          <div class="flex-between"><span>① getServerSideProps</span><span class="badge success">完走</span></div>
+          <div class="flex-between"><span>② normalizeRoutePath</span><span class="badge success">完走</span></div>
+          <div class="flex-between"><span>③ parseManifest</span><span class="badge success">完走</span></div>
+          <div class="flex-between"><span>④ deepGet</span><span class="badge accent">プレイ中</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+</body>
+</html>

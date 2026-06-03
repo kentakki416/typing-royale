@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>バッジカスタマイズ - CodeType</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="./top.html" class="logo"><span class="accent">code</span>type</a>
+    <div class="topbar-nav">
+      <a href="./mypage.html">マイページ</a>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <a href="./mypage.html" class="user-chip auth" title="マイページ">
+      <span class="avatar">YK</span>
+      <span class="user-name">@yuki-kano</span>
+      <svg class="github-mark" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    </a>
+  </div>
+</nav>
+
+<div class="container container-narrow">
+  <div class="text-sm text-muted mb-8"><a href="./mypage-rewards.html">← 特典に戻る</a></div>
+  <h1>🏷 SVG バッジ カスタマイズ</h1>
+  <p class="text-muted mb-24">README に貼るとリアルタイムでスコアが反映されます。表示項目とテーマを選んでください。</p>
+
+  <div class="row">
+    <div class="col">
+      <div class="card mb-16">
+        <div class="card-header"><div class="card-title">表示項目</div></div>
+        <label class="toggle on mb-16" style="display:flex; justify-content:space-between;">
+          <span>⚡ <strong>現在のグレード</strong>（例: <code class="inline">Staff Engineer</code>）<span class="badge gold" style="margin-left:4px;">人気</span></span>
+          <span class="toggle-switch"></span>
+        </label>
+        <label class="toggle on mb-16" style="display:flex; justify-content:space-between;">
+          <span>全期間ランク（圏外は非表示。例: <code class="inline">TS #87</code>）</span>
+          <span class="toggle-switch"></span>
+        </label>
+        <label class="toggle on mb-16" style="display:flex; justify-content:space-between;">
+          <span>ベストスコア</span>
+          <span class="toggle-switch"></span>
+        </label>
+        <label class="toggle mb-16" style="display:flex; justify-content:space-between;">
+          <span>累計文字数（生涯打鍵）</span>
+          <span class="toggle-switch"></span>
+        </label>
+        <label class="toggle on mb-16" style="display:flex; justify-content:space-between;">
+          <span>連続プレイ日数</span>
+          <span class="toggle-switch"></span>
+        </label>
+        <label class="toggle" style="display:flex; justify-content:space-between;">
+          <span>正確率</span>
+          <span class="toggle-switch"></span>
+        </label>
+      </div>
+
+      <div class="card mb-16">
+        <div class="card-header"><div class="card-title">対象言語</div></div>
+        <div class="form-group">
+          <select>
+            <option>TypeScript（ベスト）</option>
+            <option>JavaScript</option>
+            <option>全言語の合算</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">テーマ</div></div>
+        <div class="lang-grid" style="grid-template-columns: repeat(3, 1fr); margin:0;">
+          <label class="lang-card" style="padding:16px;">
+            <div style="background:#0d1117; border-radius:4px; padding:8px; margin-bottom:8px; font-family:var(--font-mono); color:#58a6ff; font-size:10px;">CodeType · Staff · #87</div>
+            <div class="text-sm">Dark</div>
+          </label>
+          <label class="lang-card" style="padding:16px;">
+            <div style="background:#fff; border-radius:4px; padding:8px; margin-bottom:8px; font-family:var(--font-mono); color:#0969da; font-size:10px;">CodeType · Staff · #87</div>
+            <div class="text-sm">Light</div>
+          </label>
+          <label class="lang-card" style="padding:16px;">
+            <div style="background: linear-gradient(135deg,#bc8cff,#58a6ff); border-radius:4px; padding:8px; margin-bottom:8px; font-family:var(--font-mono); color:#fff; font-size:10px;">CodeType · Staff · #87</div>
+            <div class="text-sm">Gradient</div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <aside class="col-sidebar" style="width:340px;">
+      <div class="card" style="position:sticky; top:80px;">
+        <div class="card-header"><div class="card-title">プレビュー</div></div>
+
+        <div style="background:var(--bg-base); padding:24px; border-radius:8px; border:1px solid var(--border); text-align:center;">
+          <svg width="320" height="32" xmlns="http://www.w3.org/2000/svg">
+            <rect width="110" height="32" fill="#21262d" rx="4 0 0 4"/>
+            <rect x="110" width="210" height="32" fill="#bd93f9"/>
+            <text x="55" y="20" fill="#e6edf3" font-family="monospace" font-size="12" text-anchor="middle">CodeType</text>
+            <text x="215" y="20" fill="#1a0a30" font-family="monospace" font-size="12" font-weight="700" text-anchor="middle">Staff · TS #87 · 🔥5</text>
+          </svg>
+        </div>
+
+        <div class="form-group mt-16">
+          <label>Markdown</label>
+          <textarea readonly>![CodeType](https://codetype.app/badge/yuki-kano.svg?lang=ts&items=grade,rank,score,streak&theme=dark)</textarea>
+        </div>
+        <div class="form-group">
+          <label>HTML</label>
+          <textarea readonly><img src="https://codetype.app/badge/yuki-kano.svg?lang=ts" alt="CodeType" /></textarea>
+        </div>
+        <button class="btn btn-primary btn-block">Markdown をコピー</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="footer"><a href="./index.html">モック一覧</a></div>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# Trivy設定ファイル（prd環境）
+# 本番環境では全チェックを有効にする
+severity:
+  - CRITICAL
+  - HIGH
+  - MEDIUM
+
+timeout: 10m
+cache-dir: ~/.trivy/cache

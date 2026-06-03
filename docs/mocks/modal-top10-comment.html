@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>トップ10入りモーダル - CodeType</title>
+<link rel="stylesheet" href="./styles.css" />
+<style>
+/**
+ * Mock-only sparkle animation for the "🎉 トップ10入り見込み！" moment.
+ */
+@keyframes sparkle-rise {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.6); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-40px) scale(1.4); }
+}
+.sparkle {
+  position: absolute;
+  font-size: 18px;
+  pointer-events: none;
+  animation: sparkle-rise 3s ease-out infinite;
+}
+.celebration-icon {
+  display: inline-block;
+  font-size: 80px;
+  filter: drop-shadow(0 4px 10px rgba(255, 213, 74, 0.5));
+  animation: crown-bob 2.4s ease-in-out infinite;
+}
+.top10-modal {
+  background:
+    radial-gradient(ellipse 120% 60% at 50% 0%, rgba(255, 213, 74, 0.18), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 14%, transparent 88%, rgba(0, 0, 0, 0.2) 100%),
+    linear-gradient(180deg, #1f2531 0%, #161b22 100%);
+  border: 1px solid rgba(255, 213, 74, 0.4);
+  box-shadow:
+    0 14px 0 rgba(0, 0, 0, 0.4),
+    0 30px 80px rgba(0, 0, 0, 0.7),
+    0 0 80px rgba(255, 213, 74, 0.35),
+    inset 0 2px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+}
+.char-counter {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: -10px;
+  margin-bottom: 14px;
+}
+.boundary-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, rgba(255, 213, 74, 0.08) 0%, rgba(0, 0, 0, 0.18) 100%);
+  border: 1px solid rgba(255, 213, 74, 0.25);
+  border-radius: 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.boundary-bar .you { color: var(--accent); font-weight: 800; text-align: right; }
+.boundary-bar .arrow { color: var(--gold-light); font-size: 18px; }
+.boundary-bar .border-score { color: var(--text-muted); text-align: left; }
+.boundary-bar .border-score strong { color: var(--gold-light); font-weight: 700; }
+</style>
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="./top.html" class="logo"><span class="accent">code</span>type</a>
+  </div>
+  <div class="topbar-right">
+    <a href="./mypage.html" class="user-chip auth" title="マイページ">
+      <span class="avatar">YK</span>
+      <span class="user-name">@yuki-kano</span>
+      <svg class="github-mark" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    </a>
+  </div>
+</nav>
+
+<!-- Result screen background (blurred) -->
+<div class="container container-narrow" style="opacity: 0.25; filter: blur(3px);">
+  <div class="text-center mt-24">
+    <div class="text-mono text-muted text-sm">SESSION COMPLETE · 120s</div>
+    <h1 class="text-mono" style="font-size: 48px; margin: 8px 0;">1,052 <span class="text-muted" style="font-size: 18px;">pts</span></h1>
+  </div>
+  <div class="stat-row">
+    <div class="stat"><div class="stat-value accent">1,084</div><div class="stat-label">文字数</div></div>
+    <div class="stat"><div class="stat-value success">97.0%</div><div class="stat-label">正確率</div></div>
+    <div class="stat"><div class="stat-value">9</div><div class="stat-label">完走</div></div>
+    <div class="stat"><div class="stat-value">10</div><div class="stat-label">出題</div></div>
+  </div>
+</div>
+
+<div class="modal-overlay">
+  <div class="modal top10-modal" style="position: relative; max-width: 560px;">
+
+    <!-- Sparkles -->
+    <span class="sparkle" style="top: 20px; left: 10%; animation-delay: 0s;">✨</span>
+    <span class="sparkle" style="top: 40px; left: 85%; animation-delay: 0.4s;">✨</span>
+    <span class="sparkle" style="top: 100px; left: 5%; animation-delay: 0.8s;">⭐</span>
+    <span class="sparkle" style="top: 60px; left: 92%; animation-delay: 1.2s;">⭐</span>
+    <span class="sparkle" style="top: 140px; left: 15%; animation-delay: 1.6s;">✨</span>
+    <span class="sparkle" style="top: 80px; left: 78%; animation-delay: 2s;">✨</span>
+
+    <button class="modal-close" onclick="window.location.href='./result.html'">×</button>
+
+    <div class="text-center mb-16">
+      <div class="text-mono text-sm" style="color: #ffd54a; letter-spacing: 0.2em;">★ TOP 10 INCOMING ★</div>
+    </div>
+
+    <div class="text-center mb-16">
+      <div class="celebration-icon">🎉</div>
+      <h2 style="font-size: 26px; margin-top: 12px; color: var(--gold-light); text-shadow: 0 0 16px rgba(255,213,74,0.5);">
+        トップ 10 入り見込み！
+      </h2>
+      <p class="modal-sub" style="margin-top: 8px;">
+        TypeScript 全期間ランキングに殿堂入りする見込みです。<br/>
+        記念に Hall of Fame に残すコメントをどうぞ。
+      </p>
+    </div>
+
+    <!-- Score vs boundary -->
+    <div class="boundary-bar mb-16">
+      <span class="you">あなた 1,052 pts</span>
+      <span class="arrow">▶</span>
+      <span class="border-score">現在の TS #10 ボーダー: <strong>1,041 pts</strong></span>
+    </div>
+
+    <!-- Comment input -->
+    <div class="form-group" style="margin-bottom: 6px;">
+      <label>Hall of Fame に残すコメント <span style="color: var(--text-muted); font-weight: 400;">(任意 / 300 文字)</span></label>
+      <textarea id="hofComment" maxlength="300" placeholder="このプレイで気づいたこと、これから挑戦する人へのメッセージ、なんでも..." style="min-height: 100px;">resolveDeps を打つときの「const [head, ...rest]」のリズムが気持ちよかった。型をフリーハンドで打てると、本当に頭の中の構造が指に直結する。</textarea>
+    </div>
+    <div class="char-counter" id="charCount">130 / 300</div>
+
+    <!-- Batch notice -->
+    <div class="card mb-16" style="padding: 12px 16px; background: linear-gradient(180deg, rgba(88, 166, 255, 0.06) 0%, rgba(0, 0, 0, 0.18) 100%); border-color: rgba(88, 166, 255, 0.25);">
+      <div class="text-sm text-muted">
+        ⏱ <strong style="color: var(--text-primary);">入賞は次の毎時バッチで確定</strong> します。コメントは <strong style="color: var(--accent);">下書き保存</strong> され、確定時に Hall of Fame に公開されます。圏外に押し出された場合も下書きは保持され、次の入賞時に再利用されます。
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex gap-12" style="justify-content: space-between;">
+      <a href="./result.html" class="btn">あとで書く</a>
+      <a href="./result.html" class="btn btn-gold">Hall of Fame に登録 →</a>
+    </div>
+
+    <div class="text-sm text-muted text-center mt-16">
+      <a href="./mypage.html" style="color: var(--text-secondary); text-decoration: underline;">入賞後はいつでもマイページから編集可能</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Live char counter
+  const ta = document.getElementById('hofComment');
+  const counter = document.getElementById('charCount');
+  const update = () => { counter.textContent = `${ta.value.length} / 300`; };
+  ta.addEventListener('input', update);
+  update();
+</script>
+</body>
+</html>

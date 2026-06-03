@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>Hall of Fame - CodeType</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="./top.html" class="logo"><span class="accent">code</span>type</a>
+    <div class="topbar-nav">
+      <a href="./top.html">ホーム</a>
+      <a href="./ranking.html">ランキング</a>
+      <a href="./hall-of-fame.html" class="active">Hall of Fame</a>
+      <a href="./mypage.html">マイページ</a>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <a href="./mypage.html" class="user-chip auth" title="マイページ">
+      <span class="avatar">YK</span>
+      <span class="user-name">@yuki-kano</span>
+      <svg class="github-mark" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    </a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="text-center mb-24">
+    <div style="font-size:56px;">🏛</div>
+    <h1>Hall of Fame — 神々の殿堂</h1>
+    <p class="text-muted">言語別オールタイムトップ 10。「神々に挑戦」モードでランダムに選定される神たち。</p>
+  </div>
+
+  <div class="text-center mb-24">
+    <div class="pills">
+      <a href="#" class="pill active">TypeScript</a>
+      <a href="#" class="pill">JavaScript</a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <div style="display:grid; gap:16px;">
+
+        <div class="hof-card has-crown tappable" data-rank="gold" style="border-color: #ffd54a; box-shadow: 0 0 24px rgba(255,213,74,0.1);" onclick="openGodModal(event, 'godModal1')">
+          <span class="tap-hint">👆 タップ</span>
+          <span class="hof-crown gold" aria-hidden="true">
+            <svg viewBox="0 0 56 40" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="crown-gold" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#fff8d0"/>
+                  <stop offset="55%" stop-color="#ffd54a"/>
+                  <stop offset="100%" stop-color="#b8860b"/>
+                </linearGradient>
+              </defs>
+              <path d="M2 14 L10 30 L18 16 L28 4 L38 16 L46 30 L54 14 L52 36 L4 36 Z" fill="url(#crown-gold)" stroke="#5a4408" stroke-width="1.5" stroke-linejoin="round"/>
+              <rect x="4" y="33" width="48" height="6" rx="1.5" fill="url(#crown-gold)" stroke="#5a4408" stroke-width="1.5"/>
+              <circle cx="2" cy="14" r="3" fill="url(#crown-gold)" stroke="#5a4408" stroke-width="1.2"/>
+              <circle cx="28" cy="4" r="3.5" fill="url(#crown-gold)" stroke="#5a4408" stroke-width="1.2"/>
+              <circle cx="54" cy="14" r="3" fill="url(#crown-gold)" stroke="#5a4408" stroke-width="1.2"/>
+              <circle cx="28" cy="24" r="2.8" fill="#d33333" stroke="#5a4408" stroke-width="0.8"/>
+              <circle cx="27" cy="23" r="0.9" fill="#ffeeee" opacity="0.7"/>
+            </svg>
+          </span>
+          <div class="hof-rank gold">#1</div>
+          <div class="hof-info">
+            <div class="flex-center gap-12 mb-8">
+              <span class="avatar lg">SK</span>
+              <div>
+                <h3 style="margin:0;">@sakurai_dev</h3>
+                <div class="text-sm text-muted">1,490 pts · 1,520 文字 · 98.0% · <span class="badge-grade fellow" data-level="8">Fellow</span></div>
+                <div class="social-links">
+                  <a href="https://github.com/sakurai_dev" target="_blank" rel="noopener" class="social-link github" title="GitHub @sakurai_dev">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                  </a>
+                  <a href="https://x.com/sakurai_dev" target="_blank" rel="noopener" class="social-link x" title="X @sakurai_dev">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="hof-comment">"ペアプロでも目に見えてコードが速くなった気がする。毎朝の習慣にしてる。"</div>
+          </div>
+          <div class="text-center">
+            <span class="badge purple">3D アイコン</span>
+            <a href="./replay.html" class="btn btn-primary mt-8">▶ リプレイ</a>
+          </div>
+        </div>
+
+        <div class="hof-card has-crown tappable" data-rank="silver" style="border-color: #c0c8d3;" onclick="openGodModal(event, 'godModal2')">
+          <span class="tap-hint">👆 タップ</span>
+          <span class="hof-crown silver" aria-hidden="true">
+            <svg viewBox="0 0 56 40" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="crown-silver" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ffffff"/>
+                  <stop offset="55%" stop-color="#d8dee9"/>
+                  <stop offset="100%" stop-color="#8a939e"/>
+                </linearGradient>
+              </defs>
+              <path d="M2 14 L10 30 L18 16 L28 4 L38 16 L46 30 L54 14 L52 36 L4 36 Z" fill="url(#crown-silver)" stroke="#4a5260" stroke-width="1.5" stroke-linejoin="round"/>
+              <rect x="4" y="33" width="48" height="6" rx="1.5" fill="url(#crown-silver)" stroke="#4a5260" stroke-width="1.5"/>
+              <circle cx="2" cy="14" r="3" fill="url(#crown-silver)" stroke="#4a5260" stroke-width="1.2"/>
+              <circle cx="28" cy="4" r="3.5" fill="url(#crown-silver)" stroke="#4a5260" stroke-width="1.2"/>
+              <circle cx="54" cy="14" r="3" fill="url(#crown-silver)" stroke="#4a5260" stroke-width="1.2"/>
+              <circle cx="28" cy="24" r="2.8" fill="#3380c4" stroke="#4a5260" stroke-width="0.8"/>
+              <circle cx="27" cy="23" r="0.9" fill="#eef5ff" opacity="0.7"/>
+            </svg>
+          </span>
+          <div class="hof-rank silver">#2</div>
+          <div class="hof-info">
+            <div class="flex-center gap-12 mb-8">
+              <span class="avatar lg">YT</span>
+              <div>
+                <h3 style="margin:0;">@yuta_tanaka</h3>
+                <div class="text-sm text-muted">1,436 pts · 1,481 文字 · 97.0% · <span class="badge-grade fellow" data-level="8">Fellow</span></div>
+                <div class="social-links">
+                  <a href="https://github.com/yuta_tanaka" target="_blank" rel="noopener" class="social-link github" title="GitHub @yuta_tanaka">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                  </a>
+                  <a href="https://x.com/yuta_tanaka" target="_blank" rel="noopener" class="social-link x" title="X @yuta_tanaka">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="hof-comment">"prisma の AST 系コードが意外と気持ちよく打てる。型書く速度上がった。"</div>
+          </div>
+          <div class="text-center">
+            <span class="badge purple">3D アイコン</span>
+            <a href="./replay.html" class="btn btn-primary mt-8">▶ リプレイ</a>
+          </div>
+        </div>
+
+        <div class="hof-card has-crown tappable" data-rank="bronze" style="border-color: #d2956b;" onclick="openGodModal(event, 'godModal3')">
+          <span class="tap-hint">👆 タップ</span>
+          <span class="hof-crown bronze" aria-hidden="true">
+            <svg viewBox="0 0 56 40" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="crown-bronze" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ffd9a8"/>
+                  <stop offset="55%" stop-color="#cd7f32"/>
+                  <stop offset="100%" stop-color="#6e4118"/>
+                </linearGradient>
+              </defs>
+              <path d="M2 14 L10 30 L18 16 L28 4 L38 16 L46 30 L54 14 L52 36 L4 36 Z" fill="url(#crown-bronze)" stroke="#3d2a18" stroke-width="1.5" stroke-linejoin="round"/>
+              <rect x="4" y="33" width="48" height="6" rx="1.5" fill="url(#crown-bronze)" stroke="#3d2a18" stroke-width="1.5"/>
+              <circle cx="2" cy="14" r="3" fill="url(#crown-bronze)" stroke="#3d2a18" stroke-width="1.2"/>
+              <circle cx="28" cy="4" r="3.5" fill="url(#crown-bronze)" stroke="#3d2a18" stroke-width="1.2"/>
+              <circle cx="54" cy="14" r="3" fill="url(#crown-bronze)" stroke="#3d2a18" stroke-width="1.2"/>
+              <circle cx="28" cy="24" r="2.8" fill="#2c8050" stroke="#3d2a18" stroke-width="0.8"/>
+              <circle cx="27" cy="23" r="0.9" fill="#e8fff0" opacity="0.7"/>
+            </svg>
+          </span>
+          <div class="hof-rank bronze">#3</div>
+          <div class="hof-info">
+            <div class="flex-center gap-12 mb-8">
+              <span class="avatar lg">NM</span>
+              <div>
+                <h3 style="margin:0;">@nmoritan</h3>
+                <div class="text-sm text-muted">1,377 pts · 1,422 文字 · 96.8% · <span class="badge-grade fellow" data-level="8">Fellow</span></div>
+                <div class="social-links">
+                  <a href="https://github.com/nmoritan" target="_blank" rel="noopener" class="social-link github" title="GitHub @nmoritan">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                  </a>
+                  <a href="https://x.com/nmoritan" target="_blank" rel="noopener" class="social-link x" title="X @nmoritan">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="hof-comment">"ゴースト対戦が一番熱い。@sakurai_dev さんの背中まだ遠い…"</div>
+          </div>
+          <div class="text-center">
+            <span class="badge purple">3D アイコン</span>
+            <a href="./replay.html" class="btn btn-primary mt-8">▶ リプレイ</a>
+          </div>
+        </div>
+
+        <div class="hof-card">
+          <div class="hof-rank">#4</div>
+          <div class="hof-info">
+            <div class="flex-center gap-12 mb-8">
+              <span class="avatar lg">KO</span>
+              <div>
+                <h3 style="margin:0;">@kotapan</h3>
+                <div class="text-sm text-muted">1,287 pts · 1,328 文字 · 96.9% · <span class="badge-grade fellow" data-level="8">Fellow</span></div>
+                <div class="social-links">
+                  <a href="https://github.com/kotapan" target="_blank" rel="noopener" class="social-link github" title="GitHub @kotapan">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                  </a>
+                  <a href="https://x.com/kotapan" target="_blank" rel="noopener" class="social-link x" title="X @kotapan">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="hof-comment">"通勤前の 15 分。連続日数が伸びるとそれだけで嬉しい。"</div>
+          </div>
+          <a href="./replay.html" class="btn">▶ リプレイ</a>
+        </div>
+
+        <div class="hof-card">
+          <div class="hof-rank">#5</div>
+          <div class="hof-info">
+            <div class="flex-center gap-12 mb-8">
+              <span class="avatar lg">HJ</span>
+              <div>
+                <h3 style="margin:0;">@hjvm</h3>
+                <div class="text-sm text-muted">1,210 pts · 1,248 文字 · 96.9% · <span class="badge-grade fellow" data-level="8">Fellow</span></div>
+                <div class="social-links">
+                  <a href="https://github.com/hjvm" target="_blank" rel="noopener" class="social-link github" title="GitHub @hjvm">
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                  </a>
+                  <a href="https://x.com/hjvm" target="_blank" rel="noopener" class="social-link x" title="X @hjvm">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="hof-comment">"型のシグネチャを打つのが好きすぎて TS 縛りでやってる。"</div>
+          </div>
+          <a href="./replay.html" class="btn">▶ リプレイ</a>
+        </div>
+
+        <div class="hof-card">
+          <div class="hof-rank">#6 〜 #10</div>
+          <div class="hof-info">
+            <div class="text-muted text-sm">@m_sakai · @reohori · Anonymous · @takashi_sw · @enomoto</div>
+          </div>
+          <a href="./ranking.html" class="btn">全表示</a>
+        </div>
+
+      </div>
+
+      <div class="card mt-32">
+        <div class="card-header"><div class="card-title">💭 Hall of Fame について</div></div>
+        <p class="text-sm text-muted">コメント欄を持てるのは Hall of Fame 入りした神々だけ。あと <strong style="color: var(--text-primary);">8,000 pts</strong> 上げれば殿堂入り可能です。</p>
+      </div>
+    </div>
+
+    <aside class="col-sidebar">
+      <div class="ad-slot mb-16" style="padding: 100px 16px;">Sponsored<br/>300×600</div>
+    </aside>
+  </div>
+</div>
+
+<div class="footer"><a href="./index.html">モック一覧</a></div>
+
+<!--
+  Curtain stage modal for the #1 god (sakurai_dev).
+  Triggered by clicking the #1 Hall of Fame card.
+-->
+<div class="curtain-stage" id="godModal1" data-rank="gold" onclick="if(event.target===this||event.target.classList.contains('curtain-backdrop'))closeGodModal()">
+  <div class="curtain-backdrop"></div>
+  <div class="curtain curtain-left"></div>
+  <div class="curtain curtain-right"></div>
+  <div class="curtain-flash"></div>
+
+  <div class="god-modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeGodModal()" aria-label="閉じる">×</button>
+
+    <span class="god-modal-crown" aria-hidden="true">
+      <svg viewBox="0 0 56 40" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="crown-gold-modal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#fff8d0"/>
+            <stop offset="55%" stop-color="#ffd54a"/>
+            <stop offset="100%" stop-color="#b8860b"/>
+          </linearGradient>
+        </defs>
+        <path d="M2 14 L10 30 L18 16 L28 4 L38 16 L46 30 L54 14 L52 36 L4 36 Z" fill="url(#crown-gold-modal)" stroke="#5a4408" stroke-width="1.5" stroke-linejoin="round"/>
+        <rect x="4" y="33" width="48" height="6" rx="1.5" fill="url(#crown-gold-modal)" stroke="#5a4408" stroke-width="1.5"/>
+        <circle cx="2" cy="14" r="3" fill="url(#crown-gold-modal)" stroke="#5a4408" stroke-width="1.2"/>
+        <circle cx="28" cy="4" r="3.5" fill="url(#crown-gold-modal)" stroke="#5a4408" stroke-width="1.2"/>
+        <circle cx="54" cy="14" r="3" fill="url(#crown-gold-modal)" stroke="#5a4408" stroke-width="1.2"/>
+        <circle cx="28" cy="24" r="2.8" fill="#d33333" stroke="#5a4408" stroke-width="0.8"/>
+        <circle cx="27" cy="23" r="0.9" fill="#ffeeee" opacity="0.7"/>
+      </svg>
+    </span>
+
+    <div class="text-center">
+      <span class="avatar lg" style="width:96px; height:96px; font-size:30px; margin:0 auto;">SK</span>
+      <h2 style="margin:16px 0 6px; font-size:28px;">@sakurai_dev</h2>
+      <div class="flex gap-8" style="justify-content:center; flex-wrap:wrap;">
+        <span class="badge gold">TS オールタイム #1</span>
+        <span class="badge purple">3D アイコン</span>
+        <span class="badge purple">Hall of Fame</span>
+      </div>
+    </div>
+
+    <div class="stat-row mt-24">
+      <div class="stat">
+        <div class="stat-value accent">1,490</div>
+        <div class="stat-label">ベストスコア</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">1,520</div>
+        <div class="stat-label">最高文字数</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value success">98.0%</div>
+        <div class="stat-label">最高正確率</div>
+      </div>
+    </div>
+
+    <div class="text-center mt-16">
+      <span class="badge-grade fellow" data-level="8">Fellow</span>
+      <span class="text-sm text-muted" style="margin-left:8px;">最高峰の称号</span>
+    </div>
+
+    <div class="card mt-24" style="padding: 16px 18px;">
+      <div class="card-title text-sm mb-8" style="color: var(--gold-light);">💬 殿堂入りコメント</div>
+      <div class="hof-comment" style="margin-top:0; font-size:14px; line-height:1.7;">
+        "ペアプロでも目に見えてコードが速くなった気がする。毎朝の習慣にしてる。タイピング自体より、関数の構造が頭に入ってくる感覚が面白い。"
+      </div>
+    </div>
+
+    <div class="text-center mt-24">
+      <div class="text-sm text-muted mb-8">プロフィール</div>
+      <div class="social-links" style="justify-content:center;">
+        <a href="https://github.com/sakurai_dev" target="_blank" rel="noopener" class="social-link github" title="GitHub @sakurai_dev" onclick="event.stopPropagation()">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        </a>
+        <a href="https://x.com/sakurai_dev" target="_blank" rel="noopener" class="social-link x" title="X @sakurai_dev" onclick="event.stopPropagation()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="flex gap-12 mt-24" style="justify-content:center; flex-wrap:wrap;">
+      <a href="./replay.html" class="btn btn-primary">▶ リプレイを見る</a>
+      <a href="./play-ghost.html" class="btn btn-gold">⚡ この神に挑戦</a>
+    </div>
+  </div>
+</div>
+
+<!-- #2 silver curtain modal: @yuta_tanaka -->
+<div class="curtain-stage" id="godModal2" data-rank="silver" onclick="if(event.target===this||event.target.classList.contains('curtain-backdrop'))closeGodModal()">
+  <div class="curtain-backdrop"></div>
+  <div class="curtain curtain-left"></div>
+  <div class="curtain curtain-right"></div>
+  <div class="curtain-flash"></div>
+
+  <div class="god-modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeGodModal()" aria-label="閉じる">×</button>
+
+    <span class="god-modal-crown" aria-hidden="true">
+      <svg viewBox="0 0 56 40" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="crown-silver-modal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="55%" stop-color="#d8dee9"/>
+            <stop offset="100%" stop-color="#8a939e"/>
+          </linearGradient>
+        </defs>
+        <path d="M2 14 L10 30 L18 16 L28 4 L38 16 L46 30 L54 14 L52 36 L4 36 Z" fill="url(#crown-silver-modal)" stroke="#4a5260" stroke-width="1.5" stroke-linejoin="round"/>
+        <rect x="4" y="33" width="48" height="6" rx="1.5" fill="url(#crown-silver-modal)" stroke="#4a5260" stroke-width="1.5"/>
+        <circle cx="2" cy="14" r="3" fill="url(#crown-silver-modal)" stroke="#4a5260" stroke-width="1.2"/>
+        <circle cx="28" cy="4" r="3.5" fill="url(#crown-silver-modal)" stroke="#4a5260" stroke-width="1.2"/>
+        <circle cx="54" cy="14" r="3" fill="url(#crown-silver-modal)" stroke="#4a5260" stroke-width="1.2"/>
+        <circle cx="28" cy="24" r="2.8" fill="#3380c4" stroke="#4a5260" stroke-width="0.8"/>
+        <circle cx="27" cy="23" r="0.9" fill="#eef5ff" opacity="0.7"/>
+      </svg>
+    </span>
+
+    <div class="text-center">
+      <span class="avatar lg" style="width:96px; height:96px; font-size:30px; margin:0 auto;">YT</span>
+      <h2 style="margin:16px 0 6px; font-size:28px;">@yuta_tanaka</h2>
+      <div class="flex gap-8" style="justify-content:center; flex-wrap:wrap;">
+        <span class="badge" style="background:linear-gradient(180deg,rgba(216,222,233,0.4),rgba(138,147,158,0.2)); color:#e6edf3; border-color:rgba(216,222,233,0.5);">TS オールタイム #2</span>
+        <span class="badge purple">3D アイコン</span>
+        <span class="badge purple">Hall of Fame</span>
+      </div>
+    </div>
+
+    <div class="stat-row mt-24">
+      <div class="stat">
+        <div class="stat-value accent">1,436</div>
+        <div class="stat-label">ベストスコア</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">1,481</div>
+        <div class="stat-label">最高文字数</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value success">97.0%</div>
+        <div class="stat-label">最高正確率</div>
+      </div>
+    </div>
+
+    <div class="text-center mt-16">
+      <span class="badge-grade fellow" data-level="8">Fellow</span>
+      <span class="text-sm text-muted" style="margin-left:8px;">最高峰の称号</span>
+    </div>
+
+    <div class="card mt-24" style="padding: 16px 18px;">
+      <div class="card-title text-sm mb-8" style="color: #d8dee9;">💬 殿堂入りコメント</div>
+      <div class="hof-comment" style="margin-top:0; font-size:14px; line-height:1.7;">
+        "prisma の AST 系コードが意外と気持ちよく打てる。型書く速度上がった。神じゃないけど神に近づきたい。"
+      </div>
+    </div>
+
+    <div class="text-center mt-24">
+      <div class="text-sm text-muted mb-8">プロフィール</div>
+      <div class="social-links" style="justify-content:center;">
+        <a href="https://github.com/yuta_tanaka" target="_blank" rel="noopener" class="social-link github" title="GitHub @yuta_tanaka" onclick="event.stopPropagation()">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        </a>
+        <a href="https://x.com/yuta_tanaka" target="_blank" rel="noopener" class="social-link x" title="X @yuta_tanaka" onclick="event.stopPropagation()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="flex gap-12 mt-24" style="justify-content:center; flex-wrap:wrap;">
+      <a href="./replay.html" class="btn btn-primary">▶ リプレイを見る</a>
+      <a href="./play-ghost.html" class="btn btn-gold">⚡ この神に挑戦</a>
+    </div>
+  </div>
+</div>
+
+<!-- #3 bronze curtain modal: @nmoritan -->
+<div class="curtain-stage" id="godModal3" data-rank="bronze" onclick="if(event.target===this||event.target.classList.contains('curtain-backdrop'))closeGodModal()">
+  <div class="curtain-backdrop"></div>
+  <div class="curtain curtain-left"></div>
+  <div class="curtain curtain-right"></div>
+  <div class="curtain-flash"></div>
+
+  <div class="god-modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeGodModal()" aria-label="閉じる">×</button>
+
+    <span class="god-modal-crown" aria-hidden="true">
+      <svg viewBox="0 0 56 40" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="crown-bronze-modal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffd9a8"/>
+            <stop offset="55%" stop-color="#cd7f32"/>
+            <stop offset="100%" stop-color="#6e4118"/>
+          </linearGradient>
+        </defs>
+        <path d="M2 14 L10 30 L18 16 L28 4 L38 16 L46 30 L54 14 L52 36 L4 36 Z" fill="url(#crown-bronze-modal)" stroke="#3d2a18" stroke-width="1.5" stroke-linejoin="round"/>
+        <rect x="4" y="33" width="48" height="6" rx="1.5" fill="url(#crown-bronze-modal)" stroke="#3d2a18" stroke-width="1.5"/>
+        <circle cx="2" cy="14" r="3" fill="url(#crown-bronze-modal)" stroke="#3d2a18" stroke-width="1.2"/>
+        <circle cx="28" cy="4" r="3.5" fill="url(#crown-bronze-modal)" stroke="#3d2a18" stroke-width="1.2"/>
+        <circle cx="54" cy="14" r="3" fill="url(#crown-bronze-modal)" stroke="#3d2a18" stroke-width="1.2"/>
+        <circle cx="28" cy="24" r="2.8" fill="#2c8050" stroke="#3d2a18" stroke-width="0.8"/>
+        <circle cx="27" cy="23" r="0.9" fill="#e8fff0" opacity="0.7"/>
+      </svg>
+    </span>
+
+    <div class="text-center">
+      <span class="avatar lg" style="width:96px; height:96px; font-size:30px; margin:0 auto;">NM</span>
+      <h2 style="margin:16px 0 6px; font-size:28px;">@nmoritan</h2>
+      <div class="flex gap-8" style="justify-content:center; flex-wrap:wrap;">
+        <span class="badge" style="background:linear-gradient(180deg,rgba(205,127,50,0.4),rgba(110,65,24,0.2)); color:#ffd9a8; border-color:rgba(205,127,50,0.5);">TS オールタイム #3</span>
+        <span class="badge purple">3D アイコン</span>
+        <span class="badge purple">Hall of Fame</span>
+      </div>
+    </div>
+
+    <div class="stat-row mt-24">
+      <div class="stat">
+        <div class="stat-value accent">1,377</div>
+        <div class="stat-label">ベストスコア</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">1,422</div>
+        <div class="stat-label">最高文字数</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value success">96.8%</div>
+        <div class="stat-label">最高正確率</div>
+      </div>
+    </div>
+
+    <div class="text-center mt-16">
+      <span class="badge-grade fellow" data-level="8">Fellow</span>
+      <span class="text-sm text-muted" style="margin-left:8px;">最高峰の称号</span>
+    </div>
+
+    <div class="card mt-24" style="padding: 16px 18px;">
+      <div class="card-title text-sm mb-8" style="color: #ffd9a8;">💬 殿堂入りコメント</div>
+      <div class="hof-comment" style="margin-top:0; font-size:14px; line-height:1.7;">
+        "ゴースト対戦が一番熱い。@sakurai_dev さんの背中まだ遠い…でも近づいてる気がする。"
+      </div>
+    </div>
+
+    <div class="text-center mt-24">
+      <div class="text-sm text-muted mb-8">プロフィール</div>
+      <div class="social-links" style="justify-content:center;">
+        <a href="https://github.com/nmoritan" target="_blank" rel="noopener" class="social-link github" title="GitHub @nmoritan" onclick="event.stopPropagation()">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        </a>
+        <a href="https://x.com/nmoritan" target="_blank" rel="noopener" class="social-link x" title="X @nmoritan" onclick="event.stopPropagation()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="flex gap-12 mt-24" style="justify-content:center; flex-wrap:wrap;">
+      <a href="./replay.html" class="btn btn-primary">▶ リプレイを見る</a>
+      <a href="./play-ghost.html" class="btn btn-gold">⚡ この神に挑戦</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openGodModal(event, id) {
+    // ignore clicks that already came from a link / button inside the card
+    if (event && event.target && event.target.closest('a, button')) return;
+    const stage = document.getElementById(id);
+    if (!stage) return;
+    stage.classList.remove('active');
+    // force reflow so the animation restarts on repeated taps
+    void stage.offsetWidth;
+    stage.classList.add('active');
+  }
+  function closeGodModal() {
+    document.querySelectorAll('.curtain-stage.active').forEach(s => s.classList.remove('active'));
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGodModal(); });
+</script>
+</body>
+</html>

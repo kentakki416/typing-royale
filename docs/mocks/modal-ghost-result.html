@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>神々戦リザルト - CodeType</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="./top.html" class="logo"><span class="accent">code</span>type</a>
+  </div>
+  <div class="topbar-right">
+    <a href="./modal-login.html" class="user-chip guest" title="ログインで記録を保存">
+      <span class="guest-avatar">👤</span>
+      <span class="user-name">ゲスト</span>
+      <span class="user-status">未保存</span>
+    </a>
+  </div>
+</nav>
+
+<div class="container container-narrow" style="opacity:0.2; filter: blur(2px);">
+  <div class="stat-row mt-24">
+    <div class="stat"><div class="stat-value">752</div><div class="stat-label">文字数</div></div>
+    <div class="stat"><div class="stat-value">97.4%</div><div class="stat-label">正確率</div></div>
+    <div class="stat"><div class="stat-value">6/8</div><div class="stat-label">完走</div></div>
+  </div>
+</div>
+
+<div class="modal-overlay">
+  <div class="modal modal-lg" style="position: relative;">
+    <button class="modal-close">×</button>
+
+    <div class="text-center mb-24">
+      <div style="font-size: 56px;">😢</div>
+      <h2 style="color: var(--error);">惜敗</h2>
+      <p class="modal-sub"><span style="color: var(--gold); font-weight:700; text-shadow: 0 0 12px rgba(255,213,74,0.5);">神 @sakurai_dev</span> に <strong style="color: var(--error);">72 pts 差</strong> で負けました</p>
+    </div>
+
+    <div class="row mb-16" style="gap:12px;">
+      <div class="card" style="flex:1; padding:16px;">
+        <div class="text-sm text-muted mb-8 text-center">あなた</div>
+        <div class="text-center">
+          <div class="stat-value accent">717</div>
+          <div class="text-sm text-muted">741 文字 · 96.8%</div>
+          <div class="mt-8"><span class="badge-grade staff" data-level="5">Staff</span></div>
+        </div>
+      </div>
+      <div class="card" style="flex:1; padding:16px; border-color: var(--ghost);">
+        <div class="text-sm text-muted mb-8 text-center">⚡ 神</div>
+        <div class="text-center">
+          <div class="stat-value" style="color: var(--ghost);">789</div>
+          <div class="text-sm text-muted">812 文字 · 97.2%</div>
+          <div class="mt-8"><span class="badge-grade staff" data-level="5">Staff</span></div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="mb-8">出題シーケンスの達成状況（神と同じ順）</h3>
+    <div style="display:grid; gap:6px;" class="text-sm mb-16">
+      <div class="flex-between"><span>① getServerSideProps</span><span><span class="badge success">あなた:完走</span> <span class="badge gold">神:完走</span></span></div>
+      <div class="flex-between"><span>② normalizeRoutePath</span><span><span class="badge success">あなた:完走</span> <span class="badge gold">神:完走</span></span></div>
+      <div class="flex-between"><span>③ parseManifest</span><span><span class="badge warning">あなた:途中</span> <span class="badge gold">神:完走</span></span></div>
+      <div class="flex-between"><span>④ deepGet</span><span><span class="badge success">あなた:完走</span> <span class="badge gold">神:完走</span></span></div>
+      <div class="flex-between"><span>⑤ resolveDeps</span><span><span class="badge success">あなた:完走</span> <span class="badge gold">神:完走</span></span></div>
+      <div class="flex-between"><span>⑥ flattenConfig</span><span><span class="badge warning">あなた:時間切れ</span> <span class="badge gold">神:完走</span></span></div>
+    </div>
+
+    <div class="race">
+      <div class="race-row">
+        <div class="race-label"><span class="race-dot"></span>あなた</div>
+        <div class="race-bar"><div class="race-bar-fill" style="width: 91%;"></div></div>
+        <div class="race-percent">741</div>
+      </div>
+      <div class="race-row">
+        <div class="race-label"><span class="race-dot ghost"></span>神</div>
+        <div class="race-bar"><div class="race-bar-fill ghost" style="width: 100%;"></div></div>
+        <div class="race-percent">812</div>
+      </div>
+    </div>
+
+    <div class="text-sm text-muted text-center mt-16">
+      ⚡ 次の神もランダム抽選。指名はできません。
+    </div>
+
+    <div class="modal-actions">
+      <a href="./play-ghost.html" class="btn btn-gold">⚡ もう一度神々に挑戦</a>
+      <a href="./play.html" class="btn">▶ 通常プレイへ</a>
+      <a href="./result.html" class="btn btn-primary">リザルトを見る</a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

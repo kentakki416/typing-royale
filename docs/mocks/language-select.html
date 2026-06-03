@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>言語選択 - CodeType</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="./top.html" class="logo"><span class="accent">code</span>type</a>
+    <div class="topbar-nav">
+      <a href="./top.html">ホーム</a>
+      <a href="./ranking.html">ランキング</a>
+      <a href="./hall-of-fame.html">Hall of Fame</a>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <a href="./modal-login.html" class="user-chip guest" title="ログインで記録を保存">
+      <span class="guest-avatar">👤</span>
+      <span class="user-name">ゲスト</span>
+      <span class="user-status">未保存</span>
+    </a>
+  </div>
+</nav>
+
+<div class="container container-narrow">
+  <h1 class="text-center mt-24">言語を選択</h1>
+  <p class="text-muted text-center mb-24">120 秒で何文字打てるかを競います。問題は週次クローラが GitHub Star 上位 OSS から自動取得した関数です。</p>
+
+  <div class="lang-grid">
+    <div class="lang-card" style="cursor:default;" id="card-ts">
+      <div class="lang-icon ts">TS</div>
+      <h3>TypeScript</h3>
+      <div class="lang-meta">問題プール: 1,612 関数 · 47 repo</div>
+
+      <div class="flex gap-8 mt-16" style="justify-content:center;">
+        <a href="./play.html" class="btn btn-primary btn-play">▶ 通常プレイ</a>
+        <a href="./play-ghost.html" class="btn btn-gold">⚡ 神々に挑戦</a>
+      </div>
+    </div>
+
+    <div class="lang-card" style="cursor:default;" id="card-js">
+      <div class="lang-icon js">JS</div>
+      <h3>JavaScript</h3>
+      <div class="lang-meta">問題プール: 1,229 関数 · 38 repo</div>
+
+      <div class="flex gap-8 mt-16" style="justify-content:center;">
+        <a href="./play.html" class="btn btn-primary btn-play">▶ 通常プレイ</a>
+        <a href="./play-ghost.html" class="btn btn-gold">⚡ 神々に挑戦</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card god-frame mt-24">
+    <div class="flex-center gap-12">
+      <div style="font-size:28px;">⚡</div>
+      <div style="flex:1;">
+        <h3 style="margin-bottom:4px; color: var(--gold-light); text-shadow: 0 1px 0 rgba(0,0,0,0.5), 0 0 12px rgba(255, 213, 74, 0.5);">神々に挑戦とは？</h3>
+        <p class="text-sm text-muted">該当言語の <strong>オールタイムトップ 10 からサーバーがランダムに 1 人選定</strong>。その人と同じ問題シーケンスを 120 秒で打ち、累計文字数で勝負します。相手は指名できません（運命）。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-16">
+    <div class="card-title mb-8">🎮 ルール</div>
+    <ul class="text-sm text-muted" style="padding-left:18px; display:grid; gap:4px;">
+      <li>制限時間 <strong>120 秒</strong>、1 関数終わると次が自動で出題</li>
+      <li>スコア = 正しく打てた累計文字数 × 正確率</li>
+      <li>スキップ機能はなし（引いた関数は完走するか時間切れまで打鍵）</li>
+      <li>ペースト無効、依存型は同梱なし（関数本体のみ表示）</li>
+    </ul>
+  </div>
+
+  <div class="card mt-16">
+    <div class="card-header"><div class="card-title">近日追加予定</div></div>
+    <div class="flex gap-8" style="flex-wrap:wrap;">
+      <span class="badge">Python</span>
+      <span class="badge">Go</span>
+      <span class="badge">Rust</span>
+      <span class="badge">Java</span>
+    </div>
+  </div>
+
+  <div class="ad-slot mt-24">Sponsored · 728×90</div>
+</div>
+
+<div class="footer">
+  <a href="./index.html">モック一覧</a> · <a href="#">利用規約</a> · <a href="#">ライセンス一覧</a>
+</div>
+</body>
+</html>

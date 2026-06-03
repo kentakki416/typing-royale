@@ -248,4 +248,3 @@ docker compose down
 # データを含めて完全に削除
 docker compose down -v
 ```
-# typing-royale

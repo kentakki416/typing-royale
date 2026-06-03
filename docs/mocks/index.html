@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>モック一覧 - CodeType</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<div class="mock-banner">MOCK INDEX — このページからすべての画面モックに飛べます</div>
+<div class="container container-narrow">
+  <div class="hero" style="padding: 32px 0 24px;">
+    <h1 class="text-mono"><span class="accent">code</span>type</h1>
+    <p>画面モック一覧 (HTML)</p>
+  </div>
+
+  <div class="card mb-24">
+    <div class="card-header"><div class="card-title">コアフロー</div></div>
+    <ul style="list-style:none; line-height:2;">
+      <li><a href="./top.html">トップ画面</a> — 流入導線、神々に挑戦の紹介、直近ランキング抜粋</li>
+      <li><a href="./language-select.html">言語選択</a> — TS / JS × 「通常プレイ」「神々に挑戦」の 2 ボタン</li>
+      <li><a href="./play.html">プレイ画面（通常）</a> — 120 秒で関数を連続出題（背景 Tier 4 🔴 紅）</li>
+      <li><a href="./play-ghost.html">プレイ画面（神々に挑戦）</a> — ランダム選定された神と併走（背景 Tier 6 🌈 虹）</li>
+      <li><a href="./result.html">リザルト画面</a> — スコア・特典通知・シェア</li>
+    </ul>
+    <div class="text-sm text-muted mt-8">
+      💡 問題ソース選択画面は廃止しました（週次クローラの単一パイプラインに統合）
+    </div>
+  </div>
+
+  <div class="card mb-24">
+    <div class="card-header"><div class="card-title">アカウント</div></div>
+    <ul style="list-style:none; line-height:2;">
+      <li><a href="./modal-login.html">ログイン誘導モーダル</a></li>
+      <li><a href="./onboarding.html">初回ログインオンボーディング</a></li>
+      <li><a href="./mypage.html">マイページ（概要）</a></li>
+      <li><a href="./mypage-rewards.html">マイページ：特典タブ</a></li>
+      <li><a href="./mypage-settings.html">マイページ：アカウント設定</a></li>
+      <li><a href="./badge-customize.html">バッジカスタマイズ</a></li>
+    </ul>
+  </div>
+
+  <div class="card mb-24">
+    <div class="card-header"><div class="card-title">ランキング・観戦</div></div>
+    <ul style="list-style:none; line-height:2;">
+      <li><a href="./ranking.html">ランキング画面</a> — 言語 × 期間</li>
+      <li><a href="./player-detail.html">プレイヤー詳細</a></li>
+      <li><a href="./replay.html">リプレイ閲覧</a></li>
+      <li><a href="./hall-of-fame.html">Hall of Fame</a> — 神々の殿堂</li>
+      <li><a href="./modal-ghost-result.html">神々戦リザルト</a></li>
+    </ul>
+    <div class="text-sm text-muted mt-8">
+      💡 ゴースト選択モーダルは廃止しました（サーバーがランダム選定）
+    </div>
+  </div>
+
+  <div class="card mb-24">
+    <div class="card-header"><div class="card-title">通知</div></div>
+    <ul style="list-style:none; line-height:2;">
+      <li><a href="./modal-achievement.html">達成通知モーダル</a> — グレードアップ通知</li>
+      <li><a href="./modal-top10-comment.html">トップ 10 入りモーダル</a> — Hall of Fame コメント入力（リザルト画面で即時表示）</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <span>HTML mocks for design review.</span>
+    <a href="../README.md">プロダクト要件</a> ·
+    <a href="../spec/README.md">機能仕様</a>
+  </div>
+</div>
+</body>
+</html>

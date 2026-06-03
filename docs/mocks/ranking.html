@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>ランキング - CodeType</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="./top.html" class="logo"><span class="accent">code</span>type</a>
+    <div class="topbar-nav">
+      <a href="./top.html">ホーム</a>
+      <a href="./ranking.html" class="active">ランキング</a>
+      <a href="./hall-of-fame.html">Hall of Fame</a>
+      <a href="./mypage.html">マイページ</a>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <a href="./mypage.html" class="user-chip auth" title="マイページ">
+      <span class="avatar">YK</span>
+      <span class="user-name">@yuki-kano</span>
+      <svg class="github-mark" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    </a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="flex-between mb-24">
+    <h1>🏆 全期間ランキング</h1>
+    <div class="text-sm text-muted">snapshot: 2026-06-03 15:00 JST (14 分前)</div>
+  </div>
+
+  <div class="flex-between mb-16">
+    <div class="pills">
+      <a href="#" class="pill active">TypeScript</a>
+      <a href="#" class="pill">JavaScript</a>
+    </div>
+    <div class="text-sm text-muted">⏱ 毎時バッチ集計 · トップ 1000 位まで</div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <div class="card mb-16">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:48px;">順位</th>
+              <th>プレイヤー</th>
+              <th>グレード</th>
+              <th class="numeric">ベスト</th>
+              <th class="numeric">文字数</th>
+              <th class="numeric">正確率</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="rank-badge gold">#1</span></td>
+              <td><div class="player-cell"><span class="avatar sm">SK</span><a href="./player-detail.html"><strong>@sakurai_dev</strong></a></div></td>
+              <td><span class="badge-grade fellow" data-level="8">Fellow</span></td>
+              <td class="numeric"><strong>1,490</strong></td>
+              <td class="numeric">1,520</td>
+              <td class="numeric">98.0%</td>
+              <td><a href="./replay.html" class="badge accent">▶</a></td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge silver">#2</span></td>
+              <td><div class="player-cell"><span class="avatar sm">YT</span><a href="./player-detail.html">@yuta_tanaka</a></div></td>
+              <td><span class="badge-grade fellow" data-level="8">Fellow</span></td>
+              <td class="numeric"><strong>1,436</strong></td>
+              <td class="numeric">1,481</td>
+              <td class="numeric">97.0%</td>
+              <td><a href="./replay.html" class="badge accent">▶</a></td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge bronze">#3</span></td>
+              <td><div class="player-cell"><span class="avatar sm">NM</span><a href="./player-detail.html">@nmoritan</a></div></td>
+              <td><span class="badge-grade fellow" data-level="8">Fellow</span></td>
+              <td class="numeric"><strong>1,377</strong></td>
+              <td class="numeric">1,422</td>
+              <td class="numeric">96.8%</td>
+              <td><a href="./replay.html" class="badge accent">▶</a></td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">#4</span></td>
+              <td><div class="player-cell"><span class="avatar sm">KO</span><a href="./player-detail.html">@kotapan</a></div></td>
+              <td><span class="badge-grade fellow" data-level="8">Fellow</span></td>
+              <td class="numeric">1,287</td>
+              <td class="numeric">1,328</td>
+              <td class="numeric">96.9%</td>
+              <td><a href="./replay.html" class="badge accent">▶</a></td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">#5</span></td>
+              <td><div class="player-cell"><span class="avatar sm">HJ</span><a href="./player-detail.html">@hjvm</a></div></td>
+              <td><span class="badge-grade fellow" data-level="8">Fellow</span></td>
+              <td class="numeric">1,210</td>
+              <td class="numeric">1,248</td>
+              <td class="numeric">96.9%</td>
+              <td><a href="./replay.html" class="badge accent">▶</a></td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">#6</span></td>
+              <td><div class="player-cell"><span class="avatar sm">MS</span><a href="./player-detail.html">@m_sakai</a></div></td>
+              <td><span class="badge-grade distinguished" data-level="7">Distinguished</span></td>
+              <td class="numeric">1,182</td>
+              <td class="numeric">1,221</td>
+              <td class="numeric">96.8%</td>
+              <td><a href="./replay.html" class="badge accent">▶</a></td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">#7</span></td>
+              <td><div class="player-cell"><span class="avatar sm">RH</span><a href="./player-detail.html">@reohori</a></div></td>
+              <td><span class="badge-grade distinguished" data-level="7">Distinguished</span></td>
+              <td class="numeric">1,141</td>
+              <td class="numeric">1,184</td>
+              <td class="numeric">96.4%</td>
+              <td><a href="./replay.html" class="badge accent">▶</a></td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">#8</span></td>
+              <td><div class="player-cell"><span class="avatar sm" style="background:#666;">A</span><span class="text-muted">Anonymous</span></div></td>
+              <td><span class="badge-grade distinguished" data-level="7">Distinguished</span></td>
+              <td class="numeric">1,108</td>
+              <td class="numeric">1,144</td>
+              <td class="numeric">96.9%</td>
+              <td><span class="badge">非公開</span></td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">#9</span></td>
+              <td><div class="player-cell"><span class="avatar sm">TS</span><a href="./player-detail.html">@takashi_sw</a></div></td>
+              <td><span class="badge-grade distinguished" data-level="7">Distinguished</span></td>
+              <td class="numeric">1,073</td>
+              <td class="numeric">1,114</td>
+              <td class="numeric">96.3%</td>
+              <td><a href="./replay.html" class="badge accent">▶</a></td>
+            </tr>
+            <tr>
+              <td><span class="rank-badge">#10</span></td>
+              <td><div class="player-cell"><span class="avatar sm">EN</span><a href="./player-detail.html">@enomoto</a></div></td>
+              <td><span class="badge-grade distinguished" data-level="7">Distinguished</span></td>
+              <td class="numeric">1,041</td>
+              <td class="numeric">1,082</td>
+              <td class="numeric">96.2%</td>
+              <td><a href="./replay.html" class="badge accent">▶</a></td>
+            </tr>
+
+            <tr><td colspan="7" style="text-align:center; padding:8px; color:var(--text-muted); font-family:var(--font-mono);">···</td></tr>
+
+            <tr class="me">
+              <td><span class="rank-badge">#87</span></td>
+              <td><div class="player-cell"><span class="avatar sm">YK</span><strong>@yuki-kano (あなた)</strong></div></td>
+              <td><span class="badge-grade staff" data-level="5">Staff</span></td>
+              <td class="numeric"><strong>732</strong></td>
+              <td class="numeric">752</td>
+              <td class="numeric">97.4%</td>
+              <td><a href="./replay.html" class="badge accent">▶</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="text-center mt-16">
+        <a href="./language-select.html" class="btn btn-primary btn-play btn-large">▶ プレイしてランクアップ</a>
+      </div>
+    </div>
+
+    <aside class="col-sidebar">
+      <div class="card mb-16">
+        <div class="card-header"><div class="card-title">あなたの状況</div></div>
+        <div class="text-center mb-16">
+          <div style="font-family: var(--font-mono); font-size: 36px; font-weight: 700; color: var(--accent);">#87</div>
+          <div class="text-sm text-muted">TypeScript · 全期間 / 53,871 人中</div>
+        </div>
+        <div class="text-center mb-16">
+          <span class="badge-grade staff" data-level="5">Staff Engineer</span>
+        </div>
+        <div class="text-sm">
+          <div class="flex-between mb-8"><span class="text-muted">ベストスコア</span><span class="text-mono">732 pts</span></div>
+          <div class="flex-between mb-8"><span class="text-muted">トップ 10 まで</span><span class="text-mono">−309 pts</span></div>
+          <div class="flex-between"><span class="text-muted">次の Principal まで</span><span class="text-mono" style="color:var(--gold);">68 pts</span></div>
+        </div>
+        <div class="progress mt-8" title="Staff → Principal の進捗">
+          <div class="progress-fill" style="width: 66%;"></div>
+        </div>
+        <div class="text-sm text-muted text-center mt-8">600 ← <strong style="color:var(--text-primary);">732</strong> → 800</div>
+      </div>
+
+      <div class="card mb-16" style="border-color: rgba(210, 153, 34, 0.3);">
+        <div class="card-header"><div class="card-title">⚠ ランキングの仕様</div></div>
+        <ul class="text-sm text-muted" style="padding-left:18px; display:grid; gap:6px;">
+          <li>全期間（オールタイム）のみ集計</li>
+          <li>言語別トップ 1000 位までを保存</li>
+          <li>1000 位以下は <strong>圏外（順位非表示）</strong>、グレードで進歩を測る</li>
+          <li>1 人ベスト 1 件のみ反映</li>
+        </ul>
+      </div>
+
+      <div class="ad-slot mb-16" style="padding: 60px 16px;">Sponsored<br/>300×250</div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">📊 言語別 トップ #1</div></div>
+        <div style="display:grid; gap:12px;">
+          <div class="flex-between"><span><span class="badge accent">TS</span> @sakurai_dev</span><span class="text-mono text-sm">1,490</span></div>
+          <div class="flex-between"><span><span class="badge warning">JS</span> @kazu_lab</span><span class="text-mono text-sm">1,247</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="footer"><a href="./index.html">モック一覧</a></div>
+</body>
+</html>
