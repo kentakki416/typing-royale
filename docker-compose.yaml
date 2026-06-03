@@ -1,21 +1,20 @@
-## TODO: container_name と DB_NAME の "project-template" 部分をプロジェクト名に変更してください
 services:
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: project-template-postgres # TODO: プロジェクト名に変更
+    container_name: typing-royale-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: project-template_dev # TODO: プロジェクト名に変更（DB名はアンダースコア推奨）
+      POSTGRES_DB: typing_royale_dev
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       TZ: Asia/Tokyo
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,15 +24,15 @@ services:
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: project-template-redis # TODO: プロジェクト名に変更
+    container_name: typing-royale-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     ports:
-      - '6379:6379'
+      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -45,22 +44,49 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    container_name: project-template-api # TODO: プロジェクト名に変更
+    container_name: typing-royale-api
     restart: unless-stopped
     environment:
       NODE_ENV: local
       PORT: 8080
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/project-template_dev
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/typing_royale_dev
       REDIS_HOST: redis
       REDIS_PORT: 6379
       CORS_ORIGIN: http://localhost:3000
+      FRONTEND_URL: http://localhost:3000
       JWT_SECRET: your-secret-key-change-in-production
       JWT_EXPIRATION: 7d
-      GOOGLE_CLIENT_ID: google-client-id
-      GOOGLE_CLIENT_SECRET: google-client-secret
-      GOOGLE_CALLBACK_URL: http://localhost/google
+      GITHUB_CLIENT_ID: dummy
+      GITHUB_CLIENT_SECRET: dummy
+      GITHUB_CALLBACK_URL: http://localhost:3000/api/auth/callback/github
+      SENTRY_DSN: ""
     ports:
-      - '8080:8080'
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # Cron (週次クローラ / 月次ライセンス再検証 / 毎時ランキング集計をまとめたコンテナ。
+  # 本番は ECS Scheduled Task。ローカルでは pnpm crawler:run などで都度実行)
+  cron:
+    build:
+      context: .
+      dockerfile: apps/cron/Dockerfile
+    container_name: typing-royale-cron
+    profiles:
+      - cron
+    environment:
+      NODE_ENV: local
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/typing_royale_dev
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      GITHUB_PAT: ""
+      CRAWLER_REPOS_PER_RUN: "1"
+      SENTRY_DSN: ""
     depends_on:
       postgres:
         condition: service_healthy

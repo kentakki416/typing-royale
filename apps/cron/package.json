@@ -1,0 +1,27 @@
+{
+  "name": "cron",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "crawler:run": "tsx src/cli/run.ts",
+    "crawler:license-recheck": "tsx src/cli/license-recheck.ts",
+    "batch:ranking": "tsx src/cli/ranking-batch.ts",
+    "dev": "tsx watch src/index.ts",
+    "lint": "eslint 'src/**/*.ts'",
+    "lint:fix": "eslint 'src/**/*.ts' --fix",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@repo/api-schema": "workspace:^",
+    "@repo/logger": "workspace:^"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:^",
+    "@repo/typescript-config": "workspace:^",
+    "@types/node": "^24.10.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

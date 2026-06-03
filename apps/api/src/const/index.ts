@@ -1,32 +1,4 @@
 /**
- * Logger の種類
- */
-export const LOGGER_TYPE = {
-  CONSOLE: "console",
-  PINO: "pino",
-  SILENT: "silent",
-  WINSTON: "winston",
-} as const
-
-/**
- * LOGレベル
- */
-export const LOG_LEVEL = {
-  DEBUG: "debug",
-  INFO: "info",
-  WARN: "warn",
-  ERROR: "error"
-} as const
-
-/**
- * Nodeの環境
- */
-export const NODE_ENV = {
-  DEV: "development",
-  PRD: "production"
-} as const
-
-/**
  * production 以外でのみ公開する dev 専用パス
  *
  * /api/auth/dev-login は seed で投入した dev ユーザーで token を発行する API。

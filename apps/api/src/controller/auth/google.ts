@@ -1,10 +1,10 @@
 import { Request, Response } from "express"
 
 import { authGoogleRequestSchema, authGoogleResponseSchema, ErrorResponse } from "@repo/api-schema"
+import { logger } from "@repo/logger"
 
 import { IGoogleOAuthClient } from "../../client/google-oauth"
 import { generateAccessToken, generateRefreshToken } from "../../lib/jwt"
-import { logger } from "../../log"
 import {
   AuthAccountRepository,
   TransactionRunner,

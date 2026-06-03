@@ -2,8 +2,9 @@ import crypto from "crypto"
 
 import type { Request, Response, NextFunction } from "express"
 
+import { logger, logContext } from "@repo/logger"
+
 import { LOG_EXCLUDE_PATHS } from "../const"
-import { logger, logContext } from "../log"
 
 import type { AuthRequest } from "./auth"
 
