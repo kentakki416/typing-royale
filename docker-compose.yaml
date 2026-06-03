@@ -44,7 +44,6 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-      target: runner
     container_name: typing-royale-api
     restart: unless-stopped
     environment:
@@ -76,7 +75,6 @@ services:
     build:
       context: .
       dockerfile: apps/crawler/Dockerfile
-      target: runner
     container_name: typing-royale-crawler
     profiles:
       - crawler

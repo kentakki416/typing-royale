@@ -6,9 +6,9 @@ FROM node:20-slim AS base
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 # ==============================================================================
-# Stage 2: deps - モノレポの依存をインストール
+# Stage 2: builder - 依存インストール & ビルド
 # ==============================================================================
-FROM base AS deps
+FROM base AS builder
 
 WORKDIR /app
 
@@ -18,27 +18,6 @@ COPY apps/crawler/package.json ./apps/crawler/
 COPY packages/schema/package.json ./packages/schema/
 
 RUN pnpm install --frozen-lockfile
-
-# ==============================================================================
-# Stage 3: dev - ローカル開発用（tsx watch）
-# ==============================================================================
-FROM deps AS dev
-
-WORKDIR /app
-
-COPY packages/schema/tsconfig.json ./packages/schema/
-COPY packages/schema/src/ ./packages/schema/src/
-COPY apps/crawler/tsconfig.json apps/crawler/tsconfig.build.json ./apps/crawler/
-COPY apps/crawler/src/ ./apps/crawler/src/
-
-CMD ["pnpm", "--filter", "crawler", "exec", "tsx", "watch", "src/index.ts"]
-
-# ==============================================================================
-# Stage 4: builder - 本番ビルド
-# ==============================================================================
-FROM deps AS builder
-
-WORKDIR /app
 
 COPY packages/schema/tsconfig.json ./packages/schema/
 COPY apps/crawler/tsconfig.json apps/crawler/tsconfig.build.json ./apps/crawler/
@@ -53,7 +32,7 @@ RUN pnpm --filter crawler build
 RUN pnpm deploy --filter crawler --prod /app/deploy
 
 # ==============================================================================
-# Stage 5: runner - 本番実行用の軽量イメージ
+# Stage 3: runner - 本番実行用の軽量イメージ
 # ==============================================================================
 FROM node:20-slim AS runner
 

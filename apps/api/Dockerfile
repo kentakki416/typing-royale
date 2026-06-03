@@ -6,9 +6,9 @@ FROM node:20-slim AS base
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 # ==============================================================================
-# Stage 2: deps - モノレポの依存をインストール（dev / runner 共通）
+# Stage 2: builder - 依存インストール & ビルド
 # ==============================================================================
-FROM base AS deps
+FROM base AS builder
 
 WORKDIR /app
 
@@ -19,38 +19,10 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/schema/package.json ./packages/schema/
 
-# 依存インストール（dev 依存も含む）
+# 依存インストール
 RUN pnpm install --frozen-lockfile
 
-# ==============================================================================
-# Stage 3: dev - ローカル開発用（ホットリロード / tsx watch）
-# ==============================================================================
-FROM deps AS dev
-
-WORKDIR /app
-
-# tsconfig / Prisma スキーマ / ソースをコピー（compose で volume mount する場合は上書きされる）
-COPY packages/schema/tsconfig.json ./packages/schema/
-COPY packages/schema/src/ ./packages/schema/src/
-COPY apps/api/tsconfig.json apps/api/tsconfig.build.json ./apps/api/
-COPY apps/api/src/ ./apps/api/src/
-
-# Prisma Client を生成（dev でも必須）
-RUN cd apps/api && pnpm exec prisma generate --config=src/prisma/prisma.config.ts || true
-
-EXPOSE 8080
-
-# tsx watch でホットリロード（dotenvx は使わず、compose の environment / env_file から注入される前提）
-CMD ["pnpm", "--filter", "api", "exec", "tsx", "watch", "src/index.ts"]
-
-# ==============================================================================
-# Stage 4: builder - 本番用ビルド
-# ==============================================================================
-FROM deps AS builder
-
-WORKDIR /app
-
-# tsconfig をコピー
+# 各パッケージのtsconfig.jsonをコピー
 COPY packages/schema/tsconfig.json ./packages/schema/
 COPY apps/api/tsconfig.json apps/api/tsconfig.build.json ./apps/api/
 
@@ -62,7 +34,7 @@ COPY apps/api/src/ ./apps/api/src/
 RUN pnpm --filter @repo/api-schema build
 
 # Prisma Client を生成
-RUN cd apps/api && pnpm exec prisma generate --config=src/prisma/prisma.config.ts
+RUN cd apps/api && pnpm exec prisma generate --schema=src/prisma/schema.prisma
 
 # API をビルド
 RUN pnpm --filter api build
@@ -71,7 +43,7 @@ RUN pnpm --filter api build
 RUN pnpm deploy --filter api --prod /app/deploy
 
 # ==============================================================================
-# Stage 5: runner - 本番実行用の軽量イメージ
+# Stage 3: runner - 本番実行用の軽量イメージ
 # ==============================================================================
 FROM node:20-slim AS runner
 
