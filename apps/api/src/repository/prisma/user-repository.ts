@@ -9,9 +9,9 @@ import { TransactionContext } from "./transaction-runner"
  */
 export type CreateUserInput = {
     avatarUrl?: string
+    canPublicRanking?: boolean
     displayName?: string
     email?: string
-    publicRanking?: boolean
 }
 
 /**
@@ -50,9 +50,9 @@ export class PrismaUserRepository implements UserRepository {
     const prismaUser = await client.user.create({
       data: {
         avatarUrl: data.avatarUrl,
+        canPublicRanking: data.canPublicRanking ?? true,
         displayName: data.displayName,
         email: data.email,
-        publicRanking: data.publicRanking ?? true,
       },
     })
     return this._toDomainUser(prismaUser)
@@ -64,11 +64,11 @@ export class PrismaUserRepository implements UserRepository {
   private _toDomainUser(prismaUser: PrismaTypes.UserGetPayload<{}>): User {
     return {
       avatarUrl: prismaUser.avatarUrl,
+      canPublicRanking: prismaUser.canPublicRanking,
       createdAt: prismaUser.createdAt,
       displayName: prismaUser.displayName,
       email: prismaUser.email,
       id: prismaUser.id,
-      publicRanking: prismaUser.publicRanking,
       updatedAt: prismaUser.updatedAt,
     }
   }

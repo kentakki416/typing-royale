@@ -10,18 +10,15 @@ datasource db {
     provider = "postgresql"
 }
 
-/**
- * 認証アカウント（複数プロバイダー対応）
- *
- * アクセストークン / リフレッシュトークン等は OAuth プロバイダ側で発行・管理し、
- * 本アプリでは保持しない（OAuth Token は 1 回使い切りで、以降は内部 JWT で完結）。
- * 詳細は docs/spec/github-auth/README.md の「アクセストークン非保存方針」参照。
- */
+// 認証アカウント（複数プロバイダー対応）
+// OAuth プロバイダのアクセストークンは保持しない（docs/spec/github-auth/README.md「アクセストークン非保存方針」）
 model AuthAccount {
     id                Int      @id @default(autoincrement())
     userId            Int      @map("user_id")
-    provider          String // "google" | "github" | "dev"
-    providerAccountId String   @map("provider_account_id") // プロバイダー側のユーザーID
+    /// "google" | "github" | "dev"
+    provider          String
+    /// プロバイダー側のユーザー ID
+    providerAccountId String   @map("provider_account_id")
     createdAt         DateTime @default(now()) @map("created_at")
     updatedAt         DateTime @updatedAt @map("updated_at")
 
@@ -43,21 +40,18 @@ model Memo {
     @@map("memos")
 }
 
-/**
- * ユーザー（認証プロバイダー非依存）
- *
- * displayName は GitHub username 等を初期値に持つ、ユーザー表示用の名前。
- * publicRanking が false の場合はランキング集計から完全に除外される（順位そのものが計算されない）。
- * email は dev-login や将来のメール連絡用にオプショナルで保持（MVP の GitHub OAuth では収集しない）。
- */
+// ユーザー（認証プロバイダー非依存）
 model User {
-    id            Int      @id @default(autoincrement())
-    email         String?  @unique
-    displayName   String?  @map("display_name")
-    avatarUrl     String?  @map("avatar_url")
-    publicRanking Boolean  @default(true) @map("public_ranking")
-    createdAt     DateTime @default(now()) @map("created_at")
-    updatedAt     DateTime @updatedAt @map("updated_at")
+    id               Int      @id @default(autoincrement())
+    /// dev-login や将来のメール連絡用にオプショナルで保持（MVP の GitHub OAuth では収集しない）
+    email            String?  @unique
+    /// GitHub username 等を初期値に持つ、ユーザー表示用の名前
+    displayName      String?  @map("display_name")
+    avatarUrl        String?  @map("avatar_url")
+    /// false の場合はランキング集計から完全に除外される（順位そのものが計算されない）
+    canPublicRanking Boolean  @default(true) @map("can_public_ranking")
+    createdAt        DateTime @default(now()) @map("created_at")
+    updatedAt        DateTime @updatedAt @map("updated_at")
 
     accounts AuthAccount[]
 

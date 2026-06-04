@@ -14,12 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model User
- * *
- *  * ユーザー（認証プロバイダー非依存）
- *  *
- *  * displayName は GitHub username 等を初期値に持つ、ユーザー表示用の名前。
- *  * publicRanking が false の場合はランキング集計から完全に除外される（順位そのものが計算されない）。
- *  * email は dev-login や将来のメール連絡用にオプショナルで保持（MVP の GitHub OAuth では収集しない）。
+ * 
  */
 export type UserModel = runtime.Types.Result.DefaultSelection<Prisma.$UserPayload>
 
@@ -44,7 +39,7 @@ export type UserMinAggregateOutputType = {
   email: string | null
   displayName: string | null
   avatarUrl: string | null
-  publicRanking: boolean | null
+  canPublicRanking: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -54,7 +49,7 @@ export type UserMaxAggregateOutputType = {
   email: string | null
   displayName: string | null
   avatarUrl: string | null
-  publicRanking: boolean | null
+  canPublicRanking: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -64,7 +59,7 @@ export type UserCountAggregateOutputType = {
   email: number
   displayName: number
   avatarUrl: number
-  publicRanking: number
+  canPublicRanking: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -84,7 +79,7 @@ export type UserMinAggregateInputType = {
   email?: true
   displayName?: true
   avatarUrl?: true
-  publicRanking?: true
+  canPublicRanking?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -94,7 +89,7 @@ export type UserMaxAggregateInputType = {
   email?: true
   displayName?: true
   avatarUrl?: true
-  publicRanking?: true
+  canPublicRanking?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -104,7 +99,7 @@ export type UserCountAggregateInputType = {
   email?: true
   displayName?: true
   avatarUrl?: true
-  publicRanking?: true
+  canPublicRanking?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -201,7 +196,7 @@ export type UserGroupByOutputType = {
   email: string | null
   displayName: string | null
   avatarUrl: string | null
-  publicRanking: boolean
+  canPublicRanking: boolean
   createdAt: Date
   updatedAt: Date
   _count: UserCountAggregateOutputType | null
@@ -234,7 +229,7 @@ export type UserWhereInput = {
   email?: Prisma.StringNullableFilter<"User"> | string | null
   displayName?: Prisma.StringNullableFilter<"User"> | string | null
   avatarUrl?: Prisma.StringNullableFilter<"User"> | string | null
-  publicRanking?: Prisma.BoolFilter<"User"> | boolean
+  canPublicRanking?: Prisma.BoolFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   accounts?: Prisma.AuthAccountListRelationFilter
@@ -245,7 +240,7 @@ export type UserOrderByWithRelationInput = {
   email?: Prisma.SortOrderInput | Prisma.SortOrder
   displayName?: Prisma.SortOrderInput | Prisma.SortOrder
   avatarUrl?: Prisma.SortOrderInput | Prisma.SortOrder
-  publicRanking?: Prisma.SortOrder
+  canPublicRanking?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   accounts?: Prisma.AuthAccountOrderByRelationAggregateInput
@@ -259,7 +254,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   displayName?: Prisma.StringNullableFilter<"User"> | string | null
   avatarUrl?: Prisma.StringNullableFilter<"User"> | string | null
-  publicRanking?: Prisma.BoolFilter<"User"> | boolean
+  canPublicRanking?: Prisma.BoolFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   accounts?: Prisma.AuthAccountListRelationFilter
@@ -270,7 +265,7 @@ export type UserOrderByWithAggregationInput = {
   email?: Prisma.SortOrderInput | Prisma.SortOrder
   displayName?: Prisma.SortOrderInput | Prisma.SortOrder
   avatarUrl?: Prisma.SortOrderInput | Prisma.SortOrder
-  publicRanking?: Prisma.SortOrder
+  canPublicRanking?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
@@ -288,7 +283,7 @@ export type UserScalarWhereWithAggregatesInput = {
   email?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   displayName?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   avatarUrl?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
-  publicRanking?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  canPublicRanking?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
 }
@@ -297,7 +292,7 @@ export type UserCreateInput = {
   email?: string | null
   displayName?: string | null
   avatarUrl?: string | null
-  publicRanking?: boolean
+  canPublicRanking?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
@@ -308,7 +303,7 @@ export type UserUncheckedCreateInput = {
   email?: string | null
   displayName?: string | null
   avatarUrl?: string | null
-  publicRanking?: boolean
+  canPublicRanking?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
@@ -318,7 +313,7 @@ export type UserUpdateInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  publicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
@@ -329,7 +324,7 @@ export type UserUncheckedUpdateInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  publicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
@@ -340,7 +335,7 @@ export type UserCreateManyInput = {
   email?: string | null
   displayName?: string | null
   avatarUrl?: string | null
-  publicRanking?: boolean
+  canPublicRanking?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -349,7 +344,7 @@ export type UserUpdateManyMutationInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  publicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -359,7 +354,7 @@ export type UserUncheckedUpdateManyInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  publicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -374,7 +369,7 @@ export type UserCountOrderByAggregateInput = {
   email?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   avatarUrl?: Prisma.SortOrder
-  publicRanking?: Prisma.SortOrder
+  canPublicRanking?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -388,7 +383,7 @@ export type UserMaxOrderByAggregateInput = {
   email?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   avatarUrl?: Prisma.SortOrder
-  publicRanking?: Prisma.SortOrder
+  canPublicRanking?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -398,7 +393,7 @@ export type UserMinOrderByAggregateInput = {
   email?: Prisma.SortOrder
   displayName?: Prisma.SortOrder
   avatarUrl?: Prisma.SortOrder
-  publicRanking?: Prisma.SortOrder
+  canPublicRanking?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -433,7 +428,7 @@ export type UserCreateWithoutAccountsInput = {
   email?: string | null
   displayName?: string | null
   avatarUrl?: string | null
-  publicRanking?: boolean
+  canPublicRanking?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -443,7 +438,7 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   email?: string | null
   displayName?: string | null
   avatarUrl?: string | null
-  publicRanking?: boolean
+  canPublicRanking?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -468,7 +463,7 @@ export type UserUpdateWithoutAccountsInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  publicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -478,7 +473,7 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  publicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -519,7 +514,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   email?: boolean
   displayName?: boolean
   avatarUrl?: boolean
-  publicRanking?: boolean
+  canPublicRanking?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
@@ -531,7 +526,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   email?: boolean
   displayName?: boolean
   avatarUrl?: boolean
-  publicRanking?: boolean
+  canPublicRanking?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -541,7 +536,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   email?: boolean
   displayName?: boolean
   avatarUrl?: boolean
-  publicRanking?: boolean
+  canPublicRanking?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -551,12 +546,12 @@ export type UserSelectScalar = {
   email?: boolean
   displayName?: boolean
   avatarUrl?: boolean
-  publicRanking?: boolean
+  canPublicRanking?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "displayName" | "avatarUrl" | "publicRanking" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "displayName" | "avatarUrl" | "canPublicRanking" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -571,10 +566,19 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
+    /**
+     * dev-login や将来のメール連絡用にオプショナルで保持（MVP の GitHub OAuth では収集しない）
+     */
     email: string | null
+    /**
+     * GitHub username 等を初期値に持つ、ユーザー表示用の名前
+     */
     displayName: string | null
     avatarUrl: string | null
-    publicRanking: boolean
+    /**
+     * false の場合はランキング集計から完全に除外される（順位そのものが計算されない）
+     */
+    canPublicRanking: boolean
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["user"]>
@@ -1005,7 +1009,7 @@ export interface UserFieldRefs {
   readonly email: Prisma.FieldRef<"User", 'String'>
   readonly displayName: Prisma.FieldRef<"User", 'String'>
   readonly avatarUrl: Prisma.FieldRef<"User", 'String'>
-  readonly publicRanking: Prisma.FieldRef<"User", 'Boolean'>
+  readonly canPublicRanking: Prisma.FieldRef<"User", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
 }

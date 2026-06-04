@@ -84,11 +84,11 @@ export class PrismaAuthAccountRepository implements AuthAccountRepository {
   private _toDomainUser(prismaUser: PrismaTypes.UserGetPayload<{}>): User {
     return {
       avatarUrl: prismaUser.avatarUrl,
+      canPublicRanking: prismaUser.canPublicRanking,
       createdAt: prismaUser.createdAt,
       displayName: prismaUser.displayName,
       email: prismaUser.email,
       id: prismaUser.id,
-      publicRanking: prismaUser.publicRanking,
       updatedAt: prismaUser.updatedAt,
     }
   }

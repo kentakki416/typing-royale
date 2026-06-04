@@ -62,11 +62,11 @@ export class AuthDevLoginController {
       refresh_token: refreshToken,
       user: {
         avatar_url: user.avatarUrl,
+        can_public_ranking: user.canPublicRanking,
         created_at: user.createdAt.toISOString(),
         display_name: user.displayName,
         email: user.email,
         id: user.id,
-        public_ranking: user.publicRanking,
       },
     })
 

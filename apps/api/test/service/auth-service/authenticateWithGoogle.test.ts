@@ -80,11 +80,11 @@ describe("authenticateWithGoogle", () => {
 
       const mockExistingUser: User = {
         avatarUrl: "https://example.com/avatar.jpg",
+        canPublicRanking: true,
         createdAt: new Date(),
         displayName: "Test User",
         email: "test@example.com",
         id: 1,
-        publicRanking: true,
         updatedAt: new Date(),
       }
 
@@ -135,11 +135,11 @@ describe("authenticateWithGoogle", () => {
 
       const mockNewUser: User = {
         avatarUrl: "https://example.com/new-avatar.jpg",
+        canPublicRanking: true,
         createdAt: new Date(),
         displayName: "New User",
         email: "newuser@example.com",
         id: 2,
-        publicRanking: true,
         updatedAt: new Date(),
       }
 

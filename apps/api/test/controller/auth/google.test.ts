@@ -78,11 +78,11 @@ describe("POST /api/auth/google", () => {
         refresh_token: expect.any(String),
         user: {
           avatar_url: "https://example.com/new-avatar.jpg",
+          can_public_ranking: true,
           created_at: expect.any(String),
           display_name: "New User",
           email: "new@example.com",
           id: expect.any(Number),
-          public_ranking: true,
         },
       })
 
@@ -92,9 +92,9 @@ describe("POST /api/auth/google", () => {
       })
       expect(createdUser).toMatchObject({
         avatarUrl: "https://example.com/new-avatar.jpg",
+        canPublicRanking: true,
         displayName: "New User",
         email: "new@example.com",
-        publicRanking: true,
       })
 
       /** Postgres に AuthAccount が作成され、User と同じトランザクションで紐付いている */
@@ -147,11 +147,11 @@ describe("POST /api/auth/google", () => {
         refresh_token: expect.any(String),
         user: {
           avatar_url: "https://example.com/avatar.jpg",
+          can_public_ranking: true,
           created_at: expect.any(String),
           display_name: "Test User",
           email: "test@example.com",
           id: user.id,
-          public_ranking: true,
         },
       })
 

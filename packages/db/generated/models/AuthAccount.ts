@@ -14,12 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model AuthAccount
- * *
- *  * 認証アカウント（複数プロバイダー対応）
- *  *
- *  * アクセストークン / リフレッシュトークン等は OAuth プロバイダ側で発行・管理し、
- *  * 本アプリでは保持しない（OAuth Token は 1 回使い切りで、以降は内部 JWT で完結）。
- *  * 詳細は docs/spec/github-auth/README.md の「アクセストークン非保存方針」参照。
+ * 
  */
 export type AuthAccountModel = runtime.Types.Result.DefaultSelection<Prisma.$AuthAccountPayload>
 
@@ -599,7 +594,13 @@ export type $AuthAccountPayload<ExtArgs extends runtime.Types.Extensions.Interna
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
     userId: number
+    /**
+     * "google" | "github" | "dev"
+     */
     provider: string
+    /**
+     * プロバイダー側のユーザー ID
+     */
     providerAccountId: string
     createdAt: Date
     updatedAt: Date

@@ -46,11 +46,11 @@ describe("GET /api/auth/me", () => {
       expect(res.status).toBe(200)
       expect(res.body).toEqual({
         avatar_url: "https://example.com/avatar.jpg",
+        can_public_ranking: true,
         created_at: expect.any(String),
         display_name: "Test User",
         email: "test@example.com",
         id: user.id,
-        public_ranking: true,
       })
     })
   })

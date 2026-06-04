@@ -19,11 +19,11 @@ describe("getUserById", () => {
     it("ユーザーが存在する場合、ok: true とユーザー情報を返す", async () => {
       const mockUser: User = {
         avatarUrl: "https://example.com/avatar.jpg",
+        canPublicRanking: true,
         createdAt: new Date(),
         displayName: "Test User",
         email: "test@example.com",
         id: 1,
-        publicRanking: true,
         updatedAt: new Date(),
       }
 
