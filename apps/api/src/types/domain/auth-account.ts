@@ -1,19 +1,21 @@
 import { User } from "./user"
 
 /**
- * 認証アカウントドメイン型
+ * 認証アカウントドメイン型（複数プロバイダー対応、 (provider, providerAccountId) で一意）
+ *
+ * OAuth プロバイダのアクセストークンは保持しない（docs/spec/github-auth/README.md 参照）。
  */
 export type AuthAccount = {
-    accessToken: string | null
     createdAt: Date
-    expiresAt: number | null
     id: number
-    idToken: string | null
+    /**
+     * "google" | "github" | "dev"
+     */
     provider: string
+    /**
+     * プロバイダー側のユーザー ID
+     */
     providerAccountId: string
-    refreshToken: string | null
-    scope: string | null
-    tokenType: string | null
     updatedAt: Date
     userId: number
 }

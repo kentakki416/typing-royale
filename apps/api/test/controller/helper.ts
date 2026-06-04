@@ -35,23 +35,26 @@ export const attachErrorHandler = (app: express.Express): void => {
  */
 export const createTestUser = async (overrides?: {
   avatarUrl?: string
+  canPublicRanking?: boolean
+  displayName?: string
   email?: string
-  name?: string
 }): Promise<{ token: string; user: User }> => {
   const prismaUser = await testPrisma.user.create({
     data: {
       avatarUrl: overrides?.avatarUrl ?? "https://example.com/avatar.jpg",
+      canPublicRanking: overrides?.canPublicRanking ?? true,
+      displayName: overrides?.displayName ?? "Test User",
       email: overrides?.email ?? `test-${Date.now()}@example.com`,
-      name: overrides?.name ?? "Test User",
     },
   })
 
   const user: User = {
     avatarUrl: prismaUser.avatarUrl,
+    canPublicRanking: prismaUser.canPublicRanking,
     createdAt: prismaUser.createdAt,
+    displayName: prismaUser.displayName,
     email: prismaUser.email,
     id: prismaUser.id,
-    name: prismaUser.name,
     updatedAt: prismaUser.updatedAt,
   }
 

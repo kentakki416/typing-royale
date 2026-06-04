@@ -71,8 +71,8 @@ export const authenticateWithGoogle = async (
       const newUser = await repo.userRepository.create(
         {
           avatarUrl: googleUser.picture,
+          displayName: googleUser.name,
           email: googleUser.email,
-          name: googleUser.name,
         },
         tx,
       )

@@ -10,20 +10,20 @@ const prisma = createPrismaClient()
  * ボタン経由でログインできる。production 環境では seed 自体スキップする。
  */
 type DevUserSeed = {
+  displayName: string
   email: string
-  name: string
 }
 
 const devUsers: DevUserSeed[] = [
-  { email: "alice@dev.local", name: "Alice (dev)" },
-  { email: "bob@dev.local", name: "Bob (dev)" },
+  { displayName: "Alice (dev)", email: "alice@dev.local" },
+  { displayName: "Bob (dev)", email: "bob@dev.local" },
 ]
 
 const seedDevUsers = async () => {
   for (const devUser of devUsers) {
     const user = await prisma.user.upsert({
-      create: { email: devUser.email, name: devUser.name },
-      update: { name: devUser.name },
+      create: { displayName: devUser.displayName, email: devUser.email },
+      update: { displayName: devUser.displayName },
       where: { email: devUser.email },
     })
 

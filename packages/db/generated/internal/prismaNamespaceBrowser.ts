@@ -77,12 +77,6 @@ export const AuthAccountScalarFieldEnum = {
   userId: 'userId',
   provider: 'provider',
   providerAccountId: 'providerAccountId',
-  accessToken: 'accessToken',
-  refreshToken: 'refreshToken',
-  expiresAt: 'expiresAt',
-  tokenType: 'tokenType',
-  scope: 'scope',
-  idToken: 'idToken',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -104,8 +98,9 @@ export type MemoScalarFieldEnum = (typeof MemoScalarFieldEnum)[keyof typeof Memo
 export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
-  name: 'name',
+  displayName: 'displayName',
   avatarUrl: 'avatarUrl',
+  canPublicRanking: 'canPublicRanking',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
