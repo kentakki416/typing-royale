@@ -1,6 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env.*local"],
+  "concurrency": "20",
   "tasks": {
     "@repo/db#db:generate": {
       "cache": false,
