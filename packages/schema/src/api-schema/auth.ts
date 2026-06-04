@@ -47,6 +47,37 @@ export const authGoogleResponseSchema = z.object({
 export type AuthGoogleResponse = z.infer<typeof authGoogleResponseSchema>
 
 // ========================================================
+// POST /api/auth/github - GitHub OAuth 認証コードの検証
+// ========================================================
+
+/**
+ * GitHub OAuth 認証リクエストのスキーマ
+ *
+ * Web (Next.js) 側で取得した Authorization Code と、callback URL の redirect_uri を受け取る。
+ * API 側で code → access_token 交換 → GitHub /user 取得 → User+AuthAccount upsert を行う。
+ */
+export const authGithubRequestSchema = z.object({
+  code: z.string().min(1),
+  redirect_uri: z.string().url(),
+})
+
+export type AuthGithubRequest = z.infer<typeof authGithubRequestSchema>
+
+/**
+ * GitHub OAuth 認証レスポンスのスキーマ
+ *
+ * 形は authGoogleResponseSchema と同型（Web 側で同じ setAuthCookies に渡せる）。
+ */
+export const authGithubResponseSchema = z.object({
+  access_token: z.string(),
+  is_new_user: z.boolean(),
+  refresh_token: z.string(),
+  user: authUserSchema,
+})
+
+export type AuthGithubResponse = z.infer<typeof authGithubResponseSchema>
+
+// ========================================================
 // POST /api/auth/refresh - Access/Refresh Token のローテーション
 // ========================================================
 

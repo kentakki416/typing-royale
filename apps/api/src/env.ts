@@ -34,6 +34,17 @@ const apiEnvSchema = baseEnvSchema.extend({
   GOOGLE_CLIENT_SECRET: z.string().default("dummy"),
 
   /**
+   * GitHub OAuth クライアント ID
+   * dev 環境では "dummy" でも動くため optional 扱い
+   */
+  GITHUB_CLIENT_ID: z.string().default("dummy"),
+
+  /**
+   * GitHub OAuth クライアントシークレット
+   */
+  GITHUB_CLIENT_SECRET: z.string().default("dummy"),
+
+  /**
    * Access Token 署名鍵
    */
   JWT_ACCESS_SECRET: z.string().min(32),

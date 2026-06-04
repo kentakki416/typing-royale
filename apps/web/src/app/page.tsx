@@ -80,10 +80,10 @@ export default function Home() {
                   <span className="font-medium">ID:</span> {userData.id}
                 </p>
                 <p className="text-zinc-700 dark:text-zinc-300">
-                  <span className="font-medium">メッセージ:</span> {userData.message}
+                  <span className="font-medium">表示名:</span> {userData.display_name ?? "(no name)"}
                 </p>
                 <p className="text-zinc-700 dark:text-zinc-300">
-                  <span className="font-medium">タイムスタンプ:</span> {userData.timestamp}
+                  <span className="font-medium">登録日時:</span> {userData.created_at}
                 </p>
               </div>
             </div>
