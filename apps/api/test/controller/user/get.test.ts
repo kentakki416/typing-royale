@@ -1,9 +1,9 @@
 import request from "supertest"
 
-import { AuthMeController } from "../../../src/controller/auth/me"
+import { UserGetController } from "../../../src/controller/user/get"
 import { generateAccessToken } from "../../../src/lib/jwt"
 import { PrismaUserRepository } from "../../../src/repository/prisma/user-repository"
-import { authRouter } from "../../../src/routes/auth-router"
+import { userRouter } from "../../../src/routes/user-router"
 import { attachErrorHandler, createTestApp } from "../helper"
 import { cleanupTestData, disconnectTestDb, disconnectTestRedis, testPrisma } from "../setup"
 
@@ -11,9 +11,9 @@ const userRepository = new PrismaUserRepository(testPrisma)
 
 const app = createTestApp()
 
-const authMeController = new AuthMeController(userRepository)
+const userGetController = new UserGetController(userRepository)
 
-app.use("/api/auth", authRouter({ me: authMeController }))
+app.use("/api/user", userRouter({ get: userGetController }))
 attachErrorHandler(app)
 
 beforeEach(async () => {
@@ -26,7 +26,7 @@ afterAll(async () => {
   await disconnectTestRedis()
 })
 
-describe("GET /api/auth/me", () => {
+describe("GET /api/user", () => {
   describe("正常系", () => {
     it("認証済みユーザーの場合、200 とユーザー情報を返す", async () => {
       const user = await testPrisma.user.create({
@@ -40,7 +40,7 @@ describe("GET /api/auth/me", () => {
       const token = generateAccessToken(user.id)
 
       const res = await request(app)
-        .get("/api/auth/me")
+        .get("/api/user")
         .set("Authorization", `Bearer ${token}`)
 
       expect(res.status).toBe(200)
@@ -60,7 +60,7 @@ describe("GET /api/auth/me", () => {
       const token = generateAccessToken(999999)
 
       const res = await request(app)
-        .get("/api/auth/me")
+        .get("/api/user")
         .set("Authorization", `Bearer ${token}`)
 
       expect(res.status).toBe(404)
@@ -68,7 +68,7 @@ describe("GET /api/auth/me", () => {
     })
 
     it("トークンがない場合、401 を返す", async () => {
-      const res = await request(app).get("/api/auth/me")
+      const res = await request(app).get("/api/user")
 
       expect(res.status).toBe(401)
       expect(res.body).toEqual({ error: expect.any(String), status_code: 401 })
@@ -76,7 +76,7 @@ describe("GET /api/auth/me", () => {
 
     it("無効なトークンの場合、401 を返す", async () => {
       const res = await request(app)
-        .get("/api/auth/me")
+        .get("/api/user")
         .set("Authorization", "Bearer invalid-token")
 
       expect(res.status).toBe(401)

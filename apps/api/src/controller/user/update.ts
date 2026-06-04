@@ -1,6 +1,6 @@
 import { Response } from "express"
 
-import { authMeResponseSchema, ErrorResponse } from "@repo/api-schema"
+import { updateUserRequestSchema, updateUserResponseSchema, ErrorResponse } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
 import { AuthRequest } from "../../middleware/auth"
@@ -8,17 +8,27 @@ import { UserRepository } from "../../repository/prisma"
 import * as service from "../../service"
 
 /**
- * 現在ログイン中のユーザー情報を取得するAPI
+ * PATCH /api/user
+ *
+ * 認証中ユーザーの表示名 / ランキング公開設定の部分更新。
+ * リクエストボディは display_name / can_public_ranking の少なくとも 1 つが必須。
  */
-export class AuthMeController {
+export class UserUpdateController {
   constructor(private userRepository: UserRepository) {}
 
   async execute(req: AuthRequest, res: Response) {
-    logger.info("AuthMeController: Fetching user information", {
-      requestedUserId: req.userId,
-    })
+    logger.info("UserUpdateController: Updating authenticated user", { userId: req.userId })
 
-    const result = await service.user.getUserById(req.userId!, { userRepository: this.userRepository })
+    const body = updateUserRequestSchema.parse(req.body)
+
+    const result = await service.user.updateUser(
+      req.userId!,
+      {
+        canPublicRanking: body.can_public_ranking,
+        displayName: body.display_name,
+      },
+      { userRepository: this.userRepository },
+    )
 
     if (!result.ok) {
       const errorResponse: ErrorResponse = {
@@ -28,12 +38,7 @@ export class AuthMeController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    logger.info("AuthMeController: User information retrieved successfully", {
-      userId: result.value.id,
-    })
-
-    // レスポンススキーマのバリデーション
-    const response = authMeResponseSchema.parse({
+    const response = updateUserResponseSchema.parse({
       avatar_url: result.value.avatarUrl,
       can_public_ranking: result.value.canPublicRanking,
       created_at: result.value.createdAt.toISOString(),

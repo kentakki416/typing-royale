@@ -3,14 +3,12 @@ import { Router } from "express"
 import { AuthDevLoginController } from "../controller/auth/dev-login"
 import { AuthGoogleController } from "../controller/auth/google"
 import { AuthLogoutController } from "../controller/auth/logout"
-import { AuthMeController } from "../controller/auth/me"
 import { AuthRefreshController } from "../controller/auth/refresh"
 
 type AuthRouterControllers = {
   devLogin?: AuthDevLoginController
   google?: AuthGoogleController
   logout?: AuthLogoutController
-  me?: AuthMeController
   refresh?: AuthRefreshController
 }
 
@@ -47,12 +45,6 @@ export const authRouter = (controllers: AuthRouterControllers): Router => {
   if (controllers.logout) {
     const controller = controllers.logout
     router.post("/logout", async (req, res) => controller.execute(req, res))
-  }
-
-  /** GET /api/auth/me（グローバルに authMiddleware が適用済み） */
-  if (controllers.me) {
-    const controller = controllers.me
-    router.get("/me", async (req, res) => controller.execute(req, res))
   }
 
   return router

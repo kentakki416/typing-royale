@@ -30,13 +30,16 @@ const mockUserCreate = vi.fn<(
 ) => Promise<User>>()
 const mockUserRepository: UserRepository = {
   create: mockUserCreate,
+  delete: vi.fn(),
   findByEmail: vi.fn(),
   findById: vi.fn(),
+  update: vi.fn(),
 }
 
 const mockRefreshTokenSave = vi.fn<(_0: string, _1: number, _2: number) => Promise<void>>()
 const mockRefreshTokenRepository: RefreshTokenRepository = {
   delete: vi.fn(),
+  deleteAllByUserId: vi.fn(),
   findUserId: vi.fn(),
   save: mockRefreshTokenSave,
 }

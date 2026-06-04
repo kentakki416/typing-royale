@@ -15,12 +15,25 @@ export type CreateUserInput = {
 }
 
 /**
+ * ユーザー更新時の入力（部分更新）
+ *
+ * displayName は空文字を許容しない（呼び出し側で trim 済みの非空文字列を渡す前提）。
+ * canPublicRanking は明示的に true/false を切り替えるため optional。
+ */
+export type UpdateUserInput = {
+    canPublicRanking?: boolean
+    displayName?: string
+}
+
+/**
  * ユーザーリポジトリのインターフェース
  */
 export interface UserRepository {
     create(data: CreateUserInput, tx?: TransactionContext): Promise<User>
+    delete(id: number): Promise<void>
     findByEmail(email: string): Promise<User | null>
     findById(id: number): Promise<User | null>
+    update(id: number, data: UpdateUserInput): Promise<User>
 }
 
 /**
@@ -56,6 +69,25 @@ export class PrismaUserRepository implements UserRepository {
       },
     })
     return this._toDomainUser(prismaUser)
+  }
+
+  async update(id: number, data: UpdateUserInput): Promise<User> {
+    const prismaUser = await this._prisma.user.update({
+      data: {
+        ...(data.canPublicRanking !== undefined && { canPublicRanking: data.canPublicRanking }),
+        ...(data.displayName !== undefined && { displayName: data.displayName }),
+      },
+      where: { id },
+    })
+    return this._toDomainUser(prismaUser)
+  }
+
+  /**
+   * onDelete: Cascade により AuthAccount もまとめて削除される。
+   * 将来 score / keystroke_logs 等を追加した際も FK カスケードで連動削除されることを前提とする。
+   */
+  async delete(id: number): Promise<void> {
+    await this._prisma.user.delete({ where: { id } })
   }
 
   /**
