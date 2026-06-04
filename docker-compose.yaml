@@ -45,7 +45,6 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     container_name: typing-royale-api
-    restart: unless-stopped
     environment:
       NODE_ENV: local
       PORT: 8080
