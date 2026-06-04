@@ -49,6 +49,11 @@ export const apiClient = {
     if (!res.ok) throw new Error(`API error: ${res.status}`)
     return res.json() as Promise<T>
   },
+  patch: async <T>(path: string, body: unknown): Promise<T> => {
+    const res = await fetchWithAuth(path, { body: JSON.stringify(body), method: "PATCH" })
+    if (!res.ok) throw new Error(`API error: ${res.status}`)
+    return res.json() as Promise<T>
+  },
   post: async <T>(path: string, body: unknown): Promise<T> => {
     const res = await fetchWithAuth(path, { body: JSON.stringify(body), method: "POST" })
     if (!res.ok) throw new Error(`API error: ${res.status}`)
