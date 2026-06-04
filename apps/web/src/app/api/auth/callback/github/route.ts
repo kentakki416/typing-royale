@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { authGithubResponseSchema } from "@repo/api-schema"
 
+import { env } from "@/env"
 import { OAUTH_STATE_COOKIE, setAuthCookies } from "@/libs/auth"
 
-const API_BASE_URL = process.env.API_URL || "http://localhost:8080"
+const API_BASE_URL = env.API_URL
 
 /**
  * GitHub OAuth コールバックを受け取り、Express API で code を検証して
@@ -38,7 +39,7 @@ export const GET = async (req: NextRequest) => {
   const apiRes = await fetch(`${API_BASE_URL}/api/auth/github`, {
     body: JSON.stringify({
       code,
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/github`,
+      redirect_uri: `${env.NEXT_PUBLIC_APP_URL}/api/auth/callback/github`,
     }),
     headers: { "Content-Type": "application/json" },
     method: "POST",

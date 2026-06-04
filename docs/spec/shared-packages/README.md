@@ -1,13 +1,16 @@
 # shared-packages
 
+> ⚠️ **`@repo/config` は撤去済み（2026-06-04）**。
+> env 検証は各 app の `src/env.ts` に Zod スキーマ + `safeParse → process.exit(1)` を**インラインで**定義する方針に変更。理由・経緯はこのファイル末尾、または PR の議論を参照。
+> 以下の文中で `@repo/config` / `baseEnvSchema` / `loadEnv` に言及している箇所は **歴史的記述** として残しているのみで、現在の正解ではない。step4 (`step4-packages-config.md`) も同様。
+
 このテンプレートが想定するユースケース（api / cron / worker / batch などの複数 server-side アプリ）で共通利用される基盤コードを `packages/` 配下に切り出し、新規 server-side app をテンプレートからスピンアップした時にゼロから書き直さずに済む状態にする。
 
-対象は以下の 5 パッケージ:
+対象は以下の 4 パッケージ:
 
 - `@repo/db` — Prisma schema / generated client / 接続クライアント
 - `@repo/logger` — Logger インターフェース + Pino/Winston/Console/Silent 実装 + リクエストコンテキスト
 - `@repo/errors` — `Result<T>` 型と業務エラーのヘルパ
-- `@repo/config` — 環境変数の Zod スキーマ検証
 - `@repo/redis` — ioredis 接続クライアント（singleton + factory）
 
 このドキュメントは **仕様（What）** と **設計（How）** を分けて記述する：

@@ -1,5 +1,8 @@
 # step4-packages-config.md
 
+> ⚠️ **このステップは撤去済み（2026-06-04）**。`@repo/config` パッケージは削除し、env 検証は各 app の `src/env.ts` に Zod スキーマ + `safeParse → process.exit(1)` をインラインで書く方針に変更した。
+> このファイル以降の記述は **歴史的経緯** として残しているのみで、現在の正解は `apps/api/src/env.ts` / `apps/web/src/env.ts` のコードを直接参照すること。
+
 `@repo/config` パッケージを新設し、`process.env` を Zod スキーマで検証する `loadEnv` ヘルパと、共通環境変数の `baseEnvSchema` を提供する。`apps/api` 側に `src/env.ts` を新設し、起動時に env 検証を行う。
 
 ## 対応内容
