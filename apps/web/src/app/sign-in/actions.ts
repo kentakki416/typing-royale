@@ -5,9 +5,10 @@ import { randomBytes } from "node:crypto"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
+import { env } from "@/env"
 import { OAUTH_STATE_COOKIE } from "@/libs/auth"
 
-const isProduction = process.env.NODE_ENV === "production"
+const isProduction = env.NODE_ENV === "production"
 
 const STATE_COOKIE_MAX_AGE = 60 * 5
 
@@ -38,8 +39,8 @@ export const startGoogleOAuth = async () => {
 
   const params = new URLSearchParams({
     access_type: "offline",
-    client_id: process.env.GOOGLE_CLIENT_ID!,
-    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/google`,
+    client_id: env.GOOGLE_CLIENT_ID,
+    redirect_uri: `${env.NEXT_PUBLIC_APP_URL}/api/auth/callback/google`,
     response_type: "code",
     scope: "openid email profile",
     state,
@@ -58,8 +59,8 @@ export const startGithubOAuth = async () => {
   await setOAuthStateCookie(state)
 
   const params = new URLSearchParams({
-    client_id: process.env.GITHUB_CLIENT_ID!,
-    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/github`,
+    client_id: env.GITHUB_CLIENT_ID,
+    redirect_uri: `${env.NEXT_PUBLIC_APP_URL}/api/auth/callback/github`,
     scope: "read:user",
     state,
   })

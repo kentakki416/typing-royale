@@ -19,10 +19,11 @@ Turborepo + pnpm モノレポ。
 - **packages/db**: Prisma schema / migrations / generated client + `createPrismaClient` factory (`@repo/db`)
 - **packages/logger**: `ILogger` + pino/winston/console/silent + AsyncLocalStorage context (`@repo/logger`)
 - **packages/errors**: `Result<T>` + `ApiError` + 業務エラー生成ヘルパ (`@repo/errors`)
-- **packages/config**: Zod ベース env スキーマ検証 + `loadEnv` (`@repo/config`)
 - **packages/redis**: `createRedisClient` factory（BullMQ / Pub/Sub 対応）(`@repo/redis`)
 
-共通パッケージの設計詳細は [`docs/spec/shared-packages/`](docs/spec/shared-packages/README.md) を参照。新規 server-side app (cron / worker / batch) を追加する場合は同設計書に沿って `@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/config` / `@repo/redis` を依存に追加し、各 app の `src/index.ts` で client を生成して Repository に DI する。
+共通パッケージの設計詳細は [`docs/spec/shared-packages/`](docs/spec/shared-packages/README.md) を参照。新規 server-side app (cron / worker / batch) を追加する場合は同設計書に沿って `@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/redis` を依存に追加し、各 app の `src/index.ts` で client を生成して Repository に DI する。
+
+> **env 検証は各 app の `src/env.ts` に Zod スキーマ + `safeParse → process.exit(1)` をインラインで定義する**（旧 `@repo/config` は撤去済み。app ごとに自己完結させる方が読みやすく、shared package が読む env も各 app の env.ts が直接宣言する）。
 
 ### Infra
 
@@ -38,7 +39,7 @@ Turborepo + pnpm モノレポ。
 - Mobile → `apps/mobile/CLAUDE.md`
 - スキーマ → `packages/schema/CLAUDE.md`（スキーマ命名規則）
 - Terraform → `infra/terraform/CLAUDE.md`
-- 共通パッケージ設計 → [`docs/spec/shared-packages/README.md`](docs/spec/shared-packages/README.md)（`@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/config` / `@repo/redis` の仕様・設計・移行手順）
+- 共通パッケージ設計 → [`docs/spec/shared-packages/README.md`](docs/spec/shared-packages/README.md)（`@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/redis` の仕様・設計・移行手順）
 
 ## Common Commands (root)
 

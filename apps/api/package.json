@@ -25,7 +25,6 @@
   "license": "ISC",
   "dependencies": {
     "@repo/api-schema": "workspace:^",
-    "@repo/config": "workspace:^",
     "@repo/db": "workspace:^",
     "@repo/errors": "workspace:^",
     "@repo/logger": "workspace:^",

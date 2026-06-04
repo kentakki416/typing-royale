@@ -17,7 +17,7 @@
 | rewards | ✅ | 特典（リワード）。SVG バッジ・達成カード・3D アイコン・Hall of Fame | [./rewards/README.md](./rewards/README.md) |
 | adsense | ✅ | 広告配信。Google AdSense のディスプレイ広告 | [./adsense/README.md](./adsense/README.md) |
 | dev-login | ✅ | 開発用ログイン（既存） | [./dev-login/README.md](./dev-login/README.md) |
-| shared-packages | ✅ | api/cron 横断で共通利用する `@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/config` / `@repo/redis` の設計（テンプレート整備） | [./shared-packages/README.md](./shared-packages/README.md) |
+| shared-packages | ✅ | api/cron 横断で共通利用する `@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/redis` の設計（テンプレート整備）。`@repo/config` は撤去済み（各 app の `src/env.ts` にインライン化） | [./shared-packages/README.md](./shared-packages/README.md) |
 
 ## ステータスの定義
 

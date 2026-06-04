@@ -16,6 +16,7 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 - [`docs/README.md`](docs/README.md) — プロダクト全体像
 - [`docs/spec/README.md`](docs/spec/README.md) — 機能一覧と各 spec へのリンク
 - [`docs/infra.md`](docs/infra.md) — インフラ全体設計
+- [`docs/mocks/`](docs/mocks/) — **UI デザインのモック（HTML/CSS）。web の画面実装時は必ず該当モックを参照してマークアップ・配色・レイアウトを揃える**
 
 ---
 
@@ -51,9 +52,9 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### GitHub 連携の最小準備（ローカルテスト用）
 
-- [ ] **GitHub OAuth App（dev 用）**を作成（`http://localhost:3000/api/auth/callback/github` を callback に登録）
+- [x] **GitHub OAuth App（dev 用）**を作成（`http://localhost:3000/api/auth/callback/github` を callback に登録）
 - [ ] GitHub PAT 発行（クローラ用、運営アカウント。**`public_repo` スコープのみ**）
-- [ ] `.env.local` に `GITHUB_CLIENT_ID/SECRET`、`GITHUB_PAT` を記載
+- [x] `.env.local` に `GITHUB_CLIENT_ID/SECRET` を記載（dotenvx 暗号化）/ `GITHUB_PAT` は Phase 2 で追加
 
 > AWS / Vercel / Sentry 本番 / Google AdSense 等のアカウント設定は **Phase 9 で実施**。Phase 0〜8 はすべてローカルで完結。
 
@@ -65,37 +66,39 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### DB スキーマ・Prisma
 
-- [ ] `User` テーブル定義（`id`, `displayName`, `avatarUrl`, `publicRanking`, `createdAt`, `updatedAt`）
-- [ ] `AuthAccount` テーブル定義（`id`, `userId`, `provider`, `providerUserId`, `createdAt`、複合一意制約）
-- [ ] Prisma スキーマ作成・初回マイグレーション
-- [ ] Seed データ作成（dev 用テストユーザー）
+- [x] `User` テーブル定義（`id`, `displayName`, `avatarUrl`, `canPublicRanking`, `createdAt`, `updatedAt`）
+- [x] `AuthAccount` テーブル定義（`id`, `userId`, `provider`, `providerUserId`, `createdAt`、複合一意制約）
+- [x] Prisma スキーマ作成・初回マイグレーション
+- [x] Seed データ作成（dev 用テストユーザー Alice / Bob）
 
 ### apps/api（Express）
 
-- [ ] `apps/api/src/client/github-oauth.ts` 新規（code → access_token → user info の薄いラッパー）
-- [ ] `apps/api/src/controller/auth/github.ts` 新規（`POST /api/auth/github` Controller）
-- [ ] `apps/api/src/service/auth-service.ts` に `authenticateWithGithub` 追加
-- [ ] `apps/api/src/repository/prisma/auth-account-repository.ts` 拡張（provider 汎用化）
-- [ ] `apps/api/src/lib/jwt.ts` 既存利用（access 15分 / refresh 7日）
-- [ ] `apps/api/src/repository/redis/refresh-token-repository.ts` 既存利用
+- [x] `apps/api/src/client/github-oauth.ts` 新規（code → access_token → user info の薄いラッパー）
+- [x] `apps/api/src/controller/auth/github.ts` 新規（`POST /api/auth/github` Controller）
+- [x] `apps/api/src/service/auth-service.ts` に `authenticateWithGithub` 追加
+- [x] `apps/api/src/repository/prisma/auth-account-repository.ts` 拡張（provider 汎用化）
+- [x] `apps/api/src/lib/jwt.ts` 既存利用（access 15分 / refresh 7日）
+- [x] `apps/api/src/repository/redis/refresh-token-repository.ts` 既存利用
 - [ ] `POST /api/auth/refresh`、`POST /api/auth/logout`、`GET/PATCH/DELETE /api/me` の動作確認（既存共用）
 - [ ] `POST /api/play-sessions/claim` 新規（ゲストプレイのバッファをアカウント紐付け、Phase 3 と並行可）
 - [ ] 単体テスト（auth-service / github-oauth）
 
 ### apps/web（Next.js）
 
-- [ ] `apps/web/src/app/sign-in/page.tsx` 拡張（GitHub ボタン追加）
-- [ ] `apps/web/src/app/sign-in/actions.ts` に `startGithubOAuth` Server Action 追加
-- [ ] `apps/web/src/app/api/auth/callback/github/route.ts` 新規（callback Route Handler）
-- [ ] `apps/web/src/libs/auth.ts` 既存利用（cookie 操作）
-- [ ] `apps/web/src/middleware.ts` 既存利用（認証ガード）
-- [ ] マイページ > ホーム画面の枠だけ実装（中身は Phase 4 でグレード表示）
-- [ ] マイページ > アカウント設定画面（表示名 / publicRanking / アカウント削除）
-- [ ] 初回ログイン後のオンボーディング画面
+> **UI は [`docs/mocks/`](docs/mocks/) のモックを参照して実装する**（特に `modal-login.html` / `onboarding.html` / `mypage.html` / `mypage-settings.html`）。
+
+- [x] `apps/web/src/app/sign-in/page.tsx` 拡張（GitHub ボタン追加）← デザインは `docs/mocks/modal-login.html` 参照
+- [x] `apps/web/src/app/sign-in/actions.ts` に `startGithubOAuth` Server Action 追加
+- [x] `apps/web/src/app/api/auth/callback/github/route.ts` 新規（callback Route Handler）
+- [x] `apps/web/src/libs/auth.ts` 既存利用（cookie 操作）
+- [x] `apps/web/src/middleware.ts` 既存利用（認証ガード）
+- [x] マイページ > ホーム画面の枠だけ実装（中身は Phase 4 でグレード表示）← デザインは `docs/mocks/mypage.html` 参照
+- [x] マイページ > アカウント設定画面（表示名 / canPublicRanking / アカウント削除）← デザインは `docs/mocks/mypage-settings.html` 参照
+- [x] 初回ログイン後のオンボーディング画面 ← デザインは `docs/mocks/onboarding.html` 参照
 
 ### 動作確認（ローカル）
 
-- [ ] dev 環境で GitHub ログイン成功確認
+- [x] dev 環境で GitHub ログイン成功確認（2026-06-04 認証フロー完走 / migration 適用後）
 - [ ] httpOnly cookie に JWT が保存されることを確認
 - [ ] refresh token が Redis に保存されることを確認
 - [ ] アカウント削除で User / AuthAccount / refresh token が全削除されることを確認
@@ -178,11 +181,13 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### apps/web 実装（通常モード UI）
 
-- [ ] トップ画面（言語選択への導線）
-- [ ] 言語選択画面（TypeScript / JavaScript の 2 ボタン）
+> **UI は [`docs/mocks/`](docs/mocks/) のモックを参照**：`top.html` / `language-select.html` / `play.html` / `result.html`。
+
+- [ ] トップ画面（言語選択への導線）← `docs/mocks/top.html`
+- [ ] 言語選択画面（TypeScript / JavaScript の 2 ボタン）← `docs/mocks/language-select.html`
   - [ ] **「神々に挑戦」ボタン**も配置（Phase 5 で有効化）
 - [ ] 「今日の挑戦」スプラッシュ画面（repo 名 + Star 数 + description、2 秒表示）
-- [ ] **プレイ画面**（コアコンポーネント）
+- [ ] **プレイ画面**（コアコンポーネント）← `docs/mocks/play.html`
   - [ ] コード表示（打鍵済み / 現在位置 / 未打鍵で色分け）
   - [ ] キー入力ハンドリング（1 文字判定、誤入力時の進行ロック）
   - [ ] paste イベント無効化
@@ -193,7 +198,7 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
   - [ ] サイドに repo 名・関数名を控えめ表示
   - [ ] IME ON 検知 → 警告表示
 - [ ] **キーストロークログ記録**（`{ t, p, ch, ok }` の配列）
-- [ ] **リザルト画面**（基本版、順位は Phase 4 で）
+- [ ] **リザルト画面**（基本版、順位は Phase 4 で）← `docs/mocks/result.html`
   - [ ] スコア・累計文字数・正確率・出題数 / 完走数
   - [ ] 「ちなみに今回のリポジトリは XXX… コメント」（`repoInfo` から）
   - [ ] ニガテ文字（`mistypeStats` 上位 5〜10）
@@ -242,8 +247,10 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### apps/web 実装
 
-- [ ] ランキング画面（言語タブ切替、トップ 10 表示、自分の順位 or 「圏外」表示）
-- [ ] プレイヤー詳細ページ
+> **UI は [`docs/mocks/`](docs/mocks/) のモックを参照**：`ranking.html` / `player-detail.html` / `mypage.html`。
+
+- [ ] ランキング画面（言語タブ切替、トップ 10 表示、自分の順位 or 「圏外」表示）← `docs/mocks/ranking.html`
+- [ ] プレイヤー詳細ページ ← `docs/mocks/player-detail.html`
 - [ ] **リザルト画面拡張**：
   - [ ] 「現在のエンジニアグレード」表示（即時）
   - [ ] 次グレードまでの進捗バー
@@ -281,9 +288,11 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### apps/web 実装
 
+> **UI は [`docs/mocks/`](docs/mocks/) のモックを参照**：`play-ghost.html` / `modal-ghost-result.html`。
+
 - [ ] 言語選択画面の「神々に挑戦」ボタン有効化
   - [ ] トップ 10 不在時（HTTP 409）はボタンを disabled + 通常モード誘導
-- [ ] **神々モードプレイ画面**：
+- [ ] **神々モードプレイ画面**：← `docs/mocks/play-ghost.html`
   - [ ] ヘッダーに「あなた：XXX 文字 / 神：YYY 文字」とリアルタイム差分バー
   - [ ] サイドエリアに神の現在状態（「問題 3 / 12 行目」）
   - [ ] 神の表示名にグレード名併記（例：「Principal Engineer kenta」）
@@ -291,7 +300,7 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
   - [ ] gzip 解凍
   - [ ] `requestAnimationFrame` で `t` の経過時刻に合わせて進行
   - [ ] 神の累計文字数を秒単位で算出
-- [ ] **神々戦リザルト画面**：
+- [ ] **神々戦リザルト画面**：← `docs/mocks/modal-ghost-result.html`
   - [ ] 勝敗・累計文字数差・正確率差・出題進捗の比較
   - [ ] 「もう一度」「別の神」ボタン
 - [ ] **ゴーストデータ取得失敗時の再抽選**（最大 3 回、失敗で通常モードへ）
@@ -324,7 +333,9 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### apps/web 実装
 
-- [ ] **リプレイ画面**：
+> **UI は [`docs/mocks/replay.html`](docs/mocks/replay.html) を参照**。
+
+- [ ] **リプレイ画面**：← `docs/mocks/replay.html`
   - [ ] コード表示エリア（コメント除去後の codeBlock）
   - [ ] キーストローク再描画エンジン（再生・一時停止・1.5x / 2x 倍速・シーク）
   - [ ] プログレスバーは 120 秒全体、問題遷移マーカー表示
@@ -354,11 +365,13 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 - [ ] `badge_configs` テーブル定義（`displayItems` jsonb）
 - [ ] Prisma マイグレーション
 
+> **UI は [`docs/mocks/`](docs/mocks/) のモックを参照**：`badge-customize.html` / `hall-of-fame.html` / `mypage-rewards.html` / `modal-achievement.html` / `modal-top10-comment.html`。
+
 ### 動的 SVG バッジ
 
 - [ ] `GET /badge/:username.svg` Controller
 - [ ] SVG テンプレート作成（グレード名 / スコア / ランク / 連続日数 / 累計の組み合わせ）
-- [ ] バッジカスタマイズ画面（マイページ）
+- [ ] バッジカスタマイズ画面（マイページ）← `docs/mocks/badge-customize.html`
 - [ ] HTTP `Cache-Control: public, max-age=300, stale-while-revalidate=600`
 - [ ] `badge_configs` 更新時に CDN キャッシュ無効化（ローカルでは確認のみ、本番設定は Phase 9）
 
@@ -374,14 +387,14 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
   - [ ] 累計 10,000 文字 / 100,000 文字 達成時
   - [ ] 初トップ 10 入り時
   - [ ] 7 日連続プレイ達成時
-- [ ] 達成通知モーダル（プレイ完了直後）
+- [ ] 達成通知モーダル（プレイ完了直後）← `docs/mocks/modal-achievement.html`
 
 ### Hall of Fame
 
 - [ ] `GET /api/hall-of-fame` Controller（言語別トップ 10 + 公開コメント）
 - [ ] `POST /api/hall-of-fame/comments` Controller（本人コメント登録、NG ワードフィルタ）
 - [ ] `/finish` レスポンスに **`topTenBoundaryScore`**（直近 snapshot の言語別 10 位スコア）を含める
-- [ ] **リザルト画面のコメント入力モーダル**：
+- [ ] **リザルト画面のコメント入力モーダル**：← `docs/mocks/modal-top10-comment.html`
   - [ ] `myScore > topTenBoundaryScore` でモーダル表示
   - [ ] 「🎉 トップ 10 入り見込み！」と暫定 UI 明示
   - [ ] 入力内容を `commentDraft` に下書き保存
@@ -393,12 +406,12 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 - [ ] **マイページ > Hall of Fame コメント編集**：
   - [ ] 入賞中の編集は即座に `comment` 反映（次バッチ待たない）
   - [ ] 編集履歴の保持
-- [ ] Hall of Fame 画面実装
+- [ ] Hall of Fame 画面実装 ← `docs/mocks/hall-of-fame.html`
 - [ ] リプレイへの導線
 
 ### マイページ > 特典タブ
 
-- [ ] 獲得済み特典の一覧
+- [ ] 獲得済み特典の一覧 ← `docs/mocks/mypage-rewards.html`
 - [ ] バッジ URL のコピー機能
 - [ ] 達成カード PNG のダウンロード機能
 - [ ] **Coming Soon プレースホルダ枠**（3D / Lottie / カード / アート / 公式 X 紹介投稿）

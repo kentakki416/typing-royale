@@ -11,7 +11,7 @@
 process.env.LOGGER_TYPE = process.env.LOGGER_TYPE || "silent"
 
 /**
- * JWT secret は @repo/config の apiEnvSchema で min(32) 制約があるため、
+ * JWT secret は src/env.ts の apiEnvSchema で min(32) 制約があるため、
  * テスト用デフォルトも 32 文字以上にする
  */
 process.env.JWT_ACCESS_SECRET =
