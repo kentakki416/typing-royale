@@ -3,7 +3,7 @@ import { join } from "node:path"
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { getRepoMeta } from "../../../src/client/github/repos"
+import { GithubClient } from "../../../src/client/github/client"
 
 const loadFixture = (name: string): string =>
   readFileSync(join(__dirname, "../../fixtures/github", name), "utf-8")
@@ -11,7 +11,10 @@ const loadFixture = (name: string): string =>
 const okResponse = (bodyJson: string): Response =>
   new Response(bodyJson, { status: 200 })
 
-describe("getRepoMeta", () => {
+const newClient = (): GithubClient =>
+  new GithubClient({ pat: "test-pat", minStars: 1000, pushedAfter: "2024-06-01" })
+
+describe("GithubClient.getRepoMeta", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn())
   })
@@ -26,7 +29,7 @@ describe("getRepoMeta", () => {
         .mockResolvedValueOnce(okResponse(loadFixture("repos-colinhacks-zod.json")))
         .mockResolvedValueOnce(okResponse(loadFixture("refs-heads-main.json")))
 
-      const meta = await getRepoMeta("colinhacks", "zod")
+      const meta = await newClient().getRepoMeta("colinhacks", "zod")
 
       expect(meta).toEqual({
         id: 123,
@@ -48,7 +51,7 @@ describe("getRepoMeta", () => {
         .mockResolvedValueOnce(okResponse(loadFixture("repos-license-null.json")))
         .mockResolvedValueOnce(okResponse(loadFixture("refs-heads-main.json")))
 
-      const meta = await getRepoMeta("someone", "no-license")
+      const meta = await newClient().getRepoMeta("someone", "no-license")
       expect(meta.license).toBeNull()
     })
 
@@ -57,7 +60,7 @@ describe("getRepoMeta", () => {
         .mockResolvedValueOnce(okResponse(loadFixture("repos-topics-undefined.json")))
         .mockResolvedValueOnce(okResponse(loadFixture("refs-heads-main.json")))
 
-      const meta = await getRepoMeta("old", "repo")
+      const meta = await newClient().getRepoMeta("old", "repo")
       expect(meta.topics).toEqual([])
     })
 
@@ -66,7 +69,7 @@ describe("getRepoMeta", () => {
         .mockResolvedValueOnce(okResponse(loadFixture("repos-colinhacks-zod.json")))
         .mockResolvedValueOnce(okResponse(loadFixture("refs-heads-main.json")))
 
-      await getRepoMeta("colinhacks", "zod")
+      await newClient().getRepoMeta("colinhacks", "zod")
 
       expect(fetch).toHaveBeenCalledTimes(2)
       expect(vi.mocked(fetch).mock.calls[0][0]).toBe("https://api.github.com/repos/colinhacks/zod")
@@ -79,7 +82,9 @@ describe("getRepoMeta", () => {
     it("HTTP 404 は GithubApiError(404) として throw（disable 候補）", async () => {
       vi.mocked(fetch).mockResolvedValueOnce(new Response("Not Found", { status: 404 }))
 
-      await expect(getRepoMeta("foo", "missing")).rejects.toMatchObject({ statusCode: 404 })
+      await expect(newClient().getRepoMeta("foo", "missing")).rejects.toMatchObject({
+        statusCode: 404,
+      })
     })
   })
 })

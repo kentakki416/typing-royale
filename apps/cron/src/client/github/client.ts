@@ -1,0 +1,295 @@
+import { GithubApiError } from "./errors"
+import { parseRateLimit, waitForRateLimit } from "./rate-limit"
+import type {
+  GithubRepoMeta,
+  GithubSearchItem,
+  GithubSearchResult,
+  GithubTreeEntry,
+} from "./types"
+
+/**
+ * GitHub API クライアント
+ *
+ * REST API（api.github.com）と raw content（raw.githubusercontent.com）の双方を
+ * 1 つの class に集約する。コンストラクタで PAT / User-Agent / Search のデフォルト
+ * フィルタを受け取り、env への直接依存はここでは持たない（cli 側で env から組み立てる）。
+ *
+ * 提供メソッド:
+ *   - searchRepos        : Search Repositories API
+ *   - getRepoMeta        : Repos API + default branch の HEAD commit SHA
+ *   - listSourceFiles    : Git Tree API + クロール用のファイル除外フィルタ
+ *   - getRawContent      : raw.githubusercontent.com からのファイル本文取得
+ *
+ * 共通の fetch / ヘッダ / rate limit ハンドリングは private メソッドに閉じてあり、
+ * 4xx は GithubApiError(status)、5xx・ネットワークエラーは GithubApiError(>=500) に
+ * wrap して throw する（lib/retry.ts の retryWithBackoff がそれを 5xx 判定で拾う）。
+ */
+
+const API_BASE = "https://api.github.com"
+const RAW_BASE = "https://raw.githubusercontent.com"
+const DEFAULT_USER_AGENT = "typing-royale-crawler/1.0"
+
+const SEARCH_LICENSE_FILTER =
+  "license:mit license:apache-2.0 license:bsd-3-clause license:isc"
+
+/** AST 解析対象の拡張子（tree フィルタで使用） */
+const TARGET_EXTENSIONS = /\.(ts|tsx|js|jsx)$/
+
+/**
+ * ファイルサイズの上限（バンドル済みファイル等を除外）。
+ * 100KB を超えるソースは AST パースが重く、ノイズになりがちなので落とす。
+ */
+const MAX_FILE_SIZE = 100_000
+
+/**
+ * tree からダウンロードしない（≒ AST 解析対象外）のパスパターン。
+ * ダウンロード前に除外することで GitHub API のレート消費と AST パースコストを抑える。
+ */
+const EXCLUDED_TREE_PATTERNS = [
+  /** 依存・ビルド成果物 */
+  /^node_modules\//,
+  /\/node_modules\//,
+  /^dist\//,
+  /^build\//,
+  /\.d\.ts$/,
+
+  /** テストファイル（拡張子 / suffix） */
+  /\.test\./,
+  /\.spec\./,
+  /[-_]test\.[jt]sx?$/,
+
+  /** テストディレクトリ */
+  /^(__tests__|tests?|e2e|cypress)\//,
+  /\/(__tests__|tests?|e2e|cypress)\//,
+  /^__mocks__\//,
+  /\/__mocks__\//,
+
+  /** ノイズ（実装ロジックではない） */
+  /\.stories\.[jt]sx?$/,
+  /\.fixtures?\./,
+]
+
+export type GithubClientConfig = {
+  /**
+   * GitHub Personal Access Token（public_repo スコープ想定）。
+   * 空文字を渡せば未認証で叩くこともできるが、レート制限が IP 単位の 60 req/h に
+   * 落ちるため実運用では必須。
+   */
+  pat: string
+  /** Search Repositories API の `stars:>=` フィルタ値 */
+  minStars: number
+  /** Search Repositories API の `pushed:>` フィルタ値（YYYY-MM-DD）。省略時は実行日 - 2 年 */
+  pushedAfter?: string
+  userAgent?: string
+}
+
+export class GithubClient {
+  private readonly pat: string
+  private readonly userAgent: string
+  private readonly minStars: number
+  private readonly pushedAfter: string
+
+  constructor(config: GithubClientConfig) {
+    this.pat = config.pat
+    this.userAgent = config.userAgent ?? DEFAULT_USER_AGENT
+    this.minStars = config.minStars
+    this.pushedAfter = config.pushedAfter ?? this.defaultPushedAfter()
+  }
+
+  /**
+   * Search Repositories API
+   *
+   * docs/spec/problem-pool/README.md「取得元の選定」のフィルタ条件:
+   *   - language:{slug}
+   *   - license:mit | license:apache-2.0 | license:bsd-3-clause | license:isc
+   *   - stars:>={minStars}
+   *   - pushed:>{pushedAfter}
+   *   - archived:false
+   *   - sort=stars-desc / per_page=100
+   */
+  searchRepos = async (language: string, page: number): Promise<GithubSearchResult> => {
+    const q = `language:${language} ${SEARCH_LICENSE_FILTER} stars:>=${this.minStars} pushed:>${this.pushedAfter} archived:false`
+    const url = `${API_BASE}/search/repositories?q=${encodeURIComponent(q)}&sort=stars&order=desc&per_page=100&page=${page}`
+    const res = await this.fetch(url, this.apiHeaders())
+    const json = (await res.json()) as { items: unknown[]; total_count: number }
+    return {
+      items: json.items.map(this.toSearchItem),
+      totalCount: json.total_count,
+    }
+  }
+
+  /**
+   * Repos API + Git Refs API
+   *
+   * `GET /repos/{owner}/{repo}` でメタ情報を取り、default branch の HEAD commit SHA
+   * を別エンドポイントで取得して permalink 生成用の commitSha として返す。
+   */
+  getRepoMeta = async (owner: string, repo: string): Promise<GithubRepoMeta> => {
+    const url = `${API_BASE}/repos/${owner}/${repo}`
+    const res = await this.fetch(url, this.apiHeaders())
+    const json = (await res.json()) as {
+      default_branch: string
+      description: string | null
+      full_name: string
+      homepage: string | null
+      id: number
+      license: { spdx_id: string | null } | null
+      name: string
+      owner: { login: string }
+      stargazers_count: number
+      topics: string[] | undefined
+    }
+    const sha = await this.getCommitSha(owner, repo, json.default_branch)
+    return {
+      id: json.id,
+      commitSha: sha,
+      defaultBranch: json.default_branch,
+      description: json.description,
+      fullName: json.full_name,
+      homepage: json.homepage,
+      license: json.license?.spdx_id ?? null,
+      name: json.name,
+      owner: json.owner.login,
+      stars: json.stargazers_count,
+      /** GitHub は topics 未設定の repo で undefined を返すケースがある */
+      topics: json.topics ?? [],
+    }
+  }
+
+  /**
+   * Git Tree API + クロール用フィルタ
+   *
+   * `recursive=1` で repo の全ファイルパスを取得し、AST 解析対象（.ts/.tsx/.js/.jsx）
+   * かつテスト・ノイズ・大ファイルを除いたエントリだけ返す。ダウンロード前に絞ることで
+   * raw content API のレート消費と AST パースコストを抑えるのが目的。
+   */
+  listSourceFiles = async (
+    owner: string,
+    repo: string,
+    commitSha: string
+  ): Promise<GithubTreeEntry[]> => {
+    const url = `${API_BASE}/repos/${owner}/${repo}/git/trees/${commitSha}?recursive=1`
+    const res = await this.fetch(url, this.apiHeaders())
+    const json = (await res.json()) as { tree: unknown[] }
+    return json.tree
+      .map(this.toTreeEntry)
+      .filter((e): e is GithubTreeEntry => e !== null)
+      .filter((e) => e.type === "blob")
+      .filter((e) => TARGET_EXTENSIONS.test(e.path))
+      .filter((e) => !EXCLUDED_TREE_PATTERNS.some((p) => p.test(e.path)))
+      .filter((e) => (e.size ?? 0) <= MAX_FILE_SIZE)
+  }
+
+  /**
+   * raw.githubusercontent.com からファイル本文を UTF-8 文字列で取得する。
+   *
+   * Accept ヘッダはデフォルトで OK。認証は不要だが PAT を付けることでアカウント単位
+   * のレート制限になる（非認証だと IP 単位で 60 req/h と厳しい）。
+   */
+  getRawContent = async (
+    owner: string,
+    repo: string,
+    commitSha: string,
+    path: string
+  ): Promise<string> => {
+    const url = `${RAW_BASE}/${owner}/${repo}/${commitSha}/${path}`
+    const res = await this.fetch(url, this.rawHeaders())
+    return res.text()
+  }
+
+  /**
+   * 共通 fetch ヘルパ
+   *
+   * - レスポンスヘッダから rate limit を読み取り、necessary なら待機
+   * - ネットワークエラー（fetch native の TypeError 等）は GithubApiError(599) に
+   *   wrap して投げ直す。retryWithBackoff の「statusCode >= 500 ならリトライ」
+   *   ルートに乗せるため
+   * - HTTP 非 2xx は GithubApiError(status) として throw（4xx は呼び出し側で
+   *   disable 判断、5xx はリトライへ）
+   */
+  private fetch = async (
+    url: string,
+    headers: Record<string, string>
+  ): Promise<Response> => {
+    let res: Response
+    try {
+      res = await globalThis.fetch(url, { headers })
+    } catch (err) {
+      throw new GithubApiError(599, String(err))
+    }
+
+    const rateLimit = parseRateLimit(res.headers)
+    if (rateLimit) await waitForRateLimit(rateLimit)
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "")
+      throw new GithubApiError(res.status, body)
+    }
+    return res
+  }
+
+  private apiHeaders = (): Record<string, string> => ({
+    "Accept": "application/vnd.github+json",
+    "Authorization": `Bearer ${this.pat}`,
+    "User-Agent": this.userAgent,
+    "X-GitHub-Api-Version": "2022-11-28",
+  })
+
+  private rawHeaders = (): Record<string, string> => ({
+    "Authorization": `Bearer ${this.pat}`,
+    "User-Agent": this.userAgent,
+  })
+
+  private getCommitSha = async (
+    owner: string,
+    repo: string,
+    branch: string
+  ): Promise<string> => {
+    const url = `${API_BASE}/repos/${owner}/${repo}/git/refs/heads/${branch}`
+    const res = await this.fetch(url, this.apiHeaders())
+    const json = (await res.json()) as { object: { sha: string } }
+    return json.object.sha
+  }
+
+  private defaultPushedAfter = (): string => {
+    const d = new Date()
+    d.setFullYear(d.getFullYear() - 2)
+    return d.toISOString().slice(0, 10)
+  }
+
+  private toSearchItem = (raw: unknown): GithubSearchItem => {
+    const r = raw as {
+      default_branch: string
+      full_name: string
+      id: number
+      license: { spdx_id: string | null } | null
+      name: string
+      owner: { login: string }
+      pushed_at: string
+      stargazers_count: number
+    }
+    return {
+      id: r.id,
+      defaultBranch: r.default_branch,
+      fullName: r.full_name,
+      /** license が null や spdx_id 不明な場合は空文字（呼び出し側で弾く） */
+      license: r.license?.spdx_id ?? "",
+      name: r.name,
+      owner: r.owner.login,
+      pushedAt: r.pushed_at,
+      stars: r.stargazers_count,
+    }
+  }
+
+  private toTreeEntry = (raw: unknown): GithubTreeEntry | null => {
+    if (typeof raw !== "object" || raw === null) return null
+    const r = raw as { path?: unknown; size?: unknown; type?: unknown }
+    if (typeof r.path !== "string") return null
+    if (r.type !== "blob" && r.type !== "tree") return null
+    return {
+      path: r.path,
+      size: typeof r.size === "number" ? r.size : null,
+      type: r.type,
+    }
+  }
+}

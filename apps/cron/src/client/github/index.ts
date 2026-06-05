@@ -1,10 +1,11 @@
+export { GithubClient } from "./client"
+export type { GithubClientConfig } from "./client"
 export { GithubApiError } from "./errors"
 export { parseRateLimit, waitForRateLimit } from "./rate-limit"
 export type { RateLimitState } from "./rate-limit"
-export { searchRepos } from "./search"
-export type { GithubSearchItem, GithubSearchResult } from "./search"
-export { getRepoMeta } from "./repos"
-export type { GithubRepoMeta } from "./repos"
-export { listSourceFiles } from "./tree"
-export type { GithubTreeEntry } from "./tree"
-export { getRawContent } from "./raw"
+export type {
+  GithubRepoMeta,
+  GithubSearchItem,
+  GithubSearchResult,
+  GithubTreeEntry,
+} from "./types"

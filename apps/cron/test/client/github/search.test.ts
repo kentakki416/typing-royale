@@ -3,8 +3,8 @@ import { join } from "node:path"
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import { GithubClient } from "../../../src/client/github/client"
 import { GithubApiError } from "../../../src/client/github/errors"
-import { searchRepos } from "../../../src/client/github/search"
 
 const loadFixture = (name: string): string =>
   readFileSync(join(__dirname, "../../fixtures/github", name), "utf-8")
@@ -15,7 +15,10 @@ const okResponse = (bodyJson: string): Response =>
     headers: { "Content-Type": "application/json" },
   })
 
-describe("searchRepos", () => {
+const newClient = (): GithubClient =>
+  new GithubClient({ pat: "test-pat", minStars: 1000, pushedAfter: "2024-06-01" })
+
+describe("GithubClient.searchRepos", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn())
   })
@@ -28,7 +31,7 @@ describe("searchRepos", () => {
     it("fixture を読んで totalCount と items を整形して返す", async () => {
       vi.mocked(fetch).mockResolvedValueOnce(okResponse(loadFixture("search-typescript-page1.json")))
 
-      const result = await searchRepos("typescript", 1, { minStars: 1000, pushedAfter: "2024-06-01" })
+      const result = await newClient().searchRepos("typescript", 1)
 
       expect(result.totalCount).toBe(42)
       expect(result.items).toHaveLength(2)
@@ -47,7 +50,7 @@ describe("searchRepos", () => {
     it("クエリ文字列が language / license / stars / pushed / archived を含む", async () => {
       vi.mocked(fetch).mockResolvedValueOnce(okResponse(loadFixture("search-typescript-page1.json")))
 
-      await searchRepos("typescript", 1, { minStars: 1000, pushedAfter: "2024-06-01" })
+      await newClient().searchRepos("typescript", 1)
 
       const call = vi.mocked(fetch).mock.calls[0]
       const url = call[0] as string
@@ -65,6 +68,30 @@ describe("searchRepos", () => {
       expect(url).toContain("per_page=100")
       expect(url).toContain("page=1")
     })
+
+    it("Authorization / User-Agent / X-GitHub-Api-Version ヘッダを送る", async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(okResponse(loadFixture("search-typescript-page1.json")))
+
+      await newClient().searchRepos("typescript", 1)
+
+      const init = vi.mocked(fetch).mock.calls[0][1] as RequestInit
+      const headers = init.headers as Record<string, string>
+      expect(headers["Authorization"]).toBe("Bearer test-pat")
+      expect(headers["User-Agent"]).toBe("typing-royale-crawler/1.0")
+      expect(headers["X-GitHub-Api-Version"]).toBe("2022-11-28")
+    })
+
+    it("pushedAfter 未指定時は実行日 - 2 年（YYYY-MM-DD）になる", async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(okResponse(loadFixture("search-typescript-page1.json")))
+
+      const client = new GithubClient({ pat: "test-pat", minStars: 1000 })
+      await client.searchRepos("typescript", 1)
+
+      const url = vi.mocked(fetch).mock.calls[0][0] as string
+      const decoded = decodeURIComponent(url)
+      const match = decoded.match(/pushed:>(\d{4}-\d{2}-\d{2})/)
+      expect(match).not.toBeNull()
+    })
   })
 
   describe("異常系", () => {
@@ -73,17 +100,15 @@ describe("searchRepos", () => {
         new Response("Forbidden", { status: 403 })
       )
 
-      await expect(
-        searchRepos("typescript", 1, { minStars: 1000, pushedAfter: "2024-06-01" })
-      ).rejects.toThrow(GithubApiError)
+      await expect(newClient().searchRepos("typescript", 1)).rejects.toThrow(GithubApiError)
     })
 
     it("ネットワークエラー（fetch が throw）は GithubApiError(599) に wrap される", async () => {
       vi.mocked(fetch).mockRejectedValueOnce(new TypeError("fetch failed"))
 
-      await expect(
-        searchRepos("typescript", 1, { minStars: 1000, pushedAfter: "2024-06-01" })
-      ).rejects.toMatchObject({ statusCode: 599 })
+      await expect(newClient().searchRepos("typescript", 1)).rejects.toMatchObject({
+        statusCode: 599,
+      })
     })
   })
 })
