@@ -1,6 +1,13 @@
 # step3: processRepo / CLI / crawler_runs と Sentry 連携
 
-step1 の DB スキーマと step2 の GitHub クライアント + AST 解析を組み合わせ、`processRepo()` メイン関数、`pickNextRepo()`、`crawler_runs` での実行履歴管理、CLI エントリ（`pnpm crawler:run` / `pnpm crawler:license-recheck`）、Sentry 連携を実装する。**この step 完了で Phase 2 の機能要件が一通り揃う**。
+step1 の DB スキーマ（`crawler_runs` + `crawler_run_items` の親子構造、`Problem.languageId` 非正規化、`@@unique([languageId, astHash])`）と step2 の GitHub クライアント + AST 解析を組み合わせ、`processRepo()` メイン関数、`pickNextRepo()`、run 全体と repo 個別履歴の二段記録、CLI エントリ（`pnpm crawler:run` / `pnpm crawler:license-recheck`）、Sentry 連携を実装する。**この step 完了で Phase 2 の機能要件が一通り揃う**。
+
+主な設計方針：
+
+- **部分失敗の継続**: メインループで repo 単位の try-catch、1 件の失敗が次の repo を止めない
+- **`Result<T>` の使い方**: 業務エラー = `err(...)`、想定外 = throw（apps/api 規約と一致）。`processRepo` は disabled で記録するだけの正常フローも含むので `Promise<ProcessRepoResult>` の plain union を返す（`Result` ラップは不要）
+- **二重起動防止**: 同日（JST 00:00 起点）の active run があれば skip。ただし stale running（30 分以上前から `running` のまま）は自動 `failed` 遷移してから新 run を開始
+- **`CRAWLER_FORCE_RERUN=true`**: 開発者のローカル再実行用に同日チェックをバイパス
 
 ## 対応内容
 
@@ -33,29 +40,30 @@ import type { PrismaClient } from "@repo/db"
 import type { CrawledRepoDomain } from "../../types/domain/crawled-repo"
 
 export type CreateCrawledRepoInput = {
-  languageId: number
-  githubId: bigint
-  owner: string
-  name: string
-  fullName: string
-  description: string | null
-  homepage: string | null
-  topics: string[]
-  stars: number
-  license: string
-  defaultBranch: string
+  candidatesCount: number
   commitSha: string
-  eligible: boolean
-  eligibleProblemCount: number
+  crawledAt: Date
+  defaultBranch: string
+  description: string | null
   disabled: boolean
   disabledReason: string | null
-  crawledAt: Date
+  eligible: boolean
+  fullName: string
+  githubId: bigint
+  homepage: string | null
+  languageId: number
+  license: string
+  name: string
+  owner: string
+  stars: number
+  storedCount: number
+  topics: string[]
 }
 
 export interface CrawledRepoRepository {
   create(input: CreateCrawledRepoInput): Promise<CrawledRepoDomain>
-  listRegisteredFullNames(languageId: number): Promise<Set<string>>
   listForLicenseRecheck(): Promise<CrawledRepoDomain[]>
+  listRegisteredFullNames(languageId: number): Promise<Set<string>>
   markDisabled(id: number, reason: string): Promise<void>
 }
 
@@ -69,24 +77,31 @@ export class PrismaCrawledRepoRepository implements CrawledRepoRepository {
 
 ```typescript
 export type CreateProblemInput = {
+  astHash: string
+  charCount: number
+  codeBlock: string
   crawledRepoId: number
+  functionName: string
+  languageId: number
+  lineCount: number
   sourceFilePath: string
   sourceLineStart: number
   sourceLineEnd: number
   sourceUrl: string
-  functionName: string
-  codeBlock: string
-  charCount: number
-  lineCount: number
-  astHash: string
 }
 
 export interface ProblemRepository {
   /**
-   * UNIQUE 制約（astHash）に違反した行は skip して挿入件数だけ返す。
-   * createMany の skipDuplicates: true を使うか、 catch P2002 で個別に skip。
+   * `@@unique([languageId, astHash])` に違反した行は skip し、挿入件数だけ返す。
+   * Prisma の createMany({ skipDuplicates: true }) を使う。
+   * 同 repo 内の重複は Service 層で事前に Map dedupe するため、ここで弾かれる
+   * のは「他 repo に既に同 hash が存在する」ケースのみ
    */
   bulkCreateSkippingDuplicates(inputs: CreateProblemInput[]): Promise<number>
+  /**
+   * ライセンス再検証で disabled になった repo の problems を一括無効化
+   */
+  markDisabledByCrawledRepoId(crawledRepoId: number): Promise<number>
 }
 ```
 
@@ -99,27 +114,59 @@ export type CreateRunInput = {
 }
 
 export interface CrawlerRunRepository {
-  existsRunningOrSuccessToday(runType: string): Promise<boolean>
+  /**
+   * 同日（JST 00:00 起点）に status="running" または status="success" のレコードが
+   * 存在するか判定。CRAWLER_FORCE_RERUN=true 時は呼ばずに常に false 扱いにする
+   */
+  existsActiveRunToday(runType: string, now: Date): Promise<boolean>
+  /**
+   * `started_at < now() - 30min` の running 行を status="failed"、
+   * error={ reason: "stale_running" } で一括更新。再起動後の救済
+   */
+  markStaleAsFailed(runType: string, now: Date): Promise<number>
   start(input: CreateRunInput): Promise<{ id: number }>
-  succeed(id: number, reposProcessed: number, problemsAdded: number): Promise<void>
-  fail(id: number, error: unknown): Promise<void>
+  succeed(id: number, endedAt: Date, reposProcessed: number, problemsAdded: number): Promise<void>
+  fail(id: number, endedAt: Date, error: unknown): Promise<void>
 }
 ```
 
-「同日」は **JST 00:00 起点**で判定。
+「同日」は **JST 00:00 起点**で判定。`now` を引数で渡す形にすることでテストから clock を DI できる。
+
+#### `crawler-run-item-repository.ts`
+
+```typescript
+export type CreateRunItemInput = {
+  crawlerRunId: number
+  languageId: number
+  startedAt: Date
+  targetOwner: string
+  targetRepo: string
+}
+
+export interface CrawlerRunItemRepository {
+  start(input: CreateRunItemInput): Promise<{ id: number }>
+  succeed(id: number, endedAt: Date, problemsAdded: number): Promise<void>
+  fail(id: number, endedAt: Date, error: unknown): Promise<void>
+  skip(id: number, endedAt: Date, reason: string): Promise<void>
+  /**
+   * 連続 2 回失敗判定: 同一 targetOwner/targetRepo の直近 2 件が "failed" か
+   */
+  countConsecutiveFailures(targetOwner: string, targetRepo: string): Promise<number>
+}
+```
 
 ### `apps/cron/src/types/domain/`
 
 ```typescript
-// crawled-repo.ts
+/** crawled-repo.ts */
 export type CrawledRepoDomain = {
   id: number
-  languageId: number
-  fullName: string
-  owner: string
-  name: string
-  license: string
   commitSha: string
+  fullName: string
+  languageId: number
+  license: string
+  name: string
+  owner: string
   /** ... */
 }
 ```
@@ -127,32 +174,46 @@ export type CrawledRepoDomain = {
 ### `apps/cron/src/service/process-repo.ts`
 
 ```typescript
-import { Result, ok, err, conflictError } from "@repo/errors"
+import * as ts from "typescript"
+
 import { logger } from "@repo/logger"
 
-import * as github from "../client/github"
+import { astHashOf } from "../ast/normalize-for-hash"
+import { checkAdoption } from "../ast/adoption-check"
 import { extractFunctions } from "../ast/extract-functions"
 import { stripComments } from "../ast/strip-comments"
-import { checkAdoption } from "../ast/adoption-check"
-import { astHashOf } from "../ast/normalize-for-hash"
+import * as github from "../client/github"
 import { buildSourceUrl } from "../lib/source-url"
 import { retryWithBackoff } from "../lib/retry"
 
-import type { CrawledRepoRepository, CreateCrawledRepoInput } from "../repository/prisma/crawled-repo-repository"
-import type { ProblemRepository, CreateProblemInput } from "../repository/prisma/problem-repository"
+import type {
+  CrawledRepoRepository,
+  CreateCrawledRepoInput,
+} from "../repository/prisma/crawled-repo-repository"
+import type {
+  CreateProblemInput,
+  ProblemRepository,
+} from "../repository/prisma/problem-repository"
 
 const MIN_ELIGIBLE = 30
 const SAMPLE_CAP = 100
 
+const ALLOWED_LICENSES = new Set(["MIT", "Apache-2.0", "BSD-3-Clause", "ISC"])
+
 export type ProcessRepoTarget = {
   languageId: number
-  owner: string
   name: string
+  owner: string
 }
 
+/**
+ * 全て正常フロー上の分岐結果（業務エラーではない）。
+ * Result でラップせず plain union を返す。
+ * 想定外（API 5xx 3 回連続、DB 障害）は throw する
+ */
 export type ProcessRepoResult =
-  | { ok: true; problemsAdded: number; eligible: boolean }
-  | { ok: false; reason: string }
+  | { eligible: true; problemsAdded: number; candidatesCount: number; storedCount: number }
+  | { eligible: false; reason: "license_not_allowed" | "too_few_problems"; candidatesCount: number }
 
 export const processRepo = async (
   target: ProcessRepoTarget,
@@ -160,26 +221,27 @@ export const processRepo = async (
     crawledRepoRepository: CrawledRepoRepository
     problemRepository: ProblemRepository
   }
-): Promise<Result<ProcessRepoResult>> => {
-  logger.info("processRepo: start", { fullName: `${target.owner}/${target.name}` })
+): Promise<ProcessRepoResult> => {
+  const fullName = `${target.owner}/${target.name}`
+  logger.info("processRepo: start", { fullName })
 
-  /** 1. メタ取得 */
+  /** 1. メタ取得（5xx は 3 回まで指数バックオフ、404 は throw して呼び出し側で disable 記録） */
   const meta = await retryWithBackoff(
     () => github.getRepoMeta(target.owner, target.name),
     (e) => e instanceof github.GithubApiError && e.statusCode >= 500
   )
 
   /** 2. ライセンス確認 */
-  if (!isAllowedLicense(meta.license)) {
-    await persistDisabled(target, meta, "license_not_allowed", repo)
-    return ok({ ok: false, reason: "license_not_allowed" })
+  if (meta.license === null || !ALLOWED_LICENSES.has(meta.license)) {
+    await persistDisabled(target, meta, "license_not_allowed", repo, 0)
+    return { candidatesCount: 0, eligible: false, reason: "license_not_allowed" }
   }
 
   /** 3. ファイル一覧取得 */
   const files = await github.listSourceFiles(target.owner, target.name, meta.commitSha)
 
-  /** 4. 各ファイルから採用候補を抽出 */
-  const candidates: CreateProblemInput[] = []
+  /** 4. 各ファイルから採用候補を抽出（repo 内重複は Map で事前 dedupe） */
+  const candidateMap = new Map<string, CreateProblemInput>()
   for (const file of files) {
     try {
       const raw = await github.getRawContent(target.owner, target.name, meta.commitSha, file.path)
@@ -190,66 +252,123 @@ export const processRepo = async (
         const adoption = checkAdoption(fn.functionName, stripped)
         if (!adoption.adopted) continue
         const hash = astHashOf(stripped)
-        candidates.push({
-          crawledRepoId: 0,  // INSERT 時に上書き
-          sourceFilePath: file.path,
-          sourceLineStart: fn.sourceLineStart,
-          sourceLineEnd: fn.sourceLineEnd,
-          sourceUrl: buildSourceUrl(target.owner, target.name, meta.commitSha, file.path, fn.sourceLineStart, fn.sourceLineEnd),
-          functionName: fn.functionName,
-          codeBlock: stripped.trim(),
-          charCount: adoption.charCount,
-          lineCount: adoption.lineCount,
+        /** repo 内の同 hash は最初の 1 件だけ採用（in-repo dedupe） */
+        if (candidateMap.has(hash)) continue
+        candidateMap.set(hash, {
           astHash: hash,
+          charCount: adoption.charCount,
+          codeBlock: stripped.trim(),
+          crawledRepoId: 0,
+          functionName: fn.functionName,
+          languageId: target.languageId,
+          lineCount: adoption.lineCount,
+          sourceFilePath: file.path,
+          sourceLineEnd: fn.sourceLineEnd,
+          sourceLineStart: fn.sourceLineStart,
+          sourceUrl: buildSourceUrl(
+            target.owner,
+            target.name,
+            meta.commitSha,
+            file.path,
+            fn.sourceLineStart,
+            fn.sourceLineEnd
+          ),
         })
       }
     } catch (e) {
-      logger.warn("processRepo: file parse failed", { path: file.path, err: String(e) })
+      logger.warn("processRepo: file parse failed", { err: String(e), path: file.path })
     }
   }
 
+  const candidates = Array.from(candidateMap.values())
+  const candidatesCount = candidates.length
+
   /** 5. repo 単位の足切り */
-  if (candidates.length < MIN_ELIGIBLE) {
-    await persistDisabled(target, meta, "too_few_problems", repo, candidates.length)
-    return ok({ ok: false, reason: "too_few_problems" })
+  if (candidatesCount < MIN_ELIGIBLE) {
+    await persistDisabled(target, meta, "too_few_problems", repo, candidatesCount)
+    return { candidatesCount, eligible: false, reason: "too_few_problems" }
   }
 
   /** 6. ランダムサンプリング（> 100 なら 100 個に絞る） */
-  const sampled = candidates.length > SAMPLE_CAP ? shuffle(candidates).slice(0, SAMPLE_CAP) : candidates
+  const sampled = candidatesCount > SAMPLE_CAP ? shuffle(candidates).slice(0, SAMPLE_CAP) : candidates
 
-  /** 7. transaction で crawled_repos + problems を INSERT */
+  /** 7. crawled_repos INSERT → problems bulkCreate（dedup は @@unique で他 repo 重複を弾く） */
   const crawledRepo = await repo.crawledRepoRepository.create({
-    languageId: target.languageId,
-    githubId: BigInt(meta.id),
-    owner: meta.owner,
-    name: meta.name,
-    fullName: meta.fullName,
-    description: meta.description,
-    homepage: meta.homepage,
-    topics: meta.topics,
-    stars: meta.stars,
-    license: meta.license!,
-    defaultBranch: meta.defaultBranch,
+    candidatesCount,
     commitSha: meta.commitSha,
-    eligible: true,
-    eligibleProblemCount: candidates.length,
+    crawledAt: new Date(),
+    defaultBranch: meta.defaultBranch,
+    description: meta.description,
     disabled: false,
     disabledReason: null,
-    crawledAt: new Date(),
+    eligible: true,
+    fullName: meta.fullName,
+    githubId: BigInt(meta.id),
+    homepage: meta.homepage,
+    languageId: target.languageId,
+    license: meta.license,
+    name: meta.name,
+    owner: meta.owner,
+    stars: meta.stars,
+    storedCount: sampled.length,
+    topics: meta.topics,
   })
 
   const problemsWithRepoId = sampled.map((p) => ({ ...p, crawledRepoId: crawledRepo.id }))
-  const inserted = await repo.problemRepository.bulkCreateSkippingDuplicates(problemsWithRepoId)
+  const problemsAdded = await repo.problemRepository.bulkCreateSkippingDuplicates(problemsWithRepoId)
 
-  logger.info("processRepo: done", { fullName: meta.fullName, problemsAdded: inserted })
-  return ok({ ok: true, problemsAdded: inserted, eligible: true })
+  /** storedCount と実際の挿入件数がズレた場合（他 repo に同 hash が既存）の警告 */
+  if (problemsAdded < sampled.length) {
+    logger.info("processRepo: some problems skipped by cross-repo dedupe", {
+      fullName,
+      skipped: sampled.length - problemsAdded,
+    })
+  }
+
+  logger.info("processRepo: done", { candidatesCount, fullName, problemsAdded })
+  return { candidatesCount, eligible: true, problemsAdded, storedCount: sampled.length }
 }
 
-const isAllowedLicense = (spdx: string | null): boolean =>
-  spdx !== null && ["MIT", "Apache-2.0", "BSD-3-Clause", "ISC"].includes(spdx)
+const persistDisabled = async (
+  target: ProcessRepoTarget,
+  meta: github.GithubRepoMeta,
+  reason: string,
+  repo: { crawledRepoRepository: CrawledRepoRepository },
+  candidatesCount: number
+): Promise<void> => {
+  await repo.crawledRepoRepository.create({
+    candidatesCount,
+    commitSha: meta.commitSha,
+    crawledAt: new Date(),
+    defaultBranch: meta.defaultBranch,
+    description: meta.description,
+    disabled: true,
+    disabledReason: reason,
+    eligible: false,
+    fullName: meta.fullName,
+    githubId: BigInt(meta.id),
+    homepage: meta.homepage,
+    languageId: target.languageId,
+    license: meta.license ?? "",
+    name: meta.name,
+    owner: meta.owner,
+    stars: meta.stars,
+    storedCount: 0,
+    topics: meta.topics,
+  })
+}
+
+const shuffle = <T>(arr: T[]): T[] => {
+  const out = [...arr]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
 ```
 
-`processRepo` は **業務エラー（disabled で記録）は ok で返却、想定外エラー（API 5xx 連続失敗、DB 障害）は throw** という `Result<T>` の方針（CLAUDE.md / `@repo/errors` の規約）。
+`processRepo` は **正常フロー上の分岐結果（disabled で記録、サンプリング成功）を plain union で返却、想定外エラー（API 5xx 3 回連続失敗、DB 障害）は throw**。`Result<T>` でラップしないのは、業務エラー（4xx 系）を表現する場面が無いため（apps/api 規約に従う：業務エラーがあるときだけ `Result` を使う）。
 
 ### `apps/cron/src/service/pick-next-repo.ts`
 
@@ -275,47 +394,109 @@ export const pickNextRepo = async (
 ### `apps/cron/src/service/crawler-run.ts`
 
 ```typescript
+import { logger } from "@repo/logger"
+
+import type { CrawlerRunRepository } from "../repository/prisma/crawler-run-repository"
+
+export type RunWithCrawlerRunTrackingOptions = {
+  forceRerun?: boolean
+  /** clock を DI（テスト時に固定時刻を渡す） */
+  now?: () => Date
+}
+
+/**
+ * crawler_runs の status="running" を立ててから body を実行し、終了時に success/failed を記録する。
+ * 二重起動防止と stale running の自動解放を兼ねる。
+ */
 export const runWithCrawlerRunTracking = async (
   runType: "full" | "license_recheck",
   repo: { crawlerRunRepository: CrawlerRunRepository },
-  body: (runId: number) => Promise<{ reposProcessed: number; problemsAdded: number }>
+  body: (runId: number) => Promise<{ problemsAdded: number; reposProcessed: number }>,
+  options: RunWithCrawlerRunTrackingOptions = {}
 ): Promise<void> => {
-  if (await repo.crawlerRunRepository.existsRunningOrSuccessToday(runType)) {
-    logger.info("crawler_run: skipped, already exists today", { runType })
-    return
+  const now = options.now ?? (() => new Date())
+
+  /** 1. stale running を自動的に failed に遷移（前回 SIGKILL / OOM 等の救済） */
+  const staleCount = await repo.crawlerRunRepository.markStaleAsFailed(runType, now())
+  if (staleCount > 0) {
+    logger.warn("crawler_run: stale running marked as failed", { runType, staleCount })
   }
-  const { id } = await repo.crawlerRunRepository.start({ runType, startedAt: new Date() })
+
+  /** 2. 同日チェック（CRAWLER_FORCE_RERUN=true ならバイパス） */
+  if (!options.forceRerun) {
+    const exists = await repo.crawlerRunRepository.existsActiveRunToday(runType, now())
+    if (exists) {
+      logger.info("crawler_run: skipped, active run exists today", { runType })
+      return
+    }
+  }
+
+  const { id } = await repo.crawlerRunRepository.start({ runType, startedAt: now() })
+
   try {
     const result = await body(id)
-    await repo.crawlerRunRepository.succeed(id, result.reposProcessed, result.problemsAdded)
+    await repo.crawlerRunRepository.succeed(id, now(), result.reposProcessed, result.problemsAdded)
   } catch (err) {
-    await repo.crawlerRunRepository.fail(id, err)
+    await repo.crawlerRunRepository.fail(id, now(), err)
     throw err
   }
 }
 ```
 
+`existsActiveRunToday` / `markStaleAsFailed` は **JST 00:00 起点**で判定する Repository 実装。`now` は引数で受け取るので、テストでは `vi.fn(() => new Date("2026-06-05T03:00:00+09:00"))` のように clock を DI できる。
+
 ### `apps/cron/src/service/license-recheck.ts`
 
 ```typescript
+import { logger } from "@repo/logger"
+
+import * as github from "../client/github"
+import { retryWithBackoff } from "../lib/retry"
+
+import type { CrawledRepoRepository } from "../repository/prisma/crawled-repo-repository"
+import type { ProblemRepository } from "../repository/prisma/problem-repository"
+
+const ALLOWED_LICENSES = new Set(["MIT", "Apache-2.0", "BSD-3-Clause", "ISC"])
+
+export type LicenseRecheckResult = {
+  /** 不適合になった repo の総数 */
+  disabledRepos: number
+  /** 一括無効化した problems の総件数 */
+  disabledProblems: number
+  /** 処理した repo の総数（再検証完了済み） */
+  reposProcessed: number
+}
+
 export const licenseRecheck = async (
   repo: {
     crawledRepoRepository: CrawledRepoRepository
+    problemRepository: ProblemRepository
   }
-): Promise<{ reposProcessed: number; problemsAdded: 0 }> => {
+): Promise<LicenseRecheckResult> => {
   const all = await repo.crawledRepoRepository.listForLicenseRecheck()
-  let processed = 0
+  let reposProcessed = 0
+  let disabledRepos = 0
+  let disabledProblems = 0
   for (const r of all) {
-    const meta = await retryWithBackoff(
-      () => github.getRepoMeta(r.owner, r.name),
-      (e) => e instanceof github.GithubApiError && e.statusCode >= 500
-    )
-    if (!isAllowedLicense(meta.license)) {
-      await repo.crawledRepoRepository.markDisabled(r.id, "license_changed")
+    try {
+      const meta = await retryWithBackoff(
+        () => github.getRepoMeta(r.owner, r.name),
+        (e) => e instanceof github.GithubApiError && e.statusCode >= 500
+      )
+      if (meta.license === null || !ALLOWED_LICENSES.has(meta.license)) {
+        await repo.crawledRepoRepository.markDisabled(r.id, "license_changed")
+        const count = await repo.problemRepository.markDisabledByCrawledRepoId(r.id)
+        disabledRepos++
+        disabledProblems += count
+        logger.warn("licenseRecheck: repo disabled", { count, fullName: r.fullName, license: meta.license })
+      }
+    } catch (err) {
+      /** 個別 repo の失敗（404 等）は他に影響させないが、disabled には記録しない */
+      logger.warn("licenseRecheck: failed to recheck", { err: String(err), fullName: r.fullName })
     }
-    processed++
+    reposProcessed++
   }
-  return { reposProcessed: processed, problemsAdded: 0 }
+  return { disabledProblems, disabledRepos, reposProcessed }
 }
 ```
 
@@ -372,34 +553,62 @@ const main = async () => {
   const crawledRepoRepository = new PrismaCrawledRepoRepository(prisma)
   const problemRepository = new PrismaProblemRepository(prisma)
   const crawlerRunRepository = new PrismaCrawlerRunRepository(prisma)
+  const crawlerRunItemRepository = new PrismaCrawlerRunItemRepository(prisma)
 
   try {
-    await runWithCrawlerRunTracking("full", { crawlerRunRepository }, async () => {
-      let reposProcessed = 0
-      let problemsAdded = 0
-      for (const slug of env.CRAWLER_LANGUAGES.split(",")) {
-        const lang = await languageRepository.findBySlug(slug.trim())
-        if (!lang) {
-          logger.warn("language not found", { slug })
-          continue
-        }
-        for (let i = 0; i < env.CRAWLER_REPOS_PER_RUN; i++) {
-          if (shuttingDown) break
-          const target = await pickNextRepo(lang, { crawledRepoRepository })
-          if (!target) {
-            logger.info("no more repos to process", { slug })
-            break
+    await runWithCrawlerRunTracking(
+      "full",
+      { crawlerRunRepository },
+      async (runId) => {
+        let reposProcessed = 0
+        let problemsAdded = 0
+        for (const slug of env.CRAWLER_LANGUAGES.split(",")) {
+          const lang = await languageRepository.findBySlug(slug.trim())
+          if (!lang) {
+            logger.warn("language not found", { slug })
+            continue
           }
-          const result = await processRepo(
-            { languageId: lang.id, owner: target.owner, name: target.name },
-            { crawledRepoRepository, problemRepository }
-          )
-          reposProcessed++
-          if (result.ok && result.value.ok) problemsAdded += result.value.problemsAdded
+          for (let i = 0; i < env.CRAWLER_REPOS_PER_RUN; i++) {
+            if (shuttingDown) break
+            const target = await pickNextRepo(lang, { crawledRepoRepository })
+            if (!target) {
+              logger.info("no more repos to process", { slug })
+              break
+            }
+            /** repo 単位の try-catch で部分失敗を継続 */
+            const itemStartedAt = new Date()
+            const item = await crawlerRunItemRepository.start({
+              crawlerRunId: runId,
+              languageId: lang.id,
+              startedAt: itemStartedAt,
+              targetOwner: target.owner,
+              targetRepo: target.name,
+            })
+            try {
+              const result = await processRepo(
+                { languageId: lang.id, name: target.name, owner: target.owner },
+                { crawledRepoRepository, problemRepository }
+              )
+              const added = result.eligible ? result.problemsAdded : 0
+              await crawlerRunItemRepository.succeed(item.id, new Date(), added)
+              reposProcessed++
+              problemsAdded += added
+            } catch (err) {
+              /** 個別 repo の失敗は item に記録し、次の repo へ進む（部分失敗の継続） */
+              Sentry.captureException(err)
+              logger.error("processRepo failed", {
+                err: String(err),
+                fullName: `${target.owner}/${target.name}`,
+              })
+              await crawlerRunItemRepository.fail(item.id, new Date(), err)
+              reposProcessed++
+            }
+          }
         }
-      }
-      return { reposProcessed, problemsAdded }
-    })
+        return { problemsAdded, reposProcessed }
+      },
+      { forceRerun: env.CRAWLER_FORCE_RERUN }
+    )
   } catch (err) {
     Sentry.captureException(err)
     logger.error("crawler-run failed", { err: String(err) })
@@ -463,10 +672,48 @@ step2 のテストに加えて、Service 層のテストを追加：
 
 | テストファイル | カバー範囲 |
 |---|---|
-| `service/process-repo.test.ts` | GitHub API クライアントを `vi.fn()` で mock、Repository も mock。「採用候補 30 個未満で disabled」「>= 30 で eligible=true で INSERT」「> 100 で 100 件に絞る」「ライセンス NG で disabled」の正常 / 異常系 |
+| `service/process-repo.test.ts` | GitHub API クライアントを `vi.fn()` で mock、Repository も mock。「採用候補 30 個未満で disabled」「>= 30 で eligible=true で INSERT」「> 100 で 100 件に絞る」「ライセンス NG で disabled」「repo 内同 hash の dedupe（Map）」「他 repo に既存の hash で skipDuplicates が効く」 |
 | `service/pick-next-repo.test.ts` | Search API mock + listRegisteredFullNames mock。「登録済みをスキップして次を返す」「全て登録済みで null」 |
-| `service/crawler-run.test.ts` | 「同日 running あればスキップ」「成功で succeed」「例外で fail + rethrow」 |
-| `service/license-recheck.test.ts` | 「ライセンス OK で何もしない」「NG で markDisabled が呼ばれる」 |
+| `service/crawler-run.test.ts` | clock を `now: () => new Date(...)` で DI。「同日 active あればスキップ」「stale running を自動 failed 化」「forceRerun=true で同日チェックバイパス」「成功で succeed」「例外で fail + rethrow」 |
+| `service/license-recheck.test.ts` | 「ライセンス OK で何もしない」「NG で markDisabled + markDisabledByCrawledRepoId が呼ばれる」「個別 repo の 404 は他に影響させず継続」 |
+
+**全テストは `describe("正常系", ...)` / `describe("異常系", ...)` で必ず分類する**（apps/api/CLAUDE.md 規約）。例として `process-repo.test.ts` のスケルトン：
+
+```typescript
+describe("processRepo", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe("正常系", () => {
+    it("採用候補 50 個でランダムサンプリングなし、全件保存される", async () => {
+      /** ... */
+    })
+
+    it("採用候補 200 個でランダム 100 件に絞られ、storedCount=100", async () => {
+      /** ... */
+    })
+  })
+
+  describe("異常系", () => {
+    it("ライセンスが GPL の場合 disabled=true / disabledReason='license_not_allowed' で記録", async () => {
+      /** ... */
+    })
+
+    it("採用候補が 29 個の場合 disabled=true / disabledReason='too_few_problems'", async () => {
+      /** ... */
+    })
+
+    it("repo 内に同 astHash が複数あっても 1 件だけ保存される", async () => {
+      /** ... */
+    })
+
+    it("GitHub API が 5xx を 3 回返したら throw する", async () => {
+      /** ... */
+    })
+  })
+})
+```
 
 ### TODO.md の更新
 

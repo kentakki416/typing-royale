@@ -31,26 +31,38 @@ step5（shared-packages migration）と同じパターンで Zod スキーマを
 ```typescript
 import { z } from "zod"
 
-const cronEnvSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  DATABASE_URL: z.string().url().optional(),
-  LOGGER_TYPE: z.enum(["pino", "winston", "console", "silent"]).default("pino"),
-  LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
-  GITHUB_PAT: z.string().default(""),
-  CRAWLER_REPOS_PER_RUN: z.coerce.number().int().positive().default(1),
-  CRAWLER_LANGUAGES: z.string().default("typescript,javascript"),
-  CRAWLER_MIN_STARS: z.coerce.number().int().positive().default(1000),
-  CRAWLER_PUSHED_AFTER: z.string().optional(),
-  SENTRY_DSN: z.string().default(""),
-}).superRefine((env, ctx) => {
-  if (env.NODE_ENV !== "test" && env.GITHUB_PAT.length === 0) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "GITHUB_PAT is required when NODE_ENV is not 'test'",
-      path: ["GITHUB_PAT"],
-    })
-  }
-})
+const cronEnvSchema = z
+  .object({
+    CRAWLER_FORCE_RERUN: z.enum(["true", "false"]).transform((v) => v === "true").default("false"),
+    CRAWLER_LANGUAGES: z.string().default("typescript,javascript"),
+    CRAWLER_MIN_STARS: z.coerce.number().int().positive().default(1000),
+    CRAWLER_PUSHED_AFTER: z.string().optional(),
+    CRAWLER_REPOS_PER_RUN: z.coerce.number().int().positive().default(1),
+    DATABASE_URL: z.string().url().optional(),
+    GITHUB_PAT: z.string().default(""),
+    LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+    LOGGER_TYPE: z.enum(["pino", "winston", "console", "silent"]).default("pino"),
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    SENTRY_DSN: z.string().default(""),
+  })
+  .superRefine((env, ctx) => {
+    /** NODE_ENV !== "test" のとき GITHUB_PAT は必須（未設定だと crawler が GitHub に叩けない） */
+    if (env.NODE_ENV !== "test" && env.GITHUB_PAT.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "GITHUB_PAT is required when NODE_ENV is not 'test'",
+        path: ["GITHUB_PAT"],
+      })
+    }
+    /** production では SENTRY_DSN も必須（本番エラー検知漏れ防止） */
+    if (env.NODE_ENV === "production" && env.SENTRY_DSN.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "SENTRY_DSN is required when NODE_ENV is 'production'",
+        path: ["SENTRY_DSN"],
+      })
+    }
+  })
 
 const result = cronEnvSchema.safeParse(process.env)
 if (!result.success) {
@@ -62,6 +74,8 @@ if (!result.success) {
 export const env = result.data
 export type CronEnv = typeof env
 ```
+
+`CRAWLER_FORCE_RERUN=true` で同日二重起動防止をバイパスする（ローカル開発で `pnpm crawler:run` を試したいときに毎回 SQL を叩かなくて済む）。step3 の `runWithCrawlerRunTracking` に `forceRerun: env.CRAWLER_FORCE_RERUN` で渡す。
 
 ### `apps/cron/src/client/github/rate-limit.ts`
 
@@ -112,10 +126,10 @@ export const waitForRateLimit = async (state: RateLimitState): Promise<void> => 
 
 ```typescript
 export type RetryOptions = {
-  maxAttempts?: number
   baseMs?: number
   factor?: number
   jitterRatio?: number
+  maxAttempts?: number
 }
 
 export const retryWithBackoff = async <T>(
@@ -148,18 +162,18 @@ import { parseRateLimit, waitForRateLimit } from "./rate-limit"
 
 export type GithubSearchItem = {
   id: number
-  owner: string
-  name: string
-  fullName: string
-  stars: number
-  license: string
   defaultBranch: string
+  fullName: string
+  license: string
+  name: string
+  owner: string
   pushedAt: string
+  stars: number
 }
 
 export type GithubSearchResult = {
-  totalCount: number
   items: GithubSearchItem[]
+  totalCount: number
 }
 
 const LICENSE_FILTER = "license:mit license:apache-2.0 license:bsd-3-clause license:isc"
@@ -218,16 +232,16 @@ import { env } from "../../env"
 
 export type GithubRepoMeta = {
   id: number
-  owner: string
-  name: string
-  fullName: string
-  description: string | null
-  homepage: string | null
-  topics: string[]
-  stars: number
-  license: string | null
-  defaultBranch: string
   commitSha: string
+  defaultBranch: string
+  description: string | null
+  fullName: string
+  homepage: string | null
+  license: string | null
+  name: string
+  owner: string
+  stars: number
+  topics: string[]
 }
 
 export const getRepoMeta = async (owner: string, repo: string): Promise<GithubRepoMeta> => {
@@ -239,16 +253,16 @@ export const getRepoMeta = async (owner: string, repo: string): Promise<GithubRe
   const sha = await getCommitSha(owner, repo, json.default_branch)
   return {
     id: json.id,
-    owner: json.owner.login,
-    name: json.name,
-    fullName: json.full_name,
-    description: json.description,
-    homepage: json.homepage,
-    topics: json.topics ?? [],
-    stars: json.stargazers_count,
-    license: json.license?.spdx_id ?? null,
-    defaultBranch: json.default_branch,
     commitSha: sha,
+    defaultBranch: json.default_branch,
+    description: json.description,
+    fullName: json.full_name,
+    homepage: json.homepage,
+    license: json.license?.spdx_id ?? null,
+    name: json.name,
+    owner: json.owner.login,
+    stars: json.stargazers_count,
+    topics: json.topics ?? [],
   }
 }
 
@@ -262,8 +276,8 @@ const getCommitSha = async (owner: string, repo: string, branch: string): Promis
 ```typescript
 export type GithubTreeEntry = {
   path: string
-  type: "blob" | "tree"
   size: number | null
+  type: "blob" | "tree"
 }
 
 const EXCLUDED_PATTERNS = [
@@ -293,7 +307,7 @@ export const listSourceFiles = async (
     .filter((e) => e.type === "blob")
     .filter((e) => TARGET_EXTENSIONS.test(e.path))
     .filter((e) => !EXCLUDED_PATTERNS.some((p) => p.test(e.path)))
-    .filter((e) => (e.size ?? 0) <= 100_000)  // 100KB 上限
+    .filter((e) => (e.size ?? 0) <= 100_000) /** 100KB 上限 */
 }
 ```
 
@@ -317,22 +331,29 @@ export const getRawContent = async (
 
 ### `apps/cron/src/ast/extract-functions.ts`
 
+**重要**: 関数ノードを抽出したら **子ノードへの再帰を止める**。さもないとメソッド内のアロー関数や IIFE 等のネスト関数が二重抽出され、astHash が衝突する。仕様（README）でも「ネストされた内側の関数は抽出対象外」と明記。
+
 ```typescript
 import * as ts from "typescript"
 
 export type ExtractedFunction = {
   functionName: string
-  sourceLineStart: number  // 1-indexed
-  sourceLineEnd: number
   /** コメント除去前の元テキスト */
   rawText: string
+  sourceLineEnd: number
+  /** 1-indexed */
+  sourceLineStart: number
 }
 
 export const extractFunctions = (sourceFile: ts.SourceFile): ExtractedFunction[] => {
   const result: ExtractedFunction[] = []
-  const visit = (node: ts.Node) => {
+  const visit = (node: ts.Node): void => {
     const fn = tryExtract(node, sourceFile)
-    if (fn) result.push(fn)
+    if (fn) {
+      result.push(fn)
+      /** 抽出済みノードの子は走査しない（ネスト関数の二重抽出を防ぐ） */
+      return
+    }
     ts.forEachChild(node, visit)
   }
   visit(sourceFile)
@@ -340,21 +361,24 @@ export const extractFunctions = (sourceFile: ts.SourceFile): ExtractedFunction[]
 }
 
 const tryExtract = (node: ts.Node, sf: ts.SourceFile): ExtractedFunction | null => {
+  /** 1. function foo(...) {} */
   if (ts.isFunctionDeclaration(node) && node.name) {
     return build(node, sf, node.name.text)
   }
+  /** 2. class メソッド / オブジェクトメソッド */
   if (ts.isMethodDeclaration(node) && node.name) {
     return build(node, sf, node.name.getText(sf))
   }
-  if (ts.isVariableDeclaration(node) && node.initializer && node.name) {
+  /** 3. const foo = (...) => {} / const foo = function (...) {} */
+  if (ts.isVariableDeclaration(node) && node.initializer && ts.isIdentifier(node.name)) {
     const init = node.initializer
-    if ((ts.isArrowFunction(init) || ts.isFunctionExpression(init)) && ts.isIdentifier(node.name)) {
+    if (ts.isArrowFunction(init) || ts.isFunctionExpression(init)) {
       return build(init, sf, node.name.text)
     }
   }
+  /** 4. オブジェクトリテラルのプロパティアロー関数 { foo: () => {} }（README で採用対象に含む） */
   if (ts.isPropertyAssignment(node) && ts.isArrowFunction(node.initializer)) {
-    const key = node.name.getText(sf)
-    return build(node.initializer, sf, key)
+    return build(node.initializer, sf, node.name.getText(sf))
   }
   return null
 }
@@ -366,61 +390,91 @@ const build = (node: ts.Node, sf: ts.SourceFile, name: string): ExtractedFunctio
   const { line: lineEnd } = sf.getLineAndCharacterOfPosition(end)
   return {
     functionName: name,
-    sourceLineStart: lineStart + 1,
-    sourceLineEnd: lineEnd + 1,
     rawText: sf.text.slice(start, end),
+    sourceLineEnd: lineEnd + 1,
+    sourceLineStart: lineStart + 1,
   }
 }
 ```
 
 ### `apps/cron/src/ast/strip-comments.ts`
 
+`ts.createScanner` で全トリビアトークンを走査する実装に変更（`forEachLeading/TrailingCommentRange` のノード再帰ベースは leading/trailing が重複列挙されたり、SourceFile 直下のコメントが取りこぼされる懸念があるため）。
+
 ```typescript
 import * as ts from "typescript"
 
+/**
+ * コメント除去：scanner で全コメントトークンを舐めて文字列リテラル・正規表現リテラル
+ * を保護しつつ、後ろから削除する。
+ *
+ * scanner はトークン単位なので：
+ * - SingleLineCommentTrivia / MultiLineCommentTrivia → コメント
+ * - StringLiteral / RegularExpressionLiteral → そのまま温存（`"https://..."` 内の // を保護）
+ * - その他のトリビア（空白）は保持
+ */
 export const stripComments = (rawText: string): string => {
-  const sf = ts.createSourceFile("__inline.ts", rawText, ts.ScriptTarget.Latest, true)
+  const scanner = ts.createScanner(
+    ts.ScriptTarget.Latest,
+    /** skipTrivia */ false,
+    ts.LanguageVariant.Standard,
+    rawText
+  )
+
   const ranges: Array<[number, number]> = []
-  const collect = (node: ts.Node) => {
-    ts.forEachLeadingCommentRange(rawText, node.getFullStart(), (pos, end) => {
-      ranges.push([pos, end])
-    })
-    ts.forEachTrailingCommentRange(rawText, node.getEnd(), (pos, end) => {
-      ranges.push([pos, end])
-    })
-    ts.forEachChild(node, collect)
+  let token = scanner.scan()
+  while (token !== ts.SyntaxKind.EndOfFileToken) {
+    if (
+      token === ts.SyntaxKind.SingleLineCommentTrivia ||
+      token === ts.SyntaxKind.MultiLineCommentTrivia
+    ) {
+      ranges.push([scanner.getTokenStart(), scanner.getTokenEnd()])
+    }
+    token = scanner.scan()
   }
-  collect(sf)
-  /** 重複範囲をマージしてから逆順で削除 */
-  const merged = mergeRanges(ranges)
+
+  /** 後ろから削除（前から消すとインデックスがズレる） */
   let stripped = rawText
-  for (const [pos, end] of merged.reverse()) {
+  for (let i = ranges.length - 1; i >= 0; i--) {
+    const [pos, end] = ranges[i]
     stripped = stripped.slice(0, pos) + stripped.slice(end)
   }
+
   /** 連続空行を 1 行に折り畳む */
   return stripped.replace(/\n{3,}/g, "\n\n")
 }
-
-const mergeRanges = (ranges: Array<[number, number]>): Array<[number, number]> => {
-  /** start 昇順に sort し、overlap する範囲をマージ */
-}
 ```
+
+`mergeRanges` が不要になる（scanner が重複しないトークン境界を返すため）。文字列リテラル内の `//` は scanner が `StringLiteral` トークンとして識別するので自動で保護される。
 
 ### `apps/cron/src/ast/adoption-check.ts`
 
 ```typescript
 const EXCLUDED_NAMES = new Set([
-  "test", "it", "describe", "beforeEach", "afterEach", "beforeAll", "afterAll", "setup", "teardown",
+  "afterAll",
+  "afterEach",
+  "beforeAll",
+  "beforeEach",
+  "describe",
+  "it",
+  "setup",
+  "teardown",
+  "test",
 ])
 
 export type AdoptionResult =
   | { adopted: true; charCount: number; lineCount: number }
-  | { adopted: false; reason: string }
+  | { adopted: false; reason: AdoptionRejectReason }
 
-export const checkAdoption = (
-  functionName: string,
-  codeStripped: string
-): AdoptionResult => {
+export type AdoptionRejectReason =
+  | "char_count_out_of_range"
+  | "empty_after_strip"
+  | "excluded_function_name"
+  | "line_count_out_of_range"
+  | "line_too_long"
+  | "non_ascii"
+
+export const checkAdoption = (functionName: string, codeStripped: string): AdoptionResult => {
   if (!functionName || EXCLUDED_NAMES.has(functionName)) {
     return { adopted: false, reason: "excluded_function_name" }
   }
@@ -437,7 +491,7 @@ export const checkAdoption = (
   if (lines.some((l) => l.length > 120)) {
     return { adopted: false, reason: "line_too_long" }
   }
-  // eslint-disable-next-line no-control-regex
+  /** eslint-disable-next-line no-control-regex */
   if (/[^\x00-\x7F]/.test(trimmed)) {
     return { adopted: false, reason: "non_ascii" }
   }
@@ -473,18 +527,49 @@ export const buildSourceUrl = (
 
 ### ユニットテスト
 
-`apps/cron/test/ast/` 配下に以下を作成。GitHub API クライアントは外部依存のため step3 の integration テストで扱う。
+`apps/cron/test/` 配下に以下を作成。**全テストは `describe("正常系", ...)` / `describe("異常系", ...)` で必ず分類する**（apps/api/CLAUDE.md 規約）。
+
+#### AST モジュール
 
 | テストファイル | カバー範囲 |
 |---|---|
-| `extract-functions.test.ts` | FunctionDeclaration / ArrowFunctionExpression / FunctionExpression / MethodDeclaration / オブジェクトメソッドの 5 ケース |
-| `strip-comments.test.ts` | JSDoc / 行コメント / 行末コメント / 文字列内 `//` の保護 / 連続空行の折り畳み |
-| `adoption-check.test.ts` | 全 reason の異常系 + 1 つの正常系。describe で「正常系」「異常系」分類（apps/api/CLAUDE.md ルール） |
-| `normalize-for-hash.test.ts` | 空白パターン違いで同一ハッシュ / コメント有無で同一ハッシュ / 識別子違いで別ハッシュ |
-| `lib/retry.test.ts` | 1 回目失敗→ 2 回目成功 / 3 回失敗で throw / shouldRetry=false で即 throw |
-| `lib/source-url.test.ts` | 期待 URL を生成 |
+| `ast/extract-functions.test.ts` | FunctionDeclaration / ArrowFunctionExpression / FunctionExpression / MethodDeclaration / オブジェクトプロパティアロー関数の 5 ケース。**メソッド内のアロー関数が二重抽出されないこと** |
+| `ast/strip-comments.test.ts` | JSDoc / 行コメント / 行末コメント / 文字列リテラル内 `//` の保護 / テンプレートリテラル / 正規表現リテラル / 連続空行の折り畳み |
+| `ast/adoption-check.test.ts` | 各 reject reason の異常系 + ちょうど境界（100 / 400 文字、5 / 25 行、120 文字行）の境界値テスト + 正常系 |
+| `ast/normalize-for-hash.test.ts` | 空白パターン違いで同一ハッシュ / コメント有無で同一ハッシュ / 識別子違いで別ハッシュ |
 
-`vitest.config.ts` を `apps/cron/` 配下に追加（apps/api の設定を流用、`include: ["test/**/*.test.ts"]`）。
+#### lib
+
+| テストファイル | カバー範囲 |
+|---|---|
+| `lib/retry.test.ts` | 1 回目失敗→ 2 回目成功 / 3 回失敗で throw / `shouldRetry=false` で即 throw |
+| `lib/source-url.test.ts` | 期待 URL（`#L1-L20`）を生成 |
+
+#### GitHub クライアント（fixture ベース）
+
+`fetch` を `vi.fn()` で差し替え、`apps/cron/test/fixtures/github/` 配下に置いた GitHub API レスポンス JSON を返す形でパース層を検証する。**ネットワークは一切叩かない**ので CI / ローカル両方で安定実行。
+
+| テストファイル | カバー範囲 |
+|---|---|
+| `client/github/search.test.ts` | クエリ組み立て（`language:` / `license:` の連結が正しい）/ 正常レスポンスのパース / `totalCount` の取得 / `X-RateLimit-Remaining: 0` のときの待機判定 |
+| `client/github/repos.test.ts` | description / homepage / topics の取得 / **`license: null` のケース** / **`topics: undefined` のケース**（古い repo） / `getCommitSha` の合成 |
+| `client/github/tree.test.ts` | 拡張子フィルタ（`.ts` / `.js` 採用、`.d.ts` 除外）/ EXCLUDED_PATTERNS（`node_modules/` / `.test.` 除外）/ `size > 100KB` のスキップ |
+| `client/github/rate-limit.test.ts` | `parseRateLimit` の正常系 / ヘッダ欠落で null / `waitForRateLimit` の reset 待機 / `MAX_WAIT_MS` 超過で throw |
+
+fixture 例：
+
+```
+apps/cron/test/fixtures/github/
+├── search-typescript-page1.json          # GitHub Search API のレスポンス
+├── repos-colinhacks-zod.json             # /repos/colinhacks/zod のレスポンス
+├── repos-license-null.json               # license: null のエッジケース
+├── repos-topics-undefined.json           # topics: undefined のエッジケース
+└── tree-colinhacks-zod-recursive.json    # /git/trees/:sha?recursive=1 のレスポンス
+```
+
+これらは GitHub API ドキュメント例をベースに最小化した JSON。real API を叩いて取得した内容は **個人情報・rate limit の漏洩を避けるため** owner/email 等を匿名化してから commit する。
+
+`vitest.config.ts` を `apps/cron/` 配下に追加（apps/api の設定を流用、`include: ["test/**/*.test.ts"]`）。`fileParallelism: false` は不要（DB を使わないため並列実行可）。
 
 ### TODO.md の更新
 
