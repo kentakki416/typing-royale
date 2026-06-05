@@ -18,6 +18,7 @@
   "dependencies": {
     "@repo/api-schema": "workspace:^",
     "@repo/logger": "workspace:^",
+    "typescript": "^5.9.3",
     "zod": "^3.25.76"
   },
   "devDependencies": {
