@@ -1,9 +1,15 @@
 /**
  * 指数バックオフ + jitter 付きのリトライヘルパ
  *
- * GitHub API の 5xx 応答や一時的なネットワーク障害を吸収するための汎用ユーティリティ。
- * 404 や認可エラーのような「リトライしても意味がない」ケースは shouldRetry=false で
- * 即 throw させて Service 側で disable / 通知に倒す。
+ * `statusCode >= 500` のエラーを HTTP サーバエラーとみなしてリトライする。
+ * 404 / 401 / 403 / 429 のような「リトライしても結果が変わらない」エラー、および
+ * `statusCode` を持たないプレーンエラーは即 throw（呼び出し側で disable や
+ * rate-limit 待機などに分岐する想定）。
+ *
+ * GitHub クライアントのエラークラス（GithubApiError）に直接依存させたくないため
+ * 構造型 `{ statusCode: number }` で判定する。ネットワークエラー等の
+ * `statusCode` を持たないエラーは GitHub クライアント側で wrap してから throw する
+ * 責務分担（apps/cron/src/client/github/ で対応）。
  *
  * リトライ間隔は base * factor^(attempt-1) ± jitterRatio で計算する。
  * デフォルト（base=1s, factor=2, maxAttempts=3, jitter ±20%）の場合:
@@ -19,41 +25,6 @@ export type RetryOptions = {
   maxAttempts?: number
 }
 
-const sleep = async (ms: number): Promise<void> => {
-  await new Promise<void>((resolve) => setTimeout(resolve, ms))
-}
-
-export const retryWithBackoff = async <T>(
-  fn: () => Promise<T>,
-  shouldRetry: (err: unknown) => boolean,
-  options: RetryOptions = {}
-): Promise<T> => {
-  const { baseMs = 1000, factor = 2, jitterRatio = 0.2, maxAttempts = 3 } = options
-  let lastErr: unknown
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      return await fn()
-    } catch (err) {
-      lastErr = err
-      if (attempt === maxAttempts || !shouldRetry(err)) throw err
-      const delay = baseMs * Math.pow(factor, attempt - 1)
-      const jitter = delay * jitterRatio * (Math.random() * 2 - 1)
-      await sleep(Math.max(0, delay + jitter))
-    }
-  }
-  /** maxAttempts ループ後に必ず throw する想定だが TypeScript の網羅判定のため再 throw */
-  throw lastErr
-}
-
-/**
- * HTTP 5xx 系のサーバエラーだけリトライする `retryWithBackoff` の薄いラッパ。
- *
- * `statusCode` プロパティを持つエラー（GithubApiError 等）に対して構造的に
- * 判定するため、`lib/retry.ts` は GitHub クライアントの実装に依存しない。
- *
- * 404 / 401 / 403 / 429 のような「リトライしても結果が変わらない」エラーは
- * リトライせず即 throw（呼び出し側で disable / rate-limit 待機などに分岐）。
- */
 type WithStatusCode = { statusCode: number }
 
 const hasServerErrorStatus = (err: unknown): err is WithStatusCode =>
@@ -63,7 +34,27 @@ const hasServerErrorStatus = (err: unknown): err is WithStatusCode =>
   && typeof (err as WithStatusCode).statusCode === "number"
   && (err as WithStatusCode).statusCode >= 500
 
-export const retryOnServerError = async <T>(
+const sleep = async (ms: number): Promise<void> => {
+  await new Promise<void>((resolve) => setTimeout(resolve, ms))
+}
+
+export const retryWithBackoff = async <T>(
   fn: () => Promise<T>,
   options: RetryOptions = {}
-): Promise<T> => retryWithBackoff(fn, hasServerErrorStatus, options)
+): Promise<T> => {
+  const { baseMs = 1000, factor = 2, jitterRatio = 0.2, maxAttempts = 3 } = options
+  let lastErr: unknown
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastErr = err
+      if (attempt === maxAttempts || !hasServerErrorStatus(err)) throw err
+      const delay = baseMs * Math.pow(factor, attempt - 1)
+      const jitter = delay * jitterRatio * (Math.random() * 2 - 1)
+      await sleep(Math.max(0, delay + jitter))
+    }
+  }
+  /** maxAttempts ループ後に必ず throw する想定だが TypeScript の網羅判定のため再 throw */
+  throw lastErr
+}
