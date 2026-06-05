@@ -15,7 +15,7 @@
   - [位置・テキスト取得](#位置テキスト取得)
   - [Scanner（トークン単位の走査）](#scannerトークン単位の走査)
 - [実例: `extract-functions.ts` の読み解き](#実例-extract-functionsts-の読み解き)
-- [実例: `strip-comments.ts` の読み解き](#実例-strip-commentsts-の読み解き)
+- [実例: `remove-comments.ts` の読み解き](#実例-remove-commentsts-の読み解き)
 - [学習リソース](#学習リソース)
 
 ## 前提知識
@@ -136,7 +136,7 @@ const humanLine = line + 1   /** 1-indexed */
 
 ### Scanner（トークン単位の走査）
 
-`extract-functions.ts` がノード木を歩くのに対し、`strip-comments.ts` は **トークン列をフラットに舐める** 別の API を使う。
+`extract-functions.ts` がノード木を歩くのに対し、`remove-comments.ts` は **トークン列をフラットに舐める** 別の API を使う。
 
 #### `ts.createScanner(target, skipTrivia, variant, text)`
 字句解析器を作る。
@@ -241,10 +241,10 @@ const build = (node: ts.Node, sf: ts.SourceFile, name: string): ExtractedFunctio
 2. **`tryExtract`**：各ノードが 4 種類のどれかを type guard で判定
 3. **`build`**：マッチしたノードの開始/終了位置と原文を取り出す
 
-## 実例: `strip-comments.ts` の読み解き
+## 実例: `remove-comments.ts` の読み解き
 
 ```typescript
-export const stripComments = (rawText: string): string => {
+export const removeComments = (rawText: string): string => {
   const scanner = ts.createScanner(
     ts.ScriptTarget.Latest,
     /** skipTrivia */ false,

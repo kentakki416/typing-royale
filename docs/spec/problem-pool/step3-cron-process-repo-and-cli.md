@@ -180,7 +180,7 @@ import { logger } from "@repo/logger"
 import { astHashOf } from "../ast/normalize-for-hash"
 import { checkAdoption } from "../ast/adoption-check"
 import { extractFunctions } from "../ast/extract-functions"
-import { stripComments } from "../ast/strip-comments"
+import { removeComments } from "../ast/remove-comments"
 import * as github from "../client/github"
 import { buildSourceUrl } from "../lib/source-url"
 import { retryWithBackoff } from "../lib/retry"
@@ -250,7 +250,7 @@ export const processRepo = async (
       const sf = ts.createSourceFile(file.path, raw, ts.ScriptTarget.Latest, true)
       const functions = extractFunctions(sf)
       for (const fn of functions) {
-        const stripped = stripComments(fn.rawText)
+        const stripped = removeComments(fn.rawText)
         const adoption = checkAdoption(fn.functionName, stripped)
         if (!adoption.adopted) continue
         const hash = astHashOf(stripped)

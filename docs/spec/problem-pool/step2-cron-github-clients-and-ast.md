@@ -397,7 +397,7 @@ const build = (node: ts.Node, sf: ts.SourceFile, name: string): ExtractedFunctio
 }
 ```
 
-### `apps/cron/src/ast/strip-comments.ts`
+### `apps/cron/src/ast/remove-comments.ts`
 
 `ts.createScanner` で全トリビアトークンを走査する実装に変更（`forEachLeading/TrailingCommentRange` のノード再帰ベースは leading/trailing が重複列挙されたり、SourceFile 直下のコメントが取りこぼされる懸念があるため）。
 
@@ -413,7 +413,7 @@ import * as ts from "typescript"
  * - StringLiteral / RegularExpressionLiteral → そのまま温存（`"https://..."` 内の // を保護）
  * - その他のトリビア（空白）は保持
  */
-export const stripComments = (rawText: string): string => {
+export const removeComments = (rawText: string): string => {
   const scanner = ts.createScanner(
     ts.ScriptTarget.Latest,
     /** skipTrivia */ false,
@@ -534,7 +534,7 @@ export const buildSourceUrl = (
 | テストファイル | カバー範囲 |
 |---|---|
 | `ast/extract-functions.test.ts` | FunctionDeclaration / ArrowFunctionExpression / FunctionExpression / MethodDeclaration / オブジェクトプロパティアロー関数の 5 ケース。**メソッド内のアロー関数が二重抽出されないこと** |
-| `ast/strip-comments.test.ts` | JSDoc / 行コメント / 行末コメント / 文字列リテラル内 `//` の保護 / テンプレートリテラル / 正規表現リテラル / 連続空行の折り畳み |
+| `ast/remove-comments.test.ts` | JSDoc / 行コメント / 行末コメント / 文字列リテラル内 `//` の保護 / テンプレートリテラル / 正規表現リテラル / 連続空行の折り畳み |
 | `ast/adoption-check.test.ts` | 各 reject reason の異常系 + ちょうど境界（100 / 400 文字、5 / 25 行、120 文字行）の境界値テスト + 正常系 |
 | `ast/normalize-for-hash.test.ts` | 空白パターン違いで同一ハッシュ / コメント有無で同一ハッシュ / 識別子違いで別ハッシュ |
 
@@ -590,7 +590,7 @@ Phase 2 の以下を `[x]` に：
 pnpm --filter cron test
 ```
 
-`extract-functions` / `strip-comments` / `adoption-check` / `normalize-for-hash` / `retry` / `source-url` の全テストが緑になる。
+`extract-functions` / `remove-comments` / `adoption-check` / `normalize-for-hash` / `retry` / `source-url` の全テストが緑になる。
 
 ### GitHub API クライアントの動作確認（手動 smoke test）
 

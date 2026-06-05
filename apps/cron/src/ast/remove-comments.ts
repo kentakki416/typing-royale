@@ -12,7 +12,7 @@ import * as ts from "typescript"
  * リテラルは scanner が別トークンとして識別するため `"https://..."` 内の
  * `//` も自動で保護される。
  */
-export const stripComments = (rawText: string): string => {
+export const removeComments = (rawText: string): string => {
   const scanner = ts.createScanner(
     ts.ScriptTarget.Latest,
     /** skipTrivia */ false,
@@ -33,12 +33,12 @@ export const stripComments = (rawText: string): string => {
   }
 
   /** 後ろから削除（前から消すとインデックスがズレる） */
-  let stripped = rawText
+  let result = rawText
   for (let i = ranges.length - 1; i >= 0; i--) {
     const [pos, end] = ranges[i]
-    stripped = stripped.slice(0, pos) + stripped.slice(end)
+    result = result.slice(0, pos) + result.slice(end)
   }
 
   /** 連続空行を 1 行に折り畳む（コメント跡地の空白を抑える） */
-  return stripped.replace(/\n{3,}/g, "\n\n")
+  return result.replace(/\n{3,}/g, "\n\n")
 }
