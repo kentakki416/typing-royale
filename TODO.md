@@ -111,11 +111,11 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### DB スキーマ
 
-- [ ] `languages` テーブル定義（`id`, `name`, `slug`）+ Seed（TS / JS）
-- [ ] `crawled_repos` テーブル定義（`description`, `homepage`, `topics`, `eligible`, `eligibleProblemCount`, `crawledAt`, `disabled` 含む）
-- [ ] `problems` テーブル定義（`sourceFilePath`, `sourceLineStart`, `sourceLineEnd`, `sourceUrl`, `astHash` 含む）
-- [ ] `crawler_runs` テーブル定義
-- [ ] Prisma マイグレーション
+- [x] `languages` テーブル定義（`id`, `name`, `slug`）+ Seed（TS / JS）
+- [x] `crawled_repos` テーブル定義（`description`, `homepage`, `topics`, `eligible`, `candidatesCount`, `storedCount`, `crawledAt`, `disabled` 含む）
+- [x] `problems` テーブル定義（`languageId`, `sourceFilePath`, `sourceLineStart`, `sourceLineEnd`, `sourceUrl`, `astHash`, `disabled` 含む。`@@unique([languageId, astHash])`）
+- [x] `crawler_runs` テーブル定義（+ 子テーブル `crawler_run_items` で repo 単位の履歴を分離）
+- [x] Prisma マイグレーション（`20260605011501_problem_pool_initial`）
 
 ### apps/cron 実装
 

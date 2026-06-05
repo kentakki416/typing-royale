@@ -57,3 +57,142 @@ model User {
 
     @@map("users")
 }
+
+// 問題プールが扱う言語マスタ
+// 初期データは seed で TypeScript / JavaScript を upsert
+model Language {
+    id        Int      @id @default(autoincrement())
+    name      String   @unique
+    slug      String   @unique
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    crawledRepos    CrawledRepo[]
+    problems        Problem[]
+    crawlerRunItems CrawlerRunItem[]
+
+    @@map("languages")
+}
+
+// クロール対象 / 結果リポジトリ
+// 成功 / 不適格 / 失敗 すべてここに 1 行として記録される
+// `eligible=true` は採用候補 30 個以上 → 最大 100 個保存された repo（/solo の抽選対象）
+// docs/spec/problem-pool/README.md「DB 設計」参照
+model CrawledRepo {
+    id                   Int      @id @default(autoincrement())
+    /// GitHub 上の repo id（API レスポンスの `id`）
+    githubId             BigInt   @unique @map("github_id")
+    languageId           Int      @map("language_id")
+    owner                String
+    name                 String
+    /// "owner/name"
+    fullName             String   @map("full_name")
+    description          String?
+    homepage             String?
+    topics               Json     @default("[]")
+    stars                Int
+    license              String
+    defaultBranch        String   @map("default_branch")
+    /// クロール時の HEAD SHA
+    commitSha            String   @map("commit_sha")
+    /// 採用候補 30 個以上で true
+    eligible             Boolean  @default(false)
+    /// AST 解析で採用条件を満たした総数（サンプリング前、> 100 もあり得る）
+    candidatesCount      Int      @default(0) @map("candidates_count")
+    /// 実際に problems に保存された件数（≤ 100、≤ candidatesCount）
+    storedCount          Int      @default(0) @map("stored_count")
+    /// クローラ失敗 / ライセンス変更 / 採用候補不足 等で出題対象外
+    disabled             Boolean  @default(false)
+    /// "too_few_problems" / "not_found" / "server_error" / "license_changed" / "rate_limit_exceeded" / "license_not_allowed"
+    disabledReason       String?  @map("disabled_reason")
+    crawledAt            DateTime @map("crawled_at")
+    createdAt            DateTime @default(now()) @map("created_at")
+    updatedAt            DateTime @updatedAt @map("updated_at")
+
+    language Language  @relation(fields: [languageId], references: [id])
+    problems Problem[]
+
+    @@index([languageId, eligible, disabled])
+    @@map("crawled_repos")
+}
+
+// タイピング問題本体
+// `codeBlock` はコメント除去後、`sourceLineStart` / `sourceLineEnd` は除去前の元ファイル基準（1-indexed）
+// `languageId` は crawledRepo.languageId と同じ値を非正規化保存（出題クエリで JOIN 回避）
+// `@@unique([languageId, astHash])` で言語ごとに重複排除（言語横断の hash 衝突を許容）
+model Problem {
+    id              Int      @id @default(autoincrement())
+    crawledRepoId   Int      @map("crawled_repo_id")
+    languageId      Int      @map("language_id")
+    sourceFilePath  String   @map("source_file_path")
+    sourceLineStart Int      @map("source_line_start")
+    sourceLineEnd   Int      @map("source_line_end")
+    /// GitHub 行範囲ハイライト付き URL
+    sourceUrl       String   @map("source_url")
+    functionName    String   @map("function_name")
+    /// コメント除去済みのタイピング対象コード
+    codeBlock       String   @map("code_block")
+    charCount       Int      @map("char_count")
+    lineCount       Int      @map("line_count")
+    /// SHA-256 hex 64 文字、コピペ重複排除用
+    astHash         String   @map("ast_hash")
+    /// ライセンス再検証や運営の手動無効化で出題対象から外す
+    disabled        Boolean  @default(false)
+    createdAt       DateTime @default(now()) @map("created_at")
+    updatedAt       DateTime @updatedAt @map("updated_at")
+
+    crawledRepo CrawledRepo @relation(fields: [crawledRepoId], references: [id])
+    language    Language    @relation(fields: [languageId], references: [id])
+
+    @@unique([languageId, astHash])
+    @@index([crawledRepoId])
+    @@index([languageId, disabled])
+    @@map("problems")
+}
+
+// クローラ実行の run 全体（1 回の `pnpm crawler:run` で 1 行）
+// 個別 repo の成否は子テーブル CrawlerRunItem 参照
+model CrawlerRun {
+    id             Int       @id @default(autoincrement())
+    /// "full" / "license_recheck"
+    runType        String    @map("run_type")
+    /// "running" / "success" / "failed"
+    status         String
+    reposProcessed Int       @default(0) @map("repos_processed")
+    problemsAdded  Int       @default(0) @map("problems_added")
+    startedAt      DateTime  @map("started_at")
+    endedAt        DateTime? @map("ended_at")
+    error          Json?
+    createdAt      DateTime  @default(now()) @map("created_at")
+    updatedAt      DateTime  @updatedAt @map("updated_at")
+
+    items CrawlerRunItem[]
+
+    @@index([runType, status, startedAt(sort: Desc)])
+    @@map("crawler_runs")
+}
+
+// クローラ run 内の個別 repo 1 行の履歴
+// 連続 2 回失敗の判定（Slack 通知）や、ブートストラップ時の途中失敗の特定に使う
+model CrawlerRunItem {
+    id            Int       @id @default(autoincrement())
+    crawlerRunId  Int       @map("crawler_run_id")
+    languageId    Int       @map("language_id")
+    targetOwner   String    @map("target_owner")
+    targetRepo    String    @map("target_repo")
+    /// "success" / "failed" / "skipped"
+    status        String
+    problemsAdded Int       @default(0) @map("problems_added")
+    startedAt     DateTime  @map("started_at")
+    endedAt       DateTime? @map("ended_at")
+    error         Json?
+    createdAt     DateTime  @default(now()) @map("created_at")
+    updatedAt     DateTime  @updatedAt @map("updated_at")
+
+    crawlerRun CrawlerRun @relation(fields: [crawlerRunId], references: [id], onDelete: Cascade)
+    language   Language   @relation(fields: [languageId], references: [id])
+
+    @@index([crawlerRunId, status])
+    @@index([languageId, status, startedAt(sort: Desc)])
+    @@map("crawler_run_items")
+}
