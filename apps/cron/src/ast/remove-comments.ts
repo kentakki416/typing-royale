@@ -20,23 +20,21 @@ export const removeComments = (rawText: string): string => {
     rawText
   )
 
-  const ranges: Array<[number, number]> = []
+  const commentRanges: Array<[number, number]> = []
   let token = scanner.scan()
   while (token !== ts.SyntaxKind.EndOfFileToken) {
-    if (
-      token === ts.SyntaxKind.SingleLineCommentTrivia
-      || token === ts.SyntaxKind.MultiLineCommentTrivia
-    ) {
-      ranges.push([scanner.getTokenStart(), scanner.getTokenEnd()])
+    // コメントの場合はrangesに追加
+    if (token === ts.SyntaxKind.SingleLineCommentTrivia || token === ts.SyntaxKind.MultiLineCommentTrivia) {
+      commentRanges.push([scanner.getTokenStart(), scanner.getTokenEnd()])
     }
     token = scanner.scan()
   }
 
-  /** 後ろから削除（前から消すとインデックスがズレる） */
+  /** 前から消すとインデックスがズレるので、後ろから削除する */
   let result = rawText
-  for (let i = ranges.length - 1; i >= 0; i--) {
-    const [pos, end] = ranges[i]
-    result = result.slice(0, pos) + result.slice(end)
+  for (let i = commentRanges.length - 1; i >= 0; i--) {
+    const [start, end] = commentRanges[i]
+    result = result.slice(0, start) + result.slice(end)
   }
 
   /** 連続空行を 1 行に折り畳む（コメント跡地の空白を抑える） */
