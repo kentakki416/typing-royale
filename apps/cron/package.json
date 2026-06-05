@@ -17,7 +17,9 @@
   },
   "dependencies": {
     "@repo/api-schema": "workspace:^",
+    "@repo/db": "workspace:^",
     "@repo/logger": "workspace:^",
+    "@sentry/node": "^10.0.0",
     "typescript": "^5.9.3",
     "zod": "^3.25.76"
   },

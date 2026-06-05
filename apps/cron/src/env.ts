@@ -38,6 +38,17 @@ const cronEnvSchema = z
       })
     }
     /**
+     * NODE_ENV !== "test" のとき DATABASE_URL も必須
+     * （task は DB なしで起動できない）
+     */
+    if (env.NODE_ENV !== "test" && !env.DATABASE_URL) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "DATABASE_URL is required when NODE_ENV is not 'test'",
+        path: ["DATABASE_URL"],
+      })
+    }
+    /**
      * production では SENTRY_DSN も必須（本番エラー検知漏れ防止）
      */
     if (env.NODE_ENV === "production" && env.SENTRY_DSN.length === 0) {
