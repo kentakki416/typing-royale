@@ -342,6 +342,32 @@ Sentry.init({ dsn: env.SENTRY_DSN, enabled: env.NODE_ENV === "production" })
 
 const main = async () => {
   const prisma = createPrismaClient()
+
+  /**
+   * Graceful shutdown
+   *
+   * ECS Scheduled Task はタスクのタイムアウトや停止指示で SIGTERM を送る。
+   * デフォルトで 30 秒以内に終了しないと SIGKILL されるため、DB コネクションだけは
+   * 必ず閉じる。run の途中なら runWithCrawlerRunTracking 側の catch で
+   * crawler_runs.status=failed に更新されるので、シグナルでは特別な記録はしない。
+   *
+   * Ctrl-C で止めるローカル開発者にも同じ挙動を提供する（SIGINT）。
+   */
+  let shuttingDown = false
+  const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
+    if (shuttingDown) return
+    shuttingDown = true
+    logger.warn("shutdown initiated", { signal })
+    try {
+      await prisma.$disconnect()
+    } catch (err) {
+      logger.error("prisma disconnect failed during shutdown", { err: String(err) })
+    }
+    process.exit(signal === "SIGTERM" ? 0 : 130)
+  }
+  process.on("SIGTERM", (signal) => void shutdown(signal))
+  process.on("SIGINT", (signal) => void shutdown(signal))
+
   const languageRepository = new PrismaLanguageRepository(prisma)
   const crawledRepoRepository = new PrismaCrawledRepoRepository(prisma)
   const problemRepository = new PrismaProblemRepository(prisma)
@@ -358,6 +384,7 @@ const main = async () => {
           continue
         }
         for (let i = 0; i < env.CRAWLER_REPOS_PER_RUN; i++) {
+          if (shuttingDown) break
           const target = await pickNextRepo(lang, { crawledRepoRepository })
           if (!target) {
             logger.info("no more repos to process", { slug })
@@ -378,12 +405,14 @@ const main = async () => {
     logger.error("crawler-run failed", { err: String(err) })
     throw err
   } finally {
-    await prisma.$disconnect()
+    if (!shuttingDown) await prisma.$disconnect()
   }
 }
 
 void main().then(() => process.exit(0)).catch(() => process.exit(1))
 ```
+
+`license-recheck.ts` でも同じ SIGTERM / SIGINT ハンドラを設置する（CLI ごとに graceful shutdown が必要）。
 
 ### `apps/cron/src/cli/license-recheck.ts`
 
@@ -395,7 +424,7 @@ void main().then(() => process.exit(0)).catch(() => process.exit(1))
 {
   "scripts": {
     "build":   "tsc --project tsconfig.build.json",
-    "dev":     "dotenvx run -f .env.local -- tsx watch src/cli/crawler-run.ts",
+    "dev":     "CRAWLER_REPOS_PER_RUN=1 dotenvx run -f .env.local -- tsx src/cli/crawler-run.ts",
     "crawler:run":             "dotenvx run -f .env.local -- tsx src/cli/crawler-run.ts",
     "crawler:license-recheck": "dotenvx run -f .env.local -- tsx src/cli/license-recheck.ts",
     "test":    "vitest run",
@@ -405,7 +434,28 @@ void main().then(() => process.exit(0)).catch(() => process.exit(1))
 }
 ```
 
+#### `pnpm dev` の意味
+
+cron は **one-shot CLI** であり、長時間常駐するサーバではない。そのため `tsx watch`（ファイル変更で再起動）は **使わない**。ファイル変更ごとに GitHub API を叩いて DB に書き込んでしまうと、ローカル開発で意図せずレート制限に達したり、問題プールが汚れたりするため。
+
+`pnpm dev` は **「ローカルで挙動を 1 度確認するための最小実行」** として定義する：
+
+- `CRAWLER_REPOS_PER_RUN=1` を強制し、1 repo だけ処理して終了する
+- 1 度実行したら `crawler_runs` の同日チェックで以降は skip される（再実行は前日の `success` 行を SQL で削除するか、`crawler:run` を直接叩く）
+
 ルート `package.json` の `pnpm crawler:run` / `pnpm crawler:license-recheck` でも呼べるよう、turbo の workspace 連携経由で叩けることを確認。
+
+#### 推奨 env
+
+`apps/cron/.env.local.example`（step2 で作成）に以下を **ローカル既定** として記載：
+
+```dotenv
+LOGGER_TYPE=console     # JSON 1 行より目視しやすい
+LOG_LEVEL=debug         # processRepo の進捗を細かく追える
+CRAWLER_REPOS_PER_RUN=1 # 暴走防止
+```
+
+本番では `LOGGER_TYPE=pino` / `LOG_LEVEL=info` / `CRAWLER_REPOS_PER_RUN=1`。
 
 ### ユニットテスト
 
@@ -497,6 +547,23 @@ GITHUB_PAT=invalid pnpm crawler:run
 ```
 
 → `crawler_runs` に `failed` で記録される、Sentry（dev は disabled）には飛ばない、プロセスは exit code 1 で終了。
+
+### Graceful shutdown（SIGTERM / SIGINT）
+
+ローカルで `pnpm crawler:run` を実行中、processRepo の途中で **Ctrl-C** を押す：
+
+```
+^C
+[2026-06-05 ...] WARN: shutdown initiated
+    signal: "SIGINT"
+[2026-06-05 ...] INFO: ...
+```
+
+期待挙動：
+
+- `prisma.$disconnect()` がログに出てから exit code 130 で終了
+- `crawler_runs` の該当行は `status=running` のままになる（catch 経由ではないため）。次回 run 時の同日チェックで `running` が見つかってスキップされるので、運用上は `psql` で手動で `status='failed'` に書き換えるか前日扱いにして再実行する
+- SIGTERM のテストは `kill -TERM <pid>` で同様に確認可能（exit code 0）
 
 ### 二重起動防止
 
