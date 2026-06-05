@@ -96,7 +96,7 @@ export class GithubClient {
     this.pat = config.pat
     this.userAgent = config.userAgent ?? DEFAULT_USER_AGENT
     this.minStars = config.minStars
-    this.pushedAfter = config.pushedAfter ?? this.defaultPushedAfter()
+    this.pushedAfter = config.pushedAfter ?? this._defaultPushedAfter()
   }
 
   /**
@@ -110,13 +110,13 @@ export class GithubClient {
    *   - archived:false
    *   - sort=stars-desc / per_page=100
    */
-  searchRepos = async (language: string, page: number): Promise<GithubSearchResult> => {
+  public searchRepos = async (language: string, page: number): Promise<GithubSearchResult> => {
     const q = `language:${language} ${SEARCH_LICENSE_FILTER} stars:>=${this.minStars} pushed:>${this.pushedAfter} archived:false`
     const url = `${API_BASE}/search/repositories?q=${encodeURIComponent(q)}&sort=stars&order=desc&per_page=100&page=${page}`
-    const res = await this.fetch(url, this.apiHeaders())
+    const res = await this._fetch(url, this._apiHeaders())
     const json = (await res.json()) as { items: unknown[]; total_count: number }
     return {
-      items: json.items.map(this.toSearchItem),
+      items: json.items.map(this._toSearchItem),
       totalCount: json.total_count,
     }
   }
@@ -129,7 +129,7 @@ export class GithubClient {
    */
   getRepoMeta = async (owner: string, repo: string): Promise<GithubRepoMeta> => {
     const url = `${API_BASE}/repos/${owner}/${repo}`
-    const res = await this.fetch(url, this.apiHeaders())
+    const res = await this._fetch(url, this._apiHeaders())
     const json = (await res.json()) as {
       default_branch: string
       description: string | null
@@ -142,7 +142,7 @@ export class GithubClient {
       stargazers_count: number
       topics: string[] | undefined
     }
-    const sha = await this.getCommitSha(owner, repo, json.default_branch)
+    const sha = await this._getCommitSha(owner, repo, json.default_branch)
     return {
       id: json.id,
       commitSha: sha,
@@ -172,10 +172,10 @@ export class GithubClient {
     commitSha: string
   ): Promise<GithubTreeEntry[]> => {
     const url = `${API_BASE}/repos/${owner}/${repo}/git/trees/${commitSha}?recursive=1`
-    const res = await this.fetch(url, this.apiHeaders())
+    const res = await this._fetch(url, this._apiHeaders())
     const json = (await res.json()) as { tree: unknown[] }
     return json.tree
-      .map(this.toTreeEntry)
+      .map(this._toTreeEntry)
       .filter((e): e is GithubTreeEntry => e !== null)
       .filter((e) => e.type === "blob")
       .filter((e) => TARGET_EXTENSIONS.test(e.path))
@@ -196,7 +196,7 @@ export class GithubClient {
     path: string
   ): Promise<string> => {
     const url = `${RAW_BASE}/${owner}/${repo}/${commitSha}/${path}`
-    const res = await this.fetch(url, this.rawHeaders())
+    const res = await this._fetch(url, this._rawHeaders())
     return res.text()
   }
 
@@ -210,7 +210,7 @@ export class GithubClient {
    * - HTTP 非 2xx は GithubApiError(status) として throw（4xx は呼び出し側で
    *   disable 判断、5xx はリトライへ）
    */
-  private fetch = async (
+  private _fetch = async (
     url: string,
     headers: Record<string, string>
   ): Promise<Response> => {
@@ -231,36 +231,36 @@ export class GithubClient {
     return res
   }
 
-  private apiHeaders = (): Record<string, string> => ({
+  private _apiHeaders = (): Record<string, string> => ({
     "Accept": "application/vnd.github+json",
     "Authorization": `Bearer ${this.pat}`,
     "User-Agent": this.userAgent,
     "X-GitHub-Api-Version": "2022-11-28",
   })
 
-  private rawHeaders = (): Record<string, string> => ({
+  private _rawHeaders = (): Record<string, string> => ({
     "Authorization": `Bearer ${this.pat}`,
     "User-Agent": this.userAgent,
   })
 
-  private getCommitSha = async (
+  private _getCommitSha = async (
     owner: string,
     repo: string,
     branch: string
   ): Promise<string> => {
     const url = `${API_BASE}/repos/${owner}/${repo}/git/refs/heads/${branch}`
-    const res = await this.fetch(url, this.apiHeaders())
+    const res = await this._fetch(url, this._apiHeaders())
     const json = (await res.json()) as { object: { sha: string } }
     return json.object.sha
   }
 
-  private defaultPushedAfter = (): string => {
+  private _defaultPushedAfter = (): string => {
     const d = new Date()
     d.setFullYear(d.getFullYear() - 2)
     return d.toISOString().slice(0, 10)
   }
 
-  private toSearchItem = (raw: unknown): GithubSearchItem => {
+  private _toSearchItem = (raw: unknown): GithubSearchItem => {
     const r = raw as {
       default_branch: string
       full_name: string
@@ -284,7 +284,7 @@ export class GithubClient {
     }
   }
 
-  private toTreeEntry = (raw: unknown): GithubTreeEntry | null => {
+  private _toTreeEntry = (raw: unknown): GithubTreeEntry | null => {
     if (typeof raw !== "object" || raw === null) return null
     const r = raw as { path?: unknown; size?: unknown; type?: unknown }
     if (typeof r.path !== "string") return null
