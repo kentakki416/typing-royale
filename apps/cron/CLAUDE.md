@@ -22,59 +22,15 @@ pnpm lint         # ESLint
 
 ## ディレクトリ構成
 
-```
-apps/cron/
-├── src/
-│   ├── cli/                  # CLI エントリポイント（package.json の bin と 1:1）
-│   │   ├── run.ts            # crawler:run          - 週次クローラ
-│   │   ├── license-recheck.ts# crawler:license-recheck - 月次ライセンス再検証
-│   │   └── ranking-batch.ts  # batch:ranking        - 毎時ランキング集計
-│   ├── tasks/                # タスク固有ロジック（cli から呼ぶ）
-│   │   ├── crawler/          # 問題プール収集（Phase 2）
-│   │   ├── license-recheck/  # ライセンス再検証（Phase 2）
-│   │   └── ranking/          # ランキング集計（Phase 4）
-│   ├── client/               # 外部 API クライアント（タスク横断で再利用）
-│   │   └── github/           # GitHub REST + raw content（GithubClient class）
-│   ├── ast/                  # TypeScript Compiler API ラッパ（crawler が使用）
-│   ├── lib/                  # 汎用ユーティリティ（タスク・クライアント横断）
-│   │   ├── retry.ts          # 指数バックオフ + jitter
-│   │   └── source-url.ts     # GitHub permalink 組み立て
-│   ├── env.ts                # Zod による env 検証（safeParse → process.exit(1)）
-│   └── index.ts              # pnpm dev のエントリ（起動確認用）
-├── test/                     # src と同じツリー構造で配置
-│   ├── client/github/
-│   ├── ast/
-│   ├── tasks/...
-│   ├── lib/
-│   └── fixtures/             # 実 API レスポンスの JSON 等
-├── Dockerfile                # 本番用 (turbo prune + installer-builder + runner)
-├── package.json
-└── tsconfig.json
-```
+ディレクトリ戦略（層の役割 / 設計ルール / 新タスク追加手順）は [`README.md#ディレクトリ戦略`](./README.md#ディレクトリ戦略) を参照。新しいタスクやクライアントを追加するときは必ず README に従う。
 
-### 層の役割
+要点（AI 向けサマリ）:
 
-| 層 | 何を置くか | 何を置かないか |
-| --- | --- | --- |
-| `cli/` | CLI 引数のパース、env の組み立て、`tasks/*` の `run()` を呼ぶ薄いエントリ | ビジネスロジック・I/O |
-| `tasks/<name>/` | そのタスク固有の手順（DB / 外部 API / ドメインロジックの組み立て） | 他タスクから再利用される汎用処理 |
-| `client/<service>/` | 外部 API クライアント class（GithubClient のような）。env 依存はコンストラクタ DI | タスク固有の業務ルール |
-| `ast/` | TypeScript Compiler API のラッパ（crawler 専用だが横断的に使う想定がある層） | — |
-| `lib/` | retry / URL 組み立て・GitHub 以外でも使うユーティリティ | 特定タスク・特定サービスの知識 |
-
-### 新タスク追加時の手順（例：通知バッチを追加するケース）
-
-1. `src/cli/notify-batch.ts` を作って `package.json` の `scripts` に追加
-2. `src/tasks/notify/` にタスクの本体（`run.ts` + 必要なら repository / domain）を実装
-3. 新しい外部サービス（例：Slack）を叩くなら `src/client/slack/` に `SlackClient` を作る
-4. PAT / token 等は `src/env.ts` に追加し、cli から `new SlackClient({ token: env.SLACK_TOKEN })` で DI
-5. テストは `test/tasks/notify/` と `test/client/slack/` に src と対応する形で置く
-
-### 設計のルール
-
-- **client は env を直接 import しない**。`new GithubClient({ pat, ... })` のように cli 側で組み立てて DI する。同じクライアントを CLI が切り替わっても再利用できるようにするため。
-- **tasks は他 tasks に依存しない**。横断したくなったら `lib/` に汎用ヘルパとして切り出すか、`client/` を作るか検討する。
-- **lib は env も DB も知らない**。引数だけで完結する純関数を置く。
+- **`cli/`** はエントリのみ。env を組み立てて `tasks/*` の `run()` を呼ぶ。
+- **`tasks/<name>/`** にタスク固有の手順を置く。タスク間で直接 import しない。
+- **`client/<service>/`** に外部 API クライアント class を置く。env を直接 import しない（コンストラクタ DI）。
+- **`ast/`** は TypeScript Compiler API のラッパ（crawler 用だが横断的に使う想定）。
+- **`lib/`** は env も DB も知らない純関数のみ。
 
 ロガーは `@repo/logger` を、それ以外の共通インフラは `@repo/db` / `@repo/redis` / `@repo/errors` を必要に応じて使う。env 検証は `src/env.ts` に Zod スキーマをインラインで定義する（`safeParse → process.exit(1)` のパターン。apps/api を参照）。
 
