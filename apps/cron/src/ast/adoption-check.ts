@@ -1,15 +1,3 @@
-/**
- * 抽出した関数を problem として採用するかを判定する。
- *
- * 仕様（docs/spec/problem-pool/README.md「採用条件（関数の足切り）」）:
- *   - 文字数（コメント除去後 + trim）: 100〜400 文字
- *   - 行数: 5〜25 行
- *   - 1 行最大文字数: 120 文字以下
- *   - 非 ASCII 文字: 0 文字（日本語コメント混入や非 ASCII 識別子を除外）
- *   - 関数名: 存在する、かつテストフレームワーク予約名でない
- *   - コメント除去後本文: 空でない
- */
-
 const EXCLUDED_NAMES = new Set([
   "afterAll",
   "afterEach",
@@ -40,11 +28,22 @@ export type AdoptionRejectReason =
   | "line_too_long"
   | "non_ascii"
 
-export const checkAdoption = (functionName: string, codeStripped: string): AdoptionResult => {
+/**
+ * 抽出した関数を problem として採用するかを判定する関数
+ *
+ * 仕様（docs/spec/problem-pool/README.md「採用条件（関数の足切り）」）:
+ *   - 文字数（コメント除去後 + trim）: 100〜400 文字
+ *   - 行数: 5〜25 行
+ *   - 1 行最大文字数: 120 文字以下
+ *   - 非 ASCII 文字: 0 文字（日本語コメント混入や非 ASCII 識別子を除外）
+ *   - 関数名: 存在する、かつテストフレームワーク予約名でない
+ *   - コメント除去後本文: 空でない
+ */
+export const checkAdoption = (functionName: string, codeWithoutCommnet: string): AdoptionResult => {
   if (!functionName || EXCLUDED_NAMES.has(functionName)) {
     return { adopted: false, reason: "excluded_function_name" }
   }
-  const trimmed = codeStripped.trim()
+  const trimmed = codeWithoutCommnet.trim()
   if (trimmed.length === 0) {
     return { adopted: false, reason: "empty_after_strip" }
   }
