@@ -6,9 +6,6 @@ import { z } from "zod"
  * 起動時にこのモジュールが import された時点で safeParse が走り、
  * 不正な env の場合は stderr にエラーを出力して process.exit(1) で停止する。
  *
- * Phase 2「問題プール（クローラ）」で使う env の宣言を中心に、shared package
- * （@repo/db / @repo/logger）が読む env も明示しておくことで「クロール時に
- * 必要な env が揃っているか」を起動時に保証する。
  */
 const cronEnvSchema = z
   .object({
