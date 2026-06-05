@@ -138,7 +138,6 @@ export const CrawledRepoScalarFieldEnum = {
   license: 'license',
   defaultBranch: 'defaultBranch',
   commitSha: 'commitSha',
-  eligible: 'eligible',
   candidatesCount: 'candidatesCount',
   storedCount: 'storedCount',
   disabled: 'disabled',

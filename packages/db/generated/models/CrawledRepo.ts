@@ -57,7 +57,6 @@ export type CrawledRepoMinAggregateOutputType = {
   license: string | null
   defaultBranch: string | null
   commitSha: string | null
-  eligible: boolean | null
   candidatesCount: number | null
   storedCount: number | null
   disabled: boolean | null
@@ -80,7 +79,6 @@ export type CrawledRepoMaxAggregateOutputType = {
   license: string | null
   defaultBranch: string | null
   commitSha: string | null
-  eligible: boolean | null
   candidatesCount: number | null
   storedCount: number | null
   disabled: boolean | null
@@ -104,7 +102,6 @@ export type CrawledRepoCountAggregateOutputType = {
   license: number
   defaultBranch: number
   commitSha: number
-  eligible: number
   candidatesCount: number
   storedCount: number
   disabled: number
@@ -147,7 +144,6 @@ export type CrawledRepoMinAggregateInputType = {
   license?: true
   defaultBranch?: true
   commitSha?: true
-  eligible?: true
   candidatesCount?: true
   storedCount?: true
   disabled?: true
@@ -170,7 +166,6 @@ export type CrawledRepoMaxAggregateInputType = {
   license?: true
   defaultBranch?: true
   commitSha?: true
-  eligible?: true
   candidatesCount?: true
   storedCount?: true
   disabled?: true
@@ -194,7 +189,6 @@ export type CrawledRepoCountAggregateInputType = {
   license?: true
   defaultBranch?: true
   commitSha?: true
-  eligible?: true
   candidatesCount?: true
   storedCount?: true
   disabled?: true
@@ -305,7 +299,6 @@ export type CrawledRepoGroupByOutputType = {
   license: string
   defaultBranch: string
   commitSha: string
-  eligible: boolean
   candidatesCount: number
   storedCount: number
   disabled: boolean
@@ -352,7 +345,6 @@ export type CrawledRepoWhereInput = {
   license?: Prisma.StringFilter<"CrawledRepo"> | string
   defaultBranch?: Prisma.StringFilter<"CrawledRepo"> | string
   commitSha?: Prisma.StringFilter<"CrawledRepo"> | string
-  eligible?: Prisma.BoolFilter<"CrawledRepo"> | boolean
   candidatesCount?: Prisma.IntFilter<"CrawledRepo"> | number
   storedCount?: Prisma.IntFilter<"CrawledRepo"> | number
   disabled?: Prisma.BoolFilter<"CrawledRepo"> | boolean
@@ -378,7 +370,6 @@ export type CrawledRepoOrderByWithRelationInput = {
   license?: Prisma.SortOrder
   defaultBranch?: Prisma.SortOrder
   commitSha?: Prisma.SortOrder
-  eligible?: Prisma.SortOrder
   candidatesCount?: Prisma.SortOrder
   storedCount?: Prisma.SortOrder
   disabled?: Prisma.SortOrder
@@ -407,7 +398,6 @@ export type CrawledRepoWhereUniqueInput = Prisma.AtLeast<{
   license?: Prisma.StringFilter<"CrawledRepo"> | string
   defaultBranch?: Prisma.StringFilter<"CrawledRepo"> | string
   commitSha?: Prisma.StringFilter<"CrawledRepo"> | string
-  eligible?: Prisma.BoolFilter<"CrawledRepo"> | boolean
   candidatesCount?: Prisma.IntFilter<"CrawledRepo"> | number
   storedCount?: Prisma.IntFilter<"CrawledRepo"> | number
   disabled?: Prisma.BoolFilter<"CrawledRepo"> | boolean
@@ -433,7 +423,6 @@ export type CrawledRepoOrderByWithAggregationInput = {
   license?: Prisma.SortOrder
   defaultBranch?: Prisma.SortOrder
   commitSha?: Prisma.SortOrder
-  eligible?: Prisma.SortOrder
   candidatesCount?: Prisma.SortOrder
   storedCount?: Prisma.SortOrder
   disabled?: Prisma.SortOrder
@@ -465,7 +454,6 @@ export type CrawledRepoScalarWhereWithAggregatesInput = {
   license?: Prisma.StringWithAggregatesFilter<"CrawledRepo"> | string
   defaultBranch?: Prisma.StringWithAggregatesFilter<"CrawledRepo"> | string
   commitSha?: Prisma.StringWithAggregatesFilter<"CrawledRepo"> | string
-  eligible?: Prisma.BoolWithAggregatesFilter<"CrawledRepo"> | boolean
   candidatesCount?: Prisma.IntWithAggregatesFilter<"CrawledRepo"> | number
   storedCount?: Prisma.IntWithAggregatesFilter<"CrawledRepo"> | number
   disabled?: Prisma.BoolWithAggregatesFilter<"CrawledRepo"> | boolean
@@ -487,7 +475,6 @@ export type CrawledRepoCreateInput = {
   license: string
   defaultBranch: string
   commitSha: string
-  eligible?: boolean
   candidatesCount?: number
   storedCount?: number
   disabled?: boolean
@@ -513,7 +500,6 @@ export type CrawledRepoUncheckedCreateInput = {
   license: string
   defaultBranch: string
   commitSha: string
-  eligible?: boolean
   candidatesCount?: number
   storedCount?: number
   disabled?: boolean
@@ -536,7 +522,6 @@ export type CrawledRepoUpdateInput = {
   license?: Prisma.StringFieldUpdateOperationsInput | string
   defaultBranch?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
-  eligible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   candidatesCount?: Prisma.IntFieldUpdateOperationsInput | number
   storedCount?: Prisma.IntFieldUpdateOperationsInput | number
   disabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -562,7 +547,6 @@ export type CrawledRepoUncheckedUpdateInput = {
   license?: Prisma.StringFieldUpdateOperationsInput | string
   defaultBranch?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
-  eligible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   candidatesCount?: Prisma.IntFieldUpdateOperationsInput | number
   storedCount?: Prisma.IntFieldUpdateOperationsInput | number
   disabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -587,7 +571,6 @@ export type CrawledRepoCreateManyInput = {
   license: string
   defaultBranch: string
   commitSha: string
-  eligible?: boolean
   candidatesCount?: number
   storedCount?: number
   disabled?: boolean
@@ -609,7 +592,6 @@ export type CrawledRepoUpdateManyMutationInput = {
   license?: Prisma.StringFieldUpdateOperationsInput | string
   defaultBranch?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
-  eligible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   candidatesCount?: Prisma.IntFieldUpdateOperationsInput | number
   storedCount?: Prisma.IntFieldUpdateOperationsInput | number
   disabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -633,7 +615,6 @@ export type CrawledRepoUncheckedUpdateManyInput = {
   license?: Prisma.StringFieldUpdateOperationsInput | string
   defaultBranch?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
-  eligible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   candidatesCount?: Prisma.IntFieldUpdateOperationsInput | number
   storedCount?: Prisma.IntFieldUpdateOperationsInput | number
   disabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -667,7 +648,6 @@ export type CrawledRepoCountOrderByAggregateInput = {
   license?: Prisma.SortOrder
   defaultBranch?: Prisma.SortOrder
   commitSha?: Prisma.SortOrder
-  eligible?: Prisma.SortOrder
   candidatesCount?: Prisma.SortOrder
   storedCount?: Prisma.SortOrder
   disabled?: Prisma.SortOrder
@@ -699,7 +679,6 @@ export type CrawledRepoMaxOrderByAggregateInput = {
   license?: Prisma.SortOrder
   defaultBranch?: Prisma.SortOrder
   commitSha?: Prisma.SortOrder
-  eligible?: Prisma.SortOrder
   candidatesCount?: Prisma.SortOrder
   storedCount?: Prisma.SortOrder
   disabled?: Prisma.SortOrder
@@ -722,7 +701,6 @@ export type CrawledRepoMinOrderByAggregateInput = {
   license?: Prisma.SortOrder
   defaultBranch?: Prisma.SortOrder
   commitSha?: Prisma.SortOrder
-  eligible?: Prisma.SortOrder
   candidatesCount?: Prisma.SortOrder
   storedCount?: Prisma.SortOrder
   disabled?: Prisma.SortOrder
@@ -822,7 +800,6 @@ export type CrawledRepoCreateWithoutLanguageInput = {
   license: string
   defaultBranch: string
   commitSha: string
-  eligible?: boolean
   candidatesCount?: number
   storedCount?: number
   disabled?: boolean
@@ -846,7 +823,6 @@ export type CrawledRepoUncheckedCreateWithoutLanguageInput = {
   license: string
   defaultBranch: string
   commitSha: string
-  eligible?: boolean
   candidatesCount?: number
   storedCount?: number
   disabled?: boolean
@@ -900,7 +876,6 @@ export type CrawledRepoScalarWhereInput = {
   license?: Prisma.StringFilter<"CrawledRepo"> | string
   defaultBranch?: Prisma.StringFilter<"CrawledRepo"> | string
   commitSha?: Prisma.StringFilter<"CrawledRepo"> | string
-  eligible?: Prisma.BoolFilter<"CrawledRepo"> | boolean
   candidatesCount?: Prisma.IntFilter<"CrawledRepo"> | number
   storedCount?: Prisma.IntFilter<"CrawledRepo"> | number
   disabled?: Prisma.BoolFilter<"CrawledRepo"> | boolean
@@ -922,7 +897,6 @@ export type CrawledRepoCreateWithoutProblemsInput = {
   license: string
   defaultBranch: string
   commitSha: string
-  eligible?: boolean
   candidatesCount?: number
   storedCount?: number
   disabled?: boolean
@@ -947,7 +921,6 @@ export type CrawledRepoUncheckedCreateWithoutProblemsInput = {
   license: string
   defaultBranch: string
   commitSha: string
-  eligible?: boolean
   candidatesCount?: number
   storedCount?: number
   disabled?: boolean
@@ -985,7 +958,6 @@ export type CrawledRepoUpdateWithoutProblemsInput = {
   license?: Prisma.StringFieldUpdateOperationsInput | string
   defaultBranch?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
-  eligible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   candidatesCount?: Prisma.IntFieldUpdateOperationsInput | number
   storedCount?: Prisma.IntFieldUpdateOperationsInput | number
   disabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1010,7 +982,6 @@ export type CrawledRepoUncheckedUpdateWithoutProblemsInput = {
   license?: Prisma.StringFieldUpdateOperationsInput | string
   defaultBranch?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
-  eligible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   candidatesCount?: Prisma.IntFieldUpdateOperationsInput | number
   storedCount?: Prisma.IntFieldUpdateOperationsInput | number
   disabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1033,7 +1004,6 @@ export type CrawledRepoCreateManyLanguageInput = {
   license: string
   defaultBranch: string
   commitSha: string
-  eligible?: boolean
   candidatesCount?: number
   storedCount?: number
   disabled?: boolean
@@ -1055,7 +1025,6 @@ export type CrawledRepoUpdateWithoutLanguageInput = {
   license?: Prisma.StringFieldUpdateOperationsInput | string
   defaultBranch?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
-  eligible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   candidatesCount?: Prisma.IntFieldUpdateOperationsInput | number
   storedCount?: Prisma.IntFieldUpdateOperationsInput | number
   disabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1079,7 +1048,6 @@ export type CrawledRepoUncheckedUpdateWithoutLanguageInput = {
   license?: Prisma.StringFieldUpdateOperationsInput | string
   defaultBranch?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
-  eligible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   candidatesCount?: Prisma.IntFieldUpdateOperationsInput | number
   storedCount?: Prisma.IntFieldUpdateOperationsInput | number
   disabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1103,7 +1071,6 @@ export type CrawledRepoUncheckedUpdateManyWithoutLanguageInput = {
   license?: Prisma.StringFieldUpdateOperationsInput | string
   defaultBranch?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
-  eligible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   candidatesCount?: Prisma.IntFieldUpdateOperationsInput | number
   storedCount?: Prisma.IntFieldUpdateOperationsInput | number
   disabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1158,7 +1125,6 @@ export type CrawledRepoSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   license?: boolean
   defaultBranch?: boolean
   commitSha?: boolean
-  eligible?: boolean
   candidatesCount?: boolean
   storedCount?: boolean
   disabled?: boolean
@@ -1185,7 +1151,6 @@ export type CrawledRepoSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   license?: boolean
   defaultBranch?: boolean
   commitSha?: boolean
-  eligible?: boolean
   candidatesCount?: boolean
   storedCount?: boolean
   disabled?: boolean
@@ -1210,7 +1175,6 @@ export type CrawledRepoSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   license?: boolean
   defaultBranch?: boolean
   commitSha?: boolean
-  eligible?: boolean
   candidatesCount?: boolean
   storedCount?: boolean
   disabled?: boolean
@@ -1235,7 +1199,6 @@ export type CrawledRepoSelectScalar = {
   license?: boolean
   defaultBranch?: boolean
   commitSha?: boolean
-  eligible?: boolean
   candidatesCount?: boolean
   storedCount?: boolean
   disabled?: boolean
@@ -1245,7 +1208,7 @@ export type CrawledRepoSelectScalar = {
   updatedAt?: boolean
 }
 
-export type CrawledRepoOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "githubId" | "languageId" | "owner" | "name" | "fullName" | "description" | "homepage" | "topics" | "stars" | "license" | "defaultBranch" | "commitSha" | "eligible" | "candidatesCount" | "storedCount" | "disabled" | "disabledReason" | "crawledAt" | "createdAt" | "updatedAt", ExtArgs["result"]["crawledRepo"]>
+export type CrawledRepoOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "githubId" | "languageId" | "owner" | "name" | "fullName" | "description" | "homepage" | "topics" | "stars" | "license" | "defaultBranch" | "commitSha" | "candidatesCount" | "storedCount" | "disabled" | "disabledReason" | "crawledAt" | "createdAt" | "updatedAt", ExtArgs["result"]["crawledRepo"]>
 export type CrawledRepoInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   language?: boolean | Prisma.LanguageDefaultArgs<ExtArgs>
   problems?: boolean | Prisma.CrawledRepo$problemsArgs<ExtArgs>
@@ -1288,19 +1251,15 @@ export type $CrawledRepoPayload<ExtArgs extends runtime.Types.Extensions.Interna
      */
     commitSha: string
     /**
-     * 採用候補 30 個以上で true
-     */
-    eligible: boolean
-    /**
      * AST 解析で採用条件を満たした総数（サンプリング前、> 100 もあり得る）
      */
     candidatesCount: number
     /**
-     * 実際に problems に保存された件数（≤ 100、≤ candidatesCount）
+     * 実際に problems に保存された件数（≤ 100、≤ candidatesCount）。> 0 = 過去に採用された
      */
     storedCount: number
     /**
-     * クローラ失敗 / ライセンス変更 / 採用候補不足 等で出題対象外
+     * 出題対象外（クローラ失敗 / 採用候補不足 / ライセンス変更 / 運営判断 等）
      */
     disabled: boolean
     /**
@@ -1748,7 +1707,6 @@ export interface CrawledRepoFieldRefs {
   readonly license: Prisma.FieldRef<"CrawledRepo", 'String'>
   readonly defaultBranch: Prisma.FieldRef<"CrawledRepo", 'String'>
   readonly commitSha: Prisma.FieldRef<"CrawledRepo", 'String'>
-  readonly eligible: Prisma.FieldRef<"CrawledRepo", 'Boolean'>
   readonly candidatesCount: Prisma.FieldRef<"CrawledRepo", 'Int'>
   readonly storedCount: Prisma.FieldRef<"CrawledRepo", 'Int'>
   readonly disabled: Prisma.FieldRef<"CrawledRepo", 'Boolean'>

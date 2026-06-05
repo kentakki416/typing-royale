@@ -942,6 +942,9 @@ export type $CrawlerRunItemPayload<ExtArgs extends runtime.Types.Extensions.Inte
      * "success" / "failed" / "skipped"
      */
     status: string
+    /**
+     * この repo で problems に INSERT された件数。failed / skipped は常に 0
+     */
     problemsAdded: number
     startedAt: Date
     endedAt: Date | null

@@ -666,7 +666,13 @@ export type $CrawlerRunPayload<ExtArgs extends runtime.Types.Extensions.Internal
      * "running" / "success" / "failed"
      */
     status: string
+    /**
+     * この run で試行した repo 数（成功・失敗・skipped すべて含む。CrawlerRunItem 行数と一致）
+     */
     reposProcessed: number
+    /**
+     * この run で problems に INSERT された総件数（子の problems_added の合計）
+     */
     problemsAdded: number
     startedAt: Date
     endedAt: Date | null

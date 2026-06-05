@@ -82,8 +82,8 @@ model CrawlerRun {
   id             Int       @id @default(autoincrement())
   runType        String    @map("run_type") /// "full" / "license_recheck"
   status         String /// "running" / "success" / "failed"
-  reposProcessed Int       @default(0) @map("repos_processed") /// 子テーブル CrawlerRunItem の集計値
-  problemsAdded  Int       @default(0) @map("problems_added")
+  reposProcessed Int       @default(0) @map("repos_processed") /// この run で試行した repo 数（成功・失敗・skipped すべて含む。CrawlerRunItem 行数と一致）
+  problemsAdded  Int       @default(0) @map("problems_added") /// この run で problems に INSERT された総件数（子の problems_added の合計）
   startedAt      DateTime  @map("started_at")
   endedAt        DateTime? @map("ended_at")
   error          Json?
@@ -103,7 +103,7 @@ model CrawlerRunItem {
   targetOwner   String    @map("target_owner")
   targetRepo    String    @map("target_repo")
   status        String /// "success" / "failed" / "skipped"
-  problemsAdded Int       @default(0) @map("problems_added")
+  problemsAdded Int       @default(0) @map("problems_added") /// この repo で problems に INSERT された件数。failed / skipped は常に 0
   startedAt     DateTime  @map("started_at")
   endedAt       DateTime? @map("ended_at")
   error         Json?
