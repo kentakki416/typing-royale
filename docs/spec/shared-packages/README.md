@@ -34,6 +34,7 @@
   - [テンプレート利用フロー](#テンプレート利用フロー)
 - [設計](#設計)
   - [パッケージ境界の原則](#パッケージ境界の原則)
+  - [Repository / Service の共通化方針](#repository--service-の共通化方針)
   - [`@repo/db` の設計](#repodb-の設計)
   - [`@repo/logger` の設計](#repologger-の設計)
   - [`@repo/errors` の設計](#repoerrors-の設計)
@@ -190,12 +191,124 @@ flowchart LR
 
 | 観点 | ルール |
 | --- | --- |
-| **責務最小化** | 各パッケージは「共通 1 機能」に絞る。Repository や Service は packages に置かない（app ごとにクエリ最適化が異なるため） |
+| **責務最小化** | 各パッケージは「共通 1 機能」に絞る。Repository や Service の orchestration は packages に置かない（詳細は次節 [Repository / Service の共通化方針](#repository--service-の共通化方針)） |
 | **依存方向** | `@repo/errors` は他 packages に依存しない。`@repo/logger` は `@repo/errors` のみ任意依存可。`@repo/db` は `@repo/errors` / `@repo/logger` のいずれにも依存しない（型レベルで切り離す） |
 | **Node 専用** | すべて Node 専用。Next.js / Expo の client bundle に混入させない |
 | **環境変数の読み込み** | `process.env` を直接読むのは `@repo/config` だけ。他パッケージは引数で受け取る（テスタビリティ確保） |
 | **接続を持つものは factory のみ** | `@repo/db` / `@repo/redis` は **factory のみ** を export し、singleton を持たない。client の生成・破棄は app 側 (`src/index.ts`) の責務。logger / errors / config のように接続を持たないものは singleton / 純関数で OK |
 | **副作用** | `package.json` に `"sideEffects": false` を付ける。tree-shaking 可能にする |
+
+### Repository / Service の共通化方針
+
+複数の server-side app（api / cron / 将来の realtime / worker）が同じ DB スキーマを参照する状況で、**Repository / Service をどこに置くか**の原則を定める。
+
+#### TL;DR
+
+| 層 | 置き場所 | 理由 |
+| --- | --- | --- |
+| **Prisma schema / 生成型 / factory** | `@repo/db`（共通） | 真の重複。型は TS の安全網として全 app に伝播させたい |
+| **Repository class**（Prisma 呼び出し + Domain 型変換） | **各 app 内**（`apps/<name>/src/repository/` または `service/<domain>/`） | 同じテーブルでも app ごとに読み書き要件・cache 戦略・Domain 型が異なる |
+| **Service の orchestration**（Repository + client を組み立てる手順） | **各 app 内**（`apps/<name>/src/service/`） | I/O を束ねるロジックは app に閉じている |
+| **Service の pure domain logic**（I/O なしの計算・ルール・定数） | 2 app 以上で必要になったら **小さなドメイン特化パッケージ**に切り出す | 依存も I/O も無いので結合コストが小さく、共通化のメリットが効く |
+
+#### Repository を共通化しない理由
+
+スキーマが共通でも、Repository は app ごとに置く。
+
+1. **読み書きの関心がほぼ重ならない**
+   同じ `problems` テーブルでも、cron は `bulkCreateSkippingDuplicates` / `markDisabledByCrawledRepoId`（書き中心）、api は `findByLanguageRandom` / `findById`（読み中心）と、必要なメソッドが 90% 別物になる。共通 Repository にすると「各 app が半分ずつ使う太いクラス」になる。
+
+2. **Domain 型が app ごとに違う**
+   cron の `CrawledRepoDomain` は `pickNextRepo` 用に `id / owner / name / commitSha / languageId / license` だけの薄い型。api が表示用に持つ Domain 型はまた別。同じ DB テーブルでも、**app から見たエンティティの形は別物** という前提で各 app が必要な分だけ Domain 型を持つ方が綺麗に切れる。
+
+3. **キャッシュ・レプリカ・トランザクション戦略が app ごとに違う**
+
+   | app | アクセス頻度 | キャッシュ | replica | transaction |
+   | --- | --- | --- | --- | --- |
+   | api（プロフィール表示） | 低 | 1 秒 TTL | OK | リクエスト単位 |
+   | realtime（マッチ参加） | 超高 | 30 秒 LRU 必須 | OK | 不要 |
+   | cron（クローラ） | 中 | 不要 | primary | `$transaction` で複数 write |
+
+   `findById` 一つとっても、キャッシュをどこに入れるか・どの replica を使うかの要件が違う。共通化すると `{cache?: boolean, replica?: boolean}` のような設定オプションだらけになり、Prisma を直接叩くのと変わらない薄ラッパに退化する。
+
+4. **デプロイ独立性が崩れる**
+   共通 Repository を 1 メソッド変えると、全消費 app が再ビルド・再デプロイ対象になる。app の境界をデプロイ単位の境界に揃えておく方が、変更影響を読みやすい。
+
+5. **共通化で減るコードは思ったより少ない**
+   Repository の中身は Prisma 呼び出し + Domain 型への詰め替えがほとんどで、共通化の旨味は小さい。一方、結合コストは app の数だけ線形に増える。
+
+#### スキーマ変更時の対処
+
+「Repository が app の数だけある → スキーマ変更で全部更新が必要では？」という懸念は正しいが、実害は小さい：
+
+- **大半のスキーマ変更は追加**（新カラム / 新テーブル / 新インデックス）で、既存 Repository を触る必要がない
+- **破壊的変更**（rename / 削除 / 型変更）は年に数回レベル。発生したときは `@repo/db` の型再生成で**全 app の `tsc` が壊れた箇所をリストアップしてくれる**ので、人間が「どこを直すか」を覚えておく必要がない
+- 各 Repository の `_toDomain` メソッド（生 row → Domain 型変換）に raw 列名への依存を集めておくことで、**スキーマ変更の波が Repository より外に伝播しない**
+
+```ts
+/** 例：列名変更を Repository 内に閉じ込めるパターン */
+private _toDomain = (row: PrismaCrawledRepo): CrawledRepoDomain => ({
+  id: row.id,
+  commitSha: row.commitSha,    // スキーマで commit_sha → head_commit になっても、
+  fullName: row.fullName,      // 修正は _toDomain の 1 行で済み、ビジネスロジックは無傷
+})
+```
+
+#### Service の orchestration を共通化しない理由
+
+Service には **orchestration**（Repository / client を組み立てる手順）と **pure domain logic**（I/O なしの計算・ルール）の 2 種類が混在する。Orchestration は Repository と同じ理由で app 単位：
+
+- 使う Repository / external client の組み合わせが app ごとに違う
+- エラーハンドリング・retry 戦略・logger コンテキストが app ごとに違う
+- DI 構造が app の `src/index.ts` / `task/<name>.ts` に閉じる
+
+例：cron の `processRepo` は GithubClient + 3 種類の Repository + AST モジュールを束ねる手順。api の `authenticateWithGoogle` は GoogleOAuthClient + UserRepo + AuthAccountRepo + RefreshTokenRepo を束ねる手順。それぞれ別 app の責務であり、共通化する余地が無い。
+
+#### Pure domain logic は共通化を検討する（ただし注意点あり）
+
+I/O も依存も無い純粋ロジック（計算式・定数・判定関数）は、**結合コストがほぼゼロ**なので共通化のメリットが効く。
+
+このプロジェクトで該当しそうな候補：
+
+| 候補 | 使う app | 共通化判断 |
+| --- | --- | --- |
+| 許可ライセンスのセット（MIT / Apache-2.0 / BSD-3-Clause / ISC） | cron (processRepo, licenseRecheck) + 将来 api（バッジ表示） | 2 app で必要になったら共通化 |
+| WPM / スコア計算式 | 将来 api（マッチ結果記録）+ realtime（試合中の表示） | 2 app で必要になったら共通化 |
+| ランキング集計式 | cron (batch:ranking) + 将来 api（順位再計算） | 2 app で必要になったら共通化 |
+| AST hash 正規化 | cron のみ | 共通化しない |
+
+#### 共通化するときの置き場ルール
+
+pure logic を共通化する際、**`@repo/service` のような汎用パッケージは作らない**。`@repo/db` 以外の domain 層は、必ず `@repo/<domain>` の小さな焦点パッケージとして切る：
+
+```
+packages/
+├── db/                  # ✅ 既存：Prisma factory + 生成型
+├── api-schema/          # ✅ 既存：Zod スキーマ
+├── logger/              # ✅ 既存：ロガー
+├── errors/              # ✅ 既存：Result / ApiError
+├── redis/               # ✅ 既存：Redis factory
+│
+├── scoring/             # 🟡 将来：WPM / スコア計算（pure function のみ）
+├── license-policy/      # 🟡 将来：許可ライセンスのセット + 判定関数
+└── ranking-formula/     # 🟡 将来：ランキング集計式
+```
+
+**ルール**：
+- 1 パッケージ = 1 ドメインの pure logic
+- pure function / 定数 / 型のみ。状態を持たない、I/O を持たない、DB を知らない
+- 名前は必ず domain 名（`@repo/<domain>`）。`@repo/service` / `@repo/utils` / `@repo/common` のような汎用名は作らない（結合の温床になる）
+
+#### 共通化のトリガー条件
+
+**2 つ目の app で同じ pure logic が必要になった瞬間** に共通化を検討する。1 つの app しか使わないうちは各 app 内に置いておく（YAGNI）。
+
+判断順序：
+1. **その logic は pure か？**（I/O / DB / 状態に依存しない）→ NO なら共通化しない
+2. **2 app 以上で同一のものが必要になったか？** → NO なら app 内に置いたままにする
+3. **YES なら**、`packages/<domain>/` を新設して移動。両 app は `@repo/<domain>` 経由で使う
+
+これにより「とりあえず共通にしておこう」という事前最適化を避け、実際の重複が見えてから共通化できる。
 
 ### `@repo/db` の設計
 

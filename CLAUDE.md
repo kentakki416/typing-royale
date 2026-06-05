@@ -39,7 +39,7 @@ Turborepo + pnpm モノレポ。
 - Mobile → `apps/mobile/CLAUDE.md`
 - スキーマ → `packages/schema/CLAUDE.md`（スキーマ命名規則）
 - Terraform → `infra/terraform/CLAUDE.md`
-- 共通パッケージ設計 → [`docs/spec/shared-packages/README.md`](docs/spec/shared-packages/README.md)（`@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/redis` の仕様・設計・移行手順）
+- 共通パッケージ設計 → [`docs/spec/shared-packages/README.md`](docs/spec/shared-packages/README.md)（`@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/redis` の仕様・設計・移行手順、および [Repository / Service の共通化方針](docs/spec/shared-packages/README.md#repository--service-の共通化方針)）
 
 ## Common Commands (root)
 
