@@ -24,7 +24,6 @@ CREATE TABLE "crawled_repos" (
     "license" TEXT NOT NULL,
     "default_branch" TEXT NOT NULL,
     "commit_sha" TEXT NOT NULL,
-    "eligible" BOOLEAN NOT NULL DEFAULT false,
     "candidates_count" INTEGER NOT NULL DEFAULT 0,
     "stored_count" INTEGER NOT NULL DEFAULT 0,
     "disabled" BOOLEAN NOT NULL DEFAULT false,
@@ -101,7 +100,7 @@ CREATE UNIQUE INDEX "languages_slug_key" ON "languages"("slug");
 CREATE UNIQUE INDEX "crawled_repos_github_id_key" ON "crawled_repos"("github_id");
 
 -- CreateIndex
-CREATE INDEX "crawled_repos_language_id_eligible_disabled_idx" ON "crawled_repos"("language_id", "eligible", "disabled");
+CREATE INDEX "crawled_repos_language_id_disabled_idx" ON "crawled_repos"("language_id", "disabled");
 
 -- CreateIndex
 CREATE INDEX "problems_crawled_repo_id_idx" ON "problems"("crawled_repo_id");

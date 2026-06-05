@@ -76,43 +76,35 @@ model Language {
 
 // クロール対象 / 結果リポジトリ
 // 成功 / 不適格 / 失敗 すべてここに 1 行として記録される
-// `eligible=true` は採用候補 30 個以上 → 最大 100 個保存された repo（/solo の抽選対象）
+// 出題対象は `disabled=false` の repo（採用候補 30 個以上 → 最大 100 個保存済み）
+// 「過去に採用されたか」は `storedCount > 0` で判定できるので、別途 eligible フラグは持たない
 // docs/spec/problem-pool/README.md「DB 設計」参照
 model CrawledRepo {
-    id                   Int      @id @default(autoincrement())
-    /// GitHub 上の repo id（API レスポンスの `id`）
-    githubId             BigInt   @unique @map("github_id")
-    languageId           Int      @map("language_id")
-    owner                String
-    name                 String
-    /// "owner/name"
-    fullName             String   @map("full_name")
-    description          String?
-    homepage             String?
-    topics               Json     @default("[]")
-    stars                Int
-    license              String
-    defaultBranch        String   @map("default_branch")
-    /// クロール時の HEAD SHA
-    commitSha            String   @map("commit_sha")
-    /// 採用候補 30 個以上で true
-    eligible             Boolean  @default(false)
-    /// AST 解析で採用条件を満たした総数（サンプリング前、> 100 もあり得る）
-    candidatesCount      Int      @default(0) @map("candidates_count")
-    /// 実際に problems に保存された件数（≤ 100、≤ candidatesCount）
-    storedCount          Int      @default(0) @map("stored_count")
-    /// クローラ失敗 / ライセンス変更 / 採用候補不足 等で出題対象外
-    disabled             Boolean  @default(false)
-    /// "too_few_problems" / "not_found" / "server_error" / "license_changed" / "rate_limit_exceeded" / "license_not_allowed"
-    disabledReason       String?  @map("disabled_reason")
-    crawledAt            DateTime @map("crawled_at")
-    createdAt            DateTime @default(now()) @map("created_at")
-    updatedAt            DateTime @updatedAt @map("updated_at")
+    id              Int      @id @default(autoincrement())
+    githubId        BigInt   @unique @map("github_id") /// GitHub 上の repo id（API レスポンスの `id`）
+    languageId      Int      @map("language_id")
+    owner           String
+    name            String
+    fullName        String   @map("full_name") /// "owner/name"
+    description     String?
+    homepage        String?
+    topics          Json     @default("[]")
+    stars           Int
+    license         String
+    defaultBranch   String   @map("default_branch")
+    commitSha       String   @map("commit_sha") /// クロール時の HEAD SHA
+    candidatesCount Int      @default(0) @map("candidates_count") /// AST 解析で採用条件を満たした総数（サンプリング前、> 100 もあり得る）
+    storedCount     Int      @default(0) @map("stored_count") /// 実際に problems に保存された件数（≤ 100、≤ candidatesCount）。> 0 = 過去に採用された
+    disabled        Boolean  @default(false) /// 出題対象外（クローラ失敗 / 採用候補不足 / ライセンス変更 / 運営判断 等）
+    disabledReason  String?  @map("disabled_reason") /// "too_few_problems" / "not_found" / "server_error" / "license_changed" / "rate_limit_exceeded" / "license_not_allowed"
+    crawledAt       DateTime @map("crawled_at")
+    createdAt       DateTime @default(now()) @map("created_at")
+    updatedAt       DateTime @updatedAt @map("updated_at")
 
     language Language  @relation(fields: [languageId], references: [id])
     problems Problem[]
 
-    @@index([languageId, eligible, disabled])
+    @@index([languageId, disabled])
     @@map("crawled_repos")
 }
 
@@ -127,17 +119,13 @@ model Problem {
     sourceFilePath  String   @map("source_file_path")
     sourceLineStart Int      @map("source_line_start")
     sourceLineEnd   Int      @map("source_line_end")
-    /// GitHub 行範囲ハイライト付き URL
-    sourceUrl       String   @map("source_url")
+    sourceUrl       String   @map("source_url") /// GitHub 行範囲ハイライト付き URL
     functionName    String   @map("function_name")
-    /// コメント除去済みのタイピング対象コード
-    codeBlock       String   @map("code_block")
+    codeBlock       String   @map("code_block") /// コメント除去済みのタイピング対象コード
     charCount       Int      @map("char_count")
     lineCount       Int      @map("line_count")
-    /// SHA-256 hex 64 文字、コピペ重複排除用
-    astHash         String   @map("ast_hash")
-    /// ライセンス再検証や運営の手動無効化で出題対象から外す
-    disabled        Boolean  @default(false)
+    astHash         String   @map("ast_hash") /// SHA-256 hex 64 文字、コピペ重複排除用
+    disabled        Boolean  @default(false) /// ライセンス再検証や運営の手動無効化で出題対象から外す
     createdAt       DateTime @default(now()) @map("created_at")
     updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -154,10 +142,8 @@ model Problem {
 // 個別 repo の成否は子テーブル CrawlerRunItem 参照
 model CrawlerRun {
     id             Int       @id @default(autoincrement())
-    /// "full" / "license_recheck"
-    runType        String    @map("run_type")
-    /// "running" / "success" / "failed"
-    status         String
+    runType        String    @map("run_type") /// "full" / "license_recheck"
+    status         String    /// "running" / "success" / "failed"
     reposProcessed Int       @default(0) @map("repos_processed")
     problemsAdded  Int       @default(0) @map("problems_added")
     startedAt      DateTime  @map("started_at")
@@ -180,8 +166,7 @@ model CrawlerRunItem {
     languageId    Int       @map("language_id")
     targetOwner   String    @map("target_owner")
     targetRepo    String    @map("target_repo")
-    /// "success" / "failed" / "skipped"
-    status        String
+    status        String    /// "success" / "failed" / "skipped"
     problemsAdded Int       @default(0) @map("problems_added")
     startedAt     DateTime  @map("started_at")
     endedAt       DateTime? @map("ended_at")

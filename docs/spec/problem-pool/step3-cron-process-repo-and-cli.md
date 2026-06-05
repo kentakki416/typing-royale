@@ -47,7 +47,6 @@ export type CreateCrawledRepoInput = {
   description: string | null
   disabled: boolean
   disabledReason: string | null
-  eligible: boolean
   fullName: string
   githubId: bigint
   homepage: string | null
@@ -210,10 +209,13 @@ export type ProcessRepoTarget = {
  * 全て正常フロー上の分岐結果（業務エラーではない）。
  * Result でラップせず plain union を返す。
  * 想定外（API 5xx 3 回連続、DB 障害）は throw する
+ *
+ * adopted=true なら disabled=false で crawled_repos に INSERT、problems も保存される。
+ * adopted=false なら disabled=true / disabledReason=reason で crawled_repos に INSERT、problems は空
  */
 export type ProcessRepoResult =
-  | { eligible: true; problemsAdded: number; candidatesCount: number; storedCount: number }
-  | { eligible: false; reason: "license_not_allowed" | "too_few_problems"; candidatesCount: number }
+  | { adopted: true; candidatesCount: number; problemsAdded: number; storedCount: number }
+  | { adopted: false; candidatesCount: number; reason: "license_not_allowed" | "too_few_problems" }
 
 export const processRepo = async (
   target: ProcessRepoTarget,
@@ -234,7 +236,7 @@ export const processRepo = async (
   /** 2. ライセンス確認 */
   if (meta.license === null || !ALLOWED_LICENSES.has(meta.license)) {
     await persistDisabled(target, meta, "license_not_allowed", repo, 0)
-    return { candidatesCount: 0, eligible: false, reason: "license_not_allowed" }
+    return { adopted: false, candidatesCount: 0, reason: "license_not_allowed" }
   }
 
   /** 3. ファイル一覧取得 */
@@ -286,7 +288,7 @@ export const processRepo = async (
   /** 5. repo 単位の足切り */
   if (candidatesCount < MIN_ELIGIBLE) {
     await persistDisabled(target, meta, "too_few_problems", repo, candidatesCount)
-    return { candidatesCount, eligible: false, reason: "too_few_problems" }
+    return { adopted: false, candidatesCount, reason: "too_few_problems" }
   }
 
   /** 6. ランダムサンプリング（> 100 なら 100 個に絞る） */
@@ -301,7 +303,6 @@ export const processRepo = async (
     description: meta.description,
     disabled: false,
     disabledReason: null,
-    eligible: true,
     fullName: meta.fullName,
     githubId: BigInt(meta.id),
     homepage: meta.homepage,
@@ -326,7 +327,7 @@ export const processRepo = async (
   }
 
   logger.info("processRepo: done", { candidatesCount, fullName, problemsAdded })
-  return { candidatesCount, eligible: true, problemsAdded, storedCount: sampled.length }
+  return { adopted: true, candidatesCount, problemsAdded, storedCount: sampled.length }
 }
 
 const persistDisabled = async (
@@ -344,7 +345,6 @@ const persistDisabled = async (
     description: meta.description,
     disabled: true,
     disabledReason: reason,
-    eligible: false,
     fullName: meta.fullName,
     githubId: BigInt(meta.id),
     homepage: meta.homepage,
@@ -589,7 +589,7 @@ const main = async () => {
                 { languageId: lang.id, name: target.name, owner: target.owner },
                 { crawledRepoRepository, problemRepository }
               )
-              const added = result.eligible ? result.problemsAdded : 0
+              const added = result.adopted ? result.problemsAdded : 0
               await crawlerRunItemRepository.succeed(item.id, new Date(), added)
               reposProcessed++
               problemsAdded += added
@@ -672,7 +672,7 @@ step2 のテストに加えて、Service 層のテストを追加：
 
 | テストファイル | カバー範囲 |
 |---|---|
-| `service/process-repo.test.ts` | GitHub API クライアントを `vi.fn()` で mock、Repository も mock。「採用候補 30 個未満で disabled」「>= 30 で eligible=true で INSERT」「> 100 で 100 件に絞る」「ライセンス NG で disabled」「repo 内同 hash の dedupe（Map）」「他 repo に既存の hash で skipDuplicates が効く」 |
+| `service/process-repo.test.ts` | GitHub API クライアントを `vi.fn()` で mock、Repository も mock。「採用候補 30 個未満で disabled=true / reason='too_few_problems'」「>= 30 で disabled=false / storedCount=保存件数 で INSERT」「> 100 で 100 件に絞る」「ライセンス NG で disabled=true / reason='license_not_allowed'」「repo 内同 hash の dedupe（Map）」「他 repo に既存の hash で skipDuplicates が効く」 |
 | `service/pick-next-repo.test.ts` | Search API mock + listRegisteredFullNames mock。「登録済みをスキップして次を返す」「全て登録済みで null」 |
 | `service/crawler-run.test.ts` | clock を `now: () => new Date(...)` で DI。「同日 active あればスキップ」「stale running を自動 failed 化」「forceRerun=true で同日チェックバイパス」「成功で succeed」「例外で fail + rethrow」 |
 | `service/license-recheck.test.ts` | 「ライセンス OK で何もしない」「NG で markDisabled + markDisabledByCrawledRepoId が呼ばれる」「個別 repo の 404 は他に影響させず継続」 |
@@ -754,8 +754,8 @@ processRepo: done, fullName=colinhacks/zod, problemsAdded=100
 DB を psql で確認：
 
 ```sql
-SELECT full_name, eligible, eligible_problem_count, disabled FROM crawled_repos;
--- → colinhacks/zod | t | (適切な値) | f
+SELECT full_name, candidates_count, stored_count, disabled, disabled_reason FROM crawled_repos;
+-- → colinhacks/zod | (採用候補数) | (保存件数 ≤ 100) | f | NULL
 
 SELECT COUNT(*) FROM problems;
 -- → ~100（採用候補数による）
