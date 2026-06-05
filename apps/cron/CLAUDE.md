@@ -20,20 +20,19 @@ pnpm build        # dist/ にコンパイル
 pnpm lint         # ESLint
 ```
 
-## ディレクトリ構成（Phase 0 時点）
+## ディレクトリ構成
 
-```
-apps/cron/
-├── src/
-│   ├── cli/                  # CLI エントリポイント
-│   │   ├── run.ts            # 週次クローラ
-│   │   ├── license-recheck.ts
-│   │   └── ranking-batch.ts
-│   └── index.ts              # pnpm dev のエントリ（起動確認用）
-├── Dockerfile                # 本番用 (turbo prune + installer-builder + runner)
-├── package.json
-└── tsconfig.json
-```
+ディレクトリ戦略（層の役割 / 設計ルール / 新タスク追加手順）は [`README.md#ディレクトリ戦略`](./README.md#ディレクトリ戦略) を参照。新しい task や service / client を追加するときは必ず README に従う。
+
+要点（AI 向けサマリ）:
+
+- **`task/<name>.ts`** は cron 1 本 = 1 ファイル。env を組み立てて Prisma / client を生成し `service/*` を呼ぶだけ。サブディレクトリは切らない。
+- **`service/<domain>/`** に業務ロジックを置く（aggregator / verifier / repository など）。task 横断の再利用はここで集約する。
+- **`client/<service>/`** に外部 API クライアント class を置く。env を直接 import しない（コンストラクタ DI）。
+- **`ast/`** は TypeScript Compiler API のラッパ。
+- **`lib/`** は env も DB も知らない純関数のみ。
+
+`tasks/` （複数形）や `cli/` というディレクトリは作らない。task は単数形のディレクトリで `task/<name>.ts` のフラット配置に保つ。
 
 ロガーは `@repo/logger` を、それ以外の共通インフラは `@repo/db` / `@repo/redis` / `@repo/errors` を必要に応じて使う。env 検証は `src/env.ts` に Zod スキーマをインラインで定義する（`safeParse → process.exit(1)` のパターン。apps/api を参照）。
 

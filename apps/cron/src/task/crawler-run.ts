@@ -1,7 +1,11 @@
 import { logger } from "@repo/logger"
 
 /**
- * 週次クローラ CLI のエントリポイント（Phase 2 で本実装）。
+ * crawler:run - 週次クローラの起動エントリ（Phase 2 で本実装）。
+ *
+ * このファイル自体は env を組み立てて `service/crawler/` の処理を呼ぶ薄い 1 枚に
+ * 保つ。業務ロジック（pickNextRepo / processRepo / run 追跡）は `service/crawler/`
+ * 配下で実装し、license-recheck と共有できるところは service 側で集約する。
  *
  * 実装予定:
  *   1. crawler_runs に running レコードを作成（同日二重起動防止）

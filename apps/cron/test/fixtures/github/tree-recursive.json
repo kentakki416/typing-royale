@@ -1,0 +1,32 @@
+{
+  "sha": "abc123def456789012345678901234567890abcd",
+  "url": "https://api.github.com/repos/colinhacks/zod/git/trees/abc...",
+  "truncated": false,
+  "tree": [
+    { "path": "src/index.ts", "type": "blob", "size": 5000 },
+    { "path": "src/parse.ts", "type": "blob", "size": 12000 },
+    { "path": "src/types.ts", "type": "blob", "size": 3000 },
+    { "path": "src/utils.test.ts", "type": "blob", "size": 4000 },
+    { "path": "src/parse.spec.ts", "type": "blob", "size": 6000 },
+    { "path": "src/legacy-test.ts", "type": "blob", "size": 2000 },
+    { "path": "src/__tests__/helpers.ts", "type": "blob", "size": 1500 },
+    { "path": "tests/integration.ts", "type": "blob", "size": 3500 },
+    { "path": "e2e/login.spec.ts", "type": "blob", "size": 2500 },
+    { "path": "src/__mocks__/api.ts", "type": "blob", "size": 1000 },
+    { "path": "src/Button.stories.tsx", "type": "blob", "size": 1800 },
+    { "path": "src/data.fixtures.ts", "type": "blob", "size": 1200 },
+    { "path": "src/types.d.ts", "type": "blob", "size": 800 },
+    { "path": "node_modules/lodash/index.js", "type": "blob", "size": 50000 },
+    { "path": "dist/bundle.js", "type": "blob", "size": 200000 },
+    { "path": "build/output.js", "type": "blob", "size": 80000 },
+    { "path": "huge-bundle.js", "type": "blob", "size": 150000 },
+    { "path": "data/seeds.ts", "type": "blob", "size": 2000 },
+    { "path": "images/logo.js", "type": "blob", "size": 1000 },
+    { "path": "public/config.ts", "type": "blob", "size": 1500 },
+    { "path": "src/data/seed.ts", "type": "blob", "size": 1500 },
+    { "path": "src/images/icon.ts", "type": "blob", "size": 800 },
+    { "path": "src/public/static.ts", "type": "blob", "size": 1200 },
+    { "path": "README.md", "type": "blob", "size": 5000 },
+    { "path": "src", "type": "tree", "size": null }
+  ]
+}

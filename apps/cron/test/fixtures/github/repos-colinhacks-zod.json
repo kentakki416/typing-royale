@@ -1,0 +1,12 @@
+{
+  "id": 123,
+  "default_branch": "main",
+  "description": "TypeScript-first schema validation with static type inference",
+  "full_name": "colinhacks/zod",
+  "homepage": "https://zod.dev",
+  "license": { "spdx_id": "MIT" },
+  "name": "zod",
+  "owner": { "login": "colinhacks" },
+  "stargazers_count": 35000,
+  "topics": ["typescript", "schema", "validation", "type-safety"]
+}

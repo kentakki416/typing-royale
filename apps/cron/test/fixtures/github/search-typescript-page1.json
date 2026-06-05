@@ -1,0 +1,26 @@
+{
+  "total_count": 42,
+  "incomplete_results": false,
+  "items": [
+    {
+      "id": 123,
+      "default_branch": "main",
+      "full_name": "colinhacks/zod",
+      "license": { "spdx_id": "MIT" },
+      "name": "zod",
+      "owner": { "login": "colinhacks" },
+      "pushed_at": "2026-05-01T10:00:00Z",
+      "stargazers_count": 35000
+    },
+    {
+      "id": 456,
+      "default_branch": "master",
+      "full_name": "sindresorhus/got",
+      "license": { "spdx_id": "MIT" },
+      "name": "got",
+      "owner": { "login": "sindresorhus" },
+      "pushed_at": "2026-04-20T08:00:00Z",
+      "stargazers_count": 14000
+    }
+  ]
+}
