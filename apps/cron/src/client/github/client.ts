@@ -100,7 +100,12 @@ export class GithubClient {
   }
 
   /**
-   * Search Repositories API
+   * 役割: クローラの「次に取り込む候補 repo を **探す**」フェーズ。
+   *
+   * GitHub Search Repositories API（`/search/repositories`）を叩く。まだ owner/name を
+   * 知らない repo の中から、フィルタ条件にマッチするものをスター数降順で 100 件ずつ
+   * 取得する。返るのはあくまでマッチ一覧のメタ subset で、ファイル本文や正確な license
+   * を確定するには後段の getRepoMeta が必要。
    *
    * docs/spec/problem-pool/README.md「取得元の選定」のフィルタ条件:
    *   - language:{slug}
@@ -109,6 +114,9 @@ export class GithubClient {
    *   - pushed:>{pushedAfter}
    *   - archived:false
    *   - sort=stars-desc / per_page=100
+   *
+   * 入力: language（スラッグ）, page（1〜10）
+   * 出力: { items: GithubSearchItem[], totalCount }
    */
   public searchRepos = async (language: string, page: number): Promise<GithubSearchResult> => {
     const q = `language:${language} ${SEARCH_LICENSE_FILTER} stars:>=${this.minStars} pushed:>${this.pushedAfter} archived:false`
@@ -122,10 +130,18 @@ export class GithubClient {
   }
 
   /**
-   * Repos API + Git Refs API
+   * 役割: 候補 repo の「**最新の正確なメタ情報** と **クロール起点となる commit SHA** を取る」フェーズ。
    *
-   * `GET /repos/{owner}/{repo}` でメタ情報を取り、default branch の HEAD commit SHA
-   * を別エンドポイントで取得して permalink 生成用の commitSha として返す。
+   * 2 つの API を組み合わせる:
+   *   1. Repos API（`/repos/{owner}/{name}`）で description / topics / license /
+   *      default_branch を最新値で取得。Search の結果はインデックス時点の値なので、
+   *      ここで取り直すことで「Search 時点では MIT だったが実は変わっていた」を防ぐ。
+   *   2. Git Refs API（`/repos/{owner}/{name}/git/refs/heads/{branch}`）で default branch の
+   *      HEAD commit SHA を取得。以降の tree / raw 取得はこの SHA に固定することで、
+   *      クロール中に repo が変更されても整合性が崩れず、permalink URL も SHA 付きで作れる。
+   *
+   * 入力: owner, repo
+   * 出力: GithubRepoMeta（最新メタ + commitSha）
    */
   public getRepoMeta = async (owner: string, repo: string): Promise<GithubRepoMeta> => {
     const url = `${API_BASE}/repos/${owner}/${repo}`
@@ -160,11 +176,16 @@ export class GithubClient {
   }
 
   /**
-   * Git Tree API + クロール用フィルタ
+   * 役割: 「**どのファイルをダウンロードすべきか**」を決めるフェーズ。本文は取らない。
    *
-   * `recursive=1` で repo の全ファイルパスを取得し、AST 解析対象（.ts/.tsx/.js/.jsx）
-   * かつテスト・ノイズ・大ファイルを除いたエントリだけ返す。ダウンロード前に絞ることで
-   * raw content API のレート消費と AST パースコストを抑えるのが目的。
+   * Git Tree API（`/repos/{owner}/{name}/git/trees/{sha}?recursive=1`）を `recursive=1`
+   * で叩き、その commit に含まれる全 blob のパスとサイズを 1 リクエストで取得する。
+   * 戻り値はファイル本文を含まないので、ここで AST 対象（.ts/.tsx/.js/.jsx）に絞り、
+   * テスト・ストーリーブック・静的アセット・大ファイル等を **ダウンロード前に除外** する。
+   * これにより後段の getRawContent の呼び出し回数と AST パースコストを大きく削減できる。
+   *
+   * 入力: owner, repo, commitSha（getRepoMeta が返した SHA を使う）
+   * 出力: AST 対象に絞った GithubTreeEntry[]
    */
   public listSourceFiles = async (
     owner: string,
@@ -184,10 +205,18 @@ export class GithubClient {
   }
 
   /**
-   * raw.githubusercontent.com からファイル本文を UTF-8 文字列で取得する。
+   * 役割: 「**AST に流し込むソースコード本文を 1 ファイルずつ取得する**」最終フェーズ。
    *
-   * Accept ヘッダはデフォルトで OK。認証は不要だが PAT を付けることでアカウント単位
-   * のレート制限になる（非認証だと IP 単位で 60 req/h と厳しい）。
+   * `raw.githubusercontent.com/{owner}/{name}/{sha}/{path}` から UTF-8 テキストで取得する。
+   * commitSha 固定なので、後で repo が変更されても同じ内容が返る（永続的なソース参照）。
+   * Tree API はファイル一覧しか返さないため、本文取得は **1 ファイル 1 リクエスト**になる
+   * （これが GitHub クライアントで最もリクエスト数が多くなる箇所）。
+   *
+   * 認証は不要だが PAT を付けることでレート制限がアカウント単位（5000 req/h）になる。
+   * 非認証だと IP 単位で 60 req/h と厳しいため、PAT は事実上必須。
+   *
+   * 入力: owner, repo, commitSha, path（listSourceFiles が返した path をそのまま使う）
+   * 出力: ファイル本文（UTF-8 文字列）
    */
   public getRawContent = async (
     owner: string,
