@@ -7,6 +7,10 @@ cron / EventBridge から定期実行されるタスク群（GitHub クローラ
 - 問題プール（クローラ）: [`docs/spec/problem-pool/README.md`](../../docs/spec/problem-pool/README.md)
 - スコア・ランキング: [`docs/spec/score-ranking/README.md`](../../docs/spec/score-ranking/README.md)
 
+技術リファレンス:
+
+- TypeScript Compiler API（AST 解析の関数・データ構造）: [`docs/typescript-ast.md`](./docs/typescript-ast.md) — 新規ジョイン者向けのキャッチアップガイド
+
 ## ステータス
 
 **Phase 0**：ディレクトリと CLI エントリポイントの雛形のみ。実処理は以下のフェーズで追加する。

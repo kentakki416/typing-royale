@@ -273,6 +273,10 @@ const getCommitSha = async (owner: string, repo: string, branch: string): Promis
 
 ### `apps/cron/src/client/github/tree.ts`
 
+**重要**: テストファイル・テストディレクトリは AST パース前に **ファイル単位で除外** する。テスト系コードは関数名（`test` / `it` / `describe` 等）が `checkAdoption` で除外される可能性が高いため、AST パースまで走らせる時間が無駄になる。
+
+`EXCLUDED_PATTERNS` は OSS で広く使われている命名規約 / ディレクトリ慣習を網羅的にカバーする:
+
 ```typescript
 export type GithubTreeEntry = {
   path: string
@@ -281,13 +285,27 @@ export type GithubTreeEntry = {
 }
 
 const EXCLUDED_PATTERNS = [
+  /** 依存・ビルド成果物 */
   /^node_modules\//,
   /\/node_modules\//,
   /^dist\//,
   /^build\//,
-  /\.test\./,
-  /\.spec\./,
   /\.d\.ts$/,
+
+  /** テストファイル（拡張子 / suffix） */
+  /\.test\./,                      // foo.test.ts, foo.test.tsx
+  /\.spec\./,                      // foo.spec.ts (Jasmine / Mocha 系)
+  /[-_]test\.[jt]sx?$/,            // foo-test.ts, foo_test.ts
+
+  /** テストディレクトリ */
+  /^(__tests__|tests?|e2e|cypress)\//,  // ルート直下
+  /\/(__tests__|tests?|e2e|cypress)\//, // 深い位置
+  /^__mocks__\//,
+  /\/__mocks__\//,
+
+  /** ノイズ（実装ロジックではない） */
+  /\.stories\.[jt]sx?$/,           // Storybook
+  /\.fixtures?\./,                 // フィクスチャ
 ]
 
 const TARGET_EXTENSIONS = /\.(ts|tsx|js|jsx)$/
@@ -310,6 +328,17 @@ export const listSourceFiles = async (
     .filter((e) => (e.size ?? 0) <= 100_000) /** 100KB 上限 */
 }
 ```
+
+#### フィルタリング効果
+
+| 項目 | 値 |
+|---|---|
+| OSS 1 repo の `.ts` / `.js` ファイル数 | 100〜1000 |
+| そのうちテスト系の割合（平均） | 30〜50% |
+| 除外することで節約できる処理 | Raw ファイル取得 + AST パース |
+| 1 repo あたりの体感削減 | 数十秒〜数分 |
+
+「ファイル単位の除外」は AST 段階・DB 段階の除外より圧倒的に効率が良い（ダウンロード自体しない）ため、ここでなるべく漏らさず弾く。
 
 ### `apps/cron/src/client/github/raw.ts`
 
@@ -397,7 +426,7 @@ const build = (node: ts.Node, sf: ts.SourceFile, name: string): ExtractedFunctio
 }
 ```
 
-### `apps/cron/src/ast/strip-comments.ts`
+### `apps/cron/src/ast/remove-comments.ts`
 
 `ts.createScanner` で全トリビアトークンを走査する実装に変更（`forEachLeading/TrailingCommentRange` のノード再帰ベースは leading/trailing が重複列挙されたり、SourceFile 直下のコメントが取りこぼされる懸念があるため）。
 
@@ -413,7 +442,7 @@ import * as ts from "typescript"
  * - StringLiteral / RegularExpressionLiteral → そのまま温存（`"https://..."` 内の // を保護）
  * - その他のトリビア（空白）は保持
  */
-export const stripComments = (rawText: string): string => {
+export const removeComments = (rawText: string): string => {
   const scanner = ts.createScanner(
     ts.ScriptTarget.Latest,
     /** skipTrivia */ false,
@@ -534,7 +563,7 @@ export const buildSourceUrl = (
 | テストファイル | カバー範囲 |
 |---|---|
 | `ast/extract-functions.test.ts` | FunctionDeclaration / ArrowFunctionExpression / FunctionExpression / MethodDeclaration / オブジェクトプロパティアロー関数の 5 ケース。**メソッド内のアロー関数が二重抽出されないこと** |
-| `ast/strip-comments.test.ts` | JSDoc / 行コメント / 行末コメント / 文字列リテラル内 `//` の保護 / テンプレートリテラル / 正規表現リテラル / 連続空行の折り畳み |
+| `ast/remove-comments.test.ts` | JSDoc / 行コメント / 行末コメント / 文字列リテラル内 `//` の保護 / テンプレートリテラル / 正規表現リテラル / 連続空行の折り畳み |
 | `ast/adoption-check.test.ts` | 各 reject reason の異常系 + ちょうど境界（100 / 400 文字、5 / 25 行、120 文字行）の境界値テスト + 正常系 |
 | `ast/normalize-for-hash.test.ts` | 空白パターン違いで同一ハッシュ / コメント有無で同一ハッシュ / 識別子違いで別ハッシュ |
 
@@ -553,7 +582,7 @@ export const buildSourceUrl = (
 |---|---|
 | `client/github/search.test.ts` | クエリ組み立て（`language:` / `license:` の連結が正しい）/ 正常レスポンスのパース / `totalCount` の取得 / `X-RateLimit-Remaining: 0` のときの待機判定 |
 | `client/github/repos.test.ts` | description / homepage / topics の取得 / **`license: null` のケース** / **`topics: undefined` のケース**（古い repo） / `getCommitSha` の合成 |
-| `client/github/tree.test.ts` | 拡張子フィルタ（`.ts` / `.js` 採用、`.d.ts` 除外）/ EXCLUDED_PATTERNS（`node_modules/` / `.test.` 除外）/ `size > 100KB` のスキップ |
+| `client/github/tree.test.ts` | 拡張子フィルタ（`.ts` / `.js` 採用、`.d.ts` 除外）/ EXCLUDED_PATTERNS の主要パターン（`node_modules/` / `.test.` / `.spec.` / `-test.ts` / `__tests__/` / `tests/` / `e2e/` / `__mocks__/` / `.stories.` / `.fixtures.`）/ `size > 100KB` のスキップ |
 | `client/github/rate-limit.test.ts` | `parseRateLimit` の正常系 / ヘッダ欠落で null / `waitForRateLimit` の reset 待機 / `MAX_WAIT_MS` 超過で throw |
 
 fixture 例：
@@ -590,7 +619,7 @@ Phase 2 の以下を `[x]` に：
 pnpm --filter cron test
 ```
 
-`extract-functions` / `strip-comments` / `adoption-check` / `normalize-for-hash` / `retry` / `source-url` の全テストが緑になる。
+`extract-functions` / `remove-comments` / `adoption-check` / `normalize-for-hash` / `retry` / `source-url` の全テストが緑になる。
 
 ### GitHub API クライアントの動作確認（手動 smoke test）
 
