@@ -1,0 +1,12 @@
+{
+  "id": 789,
+  "default_branch": "main",
+  "description": "A repo with no detected license",
+  "full_name": "someone/no-license",
+  "homepage": null,
+  "license": null,
+  "name": "no-license",
+  "owner": { "login": "someone" },
+  "stargazers_count": 2500,
+  "topics": []
+}

@@ -1,0 +1,11 @@
+{
+  "id": 999,
+  "default_branch": "main",
+  "description": "An older repo whose API response lacks topics field",
+  "full_name": "old/repo",
+  "homepage": null,
+  "license": { "spdx_id": "Apache-2.0" },
+  "name": "repo",
+  "owner": { "login": "old" },
+  "stargazers_count": 1500
+}

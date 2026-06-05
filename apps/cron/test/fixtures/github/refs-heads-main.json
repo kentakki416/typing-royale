@@ -1,0 +1,10 @@
+{
+  "ref": "refs/heads/main",
+  "node_id": "REF_kwDOXXXXXXX",
+  "url": "https://api.github.com/repos/colinhacks/zod/git/refs/heads/main",
+  "object": {
+    "sha": "abc123def456789012345678901234567890abcd",
+    "type": "commit",
+    "url": "https://api.github.com/repos/colinhacks/zod/git/commits/abc123def456789012345678901234567890abcd"
+  }
+}
