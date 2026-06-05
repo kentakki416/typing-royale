@@ -3,7 +3,7 @@ import { logger } from "@repo/logger"
 /**
  * cron パッケージのデフォルトエントリポイント。
  *
- * 実際のクローラ / バッチ処理は `src/cli/` 配下の CLI コマンドから呼び出す:
+ * 実際のクローラ / バッチ処理は `src/task/` 配下のエントリから起動する:
  *   - `pnpm crawler:run`            : 週次クローラ（Phase 2）
  *   - `pnpm crawler:license-recheck`: 月次ライセンス再検証（Phase 2）
  *   - `pnpm batch:ranking`          : 毎時ランキング集計（Phase 4）

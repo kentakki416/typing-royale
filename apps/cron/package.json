@@ -5,9 +5,9 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "crawler:run": "tsx src/cli/run.ts",
-    "crawler:license-recheck": "tsx src/cli/license-recheck.ts",
-    "batch:ranking": "tsx src/cli/ranking-batch.ts",
+    "crawler:run": "tsx src/task/crawler-run.ts",
+    "crawler:license-recheck": "tsx src/task/crawler-license-recheck.ts",
+    "batch:ranking": "tsx src/task/ranking-batch.ts",
     "dev": "tsx watch src/index.ts",
     "lint": "eslint 'src/**/*.ts' 'test/**/*.ts'",
     "lint:fix": "eslint 'src/**/*.ts' 'test/**/*.ts' --fix",

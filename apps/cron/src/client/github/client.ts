@@ -127,7 +127,7 @@ export class GithubClient {
    * `GET /repos/{owner}/{repo}` でメタ情報を取り、default branch の HEAD commit SHA
    * を別エンドポイントで取得して permalink 生成用の commitSha として返す。
    */
-  getRepoMeta = async (owner: string, repo: string): Promise<GithubRepoMeta> => {
+  public getRepoMeta = async (owner: string, repo: string): Promise<GithubRepoMeta> => {
     const url = `${API_BASE}/repos/${owner}/${repo}`
     const res = await this._fetch(url, this._apiHeaders())
     const json = (await res.json()) as {
@@ -166,7 +166,7 @@ export class GithubClient {
    * かつテスト・ノイズ・大ファイルを除いたエントリだけ返す。ダウンロード前に絞ることで
    * raw content API のレート消費と AST パースコストを抑えるのが目的。
    */
-  listSourceFiles = async (
+  public listSourceFiles = async (
     owner: string,
     repo: string,
     commitSha: string
@@ -189,7 +189,7 @@ export class GithubClient {
    * Accept ヘッダはデフォルトで OK。認証は不要だが PAT を付けることでアカウント単位
    * のレート制限になる（非認証だと IP 単位で 60 req/h と厳しい）。
    */
-  getRawContent = async (
+  public getRawContent = async (
     owner: string,
     repo: string,
     commitSha: string,
