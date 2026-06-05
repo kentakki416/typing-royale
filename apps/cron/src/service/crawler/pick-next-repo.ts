@@ -1,6 +1,5 @@
 import type { GithubClient } from "../../client/github"
-
-import type { CrawledRepoRepository } from "./crawled-repo-repository"
+import type { CrawledRepoRepository } from "../../repository/prisma"
 
 /**
  * Search Repositories の結果を上から走査し、まだ DB に登録されていない最初の repo

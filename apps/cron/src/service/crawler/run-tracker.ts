@@ -1,6 +1,6 @@
 import { logger } from "@repo/logger"
 
-import type { CrawlerRunRepository } from "./crawler-run-repository"
+import type { CrawlerRunRepository } from "../../repository/prisma"
 
 /**
  * crawler_runs に run 単位の親レコードを記録するラッパ。

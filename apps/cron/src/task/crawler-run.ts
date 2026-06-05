@@ -5,14 +5,16 @@ import { logger } from "@repo/logger"
 
 import { GithubClient } from "../client/github"
 import { env } from "../env"
-import { PrismaCrawledRepoRepository } from "../service/crawler/crawled-repo-repository"
-import { PrismaCrawlerRunItemRepository } from "../service/crawler/crawler-run-item-repository"
-import { PrismaCrawlerRunRepository } from "../service/crawler/crawler-run-repository"
+import {
+  PrismaCrawledRepoRepository,
+  PrismaCrawlerRunItemRepository,
+  PrismaCrawlerRunRepository,
+  PrismaLanguageRepository,
+  PrismaProblemRepository,
+} from "../repository/prisma"
 import { pickNextRepo } from "../service/crawler/pick-next-repo"
 import { processRepo } from "../service/crawler/process-repo"
 import { runWithCrawlerRunTracking } from "../service/crawler/run-tracker"
-import { PrismaLanguageRepository } from "../service/language/repository"
-import { PrismaProblemRepository } from "../service/problem-pool/repository"
 
 /**
  * crawler:run - 週次クローラの起動エントリ。

@@ -26,13 +26,15 @@ pnpm lint         # ESLint
 
 要点（AI 向けサマリ）:
 
-- **`task/<name>.ts`** は cron 1 本 = 1 ファイル。env を組み立てて Prisma / client を生成し `service/*` を呼ぶだけ。サブディレクトリは切らない。
-- **`service/<domain>/`** に業務ロジックを置く（aggregator / verifier / repository など）。task 横断の再利用はここで集約する。
+- **`task/<name>.ts`** は cron 1 本 = 1 ファイル。env を組み立てて Prisma / client / Repository を生成し service に DI するだけ。サブディレクトリは切らない。
+- **`service/<domain>/`** に業務ロジックを置く（aggregator / verifier / orchestration など）。task 横断の再利用はここで集約する。**Repository class は service の中に書かない**。
+- **`repository/prisma/`** に DB アクセスを集約する（apps/api と同じ構造）。`interface XxxRepository` + `class PrismaXxxRepository implements XxxRepository` のペアで、`index.ts` で barrel export する。
 - **`client/<service>/`** に外部 API クライアント class を置く。env を直接 import しない（コンストラクタ DI）。
 - **`ast/`** は TypeScript Compiler API のラッパ。
 - **`lib/`** は env も DB も知らない純関数のみ。
 
 `tasks/` （複数形）や `cli/` というディレクトリは作らない。task は単数形のディレクトリで `task/<name>.ts` のフラット配置に保つ。
+service の中に Repository を置かない（DB アクセスは必ず `repository/prisma/` に分離）。
 
 ロガーは `@repo/logger` を、それ以外の共通インフラは `@repo/db` / `@repo/redis` / `@repo/errors` を必要に応じて使う。env 検証は `src/env.ts` に Zod スキーマをインラインで定義する（`safeParse → process.exit(1)` のパターン。apps/api を参照）。
 

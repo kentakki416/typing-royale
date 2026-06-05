@@ -20,21 +20,24 @@ apps/cron/src/
 ├── task/
 │   ├── crawler-run.ts                    # 本実装（既存の雛形を差し替え）
 │   └── crawler-license-recheck.ts        # 本実装（既存の雛形を差し替え）
+├── repository/
+│   └── prisma/
+│       ├── crawled-repo-repository.ts    # CrawledRepoRepository (+ Domain 型)
+│       ├── crawler-run-repository.ts     # CrawlerRunRepository
+│       ├── crawler-run-item-repository.ts# CrawlerRunItemRepository
+│       ├── language-repository.ts        # LanguageRepository
+│       ├── problem-repository.ts         # ProblemRepository
+│       └── index.ts                      # barrel export
 └── service/
-    ├── language/
-    │   └── repository.ts                 # Language マスタの read
     ├── crawler/
-    │   ├── crawled-repo-repository.ts    # CrawledRepoRepository
-    │   ├── crawler-run-repository.ts     # CrawlerRunRepository
-    │   ├── crawler-run-item-repository.ts# CrawlerRunItemRepository
     │   ├── process-repo.ts               # processRepo()
     │   ├── pick-next-repo.ts             # pickNextRepo()
     │   └── run-tracker.ts                # runWithCrawlerRunTracking()
-    ├── problem-pool/
-    │   └── repository.ts                 # ProblemRepository
     └── license/
         └── verifier.ts                   # licenseRecheck()
 ```
+
+**Repository は `service/<domain>/` の中ではなく `repository/prisma/` に集約**（apps/api と同じ構造）。service は Repository の interface だけを引数で受け取り、Prisma に直接依存しない。
 
 ## 対応内容
 
@@ -72,7 +75,7 @@ step2 では optional だった `DATABASE_URL` を、`NODE_ENV !== "test"` の�
 })
 ```
 
-### `apps/cron/src/service/language/repository.ts`
+### `apps/cron/src/repository/prisma/language-repository.ts`
 
 ```typescript
 import type { PrismaClient } from "@repo/db"
@@ -98,7 +101,7 @@ export class PrismaLanguageRepository implements LanguageRepository {
 }
 ```
 
-### `apps/cron/src/service/crawler/crawled-repo-repository.ts`
+### `apps/cron/src/repository/prisma/crawled-repo-repository.ts`
 
 ```typescript
 import type { PrismaClient } from "@repo/db"
@@ -147,7 +150,7 @@ export class PrismaCrawledRepoRepository implements CrawledRepoRepository {
 }
 ```
 
-### `apps/cron/src/service/crawler/crawler-run-repository.ts`
+### `apps/cron/src/repository/prisma/crawler-run-repository.ts`
 
 ```typescript
 import type { PrismaClient } from "@repo/db"
@@ -172,7 +175,7 @@ export class PrismaCrawlerRunRepository implements CrawlerRunRepository { /* ...
 
 「同日」は **JST 00:00 起点**で判定。`now` を引数で渡す形にしてテストから clock を DI できるようにする。
 
-### `apps/cron/src/service/crawler/crawler-run-item-repository.ts`
+### `apps/cron/src/repository/prisma/crawler-run-item-repository.ts`
 
 ```typescript
 export type CreateRunItemInput = {
@@ -193,7 +196,7 @@ export interface CrawlerRunItemRepository {
 }
 ```
 
-### `apps/cron/src/service/problem-pool/repository.ts`
+### `apps/cron/src/repository/prisma/problem-repository.ts`
 
 ```typescript
 export type CreateProblemInput = {
@@ -244,11 +247,9 @@ import { buildSourceUrl } from "../../lib/source-url"
 import type {
   CrawledRepoRepository,
   CreateCrawledRepoInput,
-} from "./crawled-repo-repository"
-import type {
   CreateProblemInput,
   ProblemRepository,
-} from "../problem-pool/repository"
+} from "../../repository/prisma"
 
 const MIN_ELIGIBLE = 30
 const SAMPLE_CAP = 100
@@ -412,7 +413,7 @@ const shuffle = <T>(arr: T[]): T[] => {
 ```typescript
 import type { GithubClient } from "../../client/github"
 
-import type { CrawledRepoRepository } from "./crawled-repo-repository"
+import type { CrawledRepoRepository } from "../../repository/prisma"
 
 export const pickNextRepo = async (
   language: { id: number; slug: string },
@@ -487,8 +488,10 @@ import type { GithubClient } from "../../client/github"
 import { GithubApiError } from "../../client/github"
 import { retryWithBackoff } from "../../lib/retry"
 
-import type { CrawledRepoRepository } from "../crawler/crawled-repo-repository"
-import type { ProblemRepository } from "../problem-pool/repository"
+import type {
+  CrawledRepoRepository,
+  ProblemRepository,
+} from "../../repository/prisma"
 
 const ALLOWED_LICENSES = new Set(["MIT", "Apache-2.0", "BSD-3-Clause", "ISC"])
 
@@ -539,14 +542,16 @@ import { logger } from "@repo/logger"
 
 import { GithubClient } from "../client/github"
 import { env } from "../env"
-import { PrismaCrawledRepoRepository } from "../service/crawler/crawled-repo-repository"
-import { PrismaCrawlerRunRepository } from "../service/crawler/crawler-run-repository"
-import { PrismaCrawlerRunItemRepository } from "../service/crawler/crawler-run-item-repository"
+import {
+  PrismaCrawledRepoRepository,
+  PrismaCrawlerRunItemRepository,
+  PrismaCrawlerRunRepository,
+  PrismaLanguageRepository,
+  PrismaProblemRepository,
+} from "../repository/prisma"
 import { pickNextRepo } from "../service/crawler/pick-next-repo"
 import { processRepo } from "../service/crawler/process-repo"
 import { runWithCrawlerRunTracking } from "../service/crawler/run-tracker"
-import { PrismaLanguageRepository } from "../service/language/repository"
-import { PrismaProblemRepository } from "../service/problem-pool/repository"
 
 Sentry.init({ dsn: env.SENTRY_DSN, enabled: env.NODE_ENV === "production" })
 

@@ -2,8 +2,10 @@ import { logger } from "@repo/logger"
 
 import type { GithubClient } from "../../client/github"
 import { retryWithBackoff } from "../../lib/retry"
-import type { CrawledRepoRepository } from "../crawler/crawled-repo-repository"
-import type { ProblemRepository } from "../problem-pool/repository"
+import type {
+  CrawledRepoRepository,
+  ProblemRepository,
+} from "../../repository/prisma"
 
 /**
  * 既に登録済みの repo について、ライセンスが寛容ライセンス（MIT / Apache-2.0 /

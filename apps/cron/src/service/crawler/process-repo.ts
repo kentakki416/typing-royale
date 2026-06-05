@@ -10,13 +10,10 @@ import type { GithubClient, GithubRepoMeta } from "../../client/github"
 import { retryWithBackoff } from "../../lib/retry"
 import { buildSourceUrl } from "../../lib/source-url"
 import type {
+  CrawledRepoRepository,
   CreateProblemInput,
   ProblemRepository,
-} from "../problem-pool/repository"
-
-import type {
-  CrawledRepoRepository,
-} from "./crawled-repo-repository"
+} from "../../repository/prisma"
 
 /**
  * 1 repo を「メタ取得 → ファイル一覧 → AST 抽出 → DB 保存」まで処理する service。

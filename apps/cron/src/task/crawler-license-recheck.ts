@@ -5,11 +5,13 @@ import { logger } from "@repo/logger"
 
 import { GithubClient } from "../client/github"
 import { env } from "../env"
-import { PrismaCrawledRepoRepository } from "../service/crawler/crawled-repo-repository"
-import { PrismaCrawlerRunRepository } from "../service/crawler/crawler-run-repository"
+import {
+  PrismaCrawledRepoRepository,
+  PrismaCrawlerRunRepository,
+  PrismaProblemRepository,
+} from "../repository/prisma"
 import { runWithCrawlerRunTracking } from "../service/crawler/run-tracker"
 import { licenseRecheck } from "../service/license/verifier"
-import { PrismaProblemRepository } from "../service/problem-pool/repository"
 
 /**
  * crawler:license-recheck - 月次ライセンス再検証の起動エントリ。

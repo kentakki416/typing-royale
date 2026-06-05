@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import type {
-  CrawlerRunRepository,
-} from "../../../src/service/crawler/crawler-run-repository"
+import type { CrawlerRunRepository } from "../../../src/repository/prisma"
 import { runWithCrawlerRunTracking } from "../../../src/service/crawler/run-tracker"
 
 const buildRepo = (overrides: Partial<CrawlerRunRepository> = {}): CrawlerRunRepository => ({

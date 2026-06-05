@@ -4,9 +4,9 @@ import { type GithubClient, type GithubRepoMeta , GithubApiError } from "../../.
 import type {
   CrawledRepoDomain,
   CrawledRepoRepository,
-} from "../../../src/service/crawler/crawled-repo-repository"
+  ProblemRepository,
+} from "../../../src/repository/prisma"
 import { licenseRecheck } from "../../../src/service/license/verifier"
-import type { ProblemRepository } from "../../../src/service/problem-pool/repository"
 
 const buildGithub = (overrides: Partial<GithubClient> = {}): GithubClient =>
   ({

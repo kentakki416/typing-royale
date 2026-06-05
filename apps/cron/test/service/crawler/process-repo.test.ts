@@ -3,9 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { type GithubClient, type GithubRepoMeta, type GithubTreeEntry , GithubApiError } from "../../../src/client/github"
 import type {
   CrawledRepoRepository,
-} from "../../../src/service/crawler/crawled-repo-repository"
+  ProblemRepository,
+} from "../../../src/repository/prisma"
 import { processRepo } from "../../../src/service/crawler/process-repo"
-import type { ProblemRepository } from "../../../src/service/problem-pool/repository"
 
 /**
  * GithubClient は class だが、テストでは public メソッドだけ vi.fn() で差し替えた

@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { GithubClient, GithubSearchItem } from "../../../src/client/github"
-import type {
-  CrawledRepoRepository,
-} from "../../../src/service/crawler/crawled-repo-repository"
+import type { CrawledRepoRepository } from "../../../src/repository/prisma"
 import { pickNextRepo } from "../../../src/service/crawler/pick-next-repo"
 
 const buildGithub = (overrides: Partial<GithubClient> = {}): GithubClient =>
