@@ -54,3 +54,28 @@ export type Memo = Prisma.MemoModel
  * 
  */
 export type User = Prisma.UserModel
+/**
+ * Model Language
+ * 
+ */
+export type Language = Prisma.LanguageModel
+/**
+ * Model CrawledRepo
+ * 
+ */
+export type CrawledRepo = Prisma.CrawledRepoModel
+/**
+ * Model Problem
+ * 
+ */
+export type Problem = Prisma.ProblemModel
+/**
+ * Model CrawlerRun
+ * 
+ */
+export type CrawlerRun = Prisma.CrawlerRunModel
+/**
+ * Model CrawlerRunItem
+ * 
+ */
+export type CrawlerRunItem = Prisma.CrawlerRunItemModel

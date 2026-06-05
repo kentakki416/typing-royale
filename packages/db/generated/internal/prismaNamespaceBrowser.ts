@@ -53,7 +53,12 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   AuthAccount: 'AuthAccount',
   Memo: 'Memo',
-  User: 'User'
+  User: 'User',
+  Language: 'Language',
+  CrawledRepo: 'CrawledRepo',
+  Problem: 'Problem',
+  CrawlerRun: 'CrawlerRun',
+  CrawlerRunItem: 'CrawlerRunItem'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -108,12 +113,119 @@ export const UserScalarFieldEnum = {
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
+export const LanguageScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  slug: 'slug',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type LanguageScalarFieldEnum = (typeof LanguageScalarFieldEnum)[keyof typeof LanguageScalarFieldEnum]
+
+
+export const CrawledRepoScalarFieldEnum = {
+  id: 'id',
+  githubId: 'githubId',
+  languageId: 'languageId',
+  owner: 'owner',
+  name: 'name',
+  fullName: 'fullName',
+  description: 'description',
+  homepage: 'homepage',
+  topics: 'topics',
+  stars: 'stars',
+  license: 'license',
+  defaultBranch: 'defaultBranch',
+  commitSha: 'commitSha',
+  candidatesCount: 'candidatesCount',
+  storedCount: 'storedCount',
+  disabled: 'disabled',
+  disabledReason: 'disabledReason',
+  crawledAt: 'crawledAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CrawledRepoScalarFieldEnum = (typeof CrawledRepoScalarFieldEnum)[keyof typeof CrawledRepoScalarFieldEnum]
+
+
+export const ProblemScalarFieldEnum = {
+  id: 'id',
+  crawledRepoId: 'crawledRepoId',
+  languageId: 'languageId',
+  sourceFilePath: 'sourceFilePath',
+  sourceLineStart: 'sourceLineStart',
+  sourceLineEnd: 'sourceLineEnd',
+  sourceUrl: 'sourceUrl',
+  functionName: 'functionName',
+  codeBlock: 'codeBlock',
+  charCount: 'charCount',
+  lineCount: 'lineCount',
+  astHash: 'astHash',
+  disabled: 'disabled',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProblemScalarFieldEnum = (typeof ProblemScalarFieldEnum)[keyof typeof ProblemScalarFieldEnum]
+
+
+export const CrawlerRunScalarFieldEnum = {
+  id: 'id',
+  runType: 'runType',
+  status: 'status',
+  reposProcessed: 'reposProcessed',
+  problemsAdded: 'problemsAdded',
+  startedAt: 'startedAt',
+  endedAt: 'endedAt',
+  error: 'error',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CrawlerRunScalarFieldEnum = (typeof CrawlerRunScalarFieldEnum)[keyof typeof CrawlerRunScalarFieldEnum]
+
+
+export const CrawlerRunItemScalarFieldEnum = {
+  id: 'id',
+  crawlerRunId: 'crawlerRunId',
+  languageId: 'languageId',
+  targetOwner: 'targetOwner',
+  targetRepo: 'targetRepo',
+  status: 'status',
+  problemsAdded: 'problemsAdded',
+  startedAt: 'startedAt',
+  endedAt: 'endedAt',
+  error: 'error',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CrawlerRunItemScalarFieldEnum = (typeof CrawlerRunItemScalarFieldEnum)[keyof typeof CrawlerRunItemScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {
@@ -130,4 +242,13 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 
