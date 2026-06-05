@@ -44,3 +44,26 @@ export const retryWithBackoff = async <T>(
   /** maxAttempts ループ後に必ず throw する想定だが TypeScript の網羅判定のため再 throw */
   throw lastErr
 }
+
+/**
+ * HTTP 5xx 系のサーバエラーだけリトライする `retryWithBackoff` の薄いラッパ。
+ *
+ * `statusCode` プロパティを持つエラー（GithubApiError 等）に対して構造的に
+ * 判定するため、`lib/retry.ts` は GitHub クライアントの実装に依存しない。
+ *
+ * 404 / 401 / 403 / 429 のような「リトライしても結果が変わらない」エラーは
+ * リトライせず即 throw（呼び出し側で disable / rate-limit 待機などに分岐）。
+ */
+type WithStatusCode = { statusCode: number }
+
+const hasServerErrorStatus = (err: unknown): err is WithStatusCode =>
+  typeof err === "object"
+  && err !== null
+  && "statusCode" in err
+  && typeof (err as WithStatusCode).statusCode === "number"
+  && (err as WithStatusCode).statusCode >= 500
+
+export const retryOnServerError = async <T>(
+  fn: () => Promise<T>,
+  options: RetryOptions = {}
+): Promise<T> => retryWithBackoff(fn, hasServerErrorStatus, options)
