@@ -7,24 +7,6 @@ import type {
   GithubTreeEntry,
 } from "./types"
 
-/**
- * GitHub API クライアント
- *
- * REST API（api.github.com）と raw content（raw.githubusercontent.com）の双方を
- * 1 つの class に集約する。コンストラクタで PAT / User-Agent / Search のデフォルト
- * フィルタを受け取り、env への直接依存はここでは持たない（cli 側で env から組み立てる）。
- *
- * 提供メソッド:
- *   - searchRepos        : Search Repositories API
- *   - getRepoMeta        : Repos API + default branch の HEAD commit SHA
- *   - listSourceFiles    : Git Tree API + クロール用のファイル除外フィルタ
- *   - getRawContent      : raw.githubusercontent.com からのファイル本文取得
- *
- * 共通の fetch / ヘッダ / rate limit ハンドリングは private メソッドに閉じてあり、
- * 4xx は GithubApiError(status)、5xx・ネットワークエラーは GithubApiError(>=500) に
- * wrap して throw する（lib/retry.ts の retryWithBackoff がそれを 5xx 判定で拾う）。
- */
-
 const API_BASE = "https://api.github.com"
 const RAW_BASE = "https://raw.githubusercontent.com"
 const DEFAULT_USER_AGENT = "typing-royale-crawler/1.0"
@@ -67,6 +49,10 @@ const EXCLUDED_TREE_PATTERNS = [
   /** ノイズ（実装ロジックではない） */
   /\.stories\.[jt]sx?$/,
   /\.fixtures?\./,
+
+  /** 静的アセット / データ（ソースコードではない） */
+  /^(data|images|public)\//,
+  /\/(data|images|public)\//,
 ]
 
 export type GithubClientConfig = {
@@ -83,6 +69,23 @@ export type GithubClientConfig = {
   userAgent?: string
 }
 
+/**
+ * GitHub API クライアント
+ *
+ * REST API（api.github.com）と raw content（raw.githubusercontent.com）の双方を
+ * 1 つの class に集約する。コンストラクタで PAT / User-Agent / Search のデフォルト
+ * フィルタを受け取り、env への直接依存はここでは持たない（cli 側で env から組み立てる）。
+ *
+ * 提供メソッド:
+ *   - searchRepos        : Search Repositories API
+ *   - getRepoMeta        : Repos API + default branch の HEAD commit SHA
+ *   - listSourceFiles    : Git Tree API + クロール用のファイル除外フィルタ
+ *   - getRawContent      : raw.githubusercontent.com からのファイル本文取得
+ *
+ * 共通の fetch / ヘッダ / rate limit ハンドリングは private メソッドに閉じてあり、
+ * 4xx は GithubApiError(status)、5xx・ネットワークエラーは GithubApiError(>=500) に
+ * wrap して throw する（lib/retry.ts の retryWithBackoff がそれを 5xx 判定で拾う）。
+ */
 export class GithubClient {
   private readonly pat: string
   private readonly userAgent: string

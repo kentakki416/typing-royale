@@ -68,6 +68,17 @@ describe("GithubClient.listSourceFiles", () => {
       expect(paths).not.toContain("src/types.d.ts")
     })
 
+    it("静的アセット / データディレクトリ（data / images / public）を除外", async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(okResponse(loadFixture("tree-recursive.json")))
+      const paths = (await newClient().listSourceFiles("o", "r", "s")).map((f) => f.path)
+      expect(paths).not.toContain("data/seeds.ts")
+      expect(paths).not.toContain("images/logo.js")
+      expect(paths).not.toContain("public/config.ts")
+      expect(paths).not.toContain("src/data/seed.ts")
+      expect(paths).not.toContain("src/images/icon.ts")
+      expect(paths).not.toContain("src/public/static.ts")
+    })
+
     it("100KB 超のファイルを除外", async () => {
       vi.mocked(fetch).mockResolvedValueOnce(okResponse(loadFixture("tree-recursive.json")))
       const paths = (await newClient().listSourceFiles("o", "r", "s")).map((f) => f.path)

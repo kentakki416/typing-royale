@@ -20,6 +20,12 @@
     { "path": "dist/bundle.js", "type": "blob", "size": 200000 },
     { "path": "build/output.js", "type": "blob", "size": 80000 },
     { "path": "huge-bundle.js", "type": "blob", "size": 150000 },
+    { "path": "data/seeds.ts", "type": "blob", "size": 2000 },
+    { "path": "images/logo.js", "type": "blob", "size": 1000 },
+    { "path": "public/config.ts", "type": "blob", "size": 1500 },
+    { "path": "src/data/seed.ts", "type": "blob", "size": 1500 },
+    { "path": "src/images/icon.ts", "type": "blob", "size": 800 },
+    { "path": "src/public/static.ts", "type": "blob", "size": 1200 },
     { "path": "README.md", "type": "blob", "size": 5000 },
     { "path": "src", "type": "tree", "size": null }
   ]
