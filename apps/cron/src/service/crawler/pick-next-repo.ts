@@ -11,11 +11,12 @@ import type { CrawledRepoRepository } from "../../repository/prisma"
  */
 export const pickNextRepo = async (
   language: { id: number; slug: string },
-  deps: { crawledRepoRepository: CrawledRepoRepository; github: GithubClient }
+  repo: { crawledRepoRepository: CrawledRepoRepository },
+  client: { github: GithubClient }
 ): Promise<{ name: string; owner: string } | null> => {
-  const registered = await deps.crawledRepoRepository.listRegisteredFullNames(language.id)
+  const registered = await repo.crawledRepoRepository.listRegisteredFullNames(language.id)
   for (let page = 1; page <= 10; page++) {
-    const result = await deps.github.searchRepos(language.slug, page)
+    const result = await client.github.searchRepos(language.slug, page)
     for (const item of result.items) {
       if (!registered.has(item.fullName)) {
         return { name: item.name, owner: item.owner }

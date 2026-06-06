@@ -12,7 +12,6 @@
     "@repo/db":      "workspace:^",
     "@repo/errors":  "workspace:^",
     "@repo/logger":  "workspace:^",
-    "@sentry/node":  "^8.0.0",
     "typescript":    "^5.9.3",
     "zod":           "^3.25.76"
   },
@@ -41,7 +40,6 @@ const cronEnvSchema = z
     LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
     LOGGER_TYPE: z.enum(["pino", "winston", "console", "silent"]).default("pino"),
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-    SENTRY_DSN: z.string().default(""),
   })
   .superRefine((env, ctx) => {
     /** NODE_ENV !== "test" のとき GITHUB_PAT は必須（未設定だと crawler が GitHub に叩けない） */
@@ -50,14 +48,6 @@ const cronEnvSchema = z
         code: z.ZodIssueCode.custom,
         message: "GITHUB_PAT is required when NODE_ENV is not 'test'",
         path: ["GITHUB_PAT"],
-      })
-    }
-    /** production では SENTRY_DSN も必須（本番エラー検知漏れ防止） */
-    if (env.NODE_ENV === "production" && env.SENTRY_DSN.length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "SENTRY_DSN is required when NODE_ENV is 'production'",
-        path: ["SENTRY_DSN"],
       })
     }
   })

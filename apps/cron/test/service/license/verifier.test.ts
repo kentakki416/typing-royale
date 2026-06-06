@@ -63,7 +63,7 @@ describe("licenseRecheck", () => {
       const github = buildGithub({ getRepoMeta: vi.fn(async () => buildMeta("MIT")) })
       const problemRepository = buildProblemRepo()
 
-      const result = await licenseRecheck({ crawledRepoRepository, github, problemRepository })
+      const result = await licenseRecheck({ crawledRepoRepository, problemRepository }, { github })
 
       expect(result).toEqual({ disabledProblems: 0, disabledRepos: 0, reposProcessed: 2 })
       expect(crawledRepoRepository.markDisabled).not.toHaveBeenCalled()
@@ -79,7 +79,7 @@ describe("licenseRecheck", () => {
         markDisabledByCrawledRepoId: vi.fn(async () => 25),
       })
 
-      const result = await licenseRecheck({ crawledRepoRepository, github, problemRepository })
+      const result = await licenseRecheck({ crawledRepoRepository, problemRepository }, { github })
 
       expect(result).toEqual({ disabledProblems: 25, disabledRepos: 1, reposProcessed: 1 })
       expect(crawledRepoRepository.markDisabled).toHaveBeenCalledWith(1, "license_changed")
@@ -95,7 +95,7 @@ describe("licenseRecheck", () => {
         markDisabledByCrawledRepoId: vi.fn(async () => 10),
       })
 
-      const result = await licenseRecheck({ crawledRepoRepository, github, problemRepository })
+      const result = await licenseRecheck({ crawledRepoRepository, problemRepository }, { github })
 
       expect(result).toMatchObject({ disabledRepos: 1, disabledProblems: 10 })
     })
@@ -118,7 +118,7 @@ describe("licenseRecheck", () => {
       })
       const problemRepository = buildProblemRepo()
 
-      const result = await licenseRecheck({ crawledRepoRepository, github, problemRepository })
+      const result = await licenseRecheck({ crawledRepoRepository, problemRepository }, { github })
 
       /** b/y は失敗（disabled 化されない）が、a/x と c/z は処理される */
       expect(result.reposProcessed).toBe(3)

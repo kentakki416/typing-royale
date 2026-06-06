@@ -15,17 +15,6 @@ import type {
   ProblemRepository,
 } from "../../repository/prisma"
 
-/**
- * 1 repo を「メタ取得 → ファイル一覧 → AST 抽出 → DB 保存」まで処理する service。
- *
- * 戻り値は **正常フロー上の分岐結果**を表す plain union（`Result` ラップしない）。
- *   - adopted=true  : 採用候補 ≥ MIN_ELIGIBLE で crawled_repos + problems を保存
- *   - adopted=false : ライセンス NG or 採用候補不足 → crawled_repos に disabled=true で記録、problems は空
- *
- * 想定外（API 5xx 3 回連続失敗、DB 障害）は throw して呼び出し側（task）の
- * try-catch で crawler_run_items を failed に記録する。
- */
-
 const MIN_ELIGIBLE = 30
 const SAMPLE_CAP = 100
 const ALLOWED_LICENSES = new Set(["MIT", "Apache-2.0", "BSD-3-Clause", "ISC"])
@@ -40,36 +29,52 @@ export type ProcessRepoResult =
   | { adopted: true; candidatesCount: number; problemsAdded: number; storedCount: number }
   | { adopted: false; candidatesCount: number; reason: "license_not_allowed" | "too_few_problems" }
 
-export type ProcessRepoDeps = {
+export type ProcessRepoRepo = {
   crawledRepoRepository: CrawledRepoRepository
-  github: GithubClient
   problemRepository: ProblemRepository
 }
 
+export type ProcessRepoClient = {
+  github: GithubClient
+}
+
+/**
+ * 1 repo を「メタ取得 → ファイル一覧 → AST 抽出 → DB 保存」まで処理する service。
+ *
+ * 戻り値は **正常フロー上の分岐結果**を表す plain union（`Result` ラップしない）。
+ *   - adopted=true  : 採用候補 ≥ MIN_ELIGIBLE で crawled_repos + problems を保存
+ *   - adopted=false : ライセンス NG or 採用候補不足 → crawled_repos に disabled=true で記録、problems は空
+ *
+ * 想定外（API 5xx 3 回連続失敗、DB 障害）は throw して呼び出し側（task）の
+ * try-catch で crawler_run_items を failed に記録する。
+ */
 export const processRepo = async (
   target: ProcessRepoTarget,
-  deps: ProcessRepoDeps
+  repo: ProcessRepoRepo,
+  client: ProcessRepoClient
 ): Promise<ProcessRepoResult> => {
   const fullName = `${target.owner}/${target.name}`
   logger.info("processRepo: start", { fullName })
 
   /** 1. 最新メタ + HEAD SHA を取得（5xx は retryWithBackoff で 3 回まで） */
-  const meta = await retryWithBackoff(async () => deps.github.getRepoMeta(target.owner, target.name))
+  const meta = await retryWithBackoff(async () => client.github.getRepoMeta(target.owner, target.name))
 
   /** 2. ライセンス確認 */
   if (meta.license === null || !ALLOWED_LICENSES.has(meta.license)) {
-    await persistDisabled(target, meta, "license_not_allowed", deps, 0)
+    await persistDisabled(target, meta, "license_not_allowed", repo, 0)
     return { adopted: false, candidatesCount: 0, reason: "license_not_allowed" }
   }
 
-  /** 3. ファイル一覧（tree フィルタ済み） */
-  const files = await deps.github.listSourceFiles(target.owner, target.name, meta.commitSha)
+  /** 3. フィルタリング済みの対象ソースファイル一覧 */
+  const files = await client.github.listSourceFiles(target.owner, target.name, meta.commitSha)
 
   /** 4. 各ファイルから採用候補を抽出（repo 内重複は Map で事前 dedupe） */
   const candidateMap = new Map<string, CreateProblemInput>()
   for (const file of files) {
     try {
-      const raw = await deps.github.getRawContent(target.owner, target.name, meta.commitSha, file.path)
+      // ソースファイルのコードを取得
+      const raw = await client.github.getRawContent(target.owner, target.name, meta.commitSha, file.path)
+      // ソースコード文字列を元にASTを作る
       const sf = ts.createSourceFile(file.path, raw, ts.ScriptTarget.Latest, true)
       for (const fn of extractFunctions(sf)) {
         const stripped = removeComments(fn.rawText)
@@ -109,7 +114,7 @@ export const processRepo = async (
 
   /** 5. repo 単位の足切り */
   if (candidatesCount < MIN_ELIGIBLE) {
-    await persistDisabled(target, meta, "too_few_problems", deps, candidatesCount)
+    await persistDisabled(target, meta, "too_few_problems", repo, candidatesCount)
     return { adopted: false, candidatesCount, reason: "too_few_problems" }
   }
 
@@ -118,7 +123,7 @@ export const processRepo = async (
     candidatesCount > SAMPLE_CAP ? shuffle(candidates).slice(0, SAMPLE_CAP) : candidates
 
   /** 7. crawled_repos INSERT → problems bulkCreate */
-  const crawledRepo = await deps.crawledRepoRepository.create({
+  const crawledRepo = await repo.crawledRepoRepository.create({
     candidatesCount,
     commitSha: meta.commitSha,
     crawledAt: new Date(),
@@ -139,7 +144,7 @@ export const processRepo = async (
   })
 
   const problemsWithRepoId = sampled.map((p) => ({ ...p, crawledRepoId: crawledRepo.id }))
-  const problemsAdded = await deps.problemRepository.bulkCreateSkippingDuplicates(problemsWithRepoId)
+  const problemsAdded = await repo.problemRepository.bulkCreateSkippingDuplicates(problemsWithRepoId)
 
   /** sampled.length とズレた場合は cross-repo dedupe で skip された */
   if (problemsAdded < sampled.length) {
@@ -153,14 +158,17 @@ export const processRepo = async (
   return { adopted: true, candidatesCount, problemsAdded, storedCount: sampled.length }
 }
 
+/**
+ * クローリングしたRepositoryをDB:crawledRepositoryに失敗としてい記録する
+ */
 const persistDisabled = async (
   target: ProcessRepoTarget,
   meta: GithubRepoMeta,
   reason: string,
-  deps: { crawledRepoRepository: CrawledRepoRepository },
+  repo: { crawledRepoRepository: CrawledRepoRepository },
   candidatesCount: number
 ): Promise<void> => {
-  await deps.crawledRepoRepository.create({
+  await repo.crawledRepoRepository.create({
     candidatesCount,
     commitSha: meta.commitSha,
     crawledAt: new Date(),

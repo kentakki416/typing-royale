@@ -1,5 +1,3 @@
-import * as Sentry from "@sentry/node"
-
 import { createPrismaClient } from "@repo/db"
 import { logger } from "@repo/logger"
 
@@ -21,10 +19,8 @@ import { licenseRecheck } from "../service/license/verifier"
  * 同 repo に紐づく problems も一括無効化する。
  *
  * run 全体は crawler_runs に start → succeed/fail を直接記録する。個別 repo の履歴
- * （crawler_run_items）は使わない（失敗 / 成功は logger.warn と Sentry で十分）。
+ * （crawler_run_items）は使わない（失敗 / 成功は logger.warn で十分）。
  */
-
-Sentry.init({ dsn: env.SENTRY_DSN, enabled: env.NODE_ENV === "production" })
 
 const main = async (): Promise<void> => {
   const prisma = createPrismaClient({ url: env.DATABASE_URL })
@@ -52,11 +48,10 @@ const main = async (): Promise<void> => {
     })
 
     try {
-      const result = await licenseRecheck({
-        crawledRepoRepository,
-        github,
-        problemRepository,
-      })
+      const result = await licenseRecheck(
+        { crawledRepoRepository, problemRepository },
+        { github }
+      )
       /**
        * crawler_runs の集計セマンティクスに合わせ、
        *   - reposProcessed: 再検証した repo 総数
@@ -71,26 +66,12 @@ const main = async (): Promise<void> => {
       )
     } catch (err) {
       /**
-       * fail() 自体が失敗しても元エラーは必ず rethrow する。
-       * fail() の失敗は orphan running として残るが、次回 run の markStaleAsFailed が回収する。
+       * fail() 自体が DB 障害で throw した場合は元エラーが消えるが、ほぼ同じ DB 障害が
+       * 原因なので調査には支障なし。orphan running は次回 run の markStaleAsFailed が回収する。
        */
-      try {
-        await crawlerRunRepository.fail(runId, new Date(), err)
-      } catch (failErr) {
-        logger.error(
-          "crawlerRunRepository.fail failed",
-          failErr instanceof Error ? failErr : new Error(String(failErr))
-        )
-      }
+      await crawlerRunRepository.fail(runId, new Date(), err)
       throw err
     }
-  } catch (err) {
-    Sentry.captureException(err)
-    logger.error(
-      "crawler-license-recheck failed",
-      err instanceof Error ? err : new Error(String(err))
-    )
-    throw err
   } finally {
     if (!shutdownHandle.isShuttingDown()) await prisma.$disconnect()
   }
@@ -98,4 +79,10 @@ const main = async (): Promise<void> => {
 
 void main()
   .then(() => process.exit(0))
-  .catch(() => process.exit(1))
+  .catch((err: unknown) => {
+    logger.error(
+      "crawler-license-recheck failed",
+      err instanceof Error ? err : new Error(String(err))
+    )
+    process.exit(1)
+  })

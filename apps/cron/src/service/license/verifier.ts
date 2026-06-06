@@ -25,23 +25,29 @@ export type LicenseRecheckResult = {
   reposProcessed: number
 }
 
-export type LicenseRecheckDeps = {
+export type LicenseRecheckRepo = {
   crawledRepoRepository: CrawledRepoRepository
-  github: GithubClient
   problemRepository: ProblemRepository
 }
 
-export const licenseRecheck = async (deps: LicenseRecheckDeps): Promise<LicenseRecheckResult> => {
-  const all = await deps.crawledRepoRepository.listForLicenseRecheck()
+export type LicenseRecheckClient = {
+  github: GithubClient
+}
+
+export const licenseRecheck = async (
+  repo: LicenseRecheckRepo,
+  client: LicenseRecheckClient
+): Promise<LicenseRecheckResult> => {
+  const all = await repo.crawledRepoRepository.listForLicenseRecheck()
   let reposProcessed = 0
   let disabledRepos = 0
   let disabledProblems = 0
   for (const r of all) {
     try {
-      const meta = await retryWithBackoff(async () => deps.github.getRepoMeta(r.owner, r.name))
+      const meta = await retryWithBackoff(async () => client.github.getRepoMeta(r.owner, r.name))
       if (meta.license === null || !ALLOWED_LICENSES.has(meta.license)) {
-        await deps.crawledRepoRepository.markDisabled(r.id, "license_changed")
-        const count = await deps.problemRepository.markDisabledByCrawledRepoId(r.id)
+        await repo.crawledRepoRepository.markDisabled(r.id, "license_changed")
+        const count = await repo.problemRepository.markDisabledByCrawledRepoId(r.id)
         disabledRepos++
         disabledProblems += count
         logger.warn("licenseRecheck: repo disabled", {

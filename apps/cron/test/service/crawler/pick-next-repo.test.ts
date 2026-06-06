@@ -52,7 +52,7 @@ describe("pickNextRepo", () => {
         listRegisteredFullNames: vi.fn(async () => new Set(["a/x"])),
       })
 
-      const next = await pickNextRepo({ id: 1, slug: "typescript" }, { crawledRepoRepository, github })
+      const next = await pickNextRepo({ id: 1, slug: "typescript" }, { crawledRepoRepository }, { github })
 
       expect(next).toEqual({ name: "y", owner: "b" })
       expect(github.searchRepos).toHaveBeenCalledTimes(1)
@@ -73,7 +73,7 @@ describe("pickNextRepo", () => {
         listRegisteredFullNames: vi.fn(async () => allPage1),
       })
 
-      const next = await pickNextRepo({ id: 1, slug: "typescript" }, { crawledRepoRepository, github })
+      const next = await pickNextRepo({ id: 1, slug: "typescript" }, { crawledRepoRepository }, { github })
 
       expect(next).toEqual({ name: "fresh", owner: "p2" })
       expect(github.searchRepos).toHaveBeenCalledTimes(2)
@@ -90,7 +90,7 @@ describe("pickNextRepo", () => {
         listRegisteredFullNames: vi.fn(async () => new Set(["a/x", "b/y"])),
       })
 
-      const next = await pickNextRepo({ id: 1, slug: "typescript" }, { crawledRepoRepository, github })
+      const next = await pickNextRepo({ id: 1, slug: "typescript" }, { crawledRepoRepository }, { github })
 
       expect(next).toBeNull()
       expect(github.searchRepos).toHaveBeenCalledTimes(1)
@@ -113,7 +113,7 @@ describe("pickNextRepo", () => {
         listRegisteredFullNames: vi.fn(async () => allRegistered),
       })
 
-      const next = await pickNextRepo({ id: 1, slug: "typescript" }, { crawledRepoRepository, github })
+      const next = await pickNextRepo({ id: 1, slug: "typescript" }, { crawledRepoRepository }, { github })
 
       expect(next).toBeNull()
       expect(github.searchRepos).toHaveBeenCalledTimes(10)

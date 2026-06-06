@@ -659,7 +659,7 @@ export type $CrawlerRunPayload<ExtArgs extends runtime.Types.Extensions.Internal
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
     /**
-     * "full" / "license_recheck"
+     * "crawler_<slug>" (e.g. "crawler_typescript") / "license_recheck"
      */
     runType: string
     /**

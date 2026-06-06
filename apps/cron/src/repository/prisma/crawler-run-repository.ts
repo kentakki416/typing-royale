@@ -3,12 +3,12 @@ import type { PrismaClient } from "@repo/db"
 /**
  * `crawler_runs` テーブルの Repository。
  *
- * 1 回の cron 実行に対応する親レコード。実行履歴の記録と、orphan running 行の
- * クリーンアップを担う。
+ * 1 回の cron 実行に対応するレコード。
+ * 実行履歴の記録と、orphan running 行のクリーンアップを担う。
  *
  * orphan running は以下のケースで発生する：
  *   - start() の INSERT は成功したが、レスポンスがネットワーク障害で届かない
- *   - succeed() / fail() の UPDATE が失敗してリトライされない
+ *   - succeed() / fail() の UPDATE が失敗（fail() は task 側で握り潰さない方針なので process.exit へ）
  *   - OOM / SIGKILL で task プロセスが落ちる
  *
  * これらを次回 run の冒頭で markStaleAsFailed で掃除する。問題プール（problems / crawled_repos）

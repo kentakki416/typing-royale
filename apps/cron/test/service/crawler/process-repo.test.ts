@@ -96,7 +96,8 @@ describe("processRepo", () => {
 
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
-        { crawledRepoRepository, github, problemRepository }
+        { crawledRepoRepository, problemRepository },
+        { github }
       )
 
       expect(result).toEqual({
@@ -122,7 +123,8 @@ describe("processRepo", () => {
 
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
-        { crawledRepoRepository, github, problemRepository }
+        { crawledRepoRepository, problemRepository },
+        { github }
       )
 
       expect(result).toMatchObject({ adopted: true, candidatesCount: 150, storedCount: 100 })
@@ -143,7 +145,8 @@ describe("processRepo", () => {
 
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
-        { crawledRepoRepository, github, problemRepository }
+        { crawledRepoRepository, problemRepository },
+        { github }
       )
 
       /** dedupe 後 < 30 になるので too_few_problems で disabled になる */
@@ -164,7 +167,8 @@ describe("processRepo", () => {
 
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
-        { crawledRepoRepository, github, problemRepository }
+        { crawledRepoRepository, problemRepository },
+        { github }
       )
 
       expect(result).toMatchObject({ adopted: true, problemsAdded: 35, storedCount: 40 })
@@ -181,7 +185,8 @@ describe("processRepo", () => {
 
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
-        { crawledRepoRepository, github, problemRepository }
+        { crawledRepoRepository, problemRepository },
+        { github }
       )
 
       expect(result).toEqual({
@@ -204,7 +209,8 @@ describe("processRepo", () => {
 
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
-        { crawledRepoRepository, github, problemRepository }
+        { crawledRepoRepository, problemRepository },
+        { github }
       )
 
       expect(result).toMatchObject({ adopted: false, reason: "license_not_allowed" })
@@ -221,7 +227,8 @@ describe("processRepo", () => {
 
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
-        { crawledRepoRepository, github, problemRepository }
+        { crawledRepoRepository, problemRepository },
+        { github }
       )
 
       expect(result).toEqual({
@@ -246,7 +253,8 @@ describe("processRepo", () => {
       await expect(
         processRepo(
           { languageId: 1, name: "r", owner: "o" },
-          { crawledRepoRepository, github, problemRepository }
+          { crawledRepoRepository, problemRepository },
+          { github }
         )
       ).rejects.toMatchObject({ statusCode: 404 })
     })
@@ -265,7 +273,8 @@ describe("processRepo", () => {
 
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
-        { crawledRepoRepository, github, problemRepository }
+        { crawledRepoRepository, problemRepository },
+        { github }
       )
 
       expect(result).toMatchObject({ adopted: true, candidatesCount: 35 })

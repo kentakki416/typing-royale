@@ -18,7 +18,6 @@ const cronEnvSchema = z
     LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
     LOGGER_TYPE: z.enum(["pino", "winston", "console", "silent"]).default("pino"),
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-    SENTRY_DSN: z.string().default(""),
   })
   .superRefine((env, ctx) => {
     /**
@@ -41,16 +40,6 @@ const cronEnvSchema = z
         code: z.ZodIssueCode.custom,
         message: "DATABASE_URL is required when NODE_ENV is not 'test'",
         path: ["DATABASE_URL"],
-      })
-    }
-    /**
-     * production では SENTRY_DSN も必須（本番エラー検知漏れ防止）
-     */
-    if (env.NODE_ENV === "production" && env.SENTRY_DSN.length === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "SENTRY_DSN is required when NODE_ENV is 'production'",
-        path: ["SENTRY_DSN"],
       })
     }
   })
