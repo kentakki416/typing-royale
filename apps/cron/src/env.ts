@@ -9,11 +9,6 @@ import { z } from "zod"
  */
 const cronEnvSchema = z
   .object({
-    CRAWLER_FORCE_RERUN: z
-      .enum(["true", "false"])
-      .transform((v) => v === "true")
-      .default("false"),
-    CRAWLER_LANGUAGES: z.string().default("typescript,javascript"),
     CRAWLER_MIN_STARS: z.coerce.number().int().positive().default(1000),
     /** 実行日からの相対計算でデフォルト値を組み立てるため optional */
     CRAWLER_PUSHED_AFTER: z.string().optional(),

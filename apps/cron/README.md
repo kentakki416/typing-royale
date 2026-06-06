@@ -17,9 +17,11 @@ cron / EventBridge から定期実行されるタスク群（GitHub クローラ
 
 | コマンド | フェーズ | 用途 |
 | --- | --- | --- |
-| `pnpm crawler:run` | Phase 2 | 週次クローラ（GitHub API → AST → 問題化） |
-| `pnpm crawler:license-recheck` | Phase 2 | 月次ライセンス再検証 |
+| `pnpm crawler:run:typescript` | Phase 2 | TypeScript 用週次クローラ（GitHub API → AST → 問題化） |
+| `pnpm crawler:license-recheck` | Phase 2 | 月次ライセンス再検証（言語非依存） |
 | `pnpm batch:ranking` | Phase 4 | 毎時ランキング集計 |
+
+**crawler は言語ごとに独立した task** として実装する：AST 抽出層が言語固有（現在は TypeScript Compiler API、将来追加する JavaScript / Go は別 parser）で、1 言語の rate limit / 障害を他言語に波及させないため。新言語追加時は `task/crawler-run-<slug>.ts` を新規作成し、`LANGUAGE_SLUG` と `RUN_TYPE = "crawler_<slug>"` をハードコードする。Phase 2 ローンチ時点では TypeScript のみ。
 
 ## Commands
 
@@ -48,11 +50,13 @@ cron は「複数の独立した定期実行タスクが 1 つのワーカーに
 apps/cron/
 ├── src/
 │   ├── task/                        # cron 1 本 = 1 ファイル（package.json scripts と 1:1）
-│   │   ├── crawler-run.ts           # crawler:run             - 週次クローラ
-│   │   ├── crawler-license-recheck.ts # crawler:license-recheck - 月次ライセンス再検証
-│   │   └── ranking-batch.ts         # batch:ranking           - 毎時ランキング集計
+│   │   ├── crawler-run-typescript.ts   # crawler:run:typescript  - 週次クローラ（TS）
+│   │   ├── crawler-license-recheck.ts  # crawler:license-recheck - 月次ライセンス再検証
+│   │   └── ranking-batch.ts            # batch:ranking           - 毎時ランキング集計
+│   ├── runtime/                     # task 共通のランタイム（graceful shutdown など）
+│   │   └── graceful-shutdown.ts
 │   ├── service/                     # 業務ロジック（task 横断で再利用される単位、I/O は Repository / client 経由）
-│   │   ├── crawler/                 # processRepo / pickNextRepo / runWithCrawlerRunTracking
+│   │   ├── crawler/                 # processRepo / pickNextRepo
 │   │   ├── license/                 # licenseRecheck
 │   │   └── ranking/                 # 将来：ランキング集計（aggregator など）
 │   ├── repository/                  # DB アクセス（interface + Prisma 実装）

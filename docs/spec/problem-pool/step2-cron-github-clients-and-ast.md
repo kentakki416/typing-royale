@@ -33,8 +33,6 @@ import { z } from "zod"
 
 const cronEnvSchema = z
   .object({
-    CRAWLER_FORCE_RERUN: z.enum(["true", "false"]).transform((v) => v === "true").default("false"),
-    CRAWLER_LANGUAGES: z.string().default("typescript,javascript"),
     CRAWLER_MIN_STARS: z.coerce.number().int().positive().default(1000),
     CRAWLER_PUSHED_AFTER: z.string().optional(),
     CRAWLER_REPOS_PER_RUN: z.coerce.number().int().positive().default(1),
@@ -74,8 +72,6 @@ if (!result.success) {
 export const env = result.data
 export type CronEnv = typeof env
 ```
-
-`CRAWLER_FORCE_RERUN=true` で同日二重起動防止をバイパスする（ローカル開発で `pnpm crawler:run` を試したいときに毎回 SQL を叩かなくて済む）。step3 の `runWithCrawlerRunTracking` に `forceRerun: env.CRAWLER_FORCE_RERUN` で渡す。
 
 ### `apps/cron/src/client/github/rate-limit.ts`
 

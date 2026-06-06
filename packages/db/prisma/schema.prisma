@@ -142,7 +142,7 @@ model Problem {
 // 個別 repo の成否は子テーブル CrawlerRunItem 参照
 model CrawlerRun {
     id             Int       @id @default(autoincrement())
-    runType        String    @map("run_type") /// "full" / "license_recheck"
+    runType        String    @map("run_type") /// "crawler_<slug>" (e.g. "crawler_typescript") / "license_recheck"
     status         String    /// "running" / "success" / "failed"
     reposProcessed Int       @default(0) @map("repos_processed") /// この run で試行した repo 数（成功・失敗・skipped すべて含む。CrawlerRunItem 行数と一致）
     problemsAdded  Int       @default(0) @map("problems_added") /// この run で problems に INSERT された総件数（子の problems_added の合計）

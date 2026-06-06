@@ -145,11 +145,12 @@ flowchart TB
 - 起動：**EventBridge → ECS RunTask**
 - 3 つのジョブ（週次クローラ / 月次ライセンス再検証 / 毎時ランキング集計）を 1 つの Image にまとめ、Task Definition の `command` で CLI エントリポイントを切り替える
 
-#### 週次クローラ
-- スケジュール：毎週月曜 03:00 JST
-- エントリポイント：`pnpm crawler:run`
-- 役割：[`docs/spec/problem-pool/`](spec/problem-pool/README.md) に従って 1 repo を処理
-- ENV：`GITHUB_PAT`（運営アカウント）、`DATABASE_URL`、`SENTRY_DSN`、`CRAWLER_REPOS_PER_RUN`
+#### 週次クローラ（言語ごとに独立した task）
+- スケジュール：TypeScript = 毎週月曜 03:00 JST（新言語追加時は別ルールを増やす）
+- エントリポイント：`pnpm crawler:run:typescript`（新言語追加時は `crawler:run:<slug>` を増やす）
+- 役割：[`docs/spec/problem-pool/`](spec/problem-pool/README.md) に従って 1 言語ぶんの repo を処理。AST 抽出層が言語固有のため task を分離している（1 言語の rate limit / 障害を他言語に波及させない）
+- Phase 2 ローンチ時点では TypeScript のみ。JavaScript / Go 等は同パターンで task を増やす
+- ENV：`GITHUB_PAT`（運営アカウント）、`DATABASE_URL`、`SENTRY_DSN`、`CRAWLER_REPOS_PER_RUN`、`CRAWLER_MIN_STARS`、`CRAWLER_PUSHED_AFTER`
 
 #### 毎時ランキングバッチ
 - スケジュール：毎時 00 分
