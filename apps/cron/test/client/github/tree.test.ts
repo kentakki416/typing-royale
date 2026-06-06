@@ -12,7 +12,7 @@ const okResponse = (bodyJson: string): Response =>
   new Response(bodyJson, { status: 200 })
 
 const newClient = (): GithubClient =>
-  new GithubClient({ pat: "test-pat", minStars: 1000, pushedAfter: "2024-06-01" })
+  new GithubClient({ pat: "test-pat", minStars: 1000, pushedAfter: "2024-06-01", targetExtensions: /\.(ts|tsx)$/ })
 
 describe("GithubClient.listSourceFiles", () => {
   beforeEach(() => {
@@ -95,6 +95,22 @@ describe("GithubClient.listSourceFiles", () => {
       vi.mocked(fetch).mockResolvedValueOnce(okResponse(loadFixture("tree-recursive.json")))
       const paths = (await newClient().listSourceFiles("o", "r", "s")).map((f) => f.path)
       expect(paths).not.toContain("README.md")
+    })
+
+    it("targetExtensions=/\\.(ts|tsx)$/ 指定時は .js / .jsx ファイルを除外する（言語別 task の拡張子フィルタ）", async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(okResponse(loadFixture("tree-recursive.json")))
+      const paths = (await newClient().listSourceFiles("o", "r", "s")).map((f) => f.path)
+      expect(paths).not.toContain("src/legacy.js")
+      expect(paths).not.toContain("src/Card.jsx")
+      /** 結果は全て .ts / .tsx のみ */
+      expect(paths.every((p) => /\.(ts|tsx)$/.test(p))).toBe(true)
+    })
+
+    it("targetExtensions 未指定で listSourceFiles を呼ぶと throw する", async () => {
+      const clientWithoutExt = new GithubClient({ pat: "test-pat", minStars: 1000, pushedAfter: "2024-06-01" })
+      await expect(clientWithoutExt.listSourceFiles("o", "r", "s")).rejects.toThrow(
+        /requires targetExtensions/
+      )
     })
   })
 
