@@ -49,7 +49,10 @@ export const retryWithBackoff = async <T>(
       return await fn()
     } catch (err) {
       lastErr = err
-      if (attempt === maxAttempts || !hasServerErrorStatus(err)) throw err
+      if (attempt === maxAttempts || !hasServerErrorStatus(err)) {
+        // リトライ回数が上限に達した。または、4xx系のエラーの場合はリトライせずにエラーを返す
+        throw err
+      }
       const delay = baseMs * Math.pow(factor, attempt - 1)
       const jitter = delay * jitterRatio * (Math.random() * 2 - 1)
       await sleep(Math.max(0, delay + jitter))

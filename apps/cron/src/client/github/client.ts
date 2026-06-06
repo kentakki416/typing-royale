@@ -130,21 +130,11 @@ export class GithubClient {
   }
 
   /**
-   * 役割: 候補 repo の「**最新の正確なメタ情報** と **クロール起点となる commit SHA** を取る」フェーズ。
-   *
-   * 2 つの API を組み合わせる:
-   *   1. Repos API（`/repos/{owner}/{name}`）で description / topics / license /
-   *      default_branch を最新値で取得。Search の結果はインデックス時点の値なので、
-   *      ここで取り直すことで「Search 時点では MIT だったが実は変わっていた」を防ぐ。
-   *   2. Git Refs API（`/repos/{owner}/{name}/git/refs/heads/{branch}`）で default branch の
-   *      HEAD commit SHA を取得。以降の tree / raw 取得はこの SHA に固定することで、
-   *      クロール中に repo が変更されても整合性が崩れず、permalink URL も SHA 付きで作れる。
-   *
-   * 入力: owner, repo
-   * 出力: GithubRepoMeta（最新メタ + commitSha）
+   * 候補 repo の「最新の正確なメタ情報」と「クロール起点となる commit SHA」を取得する関数。
    */
   public getRepoMeta = async (owner: string, repo: string): Promise<GithubRepoMeta> => {
     const url = `${API_BASE}/repos/${owner}/${repo}`
+    // Github Repos API
     const res = await this._fetch(url, this._apiHeaders())
     const json = (await res.json()) as {
       default_branch: string
@@ -158,6 +148,7 @@ export class GithubClient {
       stargazers_count: number
       topics: string[] | undefined
     }
+    // Get Refs API
     const sha = await this._getCommitSha(owner, repo, json.default_branch)
     return {
       id: json.id,
@@ -176,16 +167,7 @@ export class GithubClient {
   }
 
   /**
-   * 役割: 「**どのファイルをダウンロードすべきか**」を決めるフェーズ。本文は取らない。
-   *
-   * Git Tree API（`/repos/{owner}/{name}/git/trees/{sha}?recursive=1`）を `recursive=1`
-   * で叩き、その commit に含まれる全 blob のパスとサイズを 1 リクエストで取得する。
-   * 戻り値はファイル本文を含まないので、ここで AST 対象（.ts/.tsx/.js/.jsx）に絞り、
-   * テスト・ストーリーブック・静的アセット・大ファイル等を **ダウンロード前に除外** する。
-   * これにより後段の getRawContent の呼び出し回数と AST パースコストを大きく削減できる。
-   *
-   * 入力: owner, repo, commitSha（getRepoMeta が返した SHA を使う）
-   * 出力: AST 対象に絞った GithubTreeEntry[]
+   * 対象のgit repoからクローリング対象のソースファイル一覧を取得
    */
   public listSourceFiles = async (
     owner: string,
@@ -193,6 +175,7 @@ export class GithubClient {
     commitSha: string
   ): Promise<GithubTreeEntry[]> => {
     const url = `${API_BASE}/repos/${owner}/${repo}/git/trees/${commitSha}?recursive=1`
+    // Git Tree API
     const res = await this._fetch(url, this._apiHeaders())
     const json = (await res.json()) as { tree: unknown[] }
     return json.tree
@@ -205,18 +188,7 @@ export class GithubClient {
   }
 
   /**
-   * 役割: 「**AST に流し込むソースコード本文を 1 ファイルずつ取得する**」最終フェーズ。
-   *
-   * `raw.githubusercontent.com/{owner}/{name}/{sha}/{path}` から UTF-8 テキストで取得する。
-   * commitSha 固定なので、後で repo が変更されても同じ内容が返る（永続的なソース参照）。
-   * Tree API はファイル一覧しか返さないため、本文取得は **1 ファイル 1 リクエスト**になる
-   * （これが GitHub クライアントで最もリクエスト数が多くなる箇所）。
-   *
-   * 認証は不要だが PAT を付けることでレート制限がアカウント単位（5000 req/h）になる。
-   * 非認証だと IP 単位で 60 req/h と厳しいため、PAT は事実上必須。
-   *
-   * 入力: owner, repo, commitSha, path（listSourceFiles が返した path をそのまま使う）
-   * 出力: ファイル本文（UTF-8 文字列）
+   * 対象のソースファイルをテキストで取得する関数
    */
   public getRawContent = async (
     owner: string,
@@ -225,6 +197,7 @@ export class GithubClient {
     path: string
   ): Promise<string> => {
     const url = `${RAW_BASE}/${owner}/${repo}/${commitSha}/${path}`
+    // 対象のソースファイルを取得
     const res = await this._fetch(url, this._rawHeaders())
     return res.text()
   }

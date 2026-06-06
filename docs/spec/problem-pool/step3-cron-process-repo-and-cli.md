@@ -1,43 +1,119 @@
-# step3: processRepo / CLI / crawler_runs と Sentry 連携
+# step3: processRepo / task エントリ / crawler_runs 連携
 
-step1 の DB スキーマ（`crawler_runs` + `crawler_run_items` の親子構造、`Problem.languageId` 非正規化、`@@unique([languageId, astHash])`）と step2 の GitHub クライアント + AST 解析を組み合わせ、`processRepo()` メイン関数、`pickNextRepo()`、run 全体と repo 個別履歴の二段記録、CLI エントリ（`pnpm crawler:run` / `pnpm crawler:license-recheck`）、Sentry 連携を実装する。**この step 完了で Phase 2 の機能要件が一通り揃う**。
+step1 の DB スキーマ（`crawler_runs` + `crawler_run_items` の親子、`Problem.languageId` 非正規化、`@@unique([languageId, astHash])`）と step2 の `GithubClient` + AST モジュールを組み合わせ、`processRepo()` / `pickNextRepo()` / run 追跡 / ライセンス再検証 / task エントリ（言語別の `pnpm crawler:run:<slug>` / `pnpm crawler:license-recheck`）を実装する。**この step 完了で Phase 2 の機能要件が一通り揃う**。
 
-主な設計方針：
+## 設計方針
 
+- **`task/` と `service/<domain>/` で分離**（[`apps/cron/README.md#ディレクトリ戦略`](../../../apps/cron/README.md#ディレクトリ戦略) 準拠）
+  - `task/<name>.ts` は env 組み立て + DI + graceful shutdown だけの薄い 1 ファイル
+  - 業務ロジックは `service/<domain>/` に集約し、task 横断で再利用可能にする
+- **`GithubClient` は task 側で `new` してから service に DI**。service は env を直接読まない
 - **部分失敗の継続**: メインループで repo 単位の try-catch、1 件の失敗が次の repo を止めない
 - **`Result<T>` の使い方**: 業務エラー = `err(...)`、想定外 = throw（apps/api 規約と一致）。`processRepo` は disabled で記録するだけの正常フローも含むので `Promise<ProcessRepoResult>` の plain union を返す（`Result` ラップは不要）
-- **二重起動防止**: 同日（JST 00:00 起点）の active run があれば skip。ただし stale running（30 分以上前から `running` のまま）は自動 `failed` 遷移してから新 run を開始
-- **`CRAWLER_FORCE_RERUN=true`**: 開発者のローカル再実行用に同日チェックをバイパス
+- **二重起動防止は持たない**: 本処理はべき等（`pickNextRepo` の登録済みスキップ + `@@unique([languageId, astHash])`）なので、重複起動・手動再実行でも問題プールは壊れない
+- **`crawler_runs` の orphan running は次回 run 冒頭で救済**: start → succeed/fail の途中で task が死ぬと `status="running"` が残る。次回 run の最初に `markStaleAsFailed` で 30 分以上前の running を `failed` に倒して観測ノイズを掃除する
+- **`fail()` 失敗時の元エラーは消えるが許容**: catch 内で `fail()` を呼ぶが nested try/catch は持たない。`fail()` 自体が DB 障害で throw した場合は元エラーが失われるが、ほぼ同じ DB 障害が原因なので調査に支障なし。orphan running は次回 `markStaleAsFailed` で回収されるので、ログを残す価値が低い分はネスト削減を優先
+
+## 配置するファイル一覧
+
+```
+apps/cron/src/
+├── task/
+│   ├── crawler-run-typescript.ts         # 言語別 task（TypeScript、Phase 2 ローンチ時点ではこれのみ）
+│   └── crawler-license-recheck.ts        # ライセンス再検証（言語非依存）
+├── repository/
+│   └── prisma/
+│       ├── crawled-repo-repository.ts    # CrawledRepoRepository (+ Domain 型)
+│       ├── crawler-run-repository.ts     # CrawlerRunRepository
+│       ├── crawler-run-item-repository.ts# CrawlerRunItemRepository
+│       ├── language-repository.ts        # LanguageRepository
+│       ├── problem-repository.ts         # ProblemRepository
+│       └── index.ts                      # barrel export
+└── service/
+    ├── crawler/
+    │   ├── process-repo.ts               # processRepo()
+    │   └── pick-next-repo.ts             # pickNextRepo()
+    └── license/
+        └── verifier.ts                   # licenseRecheck()
+```
+
+**Repository は `service/<domain>/` の中ではなく `repository/prisma/` に集約**（apps/api と同じ構造）。service は Repository の interface だけを引数で受け取り、Prisma に直接依存しない。
 
 ## 対応内容
 
-### `apps/cron/src/repository/prisma/` の各 Repository
+### `apps/cron/package.json` に依存追加
 
-レイヤードアーキテクチャ（apps/api/CLAUDE.md と同じ規約）に沿って Repository を作成。
-
-#### `language-repository.ts`
-
-```typescript
-import type { PrismaClient } from "@repo/db"
-
-export interface LanguageRepository {
-  findBySlug(slug: string): Promise<{ id: number; slug: string; name: string } | null>
-}
-
-export class PrismaLanguageRepository implements LanguageRepository {
-  constructor(private readonly prisma: PrismaClient) {}
-  async findBySlug(slug: string) {
-    return this.prisma.language.findUnique({ where: { slug } })
+```jsonc
+{
+  "dependencies": {
+    "@repo/api-schema": "workspace:^",
+    "@repo/db":         "workspace:^",
+    "@repo/errors":     "workspace:^",
+    "@repo/logger":     "workspace:^",
+    "typescript":       "^5.9.3",
+    "zod":              "^3.25.76"
   }
 }
 ```
 
-#### `crawled-repo-repository.ts`
+### `apps/cron/src/env.ts` に DATABASE_URL 必須化を追記
+
+step2 では optional だった `DATABASE_URL` を、`NODE_ENV !== "test"` のとき必須にする（task が DB なしで起動できないことを起動時に弾く）。
+
+```typescript
+.superRefine((env, ctx) => {
+  // 既存の GITHUB_PAT チェック...
+
+  if (env.NODE_ENV !== "test" && !env.DATABASE_URL) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "DATABASE_URL is required when NODE_ENV is not 'test'",
+      path: ["DATABASE_URL"],
+    })
+  }
+})
+```
+
+### `apps/cron/src/repository/prisma/language-repository.ts`
 
 ```typescript
 import type { PrismaClient } from "@repo/db"
 
-import type { CrawledRepoDomain } from "../../types/domain/crawled-repo"
+export type LanguageDomain = {
+  id: number
+  name: string
+  slug: string
+}
+
+export interface LanguageRepository {
+  findBySlug: (slug: string) => Promise<LanguageDomain | null>
+}
+
+export class PrismaLanguageRepository implements LanguageRepository {
+  constructor(private readonly prisma: PrismaClient) {}
+
+  findBySlug = async (slug: string): Promise<LanguageDomain | null> => {
+    const row = await this.prisma.language.findUnique({ where: { slug } })
+    if (!row) return null
+    return { id: row.id, name: row.name, slug: row.slug }
+  }
+}
+```
+
+### `apps/cron/src/repository/prisma/crawled-repo-repository.ts`
+
+```typescript
+import type { PrismaClient } from "@repo/db"
+
+export type CrawledRepoDomain = {
+  id: number
+  commitSha: string
+  fullName: string
+  languageId: number
+  license: string
+  name: string
+  owner: string
+}
 
 export type CreateCrawledRepoInput = {
   candidatesCount: number
@@ -60,19 +136,65 @@ export type CreateCrawledRepoInput = {
 }
 
 export interface CrawledRepoRepository {
-  create(input: CreateCrawledRepoInput): Promise<CrawledRepoDomain>
-  listForLicenseRecheck(): Promise<CrawledRepoDomain[]>
-  listRegisteredFullNames(languageId: number): Promise<Set<string>>
-  markDisabled(id: number, reason: string): Promise<void>
+  create: (input: CreateCrawledRepoInput) => Promise<CrawledRepoDomain>
+  listForLicenseRecheck: () => Promise<CrawledRepoDomain[]>
+  listRegisteredFullNames: (languageId: number) => Promise<Set<string>>
+  markDisabled: (id: number, reason: string) => Promise<void>
 }
 
 export class PrismaCrawledRepoRepository implements CrawledRepoRepository {
   constructor(private readonly prisma: PrismaClient) {}
-  /** ... */
+  // 実装は型に従う。listRegisteredFullNames は disabled の有無を問わず full_name を返す
+  // （Search 結果から「再クロール候補から外す」用途）
 }
 ```
 
-#### `problem-repository.ts`
+### `apps/cron/src/repository/prisma/crawler-run-repository.ts`
+
+```typescript
+import type { PrismaClient } from "@repo/db"
+
+export type CreateRunInput = {
+  /** 例: "crawler_typescript" / "license_recheck"。task ごとにハードコードする（新言語追加時は "crawler_<slug>"） */
+  runType: string
+  startedAt: Date
+}
+
+export interface CrawlerRunRepository {
+  /** 30 分以上前から running のままの行を failed に倒す。task の start() 直前で呼ぶ */
+  markStaleAsFailed: (runType: string) => Promise<number>
+  start: (input: CreateRunInput) => Promise<{ id: number }>
+  succeed: (id: number, endedAt: Date, reposProcessed: number, problemsAdded: number) => Promise<void>
+  fail: (id: number, endedAt: Date, error: unknown) => Promise<void>
+}
+
+export class PrismaCrawlerRunRepository implements CrawlerRunRepository { /* ... */ }
+```
+
+実行履歴の記録 + orphan running の救済を担う。本処理（problems / crawled_repos の書き込み）は `@@unique([languageId, astHash])` でべき等なので、二重起動防止は持たない。orphan running は `start()` のレスポンス喪失 / `succeed()` `fail()` の失敗 / OOM / SIGKILL のいずれかで発生し得るので、次回 run 冒頭の `markStaleAsFailed` で観測ノイズを掃除する。
+
+### `apps/cron/src/repository/prisma/crawler-run-item-repository.ts`
+
+```typescript
+export type CreateRunItemInput = {
+  crawlerRunId: number
+  languageId: number
+  startedAt: Date
+  targetOwner: string
+  targetRepo: string
+}
+
+export interface CrawlerRunItemRepository {
+  start: (input: CreateRunItemInput) => Promise<{ id: number }>
+  succeed: (id: number, endedAt: Date, problemsAdded: number) => Promise<void>
+  fail: (id: number, endedAt: Date, error: unknown) => Promise<void>
+  skip: (id: number, endedAt: Date, reason: string) => Promise<void>
+  /** 同 owner/repo の直近 2 件が failed か（連続失敗判定） */
+  countConsecutiveFailures: (targetOwner: string, targetRepo: string) => Promise<number>
+}
+```
+
+### `apps/cron/src/repository/prisma/problem-repository.ts`
 
 ```typescript
 export type CreateProblemInput = {
@@ -91,112 +213,44 @@ export type CreateProblemInput = {
 
 export interface ProblemRepository {
   /**
-   * `@@unique([languageId, astHash])` に違反した行は skip し、挿入件数だけ返す。
+   * `@@unique([languageId, astHash])` 違反は skip し、挿入件数だけ返す。
    * Prisma の createMany({ skipDuplicates: true }) を使う。
-   * 同 repo 内の重複は Service 層で事前に Map dedupe するため、ここで弾かれる
-   * のは「他 repo に既に同 hash が存在する」ケースのみ
+   * 同 repo 内の重複は service 層で事前に Map dedupe するため、ここで弾かれるのは
+   * 「他 repo に既に同 hash が存在する」ケースのみ
    */
-  bulkCreateSkippingDuplicates(inputs: CreateProblemInput[]): Promise<number>
-  /**
-   * ライセンス再検証で disabled になった repo の problems を一括無効化
-   */
-  markDisabledByCrawledRepoId(crawledRepoId: number): Promise<number>
+  bulkCreateSkippingDuplicates: (inputs: CreateProblemInput[]) => Promise<number>
+  /** ライセンス再検証で disabled になった repo の problems を一括無効化 */
+  markDisabledByCrawledRepoId: (crawledRepoId: number) => Promise<number>
 }
 ```
 
-#### `crawler-run-repository.ts`
+### `apps/cron/src/service/crawler/process-repo.ts`
 
-```typescript
-export type CreateRunInput = {
-  runType: "full" | "license_recheck"
-  startedAt: Date
-}
-
-export interface CrawlerRunRepository {
-  /**
-   * 同日（JST 00:00 起点）に status="running" または status="success" のレコードが
-   * 存在するか判定。CRAWLER_FORCE_RERUN=true 時は呼ばずに常に false 扱いにする
-   */
-  existsActiveRunToday(runType: string, now: Date): Promise<boolean>
-  /**
-   * `started_at < now() - 30min` の running 行を status="failed"、
-   * error={ reason: "stale_running" } で一括更新。再起動後の救済
-   */
-  markStaleAsFailed(runType: string, now: Date): Promise<number>
-  start(input: CreateRunInput): Promise<{ id: number }>
-  succeed(id: number, endedAt: Date, reposProcessed: number, problemsAdded: number): Promise<void>
-  fail(id: number, endedAt: Date, error: unknown): Promise<void>
-}
-```
-
-「同日」は **JST 00:00 起点**で判定。`now` を引数で渡す形にすることでテストから clock を DI できる。
-
-#### `crawler-run-item-repository.ts`
-
-```typescript
-export type CreateRunItemInput = {
-  crawlerRunId: number
-  languageId: number
-  startedAt: Date
-  targetOwner: string
-  targetRepo: string
-}
-
-export interface CrawlerRunItemRepository {
-  start(input: CreateRunItemInput): Promise<{ id: number }>
-  succeed(id: number, endedAt: Date, problemsAdded: number): Promise<void>
-  fail(id: number, endedAt: Date, error: unknown): Promise<void>
-  skip(id: number, endedAt: Date, reason: string): Promise<void>
-  /**
-   * 連続 2 回失敗判定: 同一 targetOwner/targetRepo の直近 2 件が "failed" か
-   */
-  countConsecutiveFailures(targetOwner: string, targetRepo: string): Promise<number>
-}
-```
-
-### `apps/cron/src/types/domain/`
-
-```typescript
-/** crawled-repo.ts */
-export type CrawledRepoDomain = {
-  id: number
-  commitSha: string
-  fullName: string
-  languageId: number
-  license: string
-  name: string
-  owner: string
-  /** ... */
-}
-```
-
-### `apps/cron/src/service/process-repo.ts`
+processRepo() は **正常フロー上の分岐結果（disabled で記録、サンプリング成功）を plain union で返却、想定外エラー（API 5xx 3 回連続失敗、DB 障害）は throw**。`Result<T>` ラップしないのは、業務エラー（4xx 系）が出る場面が無いため。
 
 ```typescript
 import * as ts from "typescript"
 
 import { logger } from "@repo/logger"
 
-import { astHashOf } from "../ast/normalize-for-hash"
-import { checkAdoption } from "../ast/adoption-check"
-import { extractFunctions } from "../ast/extract-functions"
-import { removeComments } from "../ast/remove-comments"
-import * as github from "../client/github"
-import { buildSourceUrl } from "../lib/source-url"
-import { retryWithBackoff } from "../lib/retry"
+import { checkAdoption } from "../../ast/adoption-check"
+import { extractFunctions } from "../../ast/extract-functions"
+import { astHashOf } from "../../ast/normalize-for-hash"
+import { removeComments } from "../../ast/remove-comments"
+import type { GithubClient, GithubRepoMeta } from "../../client/github"
+import { GithubApiError } from "../../client/github"
+import { retryWithBackoff } from "../../lib/retry"
+import { buildSourceUrl } from "../../lib/source-url"
 
 import type {
   CrawledRepoRepository,
   CreateCrawledRepoInput,
-} from "../repository/prisma/crawled-repo-repository"
-import type {
   CreateProblemInput,
   ProblemRepository,
-} from "../repository/prisma/problem-repository"
+} from "../../repository/prisma"
 
 const MIN_ELIGIBLE = 30
 const SAMPLE_CAP = 100
-
 const ALLOWED_LICENSES = new Set(["MIT", "Apache-2.0", "BSD-3-Clause", "ISC"])
 
 export type ProcessRepoTarget = {
@@ -205,56 +259,46 @@ export type ProcessRepoTarget = {
   owner: string
 }
 
-/**
- * 全て正常フロー上の分岐結果（業務エラーではない）。
- * Result でラップせず plain union を返す。
- * 想定外（API 5xx 3 回連続、DB 障害）は throw する
- *
- * adopted=true なら disabled=false で crawled_repos に INSERT、problems も保存される。
- * adopted=false なら disabled=true / disabledReason=reason で crawled_repos に INSERT、problems は空
- */
 export type ProcessRepoResult =
   | { adopted: true; candidatesCount: number; problemsAdded: number; storedCount: number }
   | { adopted: false; candidatesCount: number; reason: "license_not_allowed" | "too_few_problems" }
 
+export type ProcessRepoDeps = {
+  crawledRepoRepository: CrawledRepoRepository
+  github: GithubClient
+  problemRepository: ProblemRepository
+}
+
 export const processRepo = async (
   target: ProcessRepoTarget,
-  repo: {
-    crawledRepoRepository: CrawledRepoRepository
-    problemRepository: ProblemRepository
-  }
+  deps: ProcessRepoDeps
 ): Promise<ProcessRepoResult> => {
   const fullName = `${target.owner}/${target.name}`
   logger.info("processRepo: start", { fullName })
 
-  /** 1. メタ取得（5xx は 3 回まで指数バックオフ、404 は throw して呼び出し側で disable 記録） */
-  const meta = await retryWithBackoff(
-    () => github.getRepoMeta(target.owner, target.name),
-    (e) => e instanceof github.GithubApiError && e.statusCode >= 500
-  )
+  // 1. メタ取得（5xx は 3 回まで指数バックオフ、404 は throw して呼び出し側で記録）
+  const meta = await retryWithBackoff(() => deps.github.getRepoMeta(target.owner, target.name))
 
-  /** 2. ライセンス確認 */
+  // 2. ライセンス確認
   if (meta.license === null || !ALLOWED_LICENSES.has(meta.license)) {
-    await persistDisabled(target, meta, "license_not_allowed", repo, 0)
+    await persistDisabled(target, meta, "license_not_allowed", deps, 0)
     return { adopted: false, candidatesCount: 0, reason: "license_not_allowed" }
   }
 
-  /** 3. ファイル一覧取得 */
-  const files = await github.listSourceFiles(target.owner, target.name, meta.commitSha)
+  // 3. ファイル一覧取得
+  const files = await deps.github.listSourceFiles(target.owner, target.name, meta.commitSha)
 
-  /** 4. 各ファイルから採用候補を抽出（repo 内重複は Map で事前 dedupe） */
+  // 4. 各ファイルから採用候補を抽出（repo 内重複は Map で事前 dedupe）
   const candidateMap = new Map<string, CreateProblemInput>()
   for (const file of files) {
     try {
-      const raw = await github.getRawContent(target.owner, target.name, meta.commitSha, file.path)
+      const raw = await deps.github.getRawContent(target.owner, target.name, meta.commitSha, file.path)
       const sf = ts.createSourceFile(file.path, raw, ts.ScriptTarget.Latest, true)
-      const functions = extractFunctions(sf)
-      for (const fn of functions) {
+      for (const fn of extractFunctions(sf)) {
         const stripped = removeComments(fn.rawText)
         const adoption = checkAdoption(fn.functionName, stripped)
         if (!adoption.adopted) continue
         const hash = astHashOf(stripped)
-        /** repo 内の同 hash は最初の 1 件だけ採用（in-repo dedupe） */
         if (candidateMap.has(hash)) continue
         candidateMap.set(hash, {
           astHash: hash,
@@ -267,35 +311,28 @@ export const processRepo = async (
           sourceFilePath: file.path,
           sourceLineEnd: fn.sourceLineEnd,
           sourceLineStart: fn.sourceLineStart,
-          sourceUrl: buildSourceUrl(
-            target.owner,
-            target.name,
-            meta.commitSha,
-            file.path,
-            fn.sourceLineStart,
-            fn.sourceLineEnd
-          ),
+          sourceUrl: buildSourceUrl(target.owner, target.name, meta.commitSha, file.path, fn.sourceLineStart, fn.sourceLineEnd),
         })
       }
-    } catch (e) {
-      logger.warn("processRepo: file parse failed", { err: String(e), path: file.path })
+    } catch (err) {
+      logger.warn("processRepo: file parse failed", { err: String(err), path: file.path })
     }
   }
 
   const candidates = Array.from(candidateMap.values())
   const candidatesCount = candidates.length
 
-  /** 5. repo 単位の足切り */
+  // 5. repo 単位の足切り
   if (candidatesCount < MIN_ELIGIBLE) {
-    await persistDisabled(target, meta, "too_few_problems", repo, candidatesCount)
+    await persistDisabled(target, meta, "too_few_problems", deps, candidatesCount)
     return { adopted: false, candidatesCount, reason: "too_few_problems" }
   }
 
-  /** 6. ランダムサンプリング（> 100 なら 100 個に絞る） */
+  // 6. ランダムサンプリング（> 100 なら 100 件）
   const sampled = candidatesCount > SAMPLE_CAP ? shuffle(candidates).slice(0, SAMPLE_CAP) : candidates
 
-  /** 7. crawled_repos INSERT → problems bulkCreate（dedup は @@unique で他 repo 重複を弾く） */
-  const crawledRepo = await repo.crawledRepoRepository.create({
+  // 7. crawled_repos INSERT → problems bulkCreate
+  const crawledRepo = await deps.crawledRepoRepository.create({
     candidatesCount,
     commitSha: meta.commitSha,
     crawledAt: new Date(),
@@ -316,9 +353,8 @@ export const processRepo = async (
   })
 
   const problemsWithRepoId = sampled.map((p) => ({ ...p, crawledRepoId: crawledRepo.id }))
-  const problemsAdded = await repo.problemRepository.bulkCreateSkippingDuplicates(problemsWithRepoId)
+  const problemsAdded = await deps.problemRepository.bulkCreateSkippingDuplicates(problemsWithRepoId)
 
-  /** storedCount と実際の挿入件数がズレた場合（他 repo に同 hash が既存）の警告 */
   if (problemsAdded < sampled.length) {
     logger.info("processRepo: some problems skipped by cross-repo dedupe", {
       fullName,
@@ -332,12 +368,12 @@ export const processRepo = async (
 
 const persistDisabled = async (
   target: ProcessRepoTarget,
-  meta: github.GithubRepoMeta,
+  meta: GithubRepoMeta,
   reason: string,
-  repo: { crawledRepoRepository: CrawledRepoRepository },
+  deps: { crawledRepoRepository: CrawledRepoRepository },
   candidatesCount: number
 ): Promise<void> => {
-  await repo.crawledRepoRepository.create({
+  await deps.crawledRepoRepository.create({
     candidatesCount,
     commitSha: meta.commitSha,
     crawledAt: new Date(),
@@ -368,21 +404,25 @@ const shuffle = <T>(arr: T[]): T[] => {
 }
 ```
 
-`processRepo` は **正常フロー上の分岐結果（disabled で記録、サンプリング成功）を plain union で返却、想定外エラー（API 5xx 3 回連続失敗、DB 障害）は throw**。`Result<T>` でラップしないのは、業務エラー（4xx 系）を表現する場面が無いため（apps/api 規約に従う：業務エラーがあるときだけ `Result` を使う）。
+`retryWithBackoff` は step2 で実装済み（`statusCode >= 500` のときだけリトライ）。`GithubApiError` を返す `GithubClient.fetch` が 4xx をすぐ throw / 5xx をリトライ対象にする責務分担になっている。
 
-### `apps/cron/src/service/pick-next-repo.ts`
+### `apps/cron/src/service/crawler/pick-next-repo.ts`
 
 ```typescript
+import type { GithubClient } from "../../client/github"
+
+import type { CrawledRepoRepository } from "../../repository/prisma"
+
 export const pickNextRepo = async (
   language: { id: number; slug: string },
-  repo: { crawledRepoRepository: CrawledRepoRepository }
-): Promise<{ owner: string; name: string } | null> => {
-  const registered = await repo.crawledRepoRepository.listRegisteredFullNames(language.id)
+  deps: { crawledRepoRepository: CrawledRepoRepository; github: GithubClient }
+): Promise<{ name: string; owner: string } | null> => {
+  const registered = await deps.crawledRepoRepository.listRegisteredFullNames(language.id)
   for (let page = 1; page <= 10; page++) {
-    const result = await searchRepos(language.slug, page)
+    const result = await deps.github.searchRepos(language.slug, page)
     for (const item of result.items) {
       if (!registered.has(item.fullName)) {
-        return { owner: item.owner, name: item.name }
+        return { name: item.name, owner: item.owner }
       }
     }
     if (result.items.length < 100) break
@@ -391,107 +431,51 @@ export const pickNextRepo = async (
 }
 ```
 
-### `apps/cron/src/service/crawler-run.ts`
+### `apps/cron/src/service/license/verifier.ts`
 
 ```typescript
 import { logger } from "@repo/logger"
 
-import type { CrawlerRunRepository } from "../repository/prisma/crawler-run-repository"
+import type { GithubClient } from "../../client/github"
+import { GithubApiError } from "../../client/github"
+import { retryWithBackoff } from "../../lib/retry"
 
-export type RunWithCrawlerRunTrackingOptions = {
-  forceRerun?: boolean
-  /** clock を DI（テスト時に固定時刻を渡す） */
-  now?: () => Date
-}
-
-/**
- * crawler_runs の status="running" を立ててから body を実行し、終了時に success/failed を記録する。
- * 二重起動防止と stale running の自動解放を兼ねる。
- */
-export const runWithCrawlerRunTracking = async (
-  runType: "full" | "license_recheck",
-  repo: { crawlerRunRepository: CrawlerRunRepository },
-  body: (runId: number) => Promise<{ problemsAdded: number; reposProcessed: number }>,
-  options: RunWithCrawlerRunTrackingOptions = {}
-): Promise<void> => {
-  const now = options.now ?? (() => new Date())
-
-  /** 1. stale running を自動的に failed に遷移（前回 SIGKILL / OOM 等の救済） */
-  const staleCount = await repo.crawlerRunRepository.markStaleAsFailed(runType, now())
-  if (staleCount > 0) {
-    logger.warn("crawler_run: stale running marked as failed", { runType, staleCount })
-  }
-
-  /** 2. 同日チェック（CRAWLER_FORCE_RERUN=true ならバイパス） */
-  if (!options.forceRerun) {
-    const exists = await repo.crawlerRunRepository.existsActiveRunToday(runType, now())
-    if (exists) {
-      logger.info("crawler_run: skipped, active run exists today", { runType })
-      return
-    }
-  }
-
-  const { id } = await repo.crawlerRunRepository.start({ runType, startedAt: now() })
-
-  try {
-    const result = await body(id)
-    await repo.crawlerRunRepository.succeed(id, now(), result.reposProcessed, result.problemsAdded)
-  } catch (err) {
-    await repo.crawlerRunRepository.fail(id, now(), err)
-    throw err
-  }
-}
-```
-
-`existsActiveRunToday` / `markStaleAsFailed` は **JST 00:00 起点**で判定する Repository 実装。`now` は引数で受け取るので、テストでは `vi.fn(() => new Date("2026-06-05T03:00:00+09:00"))` のように clock を DI できる。
-
-### `apps/cron/src/service/license-recheck.ts`
-
-```typescript
-import { logger } from "@repo/logger"
-
-import * as github from "../client/github"
-import { retryWithBackoff } from "../lib/retry"
-
-import type { CrawledRepoRepository } from "../repository/prisma/crawled-repo-repository"
-import type { ProblemRepository } from "../repository/prisma/problem-repository"
+import type {
+  CrawledRepoRepository,
+  ProblemRepository,
+} from "../../repository/prisma"
 
 const ALLOWED_LICENSES = new Set(["MIT", "Apache-2.0", "BSD-3-Clause", "ISC"])
 
 export type LicenseRecheckResult = {
-  /** 不適合になった repo の総数 */
-  disabledRepos: number
-  /** 一括無効化した problems の総件数 */
   disabledProblems: number
-  /** 処理した repo の総数（再検証完了済み） */
+  disabledRepos: number
   reposProcessed: number
 }
 
-export const licenseRecheck = async (
-  repo: {
-    crawledRepoRepository: CrawledRepoRepository
-    problemRepository: ProblemRepository
-  }
-): Promise<LicenseRecheckResult> => {
-  const all = await repo.crawledRepoRepository.listForLicenseRecheck()
+export type LicenseRecheckDeps = {
+  crawledRepoRepository: CrawledRepoRepository
+  github: GithubClient
+  problemRepository: ProblemRepository
+}
+
+export const licenseRecheck = async (deps: LicenseRecheckDeps): Promise<LicenseRecheckResult> => {
+  const all = await deps.crawledRepoRepository.listForLicenseRecheck()
   let reposProcessed = 0
   let disabledRepos = 0
   let disabledProblems = 0
   for (const r of all) {
     try {
-      const meta = await retryWithBackoff(
-        () => github.getRepoMeta(r.owner, r.name),
-        (e) => e instanceof github.GithubApiError && e.statusCode >= 500
-      )
+      const meta = await retryWithBackoff(() => deps.github.getRepoMeta(r.owner, r.name))
       if (meta.license === null || !ALLOWED_LICENSES.has(meta.license)) {
-        await repo.crawledRepoRepository.markDisabled(r.id, "license_changed")
-        const count = await repo.problemRepository.markDisabledByCrawledRepoId(r.id)
+        await deps.crawledRepoRepository.markDisabled(r.id, "license_changed")
+        const count = await deps.problemRepository.markDisabledByCrawledRepoId(r.id)
         disabledRepos++
         disabledProblems += count
         logger.warn("licenseRecheck: repo disabled", { count, fullName: r.fullName, license: meta.license })
       }
     } catch (err) {
-      /** 個別 repo の失敗（404 等）は他に影響させないが、disabled には記録しない */
+      // 個別 repo の失敗（404 等）は他に影響させない
       logger.warn("licenseRecheck: failed to recheck", { err: String(err), fullName: r.fullName })
     }
     reposProcessed++
@@ -500,55 +484,41 @@ export const licenseRecheck = async (
 }
 ```
 
-### `apps/cron/src/cli/crawler-run.ts`
+### `apps/cron/src/task/crawler-run-<slug>.ts`（言語別 task）
+
+**言語ごとに 1 ファイル** で task を実装する。Phase 2 ローンチ時点では `crawler-run-typescript.ts` のみ。`LANGUAGE_SLUG = "typescript"` と `RUN_TYPE = "crawler_typescript"` を冒頭でハードコードし、`languageRepository.findBySlug(LANGUAGE_SLUG)` で言語を引いてから 1 言語ぶんのループを回す。
+
+run-tracker のような共通ラッパは作らず、`markStaleAsFailed` → `start` → 本処理 → `succeed/fail` を task に直接書く（ラッパで切ると body が巨大なクロージャになって可読性が下がるため）。`fail()` は nested try/catch で保護し、`fail` 自体が失敗しても元エラーを必ず rethrow する。task 全体の logger.error は `void main().catch(...)` の top-level に集約し、main 関数の最外は `try / finally` のみ（catch なし）にしてネストを浅くする。graceful shutdown は `runtime/graceful-shutdown.ts` の `setupGracefulShutdown(prisma)` を呼ぶだけ。
+
+service の DI は `repo: { ...Repository }` と `client: { ...Client }` を別オブジェクトで渡すパターンに統一する（`pickNextRepo` / `processRepo` / `licenseRecheck` すべて同形）。
+
+新言語を追加するときは `crawler-run-<slug>.ts` をコピーして `LANGUAGE_SLUG` / `RUN_TYPE` を変える + `processRepo` を言語固有の実装に差し替える（Go なら Go 用の AST extractor を使う `processRepoGo` を別途用意、JavaScript も将来は同パターン）。以下は TypeScript 版の例：
 
 ```typescript
-import * as Sentry from "@sentry/node"
-
 import { createPrismaClient } from "@repo/db"
 import { logger } from "@repo/logger"
 
+import { GithubClient } from "../client/github"
 import { env } from "../env"
-import { runWithCrawlerRunTracking } from "../service/crawler-run"
-import { processRepo } from "../service/process-repo"
-import { pickNextRepo } from "../service/pick-next-repo"
 import {
   PrismaCrawledRepoRepository,
+  PrismaCrawlerRunItemRepository,
   PrismaCrawlerRunRepository,
   PrismaLanguageRepository,
   PrismaProblemRepository,
 } from "../repository/prisma"
+import { setupGracefulShutdown } from "../runtime/graceful-shutdown"
+import { pickNextRepo } from "../service/crawler/pick-next-repo"
+import { processRepo } from "../service/crawler/process-repo"
 
-Sentry.init({ dsn: env.SENTRY_DSN, enabled: env.NODE_ENV === "production" })
+const LANGUAGE_SLUG = "typescript"
+const RUN_TYPE = "crawler_typescript"
 
-const main = async () => {
-  const prisma = createPrismaClient()
+const main = async (): Promise<void> => {
+  const prisma = createPrismaClient({ url: env.DATABASE_URL })
+  const shutdownHandle = setupGracefulShutdown(prisma)
 
-  /**
-   * Graceful shutdown
-   *
-   * ECS Scheduled Task はタスクのタイムアウトや停止指示で SIGTERM を送る。
-   * デフォルトで 30 秒以内に終了しないと SIGKILL されるため、DB コネクションだけは
-   * 必ず閉じる。run の途中なら runWithCrawlerRunTracking 側の catch で
-   * crawler_runs.status=failed に更新されるので、シグナルでは特別な記録はしない。
-   *
-   * Ctrl-C で止めるローカル開発者にも同じ挙動を提供する（SIGINT）。
-   */
-  let shuttingDown = false
-  const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
-    if (shuttingDown) return
-    shuttingDown = true
-    logger.warn("shutdown initiated", { signal })
-    try {
-      await prisma.$disconnect()
-    } catch (err) {
-      logger.error("prisma disconnect failed during shutdown", { err: String(err) })
-    }
-    process.exit(signal === "SIGTERM" ? 0 : 130)
-  }
-  process.on("SIGTERM", (signal) => void shutdown(signal))
-  process.on("SIGINT", (signal) => void shutdown(signal))
-
+  const github = new GithubClient({ ... })
   const languageRepository = new PrismaLanguageRepository(prisma)
   const crawledRepoRepository = new PrismaCrawledRepoRepository(prisma)
   const problemRepository = new PrismaProblemRepository(prisma)
@@ -556,175 +526,129 @@ const main = async () => {
   const crawlerRunItemRepository = new PrismaCrawlerRunItemRepository(prisma)
 
   try {
-    await runWithCrawlerRunTracking(
-      "full",
-      { crawlerRunRepository },
-      async (runId) => {
-        let reposProcessed = 0
-        let problemsAdded = 0
-        for (const slug of env.CRAWLER_LANGUAGES.split(",")) {
-          const lang = await languageRepository.findBySlug(slug.trim())
-          if (!lang) {
-            logger.warn("language not found", { slug })
-            continue
-          }
-          for (let i = 0; i < env.CRAWLER_REPOS_PER_RUN; i++) {
-            if (shuttingDown) break
-            const target = await pickNextRepo(lang, { crawledRepoRepository })
-            if (!target) {
-              logger.info("no more repos to process", { slug })
-              break
-            }
-            /** repo 単位の try-catch で部分失敗を継続 */
-            const itemStartedAt = new Date()
-            const item = await crawlerRunItemRepository.start({
-              crawlerRunId: runId,
-              languageId: lang.id,
-              startedAt: itemStartedAt,
-              targetOwner: target.owner,
-              targetRepo: target.name,
-            })
-            try {
-              const result = await processRepo(
-                { languageId: lang.id, name: target.name, owner: target.owner },
-                { crawledRepoRepository, problemRepository }
-              )
-              const added = result.adopted ? result.problemsAdded : 0
-              await crawlerRunItemRepository.succeed(item.id, new Date(), added)
-              reposProcessed++
-              problemsAdded += added
-            } catch (err) {
-              /** 個別 repo の失敗は item に記録し、次の repo へ進む（部分失敗の継続） */
-              Sentry.captureException(err)
-              logger.error("processRepo failed", {
-                err: String(err),
-                fullName: `${target.owner}/${target.name}`,
-              })
-              await crawlerRunItemRepository.fail(item.id, new Date(), err)
-              reposProcessed++
-            }
-          }
+    const lang = await languageRepository.findBySlug(LANGUAGE_SLUG)
+    if (!lang) throw new Error(`language slug "${LANGUAGE_SLUG}" not found in DB`)
+
+    /** orphan running の救済（前回 run が succeed/fail 到達前に死んだ場合） */
+    const staleCount = await crawlerRunRepository.markStaleAsFailed(RUN_TYPE)
+    if (staleCount > 0) logger.warn("crawler_run: stale running marked as failed", { staleCount })
+
+    const { id: runId } = await crawlerRunRepository.start({ runType: RUN_TYPE, startedAt: new Date() })
+
+    try {
+      let reposProcessed = 0
+      let problemsAdded = 0
+      for (let i = 0; i < env.CRAWLER_REPOS_PER_RUN; i++) {
+        if (shutdownHandle.isShuttingDown()) break
+        const target = await pickNextRepo(lang, { crawledRepoRepository }, { github })
+        if (!target) {
+          logger.info("no more repos to process", { slug: LANGUAGE_SLUG })
+          break
         }
-        return { problemsAdded, reposProcessed }
-      },
-      { forceRerun: env.CRAWLER_FORCE_RERUN }
-    )
-  } catch (err) {
-    Sentry.captureException(err)
-    logger.error("crawler-run failed", { err: String(err) })
-    throw err
+        const item = await crawlerRunItemRepository.start({ ... })
+        try {
+          const result = await processRepo(
+            { languageId: lang.id, name: target.name, owner: target.owner },
+            { crawledRepoRepository, problemRepository },
+            { github }
+          )
+          const added = result.adopted ? result.problemsAdded : 0
+          await crawlerRunItemRepository.succeed(item.id, new Date(), added)
+          reposProcessed++
+          problemsAdded += added
+        } catch (err) {
+          // 部分失敗の継続: item に記録して次の repo へ
+          logger.error("processRepo failed", err instanceof Error ? err : new Error(String(err)))
+          await crawlerRunItemRepository.fail(item.id, new Date(), err)
+          reposProcessed++
+        }
+      }
+      await crawlerRunRepository.succeed(runId, new Date(), reposProcessed, problemsAdded)
+    } catch (err) {
+      // fail() が DB 障害で throw した場合は元エラーが消えるが、orphan は次回の markStaleAsFailed が回収
+      await crawlerRunRepository.fail(runId, new Date(), err)
+      throw err
+    }
   } finally {
-    if (!shuttingDown) await prisma.$disconnect()
+    if (!shutdownHandle.isShuttingDown()) await prisma.$disconnect()
   }
 }
 
-void main().then(() => process.exit(0)).catch(() => process.exit(1))
+void main()
+  .then(() => process.exit(0))
+  .catch((err: unknown) => {
+    logger.error("crawler-run-typescript failed", err instanceof Error ? err : new Error(String(err)))
+    process.exit(1)
+  })
 ```
 
-`license-recheck.ts` でも同じ SIGTERM / SIGINT ハンドラを設置する（CLI ごとに graceful shutdown が必要）。
+新言語（例: JavaScript）を追加するときはこのファイルをコピーして冒頭の定数を差し替える：
 
-### `apps/cron/src/cli/license-recheck.ts`
+```typescript
+const LANGUAGE_SLUG = "javascript"
+const RUN_TYPE = "crawler_javascript"
+```
 
-`crawler-run.ts` と同型。`runType: "license_recheck"` で `licenseRecheck` を実行。
+（AST 抽出層が言語固有な場合は `processRepo` の差し替えも必要。Go 等。）
 
-### `apps/cron/package.json` の scripts 追加
+### `apps/cron/src/task/crawler-license-recheck.ts`
 
-```jsonc
-{
-  "scripts": {
-    "build":   "tsc --project tsconfig.build.json",
-    "dev":     "CRAWLER_REPOS_PER_RUN=1 dotenvx run -f .env.local -- tsx src/cli/crawler-run.ts",
-    "crawler:run":             "dotenvx run -f .env.local -- tsx src/cli/crawler-run.ts",
-    "crawler:license-recheck": "dotenvx run -f .env.local -- tsx src/cli/license-recheck.ts",
-    "test":    "vitest run",
-    "lint":    "eslint 'src/**/*.ts' 'test/**/*.ts'",
-    "lint:fix":"eslint 'src/**/*.ts' 'test/**/*.ts' --fix"
+言語非依存（全 repo のライセンスを GitHub Repos API で一括再検証する）なので、`runType: "license_recheck"` の 1 つだけ。`crawler_run_items` は使わない（失敗 / 成功は logger.warn で十分）。構造は `crawler-run-typescript.ts` と同じパターン（最外 try / finally、run-level の fail() 保護、top-level catch）。
+
+```typescript
+const main = async (): Promise<void> => {
+  const prisma = createPrismaClient({ url: env.DATABASE_URL })
+  const shutdownHandle = setupGracefulShutdown(prisma)
+  // ... DI を crawler-run-typescript.ts と同じく組み立て ...
+
+  try {
+    const staleCount = await crawlerRunRepository.markStaleAsFailed("license_recheck")
+    if (staleCount > 0) logger.warn("crawler_run: stale running marked as failed", { staleCount })
+
+    const { id: runId } = await crawlerRunRepository.start({
+      runType: "license_recheck",
+      startedAt: new Date(),
+    })
+
+    try {
+      const result = await licenseRecheck(
+        { crawledRepoRepository, problemRepository },
+        { github }
+      )
+      // reposProcessed = 再検証 repo 数, problemsAdded = 無効化した problems 数（インパクト指標）
+      await crawlerRunRepository.succeed(runId, new Date(), result.reposProcessed, result.disabledProblems)
+    } catch (err) {
+      try {
+        await crawlerRunRepository.fail(runId, new Date(), err)
+      } catch (failErr) {
+        logger.error("crawlerRunRepository.fail failed", failErr instanceof Error ? failErr : new Error(String(failErr)))
+      }
+      throw err
+    }
+  } finally {
+    if (!shutdownHandle.isShuttingDown()) await prisma.$disconnect()
   }
 }
+
+void main()
+  .then(() => process.exit(0))
+  .catch((err: unknown) => {
+    logger.error("crawler-license-recheck failed", err instanceof Error ? err : new Error(String(err)))
+    process.exit(1)
+  })
 ```
-
-#### `pnpm dev` の意味
-
-cron は **one-shot CLI** であり、長時間常駐するサーバではない。そのため `tsx watch`（ファイル変更で再起動）は **使わない**。ファイル変更ごとに GitHub API を叩いて DB に書き込んでしまうと、ローカル開発で意図せずレート制限に達したり、問題プールが汚れたりするため。
-
-`pnpm dev` は **「ローカルで挙動を 1 度確認するための最小実行」** として定義する：
-
-- `CRAWLER_REPOS_PER_RUN=1` を強制し、1 repo だけ処理して終了する
-- 1 度実行したら `crawler_runs` の同日チェックで以降は skip される（再実行は前日の `success` 行を SQL で削除するか、`crawler:run` を直接叩く）
-
-ルート `package.json` の `pnpm crawler:run` / `pnpm crawler:license-recheck` でも呼べるよう、turbo の workspace 連携経由で叩けることを確認。
-
-#### 推奨 env
-
-`apps/cron/.env.local.example`（step2 で作成）に以下を **ローカル既定** として記載：
-
-```dotenv
-LOGGER_TYPE=console     # JSON 1 行より目視しやすい
-LOG_LEVEL=debug         # processRepo の進捗を細かく追える
-CRAWLER_REPOS_PER_RUN=1 # 暴走防止
-```
-
-本番では `LOGGER_TYPE=pino` / `LOG_LEVEL=info` / `CRAWLER_REPOS_PER_RUN=1`。
 
 ### ユニットテスト
 
-step2 のテストに加えて、Service 層のテストを追加：
+step2 のテストに加えて、service 層のテストを追加：
 
 | テストファイル | カバー範囲 |
-|---|---|
-| `service/process-repo.test.ts` | GitHub API クライアントを `vi.fn()` で mock、Repository も mock。「採用候補 30 個未満で disabled=true / reason='too_few_problems'」「>= 30 で disabled=false / storedCount=保存件数 で INSERT」「> 100 で 100 件に絞る」「ライセンス NG で disabled=true / reason='license_not_allowed'」「repo 内同 hash の dedupe（Map）」「他 repo に既存の hash で skipDuplicates が効く」 |
-| `service/pick-next-repo.test.ts` | Search API mock + listRegisteredFullNames mock。「登録済みをスキップして次を返す」「全て登録済みで null」 |
-| `service/crawler-run.test.ts` | clock を `now: () => new Date(...)` で DI。「同日 active あればスキップ」「stale running を自動 failed 化」「forceRerun=true で同日チェックバイパス」「成功で succeed」「例外で fail + rethrow」 |
-| `service/license-recheck.test.ts` | 「ライセンス OK で何もしない」「NG で markDisabled + markDisabledByCrawledRepoId が呼ばれる」「個別 repo の 404 は他に影響させず継続」 |
+| --- | --- |
+| `test/service/crawler/process-repo.test.ts` | GithubClient を `vi.fn()` で mock、Repository も mock。「採用候補 30 未満で disabled / reason='too_few_problems'」「>= 30 で disabled=false / storedCount=保存件数 で INSERT」「> 100 で 100 件に絞る」「ライセンス NG で disabled / reason='license_not_allowed'」「repo 内同 hash dedupe」 |
+| `test/service/crawler/pick-next-repo.test.ts` | Search mock + listRegisteredFullNames mock。「登録済みをスキップして次を返す」「全て登録済みで null」 |
+| `test/service/license/verifier.test.ts` | 「ライセンス OK で何もしない」「NG で markDisabled + markDisabledByCrawledRepoId が呼ばれる」「個別 repo の 404 は他に影響させず継続」 |
 
-**全テストは `describe("正常系", ...)` / `describe("異常系", ...)` で必ず分類する**（apps/api/CLAUDE.md 規約）。例として `process-repo.test.ts` のスケルトン：
-
-```typescript
-describe("processRepo", () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  describe("正常系", () => {
-    it("採用候補 50 個でランダムサンプリングなし、全件保存される", async () => {
-      /** ... */
-    })
-
-    it("採用候補 200 個でランダム 100 件に絞られ、storedCount=100", async () => {
-      /** ... */
-    })
-  })
-
-  describe("異常系", () => {
-    it("ライセンスが GPL の場合 disabled=true / disabledReason='license_not_allowed' で記録", async () => {
-      /** ... */
-    })
-
-    it("採用候補が 29 個の場合 disabled=true / disabledReason='too_few_problems'", async () => {
-      /** ... */
-    })
-
-    it("repo 内に同 astHash が複数あっても 1 件だけ保存される", async () => {
-      /** ... */
-    })
-
-    it("GitHub API が 5xx を 3 回返したら throw する", async () => {
-      /** ... */
-    })
-  })
-})
-```
-
-### TODO.md の更新
-
-Phase 2 の残り項目をすべて `[x]` に：
-- repo 単位の足切り
-- `crawler_runs` への結果記録
-- 失敗時のハンドリング
-- `pickNextRepo()`
-- CLI エントリポイント
-- 月次ライセンス再検証
-- Sentry 連携
+**全テストは `describe("正常系", ...)` / `describe("異常系", ...)` で必ず分類する**（apps/api/CLAUDE.md 規約）。
 
 ## 動作確認
 
@@ -734,17 +658,17 @@ Phase 2 の残り項目をすべて `[x]` に：
 pnpm --filter cron test
 ```
 
-step2 の AST テスト + step3 の Service テストが全て緑。
+step2 のテスト + step3 の service テストが全て緑。
 
 ### ローカル 1 repo 処理
 
-`.env.local` に `GITHUB_PAT` を入れた上で：
+`.env.local` に `GITHUB_PAT` / `DATABASE_URL` を入れた上で：
 
 ```bash
-pnpm crawler:run
+CRAWLER_REPOS_PER_RUN=1 pnpm crawler:run:typescript
 ```
 
-期待出力（logger.info）：
+期待ログ：
 
 ```
 processRepo: start, fullName=colinhacks/zod
@@ -755,66 +679,14 @@ DB を psql で確認：
 
 ```sql
 SELECT full_name, candidates_count, stored_count, disabled, disabled_reason FROM crawled_repos;
--- → colinhacks/zod | (採用候補数) | (保存件数 ≤ 100) | f | NULL
-
 SELECT COUNT(*) FROM problems;
--- → ~100（採用候補数による）
-
 SELECT source_url FROM problems LIMIT 1;
--- → https://github.com/colinhacks/zod/blob/<sha>/<path>#L<start>-L<end>
-
 SELECT run_type, status, repos_processed, problems_added FROM crawler_runs;
--- → full | success | 1 | <数>
 ```
 
-### ブートストラップ実行
+### 連続実行のべき等性
 
-```bash
-CRAWLER_REPOS_PER_RUN=5 pnpm crawler:run
-```
-
-5 つの異なる repo が処理されることを確認。
-
-### コメント除去後コードの目視確認
-
-```sql
-SELECT function_name, char_count, line_count, LEFT(code_block, 100) FROM problems LIMIT 5;
-```
-
-- コメントが含まれていない
-- 100〜400 文字、5〜25 行に収まっている
-- 非 ASCII 文字が含まれていない
-
-### 失敗系の確認
-
-`GITHUB_PAT` を無効値にして実行：
-
-```bash
-GITHUB_PAT=invalid pnpm crawler:run
-```
-
-→ `crawler_runs` に `failed` で記録される、Sentry（dev は disabled）には飛ばない、プロセスは exit code 1 で終了。
-
-### Graceful shutdown（SIGTERM / SIGINT）
-
-ローカルで `pnpm crawler:run` を実行中、processRepo の途中で **Ctrl-C** を押す：
-
-```
-^C
-[2026-06-05 ...] WARN: shutdown initiated
-    signal: "SIGINT"
-[2026-06-05 ...] INFO: ...
-```
-
-期待挙動：
-
-- `prisma.$disconnect()` がログに出てから exit code 130 で終了
-- `crawler_runs` の該当行は `status=running` のままになる（catch 経由ではないため）。次回 run 時の同日チェックで `running` が見つかってスキップされるので、運用上は `psql` で手動で `status='failed'` に書き換えるか前日扱いにして再実行する
-- SIGTERM のテストは `kill -TERM <pid>` で同様に確認可能（exit code 0）
-
-### 二重起動防止
-
-同日に 2 回連続実行 → 2 回目はスキップされ、`crawler_runs` には新規行が増えない（既存の `success` 行があるため）。
+同日に 2 回連続実行 → 2 回目は `pickNextRepo` の登録済みスキップで「処理対象なし」になるか、新しい repo を 1 件追加して終了。`crawler_runs` には実行ごとに 1 行追加される。同じ AST hash の problem を再挿入しても `@@unique([languageId, astHash])` で防がれる。
 
 ### ライセンス再検証
 
@@ -822,14 +694,18 @@ GITHUB_PAT=invalid pnpm crawler:run
 pnpm crawler:license-recheck
 ```
 
-`crawled_repos` の license が変わっている repo（手動で license を書き換えてテスト）が `disabled=true`、`disabledReason="license_changed"` になる。
+license が変わった repo が `disabled=true` / `disabled_reason="license_changed"` になり、problems も無効化される。
+
+### Graceful shutdown
+
+`pnpm crawler:run:typescript` 実行中に Ctrl-C → `prisma.$disconnect()` がログに出てから exit code 130 で終了。
 
 ### Lint / Build / Type Check
 
 ```bash
 pnpm --filter cron lint
 pnpm --filter cron build
-pnpm build  # ルートから全体
+pnpm build
 ```
 
 全て緑。

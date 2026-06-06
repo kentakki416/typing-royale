@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "crawler:run": "tsx src/task/crawler-run.ts",
+    "crawler:run:typescript": "tsx src/task/crawler-run-typescript.ts",
     "crawler:license-recheck": "tsx src/task/crawler-license-recheck.ts",
     "batch:ranking": "tsx src/task/ranking-batch.ts",
     "dev": "tsx watch src/index.ts",
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@repo/api-schema": "workspace:^",
+    "@repo/db": "workspace:^",
     "@repo/logger": "workspace:^",
     "typescript": "^5.9.3",
     "zod": "^3.25.76"

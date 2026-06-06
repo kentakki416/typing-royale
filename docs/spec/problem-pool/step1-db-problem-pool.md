@@ -80,7 +80,7 @@ model Problem {
 
 model CrawlerRun {
   id             Int       @id @default(autoincrement())
-  runType        String    @map("run_type") /// "full" / "license_recheck"
+  runType        String    @map("run_type") /// "crawler_<slug>" (e.g. "crawler_typescript") / "license_recheck"
   status         String /// "running" / "success" / "failed"
   reposProcessed Int       @default(0) @map("repos_processed") /// この run で試行した repo 数（成功・失敗・skipped すべて含む。CrawlerRunItem 行数と一致）
   problemsAdded  Int       @default(0) @map("problems_added") /// この run で problems に INSERT された総件数（子の problems_added の合計）
@@ -121,7 +121,7 @@ model CrawlerRunItem {
 
 #### 設計上の補足
 
-- **`crawler_runs` と `crawler_run_items` の親子分離**：1 回の `pnpm crawler:run` で複数 repo を処理した場合、run 全体の集計と個別 repo の成否を独立して残せる。連続 2 回失敗（Slack 通知の根拠）も `crawler_run_items` を見れば repo 単位で判定可能。`onDelete: Cascade` で run が消えれば items も消える
+- **`crawler_runs` と `crawler_run_items` の親子分離**：1 回の `pnpm crawler:run:<slug>` で複数 repo を処理した場合、run 全体の集計と個別 repo の成否を独立して残せる。連続 2 回失敗（Slack 通知の根拠）も `crawler_run_items` を見れば repo 単位で判定可能。`onDelete: Cascade` で run が消えれば items も消える
 - **`Problem.languageId` 非正規化**：出題側（`/solo`）は言語別抽選を `Problem.languageId` の単一テーブルクエリで完結させる（`crawled_repos` を JOIN しない）。`crawledRepo.languageId` との整合は Service 層の責務（INSERT 時に同じ値を入れる）
 - **`Problem.disabled`**：ライセンス再検証で repo が disabled になったとき、または運営が個別問題を手動無効化したとき `true`。出題クエリは `WHERE languageId = ? AND disabled = false` で除外する
 - **`@@unique([languageId, astHash])`**：JS と TS で偶然 hash が一致しても両方保持。`UNIQUE (astHash)` 単独だと先入れ言語が他言語を弾く

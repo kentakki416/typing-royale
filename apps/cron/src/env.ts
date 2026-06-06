@@ -9,11 +9,6 @@ import { z } from "zod"
  */
 const cronEnvSchema = z
   .object({
-    CRAWLER_FORCE_RERUN: z
-      .enum(["true", "false"])
-      .transform((v) => v === "true")
-      .default("false"),
-    CRAWLER_LANGUAGES: z.string().default("typescript,javascript"),
     CRAWLER_MIN_STARS: z.coerce.number().int().positive().default(1000),
     /** 実行日からの相対計算でデフォルト値を組み立てるため optional */
     CRAWLER_PUSHED_AFTER: z.string().optional(),
@@ -23,7 +18,6 @@ const cronEnvSchema = z
     LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
     LOGGER_TYPE: z.enum(["pino", "winston", "console", "silent"]).default("pino"),
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-    SENTRY_DSN: z.string().default(""),
   })
   .superRefine((env, ctx) => {
     /**
@@ -38,13 +32,14 @@ const cronEnvSchema = z
       })
     }
     /**
-     * production では SENTRY_DSN も必須（本番エラー検知漏れ防止）
+     * NODE_ENV !== "test" のとき DATABASE_URL も必須
+     * （task は DB なしで起動できない）
      */
-    if (env.NODE_ENV === "production" && env.SENTRY_DSN.length === 0) {
+    if (env.NODE_ENV !== "test" && !env.DATABASE_URL) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "SENTRY_DSN is required when NODE_ENV is 'production'",
-        path: ["SENTRY_DSN"],
+        message: "DATABASE_URL is required when NODE_ENV is not 'test'",
+        path: ["DATABASE_URL"],
       })
     }
   })

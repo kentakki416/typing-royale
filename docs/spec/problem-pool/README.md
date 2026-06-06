@@ -244,7 +244,7 @@ type RepoInfo = {
 #### スケジュールと実行環境
 
 - **スケジュール**：毎週月曜 03:00 JST。GitHub API の負荷が比較的低い時間帯。
-- **実行環境**：API サーバとは別プロセス（`apps/cron` パッケージ内の `pnpm crawler:run` CLI として実装）。本番は AWS EventBridge → ECS Scheduled Task で起動。
+- **実行環境**：API サーバとは別プロセス（`apps/cron` パッケージ内の `pnpm crawler:run:<slug>` CLI として実装、言語ごとに別 task）。本番は AWS EventBridge → ECS Scheduled Task で起動。
 - **実行時間目安**：1 repo の処理は数秒〜数分（メタ取得 + ファイル取得 + AST 走査）。タイムアウトは 10 分に設定。
 
 #### 1 回の処理内容
@@ -283,9 +283,13 @@ for i in 1..CRAWLER_REPOS_PER_RUN:
 
 #### 排他制御と二重起動防止
 
-- `crawler_runs` の同日（JST 00:00 起点）に `status="running"` または `status="success"` のレコードがあれば、新規 run を **作らずに早期 return**。
-- ただし `running` レコードが `started_at < now() - 30 min` の場合は **stale 判定** で自動的に `status="failed"`（error: "stale_running"）に遷移してから、新規 run を開始する。SIGKILL や OOM で `running` が残ったケースを救済。
-- 開発者が手動再実行したい場合は **`CRAWLER_FORCE_RERUN=true`** で同日チェックをバイパス可能（ローカル開発の利便性）。
+- アプリケーション側で二重起動防止のロジックは持たない。本処理がべき等なため：
+  - `pickNextRepo` は `crawled_repos` に登録済みの repo をスキップする
+  - `processRepo` の挿入は `problems` の `@@unique([languageId, astHash])` で重複を防ぐ
+  - `licenseRecheck` は read 寄りで、結果が変わらなければ DB を更新しない
+- そのため ECS Scheduled Task の重複起動・手動再実行のどちらが起きても問題プールは壊れない。
+- ただし `crawler_runs` は `start()` のレスポンス喪失 / `succeed()` `fail()` の失敗 / OOM / SIGKILL のいずれかで `status="running"` のまま残ることがあるため、次回 run の冒頭で `markStaleAsFailed` を呼んで 30 分以上前の running を `failed` に倒す。
+- `fail()` 自体が失敗した場合に元エラーが消えないよう、catch 内で nested try/catch して `fail` の失敗は logger に記録するだけにし、元の例外は必ず rethrow する。
 - 1 repo / 週の軽量運用のため分散ロック不要。
 
 #### モニタリングと通知
@@ -403,7 +407,7 @@ https://github.com/{owner}/{repo}/blob/{commitSha}/{filePath}#L{sourceLineStart}
 | `languages` | `id`, `name`, `slug` | 言語マスタ（TS / JS） |
 | `crawled_repos` | `id`, `languageId`, `githubId(unique)`, `owner`, `name`, `fullName`, `stars`, `license`, `defaultBranch`, `commitSha`, `description`, `homepage(nullable)`, `topics(jsonb)`, `candidatesCount`, `storedCount`, `disabled`, `disabledReason(nullable)`, `crawledAt` | 処理済み repo（成功 / 不適格 / 失敗 すべて）。`disabled=false AND storedCount > 0` が `/solo` の抽選対象。`candidatesCount` は採用条件を満たした総数、`storedCount` は実際に保存された件数（≤ 100、> 0 で「過去に採用された」の代理キー）。`disabled=true` は失敗 / 採用候補不足 / ライセンス変更等で除外された repo |
 | `problems` | `id`, `crawledRepoId(FK)`, `languageId(FK、非正規化)`, `sourceFilePath`, `sourceLineStart`, `sourceLineEnd`, `sourceUrl`, `functionName`, `codeBlock(text)`, `charCount`, `lineCount`, `astHash`, `disabled` | 問題本体。`codeBlock` は **コメント除去後**。`sourceLineStart` / `sourceLineEnd` は **コメント除去前の元ファイル基準**（1-indexed）。`@@unique([languageId, astHash])` で言語ごとに重複排除。`disabled` はライセンス再検証 / 運営の手動無効化で `true` |
-| `crawler_runs` | `id`, `runType("full"\|"license_recheck")`, `status("running"\|"success"\|"failed")`, `reposProcessed`, `problemsAdded`, `startedAt`, `endedAt`, `error(jsonb)` | バッチ実行の **run 全体**を表す親レコード。1 回の `pnpm crawler:run` で 1 行 |
+| `crawler_runs` | `id`, `runType("crawler_<slug>"\|"license_recheck")`, `status("running"\|"success"\|"failed")`, `reposProcessed`, `problemsAdded`, `startedAt`, `endedAt`, `error(jsonb)` | バッチ実行の **run 全体**を表す親レコード。1 回の `pnpm crawler:run:<slug>` で 1 行（言語ごとに独立した task） |
 | `crawler_run_items` | `id`, `crawlerRunId(FK)`, `languageId`, `targetOwner`, `targetRepo`, `status("success"\|"failed"\|"skipped")`, `problemsAdded`, `startedAt`, `endedAt`, `error(jsonb)` | run 内で処理した **個別 repo 1 行**の履歴。連続 2 回失敗の Slack 通知や、ブートストラップ時の途中失敗の特定に使う |
 
 関連：[`../score-ranking/README.md`](../score-ranking/README.md) の ER 図参照。

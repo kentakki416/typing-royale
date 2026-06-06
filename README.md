@@ -112,7 +112,6 @@ flowchart TB
     subgraph External["🌐 外部サービス"]
         GitHub["GitHub<br/>OAuth + Search/Tree API"]
         AdSense["Google AdSense"]
-        Sentry["Sentry"]
     end
 
     User --> Route53
@@ -137,9 +136,6 @@ flowchart TB
     ECSCron --> Secrets
 
     WebHost -.広告.-> AdSense
-    WebHost -.エラー.-> Sentry
-    ECSApi -.エラー.-> Sentry
-    ECSCron -.エラー.-> Sentry
 ```
 
 ## 主要機能
