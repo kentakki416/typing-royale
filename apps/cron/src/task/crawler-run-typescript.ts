@@ -36,6 +36,7 @@ const main = async (): Promise<void> => {
     pat: env.GITHUB_PAT,
     minStars: env.CRAWLER_MIN_STARS,
     pushedAfter: env.CRAWLER_PUSHED_AFTER,
+    targetExtensions: /\.(ts|tsx)$/,
   })
   const languageRepository = new PrismaLanguageRepository(prisma)
   const crawledRepoRepository = new PrismaCrawledRepoRepository(prisma)

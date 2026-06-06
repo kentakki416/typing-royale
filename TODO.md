@@ -46,17 +46,19 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 - [x] `.env.example` 作成（必須環境変数の一覧、ローカル用デフォルト値）
 - [x] `apps/api` の Dockerfile 作成（本番用 builder / runner マルチステージ。ローカル開発は `pnpm dev` で起動するため dev ステージは不要）
 - [x] `apps/cron/` ディレクトリ作成・`package.json`・Dockerfile（クローラ + ライセンス再検証 + ランキングバッチを兼ねる）
+- [x] `apps/cron/.env.local` を dotenvx で暗号化作成（apps/api と同じパターン、`.env.keys` は root から symlink）
 - [ ] `pnpm dev` で web / api / Postgres / Redis が同時起動できることを確認
-- [x] Sentry のローカルダミー DSN 設定（本番接続は Phase 9）
+- [x] ~~Sentry のローカルダミー DSN 設定~~ Sentry はプロジェクト全体から削除済み（観測は logger.error → CloudWatch Logs Insights で行う方針）
 - [x] `apps/api` に `/healthz` エンドポイント追加 ← 既存の `GET /api/health` (liveness) と `GET /api/health/ready` (readiness) で要件充足。ALB / ECS のヘルスチェックパスは Phase 9 でターゲットグループ設定時にこちらを指定する
 
 ### GitHub 連携の最小準備（ローカルテスト用）
 
 - [x] **GitHub OAuth App（dev 用）**を作成（`http://localhost:3000/api/auth/callback/github` を callback に登録）
-- [ ] GitHub PAT 発行（クローラ用、運営アカウント。**`public_repo` スコープのみ**）
-- [x] `.env.local` に `GITHUB_CLIENT_ID/SECRET` を記載（dotenvx 暗号化）/ `GITHUB_PAT` は Phase 2 で追加
+- [x] GitHub PAT 発行（クローラ用、運営アカウント。**`public_repo` スコープのみ**）
+- [x] `.env.local` に `GITHUB_CLIENT_ID/SECRET` を記載（dotenvx 暗号化）
+- [x] `apps/cron/.env.local` に `GITHUB_PAT` を追記（dotenvx 暗号化）
 
-> AWS / Vercel / Sentry 本番 / Google AdSense 等のアカウント設定は **Phase 9 で実施**。Phase 0〜8 はすべてローカルで完結。
+> AWS / Vercel / Google AdSense 等のアカウント設定は **Phase 9 で実施**。Phase 0〜8 はすべてローカルで完結。
 
 ---
 
@@ -119,34 +121,38 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### apps/cron 実装
 
-- [x] `apps/cron/` 初期構成（`package.json` / TypeScript / 共通ロガー）
-- [ ] GitHub Search API クライアント実装（言語 / ライセンス / stars / pushed フィルタ）
-- [ ] GitHub Repos API クライアント実装（description / homepage / topics 取得）
-- [ ] GitHub Tree / Raw API クライアント実装（ファイル取得）
-- [ ] `processRepo(target)` メイン関数：メタ取得 → ファイル取得 → AST → 関数抽出
-- [ ] **TypeScript Compiler API による AST 解析**
-  - [ ] `ts.createSourceFile` でファイル解析
-  - [ ] FunctionDeclaration / ArrowFunctionExpression / FunctionExpression / MethodDeclaration を抽出
-  - [ ] 行範囲取得（`sourceFile.getLineAndCharacterOfPosition`）
-- [ ] **コメント除去ロジック**（`forEachLeadingCommentRange` / `forEachTrailingCommentRange`）
-- [ ] 採用条件チェック（文字数 / 非 ASCII / 行長 / 関数名）
-- [ ] AST 正規化ハッシュで重複排除
-- [ ] repo 単位の足切り（採用候補 30 個以上で disabled=false / storedCount=保存件数、ランダムサンプリング最大 100 個）
-- [ ] `crawler_runs` への結果記録（同日 running の二重起動防止）
-- [ ] 失敗時のハンドリング（HTTP 5xx / 404 / レート制限）
-- [ ] `pickNextRepo()` 実装（Search 結果から未登録の最上位 repo を選定）
-- [ ] CLI エントリポイント `pnpm crawler:run`
-- [ ] 月次ライセンス再検証 CLI `pnpm crawler:license-recheck`
-- [ ] Sentry 連携（dev はオフ）
+- [x] `apps/cron/` 初期構成（`package.json` / TypeScript / 共通ロガー / dotenvx）
+- [x] GitHub Search API クライアント実装（言語 / ライセンス / stars / pushed フィルタ）
+- [x] GitHub Repos API クライアント実装（description / homepage / topics 取得）
+- [x] GitHub Tree / Raw API クライアント実装（ファイル取得）
+- [x] `processRepo(target)` メイン関数：メタ取得 → ファイル取得 → AST → 関数抽出
+- [x] **TypeScript Compiler API による AST 解析**
+  - [x] `ts.createSourceFile` でファイル解析
+  - [x] FunctionDeclaration / ArrowFunctionExpression / FunctionExpression / MethodDeclaration を抽出
+  - [x] 行範囲取得（`sourceFile.getLineAndCharacterOfPosition`）
+- [x] **コメント除去ロジック**（`forEachLeadingCommentRange` / `forEachTrailingCommentRange`）
+- [x] 採用条件チェック（文字数 / 非 ASCII / 行長 / 関数名）
+- [x] AST 正規化ハッシュで重複排除
+- [x] repo 単位の足切り（採用候補 30 個以上で disabled=false / storedCount=保存件数、ランダムサンプリング最大 100 個）
+- [x] `crawler_runs` への結果記録 ← 同日二重起動防止は持たない方針に変更（本処理がべき等：`pickNextRepo` の登録済みスキップ + `@@unique([languageId, astHash])`）。orphan running は次回 run 冒頭の `markStaleAsFailed` で 30 分以上経過した行を failed に倒して回収
+- [x] 失敗時のハンドリング（HTTP 5xx / 404 / レート制限）
+- [x] `pickNextRepo()` 実装（Search 結果から未登録の最上位 repo を選定）
+- [x] CLI エントリポイント `pnpm crawler:run:typescript` ← **言語別 task に分割**（AST 抽出層が言語固有なため。新言語追加時は `crawler-run-<slug>.ts` をコピー、Phase 2 ローンチ時点では TypeScript のみ）
+- [x] 月次ライセンス再検証 CLI `pnpm crawler:license-recheck`
+- [x] ~~Sentry 連携~~ Sentry はプロジェクト全体から削除済み（観測は logger.error → CloudWatch Logs Insights）
+- [x] graceful shutdown（`setupGracefulShutdown(prisma)` で SIGTERM / SIGINT を受けて Prisma を disconnect）
+- [x] service / Repository / client の DI パターン統一（`repo: { ...Repository }` + `client: { ...Client }` を別オブジェクトで渡す）
 
 ### 動作確認（ローカル）
 
-- [ ] ローカル環境で `pnpm crawler:run` を 1 repo 処理してみる（例：`colinhacks/zod`）
-- [ ] `crawled_repos` / `problems` テーブルに正しくデータが入ることを確認
-- [ ] `sourceUrl` が GitHub の行範囲ハイライト付き URL になっていることを確認
-- [ ] コメント除去後のコードを目視確認
+- [x] ローカル環境で `pnpm crawler:run:typescript` を 1 repo 処理してみる（**2026-06-06 確認**：freeCodeCamp/freeCodeCamp を 2 分 58 秒で完走）
+- [x] `crawled_repos` / `problems` テーブルに正しくデータが入ることを確認（candidatesCount=501、storedCount=100、disabled=false）
+- [x] `sourceUrl` が GitHub の行範囲ハイライト付き URL になっていることを確認（`github.com/.../blob/{sha}/path#L{start}-L{end}`）
+- [x] コメント除去後のコードを目視確認（関数本体のみ、TS 型注釈は保持）
+- [x] graceful shutdown 動作確認（SIGTERM で `prisma.$disconnect()` ログ → exit 0）
 - [ ] **ローカルでブートストラップ実行**：`CRAWLER_REPOS_PER_RUN=5` で 5〜10 repo 一気に積み上げる動作確認
 - [ ] 失敗時のリトライ・disabled 化の挙動確認
+- [x] **言語別ファイル拡張子の分離** (**2026-06-06 修正**): `GithubClient` のコンストラクタ引数で `targetExtensions: RegExp` を受け取る形に変更。TypeScript task では `/\.(ts|tsx)$/` を指定。listSourceFiles で未指定の場合は throw する。**動作確認**: 2 回目実行で vuejs/vue を選んで 100 problems 抽出、すべて `.ts/.tsx` で `.js/.jsx` は 0 件
 
 ---
 

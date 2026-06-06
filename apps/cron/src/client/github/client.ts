@@ -14,9 +14,6 @@ const DEFAULT_USER_AGENT = "typing-royale-crawler/1.0"
 const SEARCH_LICENSE_FILTER =
   "license:mit license:apache-2.0 license:bsd-3-clause license:isc"
 
-/** AST 解析対象の拡張子（tree フィルタで使用） */
-const TARGET_EXTENSIONS = /\.(ts|tsx|js|jsx)$/
-
 /**
  * ファイルサイズの上限（バンドル済みファイル等を除外）。
  * 100KB を超えるソースは AST パースが重く、ノイズになりがちなので落とす。
@@ -66,6 +63,12 @@ export type GithubClientConfig = {
   minStars: number
   /** Search Repositories API の `pushed:>` フィルタ値（YYYY-MM-DD）。省略時は実行日 - 2 年 */
   pushedAfter?: string
+  /**
+   * listSourceFiles で対象とするファイル拡張子の正規表現（例: `/\.(ts|tsx)$/`）。
+   * **言語別 task で固有の値を指定する**（TypeScript task なら `.ts/.tsx` のみ）。
+   * crawler task では必須。listSourceFiles を使わない license-recheck では指定不要。
+   */
+  targetExtensions?: RegExp
   userAgent?: string
 }
 
@@ -91,12 +94,14 @@ export class GithubClient {
   private readonly userAgent: string
   private readonly minStars: number
   private readonly pushedAfter: string
+  private readonly targetExtensions: RegExp | null
 
   constructor(config: GithubClientConfig) {
     this.pat = config.pat
     this.userAgent = config.userAgent ?? DEFAULT_USER_AGENT
     this.minStars = config.minStars
     this.pushedAfter = config.pushedAfter ?? this._defaultPushedAfter()
+    this.targetExtensions = config.targetExtensions ?? null
   }
 
   /**
@@ -174,6 +179,10 @@ export class GithubClient {
     repo: string,
     commitSha: string
   ): Promise<GithubTreeEntry[]> => {
+    if (!this.targetExtensions) {
+      throw new Error("GithubClient.listSourceFiles requires targetExtensions in constructor config")
+    }
+    const extensions = this.targetExtensions
     const url = `${API_BASE}/repos/${owner}/${repo}/git/trees/${commitSha}?recursive=1`
     // Git Tree API
     const res = await this._fetch(url, this._apiHeaders())
@@ -182,7 +191,7 @@ export class GithubClient {
       .map(this._toTreeEntry)
       .filter((e): e is GithubTreeEntry => e !== null)
       .filter((e) => e.type === "blob")
-      .filter((e) => TARGET_EXTENSIONS.test(e.path))
+      .filter((e) => extensions.test(e.path))
       .filter((e) => !EXCLUDED_TREE_PATTERNS.some((p) => p.test(e.path)))
       .filter((e) => (e.size ?? 0) <= MAX_FILE_SIZE)
   }

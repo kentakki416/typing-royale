@@ -26,6 +26,8 @@
     { "path": "src/data/seed.ts", "type": "blob", "size": 1500 },
     { "path": "src/images/icon.ts", "type": "blob", "size": 800 },
     { "path": "src/public/static.ts", "type": "blob", "size": 1200 },
+    { "path": "src/legacy.js", "type": "blob", "size": 5000 },
+    { "path": "src/Card.jsx", "type": "blob", "size": 4000 },
     { "path": "README.md", "type": "blob", "size": 5000 },
     { "path": "src", "type": "tree", "size": null }
   ]

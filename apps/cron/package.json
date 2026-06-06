@@ -5,13 +5,13 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "crawler:run:typescript": "tsx src/task/crawler-run-typescript.ts",
-    "crawler:license-recheck": "tsx src/task/crawler-license-recheck.ts",
-    "batch:ranking": "tsx src/task/ranking-batch.ts",
-    "dev": "tsx watch src/index.ts",
+    "crawler:run:typescript": "dotenvx run -f .env.local -- tsx src/task/crawler-run-typescript.ts",
+    "crawler:license-recheck": "dotenvx run -f .env.local -- tsx src/task/crawler-license-recheck.ts",
+    "batch:ranking": "dotenvx run -f .env.local -- tsx src/task/ranking-batch.ts",
+    "dev": "dotenvx run -f .env.local -- tsx watch src/index.ts",
     "lint": "eslint 'src/**/*.ts' 'test/**/*.ts'",
     "lint:fix": "eslint 'src/**/*.ts' 'test/**/*.ts' --fix",
-    "start": "node dist/index.js",
+    "start": "dotenvx run -f .env.local -- node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },
