@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react"
 
 import { StartSoloPlaySessionResponse } from "@repo/api-schema"
 
+import { Topbar } from "@/components/topbar"
+
 type Problem = StartSoloPlaySessionResponse["problems"][number]
 
 type KeystrokeEntry = {
@@ -80,6 +82,14 @@ export function PlayLoop({ onFinished, problems, sessionId }: Props) {
     }
     onFinished()
   }
+
+  /**
+   * body に play-screen クラスを付けることでスクロール抑止＆エディタを画面全高に伸ばす
+   */
+  useEffect(() => {
+    document.body.classList.add("play-screen")
+    return () => document.body.classList.remove("play-screen")
+  }, [])
 
   /**
    * 120 秒タイマー（rAF）
@@ -180,69 +190,74 @@ export function PlayLoop({ onFinished, problems, sessionId }: Props) {
   const currentProblem = problems[problemIndex] ?? null
   const allDone = problemIndex >= problems.length
   const accuracy = totalKeystrokes === 0 ? 0 : correctKeystrokes / totalKeystrokes
+  const remainingSec = Math.ceil(remainingMs / 1000)
+  const remainingClass = remainingSec <= 30 ? "error" : remainingSec <= 60 ? "accent" : "success"
 
   return (
-    <main className="flex min-h-screen flex-col bg-zinc-50 px-6 py-6 dark:bg-zinc-950">
-      <header className="mb-4 flex items-baseline justify-between">
-        <div>
-          <span className="text-3xl font-bold tabular-nums">
-            {Math.ceil(remainingMs / 1000)}
-          </span>
-          <span className="ml-1 text-sm text-gray-500">秒</span>
-        </div>
-        <div className="space-x-4 text-sm text-gray-600 dark:text-gray-300">
-          <span>{typedChars} 文字</span>
-          <span>{(accuracy * 100).toFixed(1)}%</span>
-          <span>
-            {problemIndex} / {problems.length} 問
-          </span>
-        </div>
-      </header>
+    <>
+      <Topbar languageBadge="TypeScript" modeBadge="通常モード" />
 
-      {imeOn && (
-        <div className="mb-4 rounded bg-yellow-100 px-4 py-3 text-sm text-yellow-900">
-          IME を OFF にしてください
+      <div className="container">
+        <div className="play-hud">
+          <div className="hud-cell">
+            <div className="hud-label">残り時間</div>
+            <div className={`hud-value ${remainingClass}`}>{remainingSec}s</div>
+          </div>
+          <div className="hud-cell">
+            <div className="hud-label">累計文字数</div>
+            <div className="hud-value accent">{typedChars}</div>
+          </div>
+          <div className="hud-cell">
+            <div className="hud-label">正確率</div>
+            <div className="hud-value success">{(accuracy * 100).toFixed(1)}%</div>
+          </div>
+          <div className="hud-cell">
+            <div className="hud-label">完走 / 出題</div>
+            <div className="hud-value">{problemIndex} / {problems.length}</div>
+          </div>
         </div>
-      )}
 
-      <section className="flex-1 rounded-lg border border-gray-200 bg-white p-6 font-mono text-base dark:border-zinc-800 dark:bg-zinc-900">
-        {allDone ? (
-          <p className="text-center text-2xl text-green-600">お見事！全問完走</p>
-        ) : currentProblem ? (
-          <pre className="whitespace-pre-wrap break-words">
-            {renderCode(currentProblem.code_block, cursorPos)}
-          </pre>
-        ) : null}
-      </section>
-
-      <footer className="mt-3 text-right text-xs text-gray-500">
-        {currentProblem && (
-          <span>
-            {currentProblem.function_name}
-            <a
-              className="ml-2 underline"
-              href={currentProblem.source_url}
-              rel="noreferrer noopener"
-              target="_blank"
-            >
-              GitHub
-            </a>
-          </span>
+        {imeOn && (
+          <div className="card" style={{ borderColor: "var(--warning)", color: "var(--warning)", marginTop: "16px" }}>
+            ⚠️ IME を OFF にしてください
+          </div>
         )}
-      </footer>
-    </main>
+
+        <div className="editor-area" style={{ marginTop: "16px" }}>
+          {currentProblem && (
+            <div className="code-block-source">
+              <span>📦 {currentProblem.function_name}</span>
+              <a href={currentProblem.source_url} rel="noreferrer noopener" target="_blank">
+                GitHub で見る ↗
+              </a>
+            </div>
+          )}
+          <pre className="code-block">
+            {allDone ? (
+              <span className="success">お見事！全問完走</span>
+            ) : currentProblem ? (
+              renderCode(currentProblem.code_block, cursorPos)
+            ) : null}
+          </pre>
+        </div>
+
+        <div className="play-foot">
+          💡 ペースト無効 · スキップなし · 未解決型はそのまま打鍵 · Backspace 無効
+        </div>
+      </div>
+    </>
   )
 }
 
 /**
- * 打鍵済み（緑）/ 現在位置（ハイライト）/ 未打鍵（gray）で色分け
+ * 打鍵済み（緑）/ 現在位置（紫ハイライト）/ 未打鍵（薄色）で色分け
  */
 const renderCode = (code: string, cursor: number) => {
   return (
     <>
-      <span className="text-green-600">{code.slice(0, cursor)}</span>
-      <span className="bg-blue-200 dark:bg-blue-900">{code[cursor] ?? ""}</span>
-      <span className="text-gray-400">{code.slice(cursor + 1)}</span>
+      <span className="typed">{code.slice(0, cursor)}</span>
+      <span className="current">{code[cursor] ?? ""}</span>
+      <span className="untyped">{code.slice(cursor + 1)}</span>
     </>
   )
 }

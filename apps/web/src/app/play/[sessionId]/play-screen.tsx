@@ -38,7 +38,7 @@ export function PlayScreen({ sessionId }: { sessionId: string }) {
       return
     }
     /**
-     * マウント時 1 回のみ sessionStorage から復元する初期化処理のため許容
+     * マウント時 1 回のみ sessionStorage から復元する初期化処理
      */
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setStart(JSON.parse(raw) as CachedStart)
@@ -67,5 +67,10 @@ export function PlayScreen({ sessionId }: { sessionId: string }) {
   /**
    * step5 で実装。本 step では placeholder
    */
-  return <div className="p-10 text-center">リザルト画面（step5 で実装）</div>
+  return (
+    <div className="container container-narrow" style={{ paddingTop: "120px", textAlign: "center" }}>
+      <h1>リザルト画面</h1>
+      <p className="text-muted">step5 で本実装します</p>
+    </div>
+  )
 }

@@ -21,17 +21,19 @@ export function Splash({ onFinished, repoInfo }: Props) {
   }, [onFinished])
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-900 px-6 text-zinc-50">
-      <div className="w-full max-w-xl space-y-4 text-center">
-        <p className="text-sm uppercase tracking-widest text-zinc-400">今回のチャレンジ</p>
-        <h1 className="text-4xl font-bold">
-          {repoInfo.owner}/{repoInfo.name}
-        </h1>
-        <p className="text-sm text-zinc-300">★ {repoInfo.stars.toLocaleString()}</p>
-        {repoInfo.description && (
-          <p className="line-clamp-3 text-base text-zinc-200">{repoInfo.description}</p>
-        )}
-      </div>
-    </main>
+    <div className="hero" style={{ paddingTop: "120px" }}>
+      <p className="text-muted text-sm" style={{ letterSpacing: "0.3em", textTransform: "uppercase" }}>
+        今回のチャレンジ
+      </p>
+      <h1 className="mt-16">
+        <span className="accent">{repoInfo.owner}</span>/{repoInfo.name}
+      </h1>
+      <p className="text-mono">★ {repoInfo.stars.toLocaleString()}</p>
+      {repoInfo.description && (
+        <p className="text-muted mt-8" style={{ maxWidth: "640px", margin: "8px auto 0" }}>
+          {repoInfo.description}
+        </p>
+      )}
+    </div>
   )
 }
