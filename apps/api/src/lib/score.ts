@@ -32,10 +32,11 @@ export const isWithinPhysicalLimits = (typedChars: number, accuracy: number): bo
 }
 
 /**
- * keystroke_logs から問題別の進捗を集計
+ * keystroke_logs から問題別の進捗（正解打鍵数 / 完走判定）を集計する
  *
- * problemCodeBlocks: orderIndex (0..19) → codeBlock の Map
- * 各 orderIndex について「正解打鍵数」「完走したか（末尾文字に到達したか）」を返す
+ * クライアントの `isCorrect` は信用せず、サーバー側で
+ * `inputChar === codeBlock[cursor]` で正誤判定する（嘘の log でスコアを
+ * 水増しされないため）
  */
 export const aggregateProblemProgress = (
   logs: KeystrokeLogs,
@@ -44,12 +45,14 @@ export const aggregateProblemProgress = (
   const progress = new Map<number, { charsTyped: number; completed: boolean }>()
 
   for (const [orderIndex, codeBlock] of problemCodeBlocks) {
-    const entries = logs.filter((e) => e.problemIndex === orderIndex)
-    const correctEntries = entries.filter((e) => e.isCorrect)
-    const charsTyped = correctEntries.length
-    /**
-     * 完走判定: 正解打鍵数が codeBlock の長さに到達したか
-     */
+    let cursorPos = 0
+    for (const entry of logs) {
+      if (entry.problemIndex !== orderIndex) continue
+      const expected = codeBlock[cursorPos]
+      if (expected === undefined) break
+      if (entry.inputChar === expected) cursorPos++
+    }
+    const charsTyped = cursorPos
     const completed = charsTyped >= codeBlock.length
     progress.set(orderIndex, { charsTyped, completed })
   }
@@ -58,33 +61,16 @@ export const aggregateProblemProgress = (
 }
 
 /**
- * keystroke_logs からニガテ文字（mistypeStats）を集計
+ * keystroke_logs からニガテ文字（mistypeStats）を集計する
  *
- * 「isCorrect=false の打鍵について、そのとき期待されていた正解文字を 1 加算」
- * 期待文字は問題の codeBlock の「現在位置」から引く
- *
- * ──────────────────────────────────────────────────────────────────
- * なぜ cursor が必要か:
- * ──────────────────────────────────────────────────────────────────
- * KeystrokeEntry には「押した文字 (inputChar) と正誤 (isCorrect)」だけが
- * 入っており、「そのとき期待されていた正解文字」は記録されていない。
- *
- * 苦手文字集計でほしいのは「**何の文字を打つべきだったときに失敗したか**」
- * （= 期待文字）なので、押した文字 inputChar は使えない。
- *
- * 期待文字は codeBlock の中にあるので、「今その問題の何文字目を打とうと
- * していたか」が分かれば codeBlock[N] で引ける。それを問題ごとに追跡する
- * のが cursor。仕様：正解で +1、誤入力では据え置き（正しい文字が打たれる
- * まで進まない）
+ * ログには「押した文字 (inputChar)」しか入っておらず「期待されていた正解文字」は
+ * 含まれない。そのため codeBlock と cursor（問題ごとの正解打鍵数）から
+ * サーバー側で「そのとき期待されていた文字」を復元し、誤入力時にその期待文字を
+ * +1 する。クライアントの `isCorrect` は信用せず、`inputChar === expected` で
+ * サーバー権威に判定する（codeBlock はサーバー所有）
  *
  * 例: codeBlock="hello" / 打鍵 h→e→l→k(誤)→l→o
- *   ・cursor=3 のとき k が来る → expected = code[3] = "l"
- *   ・mistypeStats["l"] += 1（k ではなく l が記録される）
- *
- * クライアントに expectedChar を計算させて送ってもらう設計もあり得るが、
- * (1) データサイズ削減 (2) クライアント不正に強い（codeBlock はサーバー
- * 側にあり、誤りを混ぜたログを送られても期待文字はサーバー権威で確定
- * する）という観点から、サーバー再生方式を採用している
+ *   cursor=3 のとき k が到着 → expected = code[3] = "l" → mistypeStats["l"] += 1
  */
 export const aggregateMistypeStats = (
   logs: KeystrokeLogs,
@@ -110,12 +96,9 @@ export const aggregateMistypeStats = (
      */
     if (expected === undefined) continue
 
-    if (entry.isCorrect) {
+    if (entry.inputChar === expected) {
       cursor.set(entry.problemIndex, pos + 1)
     } else {
-      /**
-       * 正解期待文字をキーに 1 加算
-       */
       mistypeStats[expected] = (mistypeStats[expected] ?? 0) + 1
     }
   }

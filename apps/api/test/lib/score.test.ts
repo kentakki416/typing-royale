@@ -94,6 +94,19 @@ describe("aggregateProblemProgress", () => {
       expect(result.get(0)).toEqual({ charsTyped: 2, completed: true })
       expect(result.get(1)).toEqual({ charsTyped: 1, completed: false })
     })
+
+    it("クライアントが嘘の isCorrect を送ってもサーバーが inputChar で判定する", () => {
+      const codeBlocks = new Map([[0, "abc"]])
+      const log = [
+        /** isCorrect=true で送ってきても、inputChar が一致しなければカウントしない */
+        { elapsedMs: 100, inputChar: "x", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 200, inputChar: "a", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 300, inputChar: "b", isCorrect: true, problemIndex: 0 },
+      ]
+      const result = aggregateProblemProgress(log, codeBlocks)
+      /** "x" は不正解扱いで進まず、"a" と "b" のみカウント */
+      expect(result.get(0)).toEqual({ charsTyped: 2, completed: false })
+    })
   })
 })
 
@@ -142,6 +155,20 @@ describe("aggregateMistypeStats", () => {
     it("ログが空なら空オブジェクトを返す", () => {
       const result = aggregateMistypeStats([], new Map([[0, "abc"]]))
       expect(result).toEqual({})
+    })
+
+    it("クライアントが嘘の isCorrect を送ってもサーバーが inputChar で判定する", () => {
+      const codeBlocks = new Map([[0, "abc"]])
+      const log = [
+        /** クライアントが isCorrect=true と送ってきても、inputChar="x" は不正解扱い */
+        { elapsedMs: 100, inputChar: "x", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 200, inputChar: "a", isCorrect: true, problemIndex: 0 },
+        /** isCorrect=false と送ってきても、inputChar="b" は正解扱い → cursor 進む */
+        { elapsedMs: 300, inputChar: "b", isCorrect: false, problemIndex: 0 },
+      ]
+      const result = aggregateMistypeStats(log, codeBlocks)
+      /** "a" の位置で "x" を誤入力したと判定される */
+      expect(result).toEqual({ a: 1 })
     })
   })
 })
