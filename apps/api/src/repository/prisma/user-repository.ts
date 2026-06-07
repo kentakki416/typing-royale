@@ -26,6 +26,18 @@ export type UpdateUserInput = {
 }
 
 /**
+ * /api/players/:userId が返す公開プロフィール用 user 情報
+ * （canPublicRanking はプライバシー判定にのみ使い、レスポンスには含めない）
+ */
+export type PublicProfileUser = {
+    avatarUrl: string | null
+    canPublicRanking: boolean
+    createdAt: Date
+    displayName: string
+    id: number
+}
+
+/**
  * ユーザーリポジトリのインターフェース
  */
 export interface UserRepository {
@@ -33,6 +45,7 @@ export interface UserRepository {
     delete(id: number): Promise<void>
     findByEmail(email: string): Promise<User | null>
     findById(id: number): Promise<User | null>
+    findPublicProfile(userId: number): Promise<PublicProfileUser | null>
     update(id: number, data: UpdateUserInput): Promise<User>
 }
 
@@ -56,6 +69,27 @@ export class PrismaUserRepository implements UserRepository {
     const prismaUser = await this._prisma.user.findUnique({ where: { email } })
     if (!prismaUser) return null
     return this._toDomainUser(prismaUser)
+  }
+
+  async findPublicProfile(userId: number): Promise<PublicProfileUser | null> {
+    const row = await this._prisma.user.findUnique({
+      select: {
+        id: true,
+        avatarUrl: true,
+        canPublicRanking: true,
+        createdAt: true,
+        displayName: true,
+      },
+      where: { id: userId },
+    })
+    if (row === null) return null
+    return {
+      avatarUrl: row.avatarUrl,
+      canPublicRanking: row.canPublicRanking,
+      createdAt: row.createdAt,
+      displayName: row.displayName ?? `user${row.id}`,
+      id: row.id,
+    }
   }
 
   async create(data: CreateUserInput, tx?: TransactionContext): Promise<User> {

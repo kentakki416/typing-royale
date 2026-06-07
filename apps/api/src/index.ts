@@ -22,6 +22,7 @@ import { MemoUpdateController } from "./controller/memo/update"
 import { PlaySessionFinishController } from "./controller/play-session/finish"
 import { PlaySessionStartChallengeGodsController } from "./controller/play-session/start-challenge-gods"
 import { PlaySessionStartSoloController } from "./controller/play-session/start-solo"
+import { PlayerDetailController } from "./controller/player/detail"
 import { RankingListController } from "./controller/ranking/list"
 import { RankingMeController } from "./controller/ranking/me"
 import { UserDeleteController } from "./controller/user/delete"
@@ -52,6 +53,7 @@ import { authRouter } from "./routes/auth-router"
 import { healthRouter } from "./routes/health-router"
 import { memoRouter } from "./routes/memo-router"
 import { playSessionRouter } from "./routes/play-session-router"
+import { playerRouter } from "./routes/player-router"
 import { rankingRouter } from "./routes/ranking-router"
 import { userRouter } from "./routes/user-router"
 
@@ -186,6 +188,15 @@ const rankingMeController = new RankingMeController(
   userLifetimeStatsRepository,
 )
 
+/**
+ * Player Controller のインスタンス化
+ */
+const playerDetailController = new PlayerDetailController(
+  userLanguageBestRepository,
+  userLifetimeStatsRepository,
+  userRepository,
+)
+
 const app = express()
 
 /**
@@ -264,6 +275,12 @@ app.use(
   rankingRouter({
     list: rankingListController,
     me: rankingMeController,
+  })
+)
+app.use(
+  "/api/players",
+  playerRouter({
+    detail: playerDetailController,
   })
 )
 

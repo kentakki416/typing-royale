@@ -26,11 +26,17 @@ export type UpsertOnFinishResult = {
 }
 
 /**
- * グレード判定 / 進捗表示に使う累計値の subset
+ * グレード判定 / プレイヤー詳細表示に使う累計値の subset
+ * （score-ranking step4 で /api/players/:userId が currentGradeReachedAt /
+ * streakDays / totalSessions / totalTypedChars も必要になったため拡張）
  */
 export type UserLifetimeStatsSummary = {
     bestScore: number
     currentGrade: string | null
+    currentGradeReachedAt: Date | null
+    streakDays: number
+    totalSessions: number
+    totalTypedChars: bigint
 }
 
 /**
@@ -56,7 +62,14 @@ export class PrismaUserLifetimeStatsRepository implements UserLifetimeStatsRepos
 
   async findByUserId(userId: number): Promise<UserLifetimeStatsSummary | null> {
     const row = await this._prisma.userLifetimeStats.findUnique({
-      select: { bestScore: true, currentGrade: true },
+      select: {
+        bestScore: true,
+        currentGrade: true,
+        currentGradeReachedAt: true,
+        streakDays: true,
+        totalSessions: true,
+        totalTypedChars: true,
+      },
       where: { userId },
     })
     return row
