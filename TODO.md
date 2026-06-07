@@ -292,22 +292,27 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### apps/api 実装
 
-- [ ] `POST /api/play-sessions/challenge-gods` Controller
-  - [ ] オールタイムトップ 10 から `publicRanking=true` のユーザーをランダム抽選
-  - [ ] 抽選した神の `play_session_problems` 先頭 20 問取得
-  - [ ] その神のセッションの `crawled_repos` から `repoInfo` を構築
-  - [ ] Redis に `mode=challenge_gods` で保存
-  - [ ] トップ 10 不在時は HTTP 409
+- [x] `POST /api/play-sessions/challenge-gods` Controller (本 step6 で実装)
+  - [x] オールタイムトップ 10 を `RankingSnapshotRepository.getTopByLanguage` から取得
+  - [x] 自分自身を候補から除外、候補 0 件なら 409 Conflict
+  - [x] 抽選した神の `play_session_problems` 先頭 20 問取得 (`PlaySessionRepository.findGhostSourceById`)
+  - [x] その神のセッションの `crawled_repos` から `repoInfo` を構築
+  - [x] 神の `keystroke_logs.compressedLog` を gunzip + JSON.parse (`KeystrokeLogRepository.findByPlaySessionId`)
+  - [x] 神セッション or log 取得不可なら次の候補へ（最大候補数分リトライ）
+  - [x] Redis に `mode=challenge_gods` + `ghostSessionId` で保存
+  - [x] **score-ranking 完成までは `StubRankingSnapshotRepository` で常に 409 Conflict を返す**（DI 差し替えで有効化）
 - [ ] `GET /api/ghosts/:playSessionId` Controller
-  - [ ] `keystroke_logs.compressedLog` を gzip のまま返却
+  - [ ] `keystroke_logs.compressedLog` を gzip のまま返却 ← 本 step6 では /challenge-gods のレスポンスに同梱しており、別エンドポイントは不要かもしれない。ghost-battle feature で再検討
   - [ ] HTTP `Cache-Control: public, max-age=86400`
 
 ### apps/web 実装
 
 > **UI は [`docs/mocks/`](docs/mocks/) のモックを参照**：`play-ghost.html` / `modal-ghost-result.html`。
 
-- [ ] 言語選択画面の「神々に挑戦」ボタン有効化
-  - [ ] トップ 10 不在時（HTTP 409）はボタンを disabled + 通常モード誘導
+- [x] 言語選択画面の「神々に挑戦」ボタンを `startPlaySession(_, "challenge_gods")` 経由で `/api/play-sessions/challenge-gods` に接続 (本 step6)
+  - [x] トップ 10 不在時（HTTP 409）は「近日公開予定です（ランキング集計が整い次第有効化されます）」を表示
+  - [x] sessionStorage に `ghostKeystrokeLogs / ghostSessionId / ghostUserDisplay / mode` を保存して /play/[sessionId] に引き継ぎ
+  - [x] PlayLoop で `mode="challenge_gods"` 時に topbar の modeBadge を「⚡ 神々に挑戦」に + 神の表示カード（grade + displayName + bestScore）をゴールド枠で表示
 - [ ] **神々モードプレイ画面**：← `docs/mocks/play-ghost.html`
   - [ ] ヘッダーに「あなた：XXX 文字 / 神：YYY 文字」とリアルタイム差分バー
   - [ ] サイドエリアに神の現在状態（「問題 3 / 12 行目」）

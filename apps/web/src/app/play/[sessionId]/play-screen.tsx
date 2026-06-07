@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from "react"
 
-import { FinishPlaySessionResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
+import { FinishPlaySessionResponse, StartChallengeGodsResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { PlayLoop } from "./play-loop"
 import { ResultScreen } from "./result-screen"
 import { Splash } from "./splash"
 
 type CachedStart = {
+  ghostKeystrokeLogs?: StartChallengeGodsResponse["ghost_keystroke_logs"] | null
+  ghostSessionId?: number | null
+  ghostUserDisplay?: StartChallengeGodsResponse["ghost_user_display"] | null
+  mode?: "challenge_gods" | "solo"
   problems: StartSoloPlaySessionResponse["problems"]
   repoInfo: StartSoloPlaySessionResponse["repo_info"]
 }
@@ -57,6 +61,8 @@ export function PlayScreen({ sessionId }: { sessionId: string }) {
   if (phase === "playing") {
     return (
       <PlayLoop
+        ghostUserDisplay={start.ghostUserDisplay ?? null}
+        mode={start.mode ?? "solo"}
         problems={start.problems}
         sessionId={sessionId}
         onFinished={(r) => {

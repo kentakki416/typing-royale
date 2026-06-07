@@ -1,6 +1,6 @@
 import { PrismaClient } from "@repo/db"
 
-import { MistypeStats } from "../../types/domain"
+import { MistypeStats, RepoInfo } from "../../types/domain"
 
 import { TransactionContext } from "./transaction-runner"
 
@@ -23,6 +23,20 @@ export type CreatePlaySessionInput = {
 }
 
 /**
+ * 神セッション 1 件分のソースデータ（/challenge-gods で使う）
+ */
+export type GhostSourceSession = {
+    crawledRepo: RepoInfo
+    crawledRepoId: number
+    id: number
+    languageId: number
+    /**
+     * play_session_problems を orderIndex 昇順に並べた problem_id 配列
+     */
+    problemIds: number[]
+}
+
+/**
  * PlaySession リポジトリのインターフェース
  *
  * 単一テーブル責務。複数テーブルの atomic 書き込みは Service が
@@ -30,6 +44,11 @@ export type CreatePlaySessionInput = {
  */
 export interface PlaySessionRepository {
     create(input: CreatePlaySessionInput, tx?: TransactionContext): Promise<{ id: number }>
+    /**
+     * /challenge-gods で神セッションの problemIds + repoInfo を引く。
+     * 神セッション削除済み等で見つからなければ null
+     */
+    findGhostSourceById(id: number): Promise<GhostSourceSession | null>
 }
 
 /**
@@ -62,5 +81,48 @@ export class PrismaPlaySessionRepository implements PlaySessionRepository {
       select: { id: true },
     })
     return { id: row.id }
+  }
+
+  async findGhostSourceById(id: number): Promise<GhostSourceSession | null> {
+    const row = await this._prisma.playSession.findUnique({
+      include: {
+        crawledRepo: {
+          select: {
+            description: true,
+            homepage: true,
+            name: true,
+            owner: true,
+            stars: true,
+            topics: true,
+          },
+        },
+        problems: {
+          orderBy: { orderIndex: "asc" },
+          select: { problemId: true },
+        },
+      },
+      where: { id },
+    })
+    if (!row) return null
+
+    return {
+      crawledRepo: {
+        description: row.crawledRepo.description,
+        homepage: row.crawledRepo.homepage,
+        name: row.crawledRepo.name,
+        owner: row.crawledRepo.owner,
+        stars: row.crawledRepo.stars,
+        /**
+         * topics は jsonb 由来。string[] であることはクローラ側で保証
+         */
+        topics: Array.isArray(row.crawledRepo.topics)
+          ? (row.crawledRepo.topics as string[])
+          : [],
+      },
+      crawledRepoId: row.crawledRepoId,
+      id: row.id,
+      languageId: row.languageId,
+      problemIds: row.problems.map((p) => p.problemId),
+    }
   }
 }

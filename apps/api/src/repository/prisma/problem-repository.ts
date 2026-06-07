@@ -3,6 +3,11 @@ import { PrismaClient } from "@repo/db"
 import { PlaySessionProblem } from "../../types/domain"
 
 /**
+ * findManyByIds の戻り値（orderIndex は呼び出し側で付与する）
+ */
+export type FoundProblem = Omit<PlaySessionProblem, "orderIndex">
+
+/**
  * Problem リポジトリのインターフェース
  *
  * 書き込みは apps/cron 側の責務
@@ -10,9 +15,9 @@ import { PlaySessionProblem } from "../../types/domain"
 export interface ProblemRepository {
     /**
      * 指定 ids の problems を取得する（順序は保証しない）
-     * /finish で sticky shuffled problemIds から codeBlock を引くのに使う
+     * /finish では codeBlock のみ使い、/challenge-gods では全フィールド使う
      */
-    findManyByIds(ids: number[]): Promise<Array<{ id: number; codeBlock: string }>>
+    findManyByIds(ids: number[]): Promise<FoundProblem[]>
 
     /**
      * 指定 repo から disabled=false の problems を最大 limit 件ランダム抽選
@@ -31,10 +36,17 @@ export class PrismaProblemRepository implements ProblemRepository {
     this._prisma = prisma
   }
 
-  async findManyByIds(ids: number[]): Promise<Array<{ id: number; codeBlock: string }>> {
+  async findManyByIds(ids: number[]): Promise<FoundProblem[]> {
     if (ids.length === 0) return []
     const rows = await this._prisma.problem.findMany({
-      select: { codeBlock: true, id: true },
+      select: {
+        charCount: true,
+        codeBlock: true,
+        functionName: true,
+        id: true,
+        lineCount: true,
+        sourceUrl: true,
+      },
       where: { id: { in: ids } },
     })
     return rows

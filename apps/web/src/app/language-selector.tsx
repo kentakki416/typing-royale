@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 
-import { startSoloPlaySession } from "./actions"
+import { startPlaySession } from "./actions"
 
 type Lang = {
   id: number
@@ -30,7 +30,7 @@ export function LanguageSelector({ languages }: Props) {
   const handleStart = (languageId: number, mode: "challenge_gods" | "solo") => {
     setError(null)
     startTransition(async () => {
-      const result = await startSoloPlaySession(languageId, mode)
+      const result = await startPlaySession(languageId, mode)
       if ("error" in result) {
         setError(result.error)
         return
@@ -38,6 +38,10 @@ export function LanguageSelector({ languages }: Props) {
       sessionStorage.setItem(
         `play:${result.sessionId}`,
         JSON.stringify({
+          ghostKeystrokeLogs: result.ghostKeystrokeLogs,
+          ghostSessionId: result.ghostSessionId,
+          ghostUserDisplay: result.ghostUserDisplay,
+          mode: result.mode,
           problems: result.problems,
           repoInfo: result.repoInfo,
         }),

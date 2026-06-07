@@ -1,4 +1,4 @@
-import { gzipSync } from "node:zlib"
+import { gunzipSync, gzipSync } from "node:zlib"
 
 import { PrismaClient } from "@repo/db"
 
@@ -14,6 +14,11 @@ import { TransactionContext } from "./transaction-runner"
  */
 export interface KeystrokeLogRepository {
     create(playSessionId: number, logs: KeystrokeLogs, tx?: TransactionContext): Promise<void>
+    /**
+     * 神セッションのキーストロークログを gzip 解凍 + JSON.parse して返す。
+     * 破損データ / 不在時は null
+     */
+    findByPlaySessionId(playSessionId: number): Promise<KeystrokeLogs | null>
 }
 
 /**
@@ -32,5 +37,19 @@ export class PrismaKeystrokeLogRepository implements KeystrokeLogRepository {
     await client.keystrokeLog.create({
       data: { compressedLog: compressed, playSessionId },
     })
+  }
+
+  async findByPlaySessionId(playSessionId: number): Promise<KeystrokeLogs | null> {
+    const row = await this._prisma.keystrokeLog.findUnique({
+      select: { compressedLog: true },
+      where: { playSessionId },
+    })
+    if (!row) return null
+    try {
+      const decompressed = gunzipSync(row.compressedLog)
+      return JSON.parse(decompressed.toString("utf8")) as KeystrokeLogs
+    } catch {
+      return null
+    }
   }
 }

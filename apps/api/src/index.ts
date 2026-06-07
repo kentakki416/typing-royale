@@ -20,6 +20,7 @@ import { MemoDetailController } from "./controller/memo/detail"
 import { MemoListController } from "./controller/memo/list"
 import { MemoUpdateController } from "./controller/memo/update"
 import { PlaySessionFinishController } from "./controller/play-session/finish"
+import { PlaySessionStartChallengeGodsController } from "./controller/play-session/start-challenge-gods"
 import { PlaySessionStartSoloController } from "./controller/play-session/start-solo"
 import { UserDeleteController } from "./controller/user/delete"
 import { UserGetController } from "./controller/user/get"
@@ -41,6 +42,8 @@ import {
   PrismaTransactionRunner,
   PrismaUserLifetimeStatsRepository,
   PrismaUserRepository,
+  RankingSnapshotRepository,
+  StubRankingSnapshotRepository,
 } from "./repository/prisma"
 import { IoRedisHealthRepository, IoRedisPlaySessionStateRepository, IoRedisRefreshTokenRepository } from "./repository/redis"
 import { authRouter } from "./routes/auth-router"
@@ -75,6 +78,11 @@ const playSessionProblemRepository = new PrismaPlaySessionProblemRepository(pris
 const keystrokeLogRepository = new PrismaKeystrokeLogRepository(prisma)
 const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(prisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(redis)
+/**
+ * score-ranking 機能（Phase 4）が完成するまでは Stub。
+ * 完成後に PrismaRankingSnapshotRepository に差し替えるだけで /challenge-gods が有効化される
+ */
+const rankingSnapshotRepository: RankingSnapshotRepository = new StubRankingSnapshotRepository()
 
 /**
  * 外部 SaaS client の DI assembly
@@ -150,6 +158,14 @@ const playSessionFinishController = new PlaySessionFinishController(
   transactionRunner,
   userLifetimeStatsRepository,
 )
+const playSessionStartChallengeGodsController = new PlaySessionStartChallengeGodsController(
+  keystrokeLogRepository,
+  languageRepository,
+  playSessionRepository,
+  playSessionStateRepository,
+  problemRepository,
+  rankingSnapshotRepository,
+)
 
 const app = express()
 
@@ -220,6 +236,7 @@ app.use(
   "/api/play-sessions",
   playSessionRouter({
     finish: playSessionFinishController,
+    startChallengeGods: playSessionStartChallengeGodsController,
     startSolo: playSessionStartSoloController,
   })
 )

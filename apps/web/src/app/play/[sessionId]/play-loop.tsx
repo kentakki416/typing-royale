@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react"
 
-import { FinishPlaySessionResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
+import { FinishPlaySessionResponse, StartChallengeGodsResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { Topbar } from "@/components/topbar"
 
 type Problem = StartSoloPlaySessionResponse["problems"][number]
+type GhostUserDisplay = StartChallengeGodsResponse["ghost_user_display"]
 
 type KeystrokeEntry = {
   elapsedMs: number
@@ -16,6 +17,11 @@ type KeystrokeEntry = {
 }
 
 type Props = {
+  /**
+   * 神々モードのみ：神の表示情報
+   */
+  ghostUserDisplay: GhostUserDisplay | null
+  mode: "challenge_gods" | "solo"
   /**
    * /finish のレスポンスを ResultScreen に渡すため、結果データ付きで通知
    * （API 失敗時は null が渡る）
@@ -35,7 +41,7 @@ const SESSION_DURATION_MS = 120_000
  * - 関数完走で次の問題へ自動切替
  * - 120 秒経過 / 全完走で /finish を 1 回だけ叩く
  */
-export function PlayLoop({ onFinished, problems, sessionId }: Props) {
+export function PlayLoop({ ghostUserDisplay, mode, onFinished, problems, sessionId }: Props) {
   const [problemIndex, setProblemIndex] = useState(0)
   const [cursorPos, setCursorPos] = useState(0)
   const [typedChars, setTypedChars] = useState(0)
@@ -201,11 +207,31 @@ export function PlayLoop({ onFinished, problems, sessionId }: Props) {
   const remainingSec = Math.ceil(remainingMs / 1000)
   const remainingClass = remainingSec <= 30 ? "error" : remainingSec <= 60 ? "accent" : "success"
 
+  const modeBadge = mode === "challenge_gods" ? "⚡ 神々に挑戦" : "通常モード"
+
   return (
     <>
-      <Topbar languageBadge="TypeScript" modeBadge="通常モード" />
+      <Topbar languageBadge="TypeScript" modeBadge={modeBadge} />
 
       <div className="container">
+        {mode === "challenge_gods" && ghostUserDisplay && (
+          <div className="card mb-16" style={{ borderColor: "rgba(255, 213, 74, 0.4)" }}>
+            <div className="flex-between">
+              <div>
+                <div className="text-xs text-muted" style={{ letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                  対戦相手
+                </div>
+                <div className="text-sm" style={{ color: "var(--gold-light)", fontWeight: 600, marginTop: "4px" }}>
+                  {ghostUserDisplay.grade} {ghostUserDisplay.display_name}
+                </div>
+              </div>
+              <div className="text-mono text-sm" style={{ color: "var(--gold)" }}>
+                神のベスト: {ghostUserDisplay.best_score} pts
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="play-hud">
           <div className="hud-cell">
             <div className="hud-label">残り時間</div>
