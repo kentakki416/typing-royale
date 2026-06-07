@@ -47,3 +47,46 @@ export type RepoInfo = {
     stars: number
     topics: string[]
 }
+
+/**
+ * キーストロークログの 1 エントリ
+ * 仕様の正本は docs/spec/ghost-battle/README.md「キーストロークログのデータ構造」
+ */
+export type KeystrokeEntry = {
+    /**
+     * セッション開始からの経過ミリ秒（performance.now() 起点）
+     */
+    elapsedMs: number
+    /**
+     * 実際に入力された文字（または "Enter" / "Backspace" 等の特殊キー名）
+     */
+    inputChar: string
+    /**
+     * その時点で期待されていた正解文字と一致したか
+     */
+    isCorrect: boolean
+    /**
+     * 何問目を打っていたか（0..19 の orderIndex）
+     */
+    problemIndex: number
+}
+
+export type KeystrokeLogs = KeystrokeEntry[]
+
+/**
+ * ニガテ文字集計（key=正解期待文字、value=誤打鍵回数）
+ */
+export type MistypeStats = Record<string, number>
+
+/**
+ * /finish のサーバー集計結果（クライアント送信値を再計算したもの）
+ */
+export type FinishResult = {
+    accuracy: number
+    mistypeStats: MistypeStats
+    persisted: boolean
+    problemsCompleted: number
+    problemsPlayed: number
+    score: number
+    typedChars: number
+}

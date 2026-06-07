@@ -80,8 +80,8 @@ step2 の `/solo` と **多くを共有**：Redis ステート構造・PlaySessi
     "grade": "Principal Engineer",
     "best_score": 942
   },
-  "ghost_keystroke_log": [
-    { "t": 142.5, "p": 0, "ch": "c", "ok": true },
+  "ghost_keystroke_logs": [
+    { "elapsed_ms": 142.5, "problem_index": 0, "input_char": "c", "is_correct": true },
     "... 1500 entry まで"
   ]
 }
@@ -94,7 +94,7 @@ step2 の `/solo` と **多くを共有**：Redis ステート構造・PlaySessi
 | `repo_info` | object | 神が打った repo の情報をそのまま継承 |
 | `ghost_session_id` | number | DB の `play_sessions.id`。神の過去 1 セッション |
 | `ghost_user_display` | object | 神の表示情報（グレード付き） |
-| `ghost_keystroke_log` | array | 神のキーストロークログ全件。`keystroke_logs.compressed_log` を gzip 解凍 + JSON.parse |
+| `ghost_keystroke_logs` | array | 神のキーストロークログ全件。`keystroke_logs.compressed_log` を gzip 解凍 + JSON.parse |
 
 ### エラー
 
@@ -143,7 +143,7 @@ sequenceDiagram
 
     Svc->>KL: findByPlaySessionId(ghostSessionId)
     KL-->>Svc: compressedLog (Bytes)
-    Svc->>Svc: gunzipSync → JSON.parse<br/>→ KeystrokeLog
+    Svc->>Svc: gunzipSync → JSON.parse<br/>→ KeystrokeLogs
     alt 全候補で keystroke log 取得不可
         Svc-->>Ctrl: err(409)
     end
@@ -169,7 +169,7 @@ sequenceDiagram
 9. 全候補で取得できなければ 409 CONFLICT（神々モード起動不能）
 10. 神セッションの `problemIds` から `findManyByIds` で `codeBlock` 等の本体を取得し orderIndex 順に並べる
 11. `sessionId` を UUID v4 で発行し、`mode="challenge_gods"` / `ghostSessionId` セットで Redis state を保存（TTL 300s）
-12. クライアントに `{ session_id, problems, repo_info, ghost_session_id, ghost_user_display, ghost_keystroke_log }` を返却
+12. クライアントに `{ session_id, problems, repo_info, ghost_session_id, ghost_user_display, ghost_keystroke_logs }` を返却
 
 ## 神選定の詳細ロジック
 
@@ -214,10 +214,10 @@ const ghostUserDisplaySchema = z.object({
 })
 
 const keystrokeEntrySchema = z.object({  /** step3 で定義済みなら共有 */
-  ch: z.string(),
-  ok: z.boolean(),
-  p: z.number().int().nonnegative().max(19),
-  t: z.number().nonnegative(),
+  input_char: z.string(),
+  is_correct: z.boolean(),
+  problem_index: z.number().int().nonnegative().max(19),
+  elapsed_ms: z.number().nonnegative(),
 })
 
 export const startChallengeGodsRequestSchema = z.object({
@@ -225,7 +225,7 @@ export const startChallengeGodsRequestSchema = z.object({
 })
 
 export const startChallengeGodsResponseSchema = z.object({
-  ghost_keystroke_log: z.array(keystrokeEntrySchema),
+  ghost_keystroke_logs: z.array(keystrokeEntrySchema),
   ghost_session_id: z.number().int().positive(),
   ghost_user_display: ghostUserDisplaySchema,
   problems: z.array(playSessionProblemSchema).length(20),
@@ -275,10 +275,10 @@ import { gunzipSync } from "node:zlib"
 
 import { PrismaClient } from "@repo/db"
 
-import { KeystrokeLog } from "../../types/domain"
+import { KeystrokeLogs } from "../../types/domain"
 
 export interface KeystrokeLogRepository {
-  findByPlaySessionId(playSessionId: number): Promise<KeystrokeLog | null>
+  findByPlaySessionId(playSessionId: number): Promise<KeystrokeLogs | null>
 }
 
 export class PrismaKeystrokeLogRepository implements KeystrokeLogRepository {
@@ -288,7 +288,7 @@ export class PrismaKeystrokeLogRepository implements KeystrokeLogRepository {
     this._prisma = prisma
   }
 
-  async findByPlaySessionId(playSessionId: number): Promise<KeystrokeLog | null> {
+  async findByPlaySessionId(playSessionId: number): Promise<KeystrokeLogs | null> {
     const row = await this._prisma.keystrokeLog.findUnique({
       select: { compressedLog: true },
       where: { playSessionId },
@@ -296,7 +296,7 @@ export class PrismaKeystrokeLogRepository implements KeystrokeLogRepository {
     if (!row) return null
     try {
       const decompressed = gunzipSync(row.compressedLog)
-      return JSON.parse(decompressed.toString("utf8")) as KeystrokeLog
+      return JSON.parse(decompressed.toString("utf8")) as KeystrokeLogs
     } catch {
       return null
     }
@@ -350,7 +350,7 @@ export const createChallengeGodsSession = async (
   }
 
   /** 3. ランダム抽選 + keystroke log 取得（欠落時は次を試す） */
-  let ghost: { entry: RankingTopEntry; ghostSession: NonNullable<Awaited<ReturnType<typeof repo.playSessionRepository.findGhostSourceById>>>; keystrokeLog: KeystrokeLog } | null = null
+  let ghost: { entry: RankingTopEntry; ghostSession: NonNullable<Awaited<ReturnType<typeof repo.playSessionRepository.findGhostSourceById>>>; keystrokeLog: KeystrokeLogs } | null = null
   const pool = [...candidates]
   while (pool.length > 0 && ghost === null) {
     const i = Math.floor(Math.random() * pool.length)
@@ -465,7 +465,7 @@ if (mode === "challenge_gods") {
       { language_id: languageId },
     )
     return {
-      ghostKeystrokeLog: res.ghost_keystroke_log,
+      ghostKeystrokeLog: res.ghost_keystroke_logs,
       ghostSessionId: res.ghost_session_id,
       ghostUserDisplay: res.ghost_user_display,
       problems: res.problems,
@@ -519,6 +519,6 @@ pnpm lint && pnpm build && cd apps/api && pnpm test
 
 ## 次の機能・step での利用
 
-- **ghost-battle 機能の step**: プレイ画面のゴースト併走 UI 本実装（横並び累計文字数 / 差分バー / 神のサマリ）。本 step でレスポンスに同梱した `ghost_keystroke_log` を `requestAnimationFrame` で再生して「神の現在文字数」を計算する
+- **ghost-battle 機能の step**: プレイ画面のゴースト併走 UI 本実装（横並び累計文字数 / 差分バー / 神のサマリ）。本 step でレスポンスに同梱した `ghost_keystroke_logs` を `requestAnimationFrame` で再生して「神の現在文字数」を計算する
 - **score-ranking 機能の step**: `StubRankingSnapshotRepository` を `PrismaRankingSnapshotRepository` に差し替え、`ranking_snapshots` テーブルからの実取得に切り替える。本 step で Service / Controller / Web 連携は完成しているため、差し替えだけで「神々に挑戦」が即時有効化される
 - **typing-engine 完成判定**: 本 step 完了で「typing-engine の API/UI 一連」は実装完了。残るは外部機能（score-ranking / ghost-battle）の連携待ち

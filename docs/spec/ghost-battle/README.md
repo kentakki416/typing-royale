@@ -90,37 +90,37 @@
 
 ```ts
 type KeystrokeEntry = {
-  t:  number   // セッション開始からの経過ミリ秒（performance.now() 起点）
-  p:  number   // 何問目を打っていたか（0〜19、20 問同梱の問題インデックス = orderIndex）
-  ch: string   // 実際に入力された文字（または特殊キー名："Enter" / "Backspace" 等）
-  ok: boolean  // その時点で期待されていた文字と一致したか
+  elapsedMs:    number   // セッション開始からの経過ミリ秒（performance.now() 起点）
+  problemIndex: number   // 何問目を打っていたか（0〜19、20 問同梱の問題インデックス = orderIndex）
+  inputChar:    string   // 実際に入力された文字（または特殊キー名："Enter" / "Backspace" 等）
+  isCorrect:    boolean  // その時点で期待されていた文字と一致したか
 }
 
-type KeystrokeLog = KeystrokeEntry[]
+type KeystrokeLogs = KeystrokeEntry[]
 ```
 
 具体例（`"hello"` を打って 1 回ミスタイプ）：
 
 ```json
 [
-  { "t": 145.2, "p": 0, "ch": "h", "ok": true  },
-  { "t": 312.8, "p": 0, "ch": "e", "ok": true  },
-  { "t": 478.1, "p": 0, "ch": "l", "ok": true  },
-  { "t": 645.6, "p": 0, "ch": "k", "ok": false },
-  { "t": 812.3, "p": 0, "ch": "l", "ok": true  },
-  { "t": 978.5, "p": 0, "ch": "o", "ok": true  }
+  { "elapsedMs": 145.2, "problemIndex": 0, "inputChar": "h", "isCorrect": true  },
+  { "elapsedMs": 312.8, "problemIndex": 0, "inputChar": "e", "isCorrect": true  },
+  { "elapsedMs": 478.1, "problemIndex": 0, "inputChar": "l", "isCorrect": true  },
+  { "elapsedMs": 645.6, "problemIndex": 0, "inputChar": "k", "isCorrect": false },
+  { "elapsedMs": 812.3, "problemIndex": 0, "inputChar": "l", "isCorrect": true  },
+  { "elapsedMs": 978.5, "problemIndex": 0, "inputChar": "o", "isCorrect": true  }
 ]
 ```
 
-問題 0 が完走したら、次のエントリの `p` が 1 に切り替わる。
+問題 0 が完走したら、次のエントリの `problemIndex` が 1 に切り替わる。
 
 このデータが効いてくる場所：
 
 | 利用箇所 | 用途 |
 | --- | --- |
-| ゴースト併走（本機能） | 神の log を取得 → `t` の経過時刻に合わせて再生 |
+| ゴースト併走（本機能） | 神の log を取得 → `elapsedMs` の経過時刻に合わせて再生 |
 | リプレイ閲覧（[`../replay-viewer/README.md`](../replay-viewer/README.md)） | シーク・倍速付きの UI で再生 |
-| 誤打鍵集計（[`../typing-engine/README.md` 「誤打鍵集計（ニガテ文字）」](../typing-engine/README.md#誤打鍵集計ニガテ文字)） | `ok: false` のエントリから「期待されていた正解文字」をカウント → `mistypeStats` 生成 |
+| 誤打鍵集計（[`../typing-engine/README.md` 「誤打鍵集計（ニガテ文字）」](../typing-engine/README.md#誤打鍵集計ニガテ文字)） | `isCorrect: false` のエントリから「期待されていた正解文字」をカウント → `mistypeStats` 生成 |
 | MVP 後の不正対策（[`../typing-engine/deferred-competitive-integrity.md`](../typing-engine/deferred-competitive-integrity.md)） | `t` の間隔分布から人間離れした打鍵を検知 |
 
 ### キーストロークログのサイズ感

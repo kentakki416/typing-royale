@@ -64,7 +64,7 @@ flowchart TD
 6. `PlayScreen`（Client）が sessionStorage から復元し `phase=splash`
 7. `Splash` が 2 秒間 `repo_info` を表示、setTimeout 完了で `phase=playing`
 8. `PlayLoop` マウントで `performance.now()` を `startAtRef` に保存し `requestAnimationFrame` ループ開始
-9. `document` の keydown を捕捉、`code_block[cursor]` と照合して `KeystrokeEntry` を `logRef` に push（cursor 進行は ok=true 時のみ）
+9. `document` の keydown を捕捉、`code_block[cursor]` と照合して `KeystrokeEntry` を `logRef` に push（cursor 進行は isCorrect=true 時のみ）
 10. 関数末尾到達で次の問題へ自動切替、20 問全完走で「お見事！」表示
 11. 残り 0 秒で Route Handler 経由 `POST /finish` を 1 回だけ叩き、レスポンスを受けて `phase=result`（step5 で UI 実装）
 
@@ -84,7 +84,7 @@ flowchart TD
 | `startAtRef` | `performance.now()` 起点 | mount 時 1 回 |
 | `problemIndexRef` / `cursorPosRef` | 現在打鍵中の問題と位置 | keydown ハンドラ内 |
 | `typedCharsRef` / `correctRef` / `totalRef` | 累計 | keydown ハンドラ内 |
-| `logRef` (`KeystrokeEntry[]`) | keystroke log の蓄積 | keydown ごとに push |
+| `logRef` (`KeystrokeLogs`) | keystroke log の蓄積 | keydown ごとに push |
 | `finishedRef` | `/finish` 二重呼び出し防止 | rAF タイマー切れ時 |
 
 ## 入力判定ロジック
@@ -99,8 +99,8 @@ flowchart TD
     F3 -->|yes| END
     F3 -->|no| F4["expected = code_block[cursorPos]<br/>input = (Enter? '\n' : e.key)"]
     F4 --> F5{input === expected?}
-    F5 -->|ok=true| OK[logRef.push<br/>typedChars++ / cursor++<br/>関数末尾なら次の問題へ]
-    F5 -->|ok=false| NG[logRef.push<br/>cursor は進めない]
+    F5 -->|isCorrect=true| OK[logRef.push<br/>typedChars++ / cursor++<br/>関数末尾なら次の問題へ]
+    F5 -->|isCorrect=false| NG[logRef.push<br/>cursor は進めない]
 ```
 
 ## 120 秒タイマー（rAF ループ）
@@ -117,7 +117,7 @@ sequenceDiagram
         rAF->>rAF: remaining = 120000 - elapsed
         rAF->>State: setRemainingMs(remaining)
         alt remaining <= 0
-            rAF->>Finish: POST /finish<br/>{ typed_chars, accuracy, keystroke_log }
+            rAF->>Finish: POST /finish<br/>{ typed_chars, accuracy, keystroke_logs }
             Finish-->>rAF: 200 result
             rAF->>State: setPhase("result")
             Note over rAF: cancelAnimationFrame
@@ -129,7 +129,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    Refs[useRef<br/>typedCharsRef<br/>correctRef / totalRef<br/>logRef] -->|aggregate| Payload["body:<br/>{ typed_chars, accuracy, keystroke_log }"]
+    Refs[useRef<br/>typedCharsRef<br/>correctRef / totalRef<br/>logRef] -->|aggregate| Payload["body:<br/>{ typed_chars, accuracy, keystroke_logs }"]
     Payload --> RH["POST /api/play-sessions/sessionId/finish<br/>(Route Handler)"]
     RH --> EX[Express POST /finish]
     EX --> RES["{ score, mistype_stats, ... }"]
@@ -146,7 +146,7 @@ flowchart LR
 - **入力判定**：`window` ではなく **`document` レベルで `keydown` を購読**（フォーカス管理を簡略化）。`preventDefault()` で `Tab` キーや `Space` のスクロール等を抑止。プレイ画面ではフォーム要素を持たないため `document` 直結が単純
 - **`paste` イベント無効化**：プレイ画面マウント時に `document.addEventListener("paste", e => e.preventDefault())` を仕掛ける。アンマウント時に剥がす
 - **`compositionstart` 検知で IME 警告**：日本語 IME ON の状態で打鍵されると正誤判定が壊れるため、`compositionstart` を検知して画面に「IME を OFF にしてください」のオーバーレイを出す。`compositionend` で消す
-- **keystroke log のメモリ管理**：1500 entry × 50 byte ≒ 75KB をメモリに保持する想定。`useRef<KeystrokeEntry[]>` に push して再レンダリングを発生させない
+- **keystroke log のメモリ管理**：1500 entry × 50 byte ≒ 75KB をメモリに保持する想定。`useRef<KeystrokeLogs>` に push して再レンダリングを発生させない
 - **状態と再レンダリングの分離**：表示用 state（残り時間、累計文字数、正確率）は `useState` で 60fps の頻度で更新するが、進行ロジック（現在の問題 index、各問題の cursor 位置）は `useRef` で持って必要なときだけ `setState` をトリガーする。**タイマー rAF の中で毎フレーム `setState` するとパフォーマンス劣化**するため、表示用は 100ms 程度のスロットルで反映
 - **アクセシビリティ**：マウス操作不要（[`./README.md#アクセシビリティ要件`](./README.md#アクセシビリティ要件)）。言語選択ボタンは `tab` でフォーカス → `Enter` で選択。プレイ画面はマウントと同時に `document` で `keydown` を拾うのでフォーカス操作なしで打鍵開始できる
 - **`/finish` レスポンスは URL クエリで持ち回らずクライアントメモリで受け渡し**：リザルト画面（step5）は `/play/[sessionId]/result` ではなく `/play/[sessionId]` の同一画面上で **画面切替** する（Router 遷移なし）。理由：`/finish` レスポンスを URL に載せるとブックマーク・共有でゴミ URL が生まれるため。同一 React コンポーネントツリー内で「プレイ → リザルト」を state 切替する形にする
@@ -462,7 +462,7 @@ import { useEffect, useRef, useState } from "react"
 import { StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 type Problem = StartSoloPlaySessionResponse["problems"][number]
-type KeystrokeEntry = { ch: string; ok: boolean; p: number; t: number }
+type KeystrokeEntry = { elapsedMs: number; inputChar: string; isCorrect: boolean; problemIndex: number }
 
 type Props = {
   onFinished: () => void
@@ -488,7 +488,7 @@ export function PlayLoop({ onFinished, problems, sessionId }: Props) {
   const typedCharsRef = useRef(0)
   const totalRef = useRef(0)
   const correctRef = useRef(0)
-  const logRef = useRef<KeystrokeEntry[]>([])
+  const logRef = useRef<KeystrokeLogs>([])
   const finishedRef = useRef(false)
 
   const finish = async () => {
@@ -500,7 +500,7 @@ export function PlayLoop({ onFinished, problems, sessionId }: Props) {
       await fetch(`/api/play-sessions/${sessionId}/finish`, {
         body: JSON.stringify({
           accuracy,
-          keystroke_log: logRef.current,
+          keystroke_logs: logRef.current,
           typed_chars: typedCharsRef.current,
         }),
         headers: { "Content-Type": "application/json" },
@@ -549,21 +549,21 @@ export function PlayLoop({ onFinished, problems, sessionId }: Props) {
       const expectedChar = currentProblem.code_block[cursorPosRef.current]
       /** Enter は改行扱い */
       const inputChar = e.key === "Enter" ? "\n" : e.key
-      const ok = inputChar === expectedChar
+      const isCorrect = inputChar === expectedChar
 
       e.preventDefault()
 
       const elapsed = performance.now() - startAtRef.current
       logRef.current.push({
-        ch: e.key,
-        ok,
-        p: problemIndexRef.current,
-        t: elapsed,
+        elapsedMs: elapsed,
+        inputChar: e.key,
+        isCorrect,
+        problemIndex: problemIndexRef.current,
       })
 
       totalRef.current += 1
       setTotalKeystrokes(totalRef.current)
-      if (ok) {
+      if (isCorrect) {
         correctRef.current += 1
         setCorrectKeystrokes(correctRef.current)
         typedCharsRef.current += 1
