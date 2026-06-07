@@ -1,22 +1,24 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 
 import { Topbar } from "@/components/topbar"
-
-import { LanguageSelector } from "./language-selector"
 
 export const metadata: Metadata = {
   title: "Typing Royale",
 }
 
 /**
- * MVP では言語マスタを取得する API がまだ無いため、ハードコードで TypeScript /
- * JavaScript を出す。DB seed の id 1/2 と一致させること
+ * トップ画面（mock: top.html 準拠の landing）
+ *
+ * 主な要素:
+ * - hero（タイトル + CTA 2 つ）
+ * - god-frame card（神々に挑戦の紹介）
+ * - 全期間トップランキング preview（Phase 4 まで placeholder）
+ * - 「なぜ Typing Royale か」3 col 説明
+ * - sidebar に統計 placeholder + 対応言語バッジ
+ *
+ * 「言語選択 → プレイ開始」自体は /play に分離している（mock 構成と同じ）
  */
-const SUPPORTED_LANGUAGES = [
-  { id: 1, iconClass: "ts", iconText: "TS", name: "TypeScript" },
-  { id: 2, iconClass: "js", iconText: "JS", name: "JavaScript" },
-] as const
-
 export default function HomePage() {
   return (
     <>
@@ -31,59 +33,99 @@ export default function HomePage() {
           OSS の実コードを 120 秒で打鍵するエンジニア向けタイピングゲーム。スコアに応じて
           README に貼れる動的バッジ・達成カード・3D アイコンがもらえる。
         </p>
+        <div className="flex-center gap-12 mt-24" style={{ justifyContent: "center" }}>
+          <Link className="btn btn-primary btn-play btn-large" href="/play">▶ プレイ開始</Link>
+          <Link className="btn btn-large" href="/sign-in">GitHub で記録を残す</Link>
+        </div>
+        <div className="text-sm text-muted mt-16">
+          ログインなしでも遊べます · 記録を残したいときだけ GitHub 連携
+        </div>
       </div>
 
-      <div className="container container-narrow">
-        <h2 className="text-center mb-16">言語を選択</h2>
-        <p className="text-muted text-center mb-24">
-          120 秒で何文字打てるかを競います。問題は週次クローラが GitHub Star 上位 OSS
-          から自動取得した関数です。
-        </p>
+      <div className="container">
+        <div className="row">
+          <div className="col">
+            <div className="card god-frame mb-24">
+              <div className="card-header">
+                <div
+                  className="card-title"
+                  style={{
+                    color: "var(--gold-light)",
+                    textShadow: "0 1px 0 rgba(0,0,0,0.5), 0 0 16px rgba(255, 213, 74, 0.5)",
+                  }}
+                >
+                  ⚡ 神々に挑戦モード
+                </div>
+                <span className="badge gold">特別モード</span>
+              </div>
+              <div className="flex-between" style={{ alignItems: "center" }}>
+                <div style={{ flex: 1 }}>
+                  <p className="text-sm">
+                    サーバーがオールタイムトップ 10 から <strong>ランダムに 1 人</strong> を選定。
+                    その神と同じ問題シーケンスで 120 秒の併走戦。
+                  </p>
+                </div>
+                <Link className="btn btn-gold" href="/play">挑戦する →</Link>
+              </div>
+            </div>
 
-        <LanguageSelector languages={SUPPORTED_LANGUAGES} />
-
-        <div className="card god-frame mt-24">
-          <div className="flex-center gap-12">
-            <div style={{ fontSize: "28px" }}>⚡</div>
-            <div style={{ flex: 1 }}>
-              <h3
-                style={{
-                  color: "var(--gold-light)",
-                  marginBottom: "4px",
-                  textShadow: "0 1px 0 rgba(0,0,0,0.5), 0 0 12px rgba(255, 213, 74, 0.5)",
-                }}
-              >
-                神々に挑戦とは？
-              </h3>
-              <p className="text-sm text-muted">
-                該当言語の <strong>オールタイムトップ 10 からサーバーがランダムに 1 人選定</strong>。
-                その人と同じ問題シーケンスを 120 秒で打ち、累計文字数で勝負します。相手は指名できません（運命）。
+            <div className="card mb-24">
+              <div className="card-header">
+                <div className="card-title">🏆 全期間トップ</div>
+                <Link className="text-sm" href="/ranking">すべて見る →</Link>
+              </div>
+              <p className="text-sm text-muted text-center mb-16" style={{ padding: "24px 0" }}>
+                ランキング preview は Phase 4 (score-ranking) で本表示します。
               </p>
             </div>
-          </div>
-        </div>
 
-        <div className="card mt-16">
-          <div className="card-title mb-8">🎮 ルール</div>
-          <ul
-            className="text-sm text-muted"
-            style={{ display: "grid", gap: "4px", paddingLeft: "18px" }}
-          >
-            <li>制限時間 <strong>120 秒</strong>、1 関数終わると次が自動で出題</li>
-            <li>スコア = 正しく打てた累計文字数 × 正確率</li>
-            <li>スキップ機能はなし（引いた関数は完走するか時間切れまで打鍵）</li>
-            <li>ペースト無効、依存型は同梱なし（関数本体のみ表示）</li>
-          </ul>
-        </div>
-
-        <div className="card mt-16">
-          <div className="card-header"><div className="card-title">近日追加予定</div></div>
-          <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
-            <span className="badge">Python</span>
-            <span className="badge">Go</span>
-            <span className="badge">Rust</span>
-            <span className="badge">Java</span>
+            <div className="card mb-24">
+              <div className="card-header">
+                <div className="card-title">なぜ Typing Royale か</div>
+              </div>
+              <div className="row gap-16">
+                <div className="col">
+                  <h3>📦 リアル OSS のコード</h3>
+                  <p className="text-sm text-muted">
+                    週次クローラが GitHub Star 上位の寛容ライセンス OSS から AST で
+                    関数を自動抽出。手で選別されたカスタム問題ではないリアル。
+                  </p>
+                </div>
+                <div className="col">
+                  <h3>🏆 言語別ランキング</h3>
+                  <p className="text-sm text-muted">
+                    言語ごとの全期間トップ。リプレイ視聴と「神々に挑戦」モードで観戦も可能。
+                  </p>
+                </div>
+                <div className="col">
+                  <h3>✨ GitHub に映える特典</h3>
+                  <p className="text-sm text-muted">
+                    動的 SVG バッジ・達成カード・3D アイコン・Hall of Fame。
+                    README が豪華になる。
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <aside className="col-sidebar">
+            <div className="card mb-16">
+              <div className="card-header"><div className="card-title">統計</div></div>
+              <p className="text-sm text-muted">
+                各種カウンタは Phase 4 / 9 で本表示します。
+              </p>
+            </div>
+
+            <div className="card">
+              <div className="card-header"><div className="card-title">対応言語</div></div>
+              <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
+                <span className="badge accent">TypeScript</span>
+                <span className="badge warning">JavaScript</span>
+                <span className="badge">Python (近日)</span>
+                <span className="badge">Go (近日)</span>
+              </div>
+            </div>
+          </aside>
         </div>
       </div>
 
