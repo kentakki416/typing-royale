@@ -1,0 +1,140 @@
+import { err, notFoundError, ok, Result } from "@repo/errors"
+import { logger } from "@repo/logger"
+
+import { calcGrade, calcNextGrade, Grade } from "../lib/grade"
+import {
+  LanguageRepository,
+  UserLanguageBestRepository,
+  UserLanguageBestWithUser,
+  UserLifetimeStatsRepository,
+} from "../repository/prisma"
+
+type ListRepo = {
+    languageRepository: LanguageRepository
+    userLanguageBestRepository: UserLanguageBestRepository
+}
+
+export type ListInput = {
+    languageSlug: string
+    limit: number
+}
+
+export type ListOutput = {
+    entries: Array<UserLanguageBestWithUser & { rank: number }>
+    language: string
+    totalRankedPlayers: number
+}
+
+/**
+ * 言語別 TOP N のリアルタイム集計
+ *
+ * 1. language slug → id 解決（無ければ 404）
+ * 2. user_language_best を tie-break 込みで ORDER BY → 先頭から rank 1..N で採番
+ * 3. 言語別ランカー総数を COUNT で取得
+ */
+export const list = async (
+  input: ListInput,
+  repo: ListRepo,
+): Promise<Result<ListOutput>> => {
+  logger.debug("RankingService: list", { language: input.languageSlug, limit: input.limit })
+
+  const language = await repo.languageRepository.findBySlug(input.languageSlug)
+  if (!language) return err(notFoundError("Language not found"))
+
+  const top = await repo.userLanguageBestRepository.findTopByLanguage(
+    language.id,
+    input.limit,
+  )
+  const totalRankedPlayers = await repo.userLanguageBestRepository.countRankableByLanguage(
+    language.id,
+  )
+
+  return ok({
+    entries: top.map((entry, idx) => ({ ...entry, rank: idx + 1 })),
+    language: input.languageSlug,
+    totalRankedPlayers,
+  })
+}
+
+type FindMineRepo = {
+    languageRepository: LanguageRepository
+    userLanguageBestRepository: UserLanguageBestRepository
+    userLifetimeStatsRepository: UserLifetimeStatsRepository
+}
+
+export type FindMineInput = {
+    languageSlug: string
+    userId: number
+}
+
+export type FindMineOutput = {
+    bestAccuracy: number | null
+    bestPlaySessionId: number | null
+    bestPlayedAt: Date | null
+    bestScore: number | null
+    grade: Grade
+    language: string
+    nextGrade: (Grade & { scoreNeeded: number }) | null
+    rank: number | null
+    totalRankedPlayers: number
+}
+
+/**
+ * 認証ユーザーの言語別順位 + グレード進捗のリアルタイム集計
+ *
+ * 1. language slug → id 解決（無ければ 404）
+ * 2. 自分のベストを引く（無ければ rank=null / best_*=null）
+ * 3. user_lifetime_stats から全言語通算 bestScore を引いてグレード判定
+ *    （`canPublicRanking=false` でも自分の順位は返す）
+ * 4. ベストありなら自分より上位の数を COUNT → +1 で rank
+ */
+export const findMine = async (
+  input: FindMineInput,
+  repo: FindMineRepo,
+): Promise<Result<FindMineOutput>> => {
+  logger.debug("RankingService: findMine", { language: input.languageSlug, userId: input.userId })
+
+  const language = await repo.languageRepository.findBySlug(input.languageSlug)
+  if (!language) return err(notFoundError("Language not found"))
+
+  const myBest = await repo.userLanguageBestRepository.findMine(input.userId, language.id)
+  const lifetimeStats = await repo.userLifetimeStatsRepository.findByUserId(input.userId)
+  const lifetimeBestScore = lifetimeStats?.bestScore ?? 0
+
+  const grade = calcGrade(lifetimeBestScore)
+  const next = calcNextGrade(grade)
+  const nextGrade = next === null
+    ? null
+    : { ...next, scoreNeeded: Math.max(0, next.threshold - lifetimeBestScore) }
+
+  const totalRankedPlayers = await repo.userLanguageBestRepository.countRankableByLanguage(
+    language.id,
+  )
+
+  if (myBest === null) {
+    return ok({
+      bestAccuracy: null,
+      bestPlaySessionId: null,
+      bestPlayedAt: null,
+      bestScore: null,
+      grade,
+      language: input.languageSlug,
+      nextGrade,
+      rank: null,
+      totalRankedPlayers,
+    })
+  }
+
+  const higher = await repo.userLanguageBestRepository.countHigherRanked(language.id, myBest)
+  return ok({
+    bestAccuracy: myBest.accuracy,
+    bestPlaySessionId: myBest.bestPlaySessionId,
+    bestPlayedAt: myBest.playedAt,
+    bestScore: myBest.score,
+    grade,
+    language: input.languageSlug,
+    nextGrade,
+    rank: higher + 1,
+    totalRankedPlayers,
+  })
+}

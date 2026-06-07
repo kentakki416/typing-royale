@@ -19,7 +19,16 @@ export const PUBLIC_PATHS: readonly string[] = [
   "/api/auth/refresh",
   "/api/health",
   "/api/memo",
+  "/api/rankings",
   ...DEV_ONLY_PUBLIC_PATHS,
+]
+
+/**
+ * PUBLIC_PATHS の prefix match の例外として、明示的に認証必須とするパス
+ * 例: `/api/rankings` は公開だが `/api/rankings/me` は認証必須
+ */
+export const PROTECTED_PATHS: readonly string[] = [
+  "/api/rankings/me",
 ]
 
 /**

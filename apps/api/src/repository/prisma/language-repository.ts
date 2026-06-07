@@ -1,12 +1,21 @@
 import { PrismaClient } from "@repo/db"
 
 /**
+ * slug 引きで返す軽量な Language
+ */
+export type LanguageRef = {
+    id: number
+    slug: string
+}
+
+/**
  * Language リポジトリのインターフェース
  *
- * step2 では languageId の存在チェックのみ。書き込みは行わない（マスタは seed で投入）
+ * 書き込みは行わない（マスタは seed で投入）
  */
 export interface LanguageRepository {
     existsById(id: number): Promise<boolean>
+    findBySlug(slug: string): Promise<LanguageRef | null>
 }
 
 /**
@@ -25,5 +34,13 @@ export class PrismaLanguageRepository implements LanguageRepository {
       where: { id },
     })
     return lang !== null
+  }
+
+  async findBySlug(slug: string): Promise<LanguageRef | null> {
+    const lang = await this._prisma.language.findUnique({
+      select: { id: true, slug: true },
+      where: { slug },
+    })
+    return lang
   }
 }

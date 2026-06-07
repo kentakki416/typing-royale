@@ -22,6 +22,8 @@ import { MemoUpdateController } from "./controller/memo/update"
 import { PlaySessionFinishController } from "./controller/play-session/finish"
 import { PlaySessionStartChallengeGodsController } from "./controller/play-session/start-challenge-gods"
 import { PlaySessionStartSoloController } from "./controller/play-session/start-solo"
+import { RankingListController } from "./controller/ranking/list"
+import { RankingMeController } from "./controller/ranking/me"
 import { UserDeleteController } from "./controller/user/delete"
 import { UserGetController } from "./controller/user/get"
 import { UserUpdateController } from "./controller/user/update"
@@ -39,17 +41,18 @@ import {
   PrismaPlaySessionProblemRepository,
   PrismaPlaySessionRepository,
   PrismaProblemRepository,
+  PrismaRankingSnapshotRepository,
   PrismaTransactionRunner,
+  PrismaUserLanguageBestRepository,
   PrismaUserLifetimeStatsRepository,
   PrismaUserRepository,
-  RankingSnapshotRepository,
-  StubRankingSnapshotRepository,
 } from "./repository/prisma"
 import { IoRedisHealthRepository, IoRedisPlaySessionStateRepository, IoRedisRefreshTokenRepository } from "./repository/redis"
 import { authRouter } from "./routes/auth-router"
 import { healthRouter } from "./routes/health-router"
 import { memoRouter } from "./routes/memo-router"
 import { playSessionRouter } from "./routes/play-session-router"
+import { rankingRouter } from "./routes/ranking-router"
 import { userRouter } from "./routes/user-router"
 
 /**
@@ -77,12 +80,14 @@ const playSessionRepository = new PrismaPlaySessionRepository(prisma)
 const playSessionProblemRepository = new PrismaPlaySessionProblemRepository(prisma)
 const keystrokeLogRepository = new PrismaKeystrokeLogRepository(prisma)
 const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(prisma)
+const userLanguageBestRepository = new PrismaUserLanguageBestRepository(prisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(redis)
 /**
- * score-ranking 機能（Phase 4）が完成するまでは Stub。
- * 完成後に PrismaRankingSnapshotRepository に差し替えるだけで /challenge-gods が有効化される
+ * `user_language_best` を source とするリアルタイム集計実装
+ * （score-ranking step2 で StubRankingSnapshotRepository から差し替え。
+ * TOP 10 が 1 件でも存在すれば /challenge-gods が成功するようになる）
  */
-const rankingSnapshotRepository: RankingSnapshotRepository = new StubRankingSnapshotRepository()
+const rankingSnapshotRepository = new PrismaRankingSnapshotRepository(prisma)
 
 /**
  * 外部 SaaS client の DI assembly
@@ -167,6 +172,19 @@ const playSessionStartChallengeGodsController = new PlaySessionStartChallengeGod
   rankingSnapshotRepository,
 )
 
+/**
+ * Ranking Controller のインスタンス化
+ */
+const rankingListController = new RankingListController(
+  languageRepository,
+  userLanguageBestRepository,
+)
+const rankingMeController = new RankingMeController(
+  languageRepository,
+  userLanguageBestRepository,
+  userLifetimeStatsRepository,
+)
+
 const app = express()
 
 /**
@@ -238,6 +256,13 @@ app.use(
     finish: playSessionFinishController,
     startChallengeGods: playSessionStartChallengeGodsController,
     startSolo: playSessionStartSoloController,
+  })
+)
+app.use(
+  "/api/rankings",
+  rankingRouter({
+    list: rankingListController,
+    me: rankingMeController,
   })
 )
 
