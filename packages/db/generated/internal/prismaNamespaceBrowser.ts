@@ -62,7 +62,8 @@ export const ModelName = {
   PlaySession: 'PlaySession',
   PlaySessionProblem: 'PlaySessionProblem',
   KeystrokeLog: 'KeystrokeLog',
-  UserLifetimeStats: 'UserLifetimeStats'
+  UserLifetimeStats: 'UserLifetimeStats',
+  UserLanguageBest: 'UserLanguageBest'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -270,6 +271,22 @@ export const UserLifetimeStatsScalarFieldEnum = {
 } as const
 
 export type UserLifetimeStatsScalarFieldEnum = (typeof UserLifetimeStatsScalarFieldEnum)[keyof typeof UserLifetimeStatsScalarFieldEnum]
+
+
+export const UserLanguageBestScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  languageId: 'languageId',
+  bestPlaySessionId: 'bestPlaySessionId',
+  score: 'score',
+  accuracy: 'accuracy',
+  typedChars: 'typedChars',
+  playedAt: 'playedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserLanguageBestScalarFieldEnum = (typeof UserLanguageBestScalarFieldEnum)[keyof typeof UserLanguageBestScalarFieldEnum]
 
 
 export const SortOrder = {

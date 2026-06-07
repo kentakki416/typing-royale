@@ -56,6 +56,7 @@ model User {
   accounts      AuthAccount[]
   playSessions  PlaySession[]
   lifetimeStats UserLifetimeStats?
+  languageBests UserLanguageBest[]
 
   @@map("users")
 }
@@ -69,10 +70,11 @@ model Language {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  crawledRepos    CrawledRepo[]
-  problems        Problem[]
-  crawlerRunItems CrawlerRunItem[]
-  playSessions    PlaySession[]
+  crawledRepos      CrawledRepo[]
+  problems          Problem[]
+  crawlerRunItems   CrawlerRunItem[]
+  playSessions      PlaySession[]
+  userLanguageBests UserLanguageBest[]
 
   @@map("languages")
 }
@@ -207,13 +209,14 @@ model PlaySession {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  language     Language             @relation(fields: [languageId], references: [id], onDelete: Restrict)
-  crawledRepo  CrawledRepo          @relation(fields: [crawledRepoId], references: [id], onDelete: Restrict)
-  ghostSession PlaySession?         @relation("GhostReference", fields: [ghostSessionId], references: [id], onDelete: SetNull)
-  ghostedBy    PlaySession[]        @relation("GhostReference")
-  problems     PlaySessionProblem[]
-  keystrokeLog KeystrokeLog?
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language           Language             @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  crawledRepo        CrawledRepo          @relation(fields: [crawledRepoId], references: [id], onDelete: Restrict)
+  ghostSession       PlaySession?         @relation("GhostReference", fields: [ghostSessionId], references: [id], onDelete: SetNull)
+  ghostedBy          PlaySession[]        @relation("GhostReference")
+  problems           PlaySessionProblem[]
+  keystrokeLog       KeystrokeLog?
+  bestOfUserLanguage UserLanguageBest[]
 
   @@index([userId, playedAt(sort: Desc)]) /// マイページの履歴表示用
   @@index([languageId, score(sort: Desc)]) /// score-ranking の言語別 × スコア降順集計
@@ -272,4 +275,29 @@ model UserLifetimeStats {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_lifetime_stats")
+}
+
+// ユーザー × 言語ごとのベストプレイ（1 ユーザー × 1 言語 = 1 行）
+// /finish でベスト更新時に upsert される。ランキング表示はこのテーブルを ORDER BY score で都度集計
+// docs/spec/score-ranking/README.md 参照（MVP は cron バッチ不要のリアルタイム集計方式）
+model UserLanguageBest {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @map("user_id")
+  languageId        Int      @map("language_id")
+  bestPlaySessionId Int      @map("best_play_session_id") /// このベストを達成した PlaySession（リプレイ動線 / 詳細ページで参照）
+  score             Int /// PlaySession.score の非正規化保存
+  accuracy          Float /// 同点時の tie-break 用
+  typedChars        Int      @map("typed_chars") /// UI 表示用（ランキング表に「文字数」列があるため）
+  playedAt          DateTime @map("played_at") /// 同点 + 同 accuracy 時の tie-break 用（先に達成した方が上位）
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language    Language    @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  playSession PlaySession @relation(fields: [bestPlaySessionId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, languageId]) /// 1 ユーザー × 1 言語 = ベスト 1 件
+  @@index([languageId, score(sort: Desc)]) /// GET /api/rankings の主クエリ (ORDER BY score DESC LIMIT)
+  @@index([userId]) /// GET /api/players/:userId / GET /api/rankings/me の自分のベスト引き
+  @@map("user_language_best")
 }
