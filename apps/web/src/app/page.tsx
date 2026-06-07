@@ -1,103 +1,95 @@
-"use client"
+import type { Metadata } from "next"
 
-import dynamic from "next/dynamic"
-import { useEffect, useState } from "react"
+import { Topbar } from "@/components/topbar"
 
-import { GetUserResponse } from "@repo/api-schema"
+import { LanguageSelector } from "./language-selector"
 
-const DotLottieReact = dynamic(
-  async () => import("@lottiefiles/dotlottie-react").then((mod) => mod.DotLottieReact),
-  { ssr: false },
-)
+export const metadata: Metadata = {
+  title: "Typing Royale",
+}
 
-export default function Home() {
-  const [userData, setUserData] = useState<GetUserResponse | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+/**
+ * MVP では言語マスタを取得する API がまだ無いため、ハードコードで TypeScript /
+ * JavaScript を出す。DB seed の id 1/2 と一致させること
+ */
+const SUPPORTED_LANGUAGES = [
+  { id: 1, iconClass: "ts", iconText: "TS", name: "TypeScript" },
+  { id: 2, iconClass: "js", iconText: "JS", name: "JavaScript" },
+] as const
 
-  // APIを呼び出す関数
-  const fetchUser = async (userId: string) => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch(`http://localhost:8080/api/user/${userId}`)
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data: GetUserResponse = await response.json()
-      setUserData(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "ユーザー情報の取得に失敗しました")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  /**
-   * コンポーネントマウント時にAPIを呼び出す（例: userId='123'）
-   * 初期表示の自動フェッチ用途のため、effect 内 setState を意図的に許容する
-   */
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchUser("123")
-  }, [])
-
+export default function HomePage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <div className="w-48 h-48">
-            <DotLottieReact
-              src="/kenttaki-bot.lottie"
-              autoplay
-              loop
-            />
+    <>
+      <Topbar active="home" />
+
+      <div className="hero">
+        <h1>
+          Type real <span className="accent">OSS code</span>.<br />
+          Get a fancier README.
+        </h1>
+        <p>
+          OSS の実コードを 120 秒で打鍵するエンジニア向けタイピングゲーム。スコアに応じて
+          README に貼れる動的バッジ・達成カード・3D アイコンがもらえる。
+        </p>
+      </div>
+
+      <div className="container container-narrow">
+        <h2 className="text-center mb-16">言語を選択</h2>
+        <p className="text-muted text-center mb-24">
+          120 秒で何文字打てるかを競います。問題は週次クローラが GitHub Star 上位 OSS
+          から自動取得した関数です。
+        </p>
+
+        <LanguageSelector languages={SUPPORTED_LANGUAGES} />
+
+        <div className="card god-frame mt-24">
+          <div className="flex-center gap-12">
+            <div style={{ fontSize: "28px" }}>⚡</div>
+            <div style={{ flex: 1 }}>
+              <h3
+                style={{
+                  color: "var(--gold-light)",
+                  marginBottom: "4px",
+                  textShadow: "0 1px 0 rgba(0,0,0,0.5), 0 0 12px rgba(255, 213, 74, 0.5)",
+                }}
+              >
+                神々に挑戦とは？
+              </h3>
+              <p className="text-sm text-muted">
+                該当言語の <strong>オールタイムトップ 10 からサーバーがランダムに 1 人選定</strong>。
+                その人と同じ問題シーケンスを 120 秒で打ち、累計文字数で勝負します。相手は指名できません（運命）。
+              </p>
+            </div>
           </div>
-
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            ユーザー情報取得サンプル
-          </h1>
-
-          {loading && <p className="text-lg text-zinc-600 dark:text-zinc-400">読み込み中...</p>}
-
-          {error && (
-            <div className="rounded-lg bg-red-100 p-4 text-red-800 dark:bg-red-900 dark:text-red-200">
-              <p className="font-semibold">エラー</p>
-              <p>{error}</p>
-            </div>
-          )}
-
-          {userData && (
-            <div className="rounded-lg bg-zinc-100 p-6 dark:bg-zinc-800">
-              <h2 className="mb-4 text-xl font-semibold text-black dark:text-zinc-50">
-                ユーザー情報
-              </h2>
-              <div className="space-y-2 text-left">
-                <p className="text-zinc-700 dark:text-zinc-300">
-                  <span className="font-medium">ID:</span> {userData.id}
-                </p>
-                <p className="text-zinc-700 dark:text-zinc-300">
-                  <span className="font-medium">表示名:</span> {userData.display_name ?? "(no name)"}
-                </p>
-                <p className="text-zinc-700 dark:text-zinc-300">
-                  <span className="font-medium">登録日時:</span> {userData.created_at}
-                </p>
-              </div>
-            </div>
-          )}
-
-          <button
-            className="mt-4 rounded-lg bg-blue-600 px-6 py-3 text-white transition-colors hover:bg-blue-700"
-            type="button"
-            onClick={async () => fetchUser("123")}
-          >
-            再取得
-          </button>
         </div>
-      </main>
-    </div>
+
+        <div className="card mt-16">
+          <div className="card-title mb-8">🎮 ルール</div>
+          <ul
+            className="text-sm text-muted"
+            style={{ display: "grid", gap: "4px", paddingLeft: "18px" }}
+          >
+            <li>制限時間 <strong>120 秒</strong>、1 関数終わると次が自動で出題</li>
+            <li>スコア = 正しく打てた累計文字数 × 正確率</li>
+            <li>スキップ機能はなし（引いた関数は完走するか時間切れまで打鍵）</li>
+            <li>ペースト無効、依存型は同梱なし（関数本体のみ表示）</li>
+          </ul>
+        </div>
+
+        <div className="card mt-16">
+          <div className="card-header"><div className="card-title">近日追加予定</div></div>
+          <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
+            <span className="badge">Python</span>
+            <span className="badge">Go</span>
+            <span className="badge">Rust</span>
+            <span className="badge">Java</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="footer">
+        <a href="#">利用規約</a> · <a href="#">プライバシー</a> · <a href="#">ライセンス一覧</a>
+      </div>
+    </>
   )
 }
