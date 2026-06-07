@@ -107,3 +107,47 @@ export const finishPlaySessionResponseSchema = z.object({
 export type FinishPlaySessionPathParam = z.infer<typeof finishPlaySessionPathParamSchema>
 export type FinishPlaySessionRequest = z.infer<typeof finishPlaySessionRequestSchema>
 export type FinishPlaySessionResponse = z.infer<typeof finishPlaySessionResponseSchema>
+
+// ========================================================
+// POST /api/play-sessions/challenge-gods - 神々モードのセッション開始
+// ========================================================
+
+/**
+ * 神の表示情報
+ */
+const ghostUserDisplaySchema = z.object({
+  avatar_url: z.string().url().nullable(),
+  best_score: z.number().int().nonnegative(),
+  display_name: z.string(),
+  grade: z.string(),
+})
+
+/**
+ * 神々モードのセッション開始リクエスト
+ */
+export const startChallengeGodsRequestSchema = z.object({
+  language_id: z.number().int().positive(),
+})
+
+/**
+ * 神々モードのセッション開始レスポンス
+ * トップ 10 不在時は 409 Conflict
+ */
+export const startChallengeGodsResponseSchema = z.object({
+  ghost_keystroke_logs: z.array(
+    z.object({
+      elapsed_ms: z.number().nonnegative(),
+      input_char: z.string().min(1).max(20),
+      is_correct: z.boolean(),
+      problem_index: z.number().int().nonnegative().max(19),
+    }),
+  ),
+  ghost_session_id: z.number().int().positive(),
+  ghost_user_display: ghostUserDisplaySchema,
+  problems: z.array(playSessionProblemSchema).length(20),
+  repo_info: repoInfoSchema,
+  session_id: z.string().uuid(),
+})
+
+export type StartChallengeGodsRequest = z.infer<typeof startChallengeGodsRequestSchema>
+export type StartChallengeGodsResponse = z.infer<typeof startChallengeGodsResponseSchema>

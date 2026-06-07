@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 
-import { badRequestError, err, notFoundError, ok, Result } from "@repo/errors"
+import { badRequestError, conflictError, err, notFoundError, ok, Result } from "@repo/errors"
 import { logger } from "@repo/logger"
 
 import { PLAY_SESSION_TTL_SECONDS, PROBLEMS_PER_SESSION } from "../const"
@@ -13,11 +13,14 @@ import {
 } from "../lib/score"
 import {
   CrawledRepoRepository,
+  GhostSourceSession,
   KeystrokeLogRepository,
   LanguageRepository,
   PlaySessionProblemRepository,
   PlaySessionRepository,
   ProblemRepository,
+  RankingSnapshotRepository,
+  RankingTopEntry,
   TransactionRunner,
   UserLifetimeStatsRepository,
 } from "../repository/prisma"
@@ -328,4 +331,157 @@ export const finishSession = async (
     score,
     typedChars: input.typedChars,
   })
+}
+
+type ChallengeGodsRepo = {
+    keystrokeLogRepository: KeystrokeLogRepository
+    languageRepository: LanguageRepository
+    playSessionRepository: PlaySessionRepository
+    playSessionStateRepository: PlaySessionStateRepository
+    problemRepository: ProblemRepository
+    rankingSnapshotRepository: RankingSnapshotRepository
+}
+
+export type CreateChallengeGodsInput = {
+    languageId: number
+    userId: number
+}
+
+export type CreateChallengeGodsOutput = {
+    ghostKeystrokeLogs: KeystrokeLogs
+    ghostSessionId: number
+    ghostUserDisplay: {
+        avatarUrl: string | null
+        bestScore: number
+        displayName: string
+        grade: string
+    }
+    problems: PlaySessionProblem[]
+    repoInfo: RepoInfo
+    sessionId: string
+}
+
+/**
+ * 神々モードのセッション開始
+ *
+ * 1. 言語存在チェック → なければ 400
+ * 2. ランキングトップ 10 取得 → 自分を除外 → 候補 0 件なら 409
+ * 3. 候補からランダムに 1 人選定 → 神セッション詳細 + keystroke log 取得
+ * 4. 神セッション欠落 / log 取得不可なら次の候補へ（最大候補数分リトライ）
+ * 5. 全候補で取得できなければ 409 Conflict
+ * 6. 神セッションの problemIds から problems 本体を取得し orderIndex 順に並べる
+ * 7. Redis state を save（mode=challenge_gods, ghostSessionId セット）
+ *
+ * Phase 4 (score-ranking) の ranking_snapshots が出来るまでは Stub が空配列を
+ * 返すため、本 API は常に 409 Conflict を返す
+ */
+export const createChallengeGodsSession = async (
+  input: CreateChallengeGodsInput,
+  repo: ChallengeGodsRepo,
+): Promise<Result<CreateChallengeGodsOutput>> => {
+  logger.debug("PlaySessionService: Creating challenge-gods session", { ...input })
+
+  /**
+   * 1. 言語存在チェック
+   */
+  if (!(await repo.languageRepository.existsById(input.languageId))) {
+    return err(badRequestError("Invalid language_id"))
+  }
+
+  /**
+   * 2. トップ 10 取得 + 自分を除外
+   */
+  const top = await repo.rankingSnapshotRepository.getTopByLanguage(input.languageId, 10)
+  const candidates = top.filter((t) => t.userId !== input.userId)
+  if (candidates.length === 0) {
+    return err(conflictError("No ghost candidates available"))
+  }
+
+  /**
+   * 3-4. 候補からランダム抽選し、神セッション + keystroke log が両方取れたら確定。
+   * 取れなければ次の候補にスキップ（candidates.length 回までリトライ）
+   */
+  const ghost = await pickUsableGhost(candidates, repo)
+  if (ghost === null) {
+    return err(conflictError("No usable ghost sessions"))
+  }
+
+  /**
+   * 6. 問題本体取得 + orderIndex 付与
+   */
+  const fullProblems = await repo.problemRepository.findManyByIds(ghost.session.problemIds)
+  const byId = new Map(fullProblems.map((p) => [p.id, p]))
+  const orderedProblems: PlaySessionProblem[] = ghost.session.problemIds.map((pid, i) => {
+    const p = byId.get(pid)
+    if (!p) {
+      throw new Error(`Problem ${pid} missing for ghost session ${ghost.session.id}`)
+    }
+    return {
+      charCount: p.charCount,
+      codeBlock: p.codeBlock,
+      functionName: p.functionName,
+      id: pid,
+      lineCount: p.lineCount,
+      orderIndex: i,
+      sourceUrl: p.sourceUrl,
+    }
+  })
+
+  /**
+   * 7. Redis state を save
+   */
+  const sessionId = randomUUID()
+  const state: PlaySessionState = {
+    crawledRepoId: ghost.session.crawledRepoId,
+    ghostSessionId: ghost.session.id,
+    languageId: input.languageId,
+    mode: "challenge_gods",
+    problemIds: orderedProblems.map((p) => p.id),
+    userId: input.userId,
+  }
+  await repo.playSessionStateRepository.save(sessionId, state, PLAY_SESSION_TTL_SECONDS)
+
+  logger.info("PlaySessionService: challenge-gods session created", {
+    ghostSessionId: ghost.session.id,
+    sessionId,
+    userId: input.userId,
+  })
+
+  return ok({
+    ghostKeystrokeLogs: ghost.keystrokeLogs,
+    ghostSessionId: ghost.session.id,
+    ghostUserDisplay: {
+      avatarUrl: ghost.entry.userDisplay.avatarUrl,
+      bestScore: ghost.entry.bestScore,
+      displayName: ghost.entry.userDisplay.displayName,
+      grade: ghost.entry.userDisplay.currentGrade,
+    },
+    problems: orderedProblems,
+    repoInfo: ghost.session.crawledRepo,
+    sessionId,
+  })
+}
+
+/**
+ * 候補リストから「神セッション + keystroke log の両方が取れる神」を 1 人引き当てる
+ */
+const pickUsableGhost = async (
+  candidates: RankingTopEntry[],
+  repo: ChallengeGodsRepo,
+): Promise<{
+    entry: RankingTopEntry
+    keystrokeLogs: KeystrokeLogs
+    session: GhostSourceSession
+} | null> => {
+  const pool = [...candidates]
+  while (pool.length > 0) {
+    const i = Math.floor(Math.random() * pool.length)
+    const [picked] = pool.splice(i, 1)
+    const session = await repo.playSessionRepository.findGhostSourceById(picked.bestPlaySessionId)
+    if (!session) continue
+    const keystrokeLogs = await repo.keystrokeLogRepository.findByPlaySessionId(picked.bestPlaySessionId)
+    if (!keystrokeLogs) continue
+    return { entry: picked, keystrokeLogs, session }
+  }
+  return null
 }
