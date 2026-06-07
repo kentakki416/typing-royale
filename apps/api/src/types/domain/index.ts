@@ -6,3 +6,11 @@ export type { AuthAccount, AuthAccountWithUser } from "./auth-account"
 
 // Memo
 export type { Memo } from "./memo"
+
+// PlaySession
+export type {
+  PlaySessionMode,
+  PlaySessionProblem,
+  PlaySessionState,
+  RepoInfo,
+} from "./play-session"

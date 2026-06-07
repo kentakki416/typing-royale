@@ -19,6 +19,7 @@ import { MemoDeleteController } from "./controller/memo/delete"
 import { MemoDetailController } from "./controller/memo/detail"
 import { MemoListController } from "./controller/memo/list"
 import { MemoUpdateController } from "./controller/memo/update"
+import { PlaySessionStartSoloController } from "./controller/play-session/start-solo"
 import { UserDeleteController } from "./controller/user/delete"
 import { UserGetController } from "./controller/user/get"
 import { UserUpdateController } from "./controller/user/update"
@@ -28,15 +29,19 @@ import { errorHandler } from "./middleware/error-handler"
 import { requestLogger } from "./middleware/request-logger"
 import {
   PrismaAuthAccountRepository,
+  PrismaCrawledRepoRepository,
   PrismaDatabaseHealthRepository,
+  PrismaLanguageRepository,
   PrismaMemoRepository,
+  PrismaProblemRepository,
   PrismaTransactionRunner,
   PrismaUserRepository,
 } from "./repository/prisma"
-import { IoRedisHealthRepository, IoRedisRefreshTokenRepository } from "./repository/redis"
+import { IoRedisHealthRepository, IoRedisPlaySessionStateRepository, IoRedisRefreshTokenRepository } from "./repository/redis"
 import { authRouter } from "./routes/auth-router"
 import { healthRouter } from "./routes/health-router"
 import { memoRouter } from "./routes/memo-router"
+import { playSessionRouter } from "./routes/play-session-router"
 import { userRouter } from "./routes/user-router"
 
 /**
@@ -57,6 +62,10 @@ const memoRepository = new PrismaMemoRepository(prisma)
 const databaseHealthRepository = new PrismaDatabaseHealthRepository(prisma)
 const redisHealthRepository = new IoRedisHealthRepository(redis)
 const refreshTokenRepository = new IoRedisRefreshTokenRepository(redis)
+const languageRepository = new PrismaLanguageRepository(prisma)
+const crawledRepoRepository = new PrismaCrawledRepoRepository(prisma)
+const problemRepository = new PrismaProblemRepository(prisma)
+const playSessionStateRepository = new IoRedisPlaySessionStateRepository(redis)
 
 /**
  * 外部 SaaS client の DI assembly
@@ -113,6 +122,16 @@ const memoDetailController = new MemoDetailController(memoRepository)
 const memoCreateController = new MemoCreateController(memoRepository)
 const memoUpdateController = new MemoUpdateController(memoRepository)
 const memoDeleteController = new MemoDeleteController(memoRepository)
+
+/**
+ * PlaySession Controller のインスタンス化
+ */
+const playSessionStartSoloController = new PlaySessionStartSoloController(
+  crawledRepoRepository,
+  languageRepository,
+  playSessionStateRepository,
+  problemRepository,
+)
 
 const app = express()
 
@@ -177,6 +196,12 @@ app.use(
     detail: memoDetailController,
     list: memoListController,
     update: memoUpdateController,
+  })
+)
+app.use(
+  "/api/play-sessions",
+  playSessionRouter({
+    startSolo: playSessionStartSoloController,
   })
 )
 

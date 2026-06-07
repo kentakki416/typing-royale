@@ -30,3 +30,14 @@ export const LOG_EXCLUDE_PATHS = [
   "/api/health",
   "/api/health/ready",
 ] as const
+
+/**
+ * プレイ中ステートの Redis TTL（秒）
+ * 120 秒のプレイ + バッファ。/finish で明示削除するため通常は TTL 切れ前に消える
+ */
+export const PLAY_SESSION_TTL_SECONDS = 300
+
+/**
+ * 1 セッションで出題する問題数
+ */
+export const PROBLEMS_PER_SESSION = 20
