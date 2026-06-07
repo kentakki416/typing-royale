@@ -189,32 +189,42 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 > **UI は [`docs/mocks/`](docs/mocks/) のモックを参照**：`top.html` / `language-select.html` / `play.html` / `result.html`。
 
-- [ ] トップ画面（言語選択への導線）← `docs/mocks/top.html`
-- [ ] 言語選択画面（TypeScript / JavaScript の 2 ボタン）← `docs/mocks/language-select.html`
-  - [ ] **「神々に挑戦」ボタン**も配置（Phase 5 で有効化）
-- [ ] 「今日の挑戦」スプラッシュ画面（repo 名 + Star 数 + description、2 秒表示）
-- [ ] **プレイ画面**（コアコンポーネント）← `docs/mocks/play.html`
-  - [ ] コード表示（打鍵済み / 現在位置 / 未打鍵で色分け）
-  - [ ] キー入力ハンドリング（1 文字判定、誤入力時の進行ロック）
-  - [ ] paste イベント無効化
-  - [ ] 120 秒カウントダウン（`requestAnimationFrame` + `performance.now()`）
-  - [ ] 累計文字数・正確率の表示
-  - [ ] 関数完走時の自動次問題遷移
-  - [ ] **20 問完走時の「お見事！」表示**（タイマー継続）
-  - [ ] サイドに repo 名・関数名を控えめ表示
-  - [ ] IME ON 検知 → 警告表示
-- [ ] **キーストロークログ記録**（`{ t, p, ch, ok }` の配列）
-- [ ] **リザルト画面**（基本版、順位は Phase 4 で）← `docs/mocks/result.html`
-  - [ ] スコア・累計文字数・正確率・出題数 / 完走数
-  - [ ] 「ちなみに今回のリポジトリは XXX… コメント」（`repoInfo` から）
-  - [ ] ニガテ文字（`mistypeStats` 上位 5〜10）
-  - [ ] シェアボタン
+- [x] **デザインシステム移植** (PR #23): `docs/mocks/styles.css` を `apps/web/src/app/globals.css` に統合 + JetBrains Mono フォント + 共通 Topbar コンポーネント + ブランド「Typing Royale」化
+- [x] トップ画面（言語選択への導線）← `docs/mocks/top.html` (PR #23, hero と言語選択カードを統合)
+- [x] 言語選択画面（TypeScript / JavaScript の 2 ボタン）← `docs/mocks/language-select.html` (PR #23)
+  - [x] **「神々に挑戦」ボタン**も配置（Phase 5 で有効化、現状 disabled でゴールド演出）
+- [x] 「今日の挑戦」スプラッシュ画面（repo 名 + Star 数 + description、2 秒表示）(PR #23)
+- [x] **プレイ画面**（コアコンポーネント）← `docs/mocks/play.html` (PR #23)
+  - [x] コード表示（打鍵済み / 現在位置 / 未打鍵で色分け、Dracula 配色）
+  - [x] キー入力ハンドリング（1 文字判定、誤入力時の進行ロック）
+  - [x] paste イベント無効化
+  - [x] 120 秒カウントダウン（`requestAnimationFrame` + `performance.now()`）
+  - [x] 累計文字数・正確率の表示（HUD 4 cell）
+  - [x] 関数完走時の自動次問題遷移
+  - [x] **20 問完走時の「お見事！」表示**（タイマー継続）
+  - [x] サイドに repo 名・関数名を控えめ表示（code-block-source バー）
+  - [x] IME ON 検知 → 警告表示
+- [x] **キーストロークログ記録**（`KeystrokeLogs` 配列、`{ elapsedMs, inputChar, isCorrect, problemIndex }`）(PR #22 で型決定 / PR #23 で蓄積)
+- [~] **リザルト画面**（基本版、順位は Phase 4 で）← `docs/mocks/result.html` (本 step5 で実装中)
+  - [x] スコア・累計文字数・正確率・出題数 / 完走数（4 stat）
+  - [x] 「今回のリポジトリ」カード（`repoInfo` から）
+  - [x] ニガテ文字（`mistypeStats` 上位 5〜10）
+  - [x] シェアボタン（X intent URL）
+  - [x] エンジニアグレード進捗（暫定、`apps/web/src/libs/grade.ts` の純粋関数）
+  - [x] ランキング placeholder（GET /api/rankings/me は Phase 4 で実装後に有効化）
+
+### apps/web 共通 UI (TODO.md には個別記載していなかったが本 step で実装)
+
+- [x] **マイページ概要画面** mock 準拠で再実装 ← `docs/mocks/mypage.html` (本 step5、グレード / ベストスコア / ランキング / 履歴は Phase 4 待ちで placeholder)
+- [x] **マイページ設定画面** mock 準拠で再実装 ← `docs/mocks/mypage-settings.html` (本 step5)
+- [x] **サインイン画面** mock 準拠で再実装 ← `docs/mocks/modal-login.html` (本 step5、modal ではなく単独ページ版)
+- [x] **オンボーディング画面** mock 準拠で再実装 ← `docs/mocks/onboarding.html` (本 step5)
 
 ### ゲストプレイ対応
 
-- [ ] IndexedDB に一時バッファ保存（リザルト画面表示中のみ）
-- [ ] 「ログインして記録を残す」ボタン → OAuth → `/api/play-sessions/claim`
-- [ ] ログイン拒否 / 画面離脱時の IndexedDB 即時削除
+- [ ] IndexedDB に一時バッファ保存（リザルト画面表示中のみ）← **Phase 2 (API ゲスト対応) 完了まで延期**
+- [ ] 「ログインして記録を残す」ボタン → OAuth → `/api/play-sessions/claim` ← 同上
+- [ ] ログイン拒否 / 画面離脱時の IndexedDB 即時削除 ← 同上
 
 ### 動作確認（ローカル）
 

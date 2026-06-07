@@ -3,94 +3,119 @@ import Link from "next/link"
 
 import { GetUserResponse } from "@repo/api-schema"
 
+import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
-import { logoutAction } from "@/libs/auth-actions"
 
 export const metadata: Metadata = {
-  title: "マイページ",
+  title: "マイページ - Typing Royale",
 }
 
 /**
- * マイページ > ホーム
+ * マイページ > ホーム（mock: mypage.html 準拠）
  *
- * Phase 1 ではグレード・ベストスコア・ランキング順位・累計打鍵数 / 連続日数の表示枠だけ作る。
- * 中身は Phase 4 (スコア・ランキング + エンジニアグレード) で実装する。
+ * Phase 1 ではユーザー情報のみ表示。グレード・ベストスコア・ランキング順位・
+ * 累計打鍵数 / 連続日数 / プレイ履歴は Phase 4 (score-ranking) で
+ * lifetime-stats API が出来てから本表示。本 step では Coming Soon ラベル付き
+ * placeholder を mock 構造に沿って配置する
  */
 export default async function MyPage() {
   const me = await apiClient.get<GetUserResponse>("/api/user")
+  const initials = (me.display_name ?? "??").slice(0, 2).toUpperCase()
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-6 py-10 dark:bg-black">
-      <div className="mx-auto w-full max-w-3xl space-y-8">
-        <header className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">マイページ</h1>
-          <div className="flex items-center gap-3">
-            <Link
-              className="text-sm text-blue-600 underline hover:text-blue-800"
-              href="/mypage/account"
-            >
-              アカウント設定
-            </Link>
-            <form action={logoutAction}>
-              <button
-                className="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50"
-                type="submit"
-              >
-                ログアウト
-              </button>
-            </form>
-          </div>
-        </header>
+    <>
+      <Topbar />
 
-        {/* プロフィール */}
-        <section className="flex items-center gap-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          {me.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              alt=""
-              className="h-16 w-16 rounded-full"
-              src={me.avatar_url}
-            />
-          ) : (
-            <div className="h-16 w-16 rounded-full bg-gray-200" />
-          )}
-          <div>
-            <p className="text-lg font-medium text-black dark:text-zinc-50">
-              {me.display_name ?? "(no name)"}
-            </p>
-            <p className="text-sm text-gray-500">
-              ランキング掲載：{me.can_public_ranking ? "ON" : "OFF"}
-            </p>
-          </div>
-        </section>
-
-        {/* エンジニアグレード（Phase 4 で実装） */}
-        <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="mb-2 text-sm font-medium text-gray-500">現在のエンジニアグレード</h2>
-          <p className="text-3xl font-bold text-gray-300">Coming soon</p>
-          <p className="mt-2 text-xs text-gray-400">
-            Phase 4 でスコア・ランキング機能とともに表示します。
-          </p>
-        </section>
-
-        {/* 集計値の枠（Phase 4 で実装） */}
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            { label: "ベストスコア" },
-            { label: "全期間順位" },
-            { label: "累計打鍵数" },
-            { label: "連続日数" },
-          ].map((stat) => (
-            <div
-              className="rounded border border-gray-200 bg-white p-4 text-center dark:border-zinc-800 dark:bg-zinc-900"
-              key={stat.label}
-            >
-              <p className="text-xs text-gray-500">{stat.label}</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-300">—</p>
+      <div className="container">
+        <div className="flex gap-16 mb-24" style={{ alignItems: "center" }}>
+          <span className="avatar lg">{initials}</span>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ marginBottom: "4px" }}>{me.display_name ?? "(no name)"}</h1>
+            <div className="text-muted text-sm mb-8">
+              ランキング掲載: <strong style={{ color: me.can_public_ranking ? "var(--success)" : "var(--text-muted)" }}>
+                {me.can_public_ranking ? "ON" : "OFF"}
+              </strong>
             </div>
-          ))}
-        </section>
+            <span className="badge-grade intern" data-level={1}>Intern</span>
+            <span className="text-sm text-muted" style={{ marginLeft: "8px" }}>(Coming Soon)</span>
+          </div>
+          <Link className="btn" href="/mypage/account">⚙ 設定</Link>
+        </div>
+
+        <div className="tabs">
+          <Link className="tab active" href="/mypage">概要</Link>
+          <a className="tab" href="#">特典</a>
+          <a className="tab" href="#">プレイ履歴</a>
+          <Link className="tab" href="/mypage/account">設定</Link>
+        </div>
+
+        <div className="row">
+          <div className="col">
+            <div className="stat-row">
+              <div className="stat">
+                <div className="stat-value accent">—</div>
+                <div className="stat-label">ベストスコア</div>
+              </div>
+              <div className="stat">
+                <div className="stat-value">—</div>
+                <div className="stat-label">累計文字数</div>
+              </div>
+              <div className="stat">
+                <div className="stat-value">—</div>
+                <div className="stat-label">総プレイ数</div>
+              </div>
+              <div className="stat">
+                <div className="stat-value success">—</div>
+                <div className="stat-label">平均正確率</div>
+              </div>
+            </div>
+
+            <div className="card mb-16" style={{ borderColor: "rgba(189, 147, 249, 0.3)" }}>
+              <div className="card-header">
+                <div className="card-title">⚡ エンジニアグレード進捗</div>
+                <span className="badge-grade intern" data-level={1}>Intern</span>
+              </div>
+              <p className="text-sm text-muted">
+                Phase 4 (score-ranking) でベストスコア + lifetime-stats API が出来たら本表示します。
+              </p>
+            </div>
+
+            <div className="card mb-16">
+              <div className="card-header">
+                <div className="card-title">📈 全期間ランキング</div>
+              </div>
+              <p className="text-sm text-muted">
+                ランキングは Phase 4 で本表示します。
+              </p>
+            </div>
+
+            <div className="card mb-16">
+              <div className="card-header">
+                <div className="card-title">📜 最近のプレイ</div>
+              </div>
+              <p className="text-sm text-muted">プレイ履歴は Phase 4 で本表示します。</p>
+            </div>
+          </div>
+
+          <aside className="col-sidebar">
+            <div className="card mb-16">
+              <div className="card-header">
+                <div className="card-title">🏷 README バッジ</div>
+              </div>
+              <p className="text-sm text-muted">バッジは Phase 7 (rewards) で本表示します。</p>
+            </div>
+
+            <div className="card mb-16">
+              <div className="card-header"><div className="card-title">🎁 特典</div></div>
+              <p className="text-sm text-muted">特典は Phase 7 で本表示します。</p>
+            </div>
+          </aside>
+        </div>
       </div>
-    </main>
+
+      <div className="footer">
+        <a href="#">利用規約</a> · <a href="#">プライバシー</a>
+      </div>
+    </>
   )
 }
