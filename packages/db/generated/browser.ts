@@ -57,3 +57,23 @@ export type CrawlerRun = Prisma.CrawlerRunModel
  * 
  */
 export type CrawlerRunItem = Prisma.CrawlerRunItemModel
+/**
+ * Model PlaySession
+ * 
+ */
+export type PlaySession = Prisma.PlaySessionModel
+/**
+ * Model PlaySessionProblem
+ * 
+ */
+export type PlaySessionProblem = Prisma.PlaySessionProblemModel
+/**
+ * Model KeystrokeLog
+ * 
+ */
+export type KeystrokeLog = Prisma.KeystrokeLogModel
+/**
+ * Model UserLifetimeStats
+ * 
+ */
+export type UserLifetimeStats = Prisma.UserLifetimeStatsModel

@@ -391,7 +391,11 @@ export const ModelName = {
   CrawledRepo: 'CrawledRepo',
   Problem: 'Problem',
   CrawlerRun: 'CrawlerRun',
-  CrawlerRunItem: 'CrawlerRunItem'
+  CrawlerRunItem: 'CrawlerRunItem',
+  PlaySession: 'PlaySession',
+  PlaySessionProblem: 'PlaySessionProblem',
+  KeystrokeLog: 'KeystrokeLog',
+  UserLifetimeStats: 'UserLifetimeStats'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -407,7 +411,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "authAccount" | "memo" | "user" | "language" | "crawledRepo" | "problem" | "crawlerRun" | "crawlerRunItem"
+    modelProps: "authAccount" | "memo" | "user" | "language" | "crawledRepo" | "problem" | "crawlerRun" | "crawlerRunItem" | "playSession" | "playSessionProblem" | "keystrokeLog" | "userLifetimeStats"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1003,6 +1007,302 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    PlaySession: {
+      payload: Prisma.$PlaySessionPayload<ExtArgs>
+      fields: Prisma.PlaySessionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PlaySessionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PlaySessionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionPayload>
+        }
+        findFirst: {
+          args: Prisma.PlaySessionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PlaySessionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionPayload>
+        }
+        findMany: {
+          args: Prisma.PlaySessionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionPayload>[]
+        }
+        create: {
+          args: Prisma.PlaySessionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionPayload>
+        }
+        createMany: {
+          args: Prisma.PlaySessionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PlaySessionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionPayload>[]
+        }
+        delete: {
+          args: Prisma.PlaySessionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionPayload>
+        }
+        update: {
+          args: Prisma.PlaySessionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionPayload>
+        }
+        deleteMany: {
+          args: Prisma.PlaySessionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PlaySessionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PlaySessionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionPayload>[]
+        }
+        upsert: {
+          args: Prisma.PlaySessionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionPayload>
+        }
+        aggregate: {
+          args: Prisma.PlaySessionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePlaySession>
+        }
+        groupBy: {
+          args: Prisma.PlaySessionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PlaySessionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PlaySessionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PlaySessionCountAggregateOutputType> | number
+        }
+      }
+    }
+    PlaySessionProblem: {
+      payload: Prisma.$PlaySessionProblemPayload<ExtArgs>
+      fields: Prisma.PlaySessionProblemFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PlaySessionProblemFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionProblemPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PlaySessionProblemFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionProblemPayload>
+        }
+        findFirst: {
+          args: Prisma.PlaySessionProblemFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionProblemPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PlaySessionProblemFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionProblemPayload>
+        }
+        findMany: {
+          args: Prisma.PlaySessionProblemFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionProblemPayload>[]
+        }
+        create: {
+          args: Prisma.PlaySessionProblemCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionProblemPayload>
+        }
+        createMany: {
+          args: Prisma.PlaySessionProblemCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PlaySessionProblemCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionProblemPayload>[]
+        }
+        delete: {
+          args: Prisma.PlaySessionProblemDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionProblemPayload>
+        }
+        update: {
+          args: Prisma.PlaySessionProblemUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionProblemPayload>
+        }
+        deleteMany: {
+          args: Prisma.PlaySessionProblemDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PlaySessionProblemUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PlaySessionProblemUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionProblemPayload>[]
+        }
+        upsert: {
+          args: Prisma.PlaySessionProblemUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlaySessionProblemPayload>
+        }
+        aggregate: {
+          args: Prisma.PlaySessionProblemAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePlaySessionProblem>
+        }
+        groupBy: {
+          args: Prisma.PlaySessionProblemGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PlaySessionProblemGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PlaySessionProblemCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PlaySessionProblemCountAggregateOutputType> | number
+        }
+      }
+    }
+    KeystrokeLog: {
+      payload: Prisma.$KeystrokeLogPayload<ExtArgs>
+      fields: Prisma.KeystrokeLogFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.KeystrokeLogFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KeystrokeLogPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.KeystrokeLogFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KeystrokeLogPayload>
+        }
+        findFirst: {
+          args: Prisma.KeystrokeLogFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KeystrokeLogPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.KeystrokeLogFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KeystrokeLogPayload>
+        }
+        findMany: {
+          args: Prisma.KeystrokeLogFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KeystrokeLogPayload>[]
+        }
+        create: {
+          args: Prisma.KeystrokeLogCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KeystrokeLogPayload>
+        }
+        createMany: {
+          args: Prisma.KeystrokeLogCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.KeystrokeLogCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KeystrokeLogPayload>[]
+        }
+        delete: {
+          args: Prisma.KeystrokeLogDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KeystrokeLogPayload>
+        }
+        update: {
+          args: Prisma.KeystrokeLogUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KeystrokeLogPayload>
+        }
+        deleteMany: {
+          args: Prisma.KeystrokeLogDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.KeystrokeLogUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.KeystrokeLogUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KeystrokeLogPayload>[]
+        }
+        upsert: {
+          args: Prisma.KeystrokeLogUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$KeystrokeLogPayload>
+        }
+        aggregate: {
+          args: Prisma.KeystrokeLogAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateKeystrokeLog>
+        }
+        groupBy: {
+          args: Prisma.KeystrokeLogGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.KeystrokeLogGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.KeystrokeLogCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.KeystrokeLogCountAggregateOutputType> | number
+        }
+      }
+    }
+    UserLifetimeStats: {
+      payload: Prisma.$UserLifetimeStatsPayload<ExtArgs>
+      fields: Prisma.UserLifetimeStatsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserLifetimeStatsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLifetimeStatsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserLifetimeStatsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLifetimeStatsPayload>
+        }
+        findFirst: {
+          args: Prisma.UserLifetimeStatsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLifetimeStatsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserLifetimeStatsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLifetimeStatsPayload>
+        }
+        findMany: {
+          args: Prisma.UserLifetimeStatsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLifetimeStatsPayload>[]
+        }
+        create: {
+          args: Prisma.UserLifetimeStatsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLifetimeStatsPayload>
+        }
+        createMany: {
+          args: Prisma.UserLifetimeStatsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserLifetimeStatsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLifetimeStatsPayload>[]
+        }
+        delete: {
+          args: Prisma.UserLifetimeStatsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLifetimeStatsPayload>
+        }
+        update: {
+          args: Prisma.UserLifetimeStatsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLifetimeStatsPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserLifetimeStatsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserLifetimeStatsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserLifetimeStatsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLifetimeStatsPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserLifetimeStatsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLifetimeStatsPayload>
+        }
+        aggregate: {
+          args: Prisma.UserLifetimeStatsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserLifetimeStats>
+        }
+        groupBy: {
+          args: Prisma.UserLifetimeStatsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserLifetimeStatsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserLifetimeStatsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserLifetimeStatsCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1170,6 +1470,70 @@ export const CrawlerRunItemScalarFieldEnum = {
 export type CrawlerRunItemScalarFieldEnum = (typeof CrawlerRunItemScalarFieldEnum)[keyof typeof CrawlerRunItemScalarFieldEnum]
 
 
+export const PlaySessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  languageId: 'languageId',
+  mode: 'mode',
+  ghostSessionId: 'ghostSessionId',
+  crawledRepoId: 'crawledRepoId',
+  repoFallback: 'repoFallback',
+  typedChars: 'typedChars',
+  accuracy: 'accuracy',
+  score: 'score',
+  problemsPlayed: 'problemsPlayed',
+  problemsCompleted: 'problemsCompleted',
+  mistypeStats: 'mistypeStats',
+  playedAt: 'playedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PlaySessionScalarFieldEnum = (typeof PlaySessionScalarFieldEnum)[keyof typeof PlaySessionScalarFieldEnum]
+
+
+export const PlaySessionProblemScalarFieldEnum = {
+  id: 'id',
+  playSessionId: 'playSessionId',
+  problemId: 'problemId',
+  orderIndex: 'orderIndex',
+  charsTyped: 'charsTyped',
+  completed: 'completed',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PlaySessionProblemScalarFieldEnum = (typeof PlaySessionProblemScalarFieldEnum)[keyof typeof PlaySessionProblemScalarFieldEnum]
+
+
+export const KeystrokeLogScalarFieldEnum = {
+  playSessionId: 'playSessionId',
+  compressedLog: 'compressedLog',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type KeystrokeLogScalarFieldEnum = (typeof KeystrokeLogScalarFieldEnum)[keyof typeof KeystrokeLogScalarFieldEnum]
+
+
+export const UserLifetimeStatsScalarFieldEnum = {
+  userId: 'userId',
+  totalTypedChars: 'totalTypedChars',
+  totalSessions: 'totalSessions',
+  bestScore: 'bestScore',
+  bestScoreByLanguage: 'bestScoreByLanguage',
+  currentGrade: 'currentGrade',
+  currentGradeReachedAt: 'currentGradeReachedAt',
+  lifetimeMistypeStats: 'lifetimeMistypeStats',
+  streakDays: 'streakDays',
+  lastPlayedDate: 'lastPlayedDate',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserLifetimeStatsScalarFieldEnum = (typeof UserLifetimeStatsScalarFieldEnum)[keyof typeof UserLifetimeStatsScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1314,6 +1678,20 @@ export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, '
 export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
     
 
+
+/**
+ * Reference to a field of type 'Bytes'
+ */
+export type BytesFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Bytes'>
+    
+
+
+/**
+ * Reference to a field of type 'Bytes[]'
+ */
+export type ListBytesFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Bytes[]'>
+    
+
 /**
  * Batch Payload for updateMany & deleteMany & createMany
  */
@@ -1432,6 +1810,10 @@ export type GlobalOmitConfig = {
   problem?: Prisma.ProblemOmit
   crawlerRun?: Prisma.CrawlerRunOmit
   crawlerRunItem?: Prisma.CrawlerRunItemOmit
+  playSession?: Prisma.PlaySessionOmit
+  playSessionProblem?: Prisma.PlaySessionProblemOmit
+  keystrokeLog?: Prisma.KeystrokeLogOmit
+  userLifetimeStats?: Prisma.UserLifetimeStatsOmit
 }
 
 /* Types for Logging */
