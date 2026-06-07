@@ -25,6 +25,7 @@ import { PlaySessionStateRepository } from "../repository/redis"
 import {
   FinishResult,
   KeystrokeLog,
+  MistypeStats,
   PlaySessionProblem,
   PlaySessionState,
   RepoInfo,
@@ -147,13 +148,99 @@ export type FinishSessionInput = {
 }
 
 /**
+ * state.problemIds の順序 (= orderIndex) で codeBlock を引ける Map を構築する。
+ *
+ * problemRepository.findManyByIds は順序保証がないため、orderIndex (0..19) から
+ * codeBlock を引きやすい形に並べ直す。直後の aggregateMistypeStats /
+ * aggregateProblemProgress / play_session_problems の INSERT で使う
+ */
+const buildCodeBlockByOrder = (
+  problemIds: number[],
+  problems: Array<{ id: number; codeBlock: string }>,
+): Map<number, string> => {
+  const map = new Map<number, string>()
+  for (let i = 0; i < problemIds.length; i++) {
+    const pid = problemIds[i]
+    const p = problems.find((x) => x.id === pid)
+    if (p) map.set(i, p.codeBlock)
+  }
+  return map
+}
+
+type PersistFinishedSessionInput = {
+    accuracy: number
+    keystrokeLog: KeystrokeLog
+    mistypeStats: MistypeStats
+    problemProgress: Map<number, { charsTyped: number; completed: boolean }>
+    problemsCompleted: number
+    problemsPlayed: number
+    score: number
+    state: PlaySessionState
+    typedChars: number
+}
+
+/**
+ * 4 テーブル (play_sessions / play_session_problems / keystroke_logs /
+ * user_lifetime_stats) を 1 transaction でアトミックに書き込む。
+ * Service が境界を制御し、各 Repository に tx を渡す（auth-service と同流派）
+ */
+const persistFinishedSession = async (
+  data: PersistFinishedSessionInput,
+  repo: FinishSessionRepo,
+): Promise<void> => {
+  await repo.transactionRunner.run(async (tx) => {
+    const session = await repo.playSessionRepository.create(
+      {
+        accuracy: data.accuracy,
+        crawledRepoId: data.state.crawledRepoId,
+        ghostSessionId: data.state.ghostSessionId,
+        languageId: data.state.languageId,
+        mistypeStats: data.mistypeStats,
+        mode: data.state.mode,
+        playedAt: new Date(),
+        problemsCompleted: data.problemsCompleted,
+        problemsPlayed: data.problemsPlayed,
+        score: data.score,
+        typedChars: data.typedChars,
+        userId: data.state.userId,
+      },
+      tx,
+    )
+
+    await repo.playSessionProblemRepository.createMany(
+      session.id,
+      [...data.problemProgress.keys()].map((orderIndex) => ({
+        charsTyped: data.problemProgress.get(orderIndex)!.charsTyped,
+        completed: data.problemProgress.get(orderIndex)!.completed,
+        orderIndex,
+        problemId: data.state.problemIds[orderIndex],
+      })),
+      tx,
+    )
+
+    await repo.keystrokeLogRepository.create(session.id, data.keystrokeLog, tx)
+
+    await repo.userLifetimeStatsRepository.upsertOnFinish(
+      {
+        languageId: data.state.languageId,
+        mistypeStats: data.mistypeStats,
+        score: data.score,
+        typedChars: data.typedChars,
+        userId: data.state.userId,
+      },
+      tx,
+    )
+  })
+}
+
+/**
  * タイピングセッションのスコア集計とアトミック DB 書き込み
  *
  * 1. 物理限界チェック（typedChars / accuracy / log size）
  * 2. Redis から PlaySessionState を取得（無ければ 404）
  * 3. state.problemIds から問題本体を取得し、件数 mismatch なら 404
  * 4. サーバーで score / mistypeStats / problemProgress を再集計
- * 5. play_sessions / play_session_problems / keystroke_logs / user_lifetime_stats を 1 transaction で書き込み
+ * 5. 4 テーブルを 1 transaction で書き込み (persistFinishedSession)
  * 6. Redis state を削除
  */
 export const finishSession = async (
@@ -192,16 +279,7 @@ export const finishSession = async (
     })
     return err(notFoundError("Problem set mismatch"))
   }
-
-  /**
-   * state.problemIds の順序（= orderIndex）に並べ直す
-   */
-  const codeBlockByOrder = new Map<number, string>()
-  for (let i = 0; i < state.problemIds.length; i++) {
-    const pid = state.problemIds[i]
-    const p = problems.find((x) => x.id === pid)
-    if (p) codeBlockByOrder.set(i, p.codeBlock)
-  }
+  const codeBlockByOrder = buildCodeBlockByOrder(state.problemIds, problems)
 
   /**
    * 4. サーバー再集計
@@ -210,56 +288,25 @@ export const finishSession = async (
   const mistypeStats = aggregateMistypeStats(input.keystrokeLog, codeBlockByOrder)
   const progress = aggregateProblemProgress(input.keystrokeLog, codeBlockByOrder)
   const problemsCompleted = [...progress.values()].filter((v) => v.completed).length
-  const playedSet = new Set(input.keystrokeLog.map((e) => e.p))
-  const problemsPlayed = playedSet.size
+  const problemsPlayed = new Set(input.keystrokeLog.map((e) => e.p)).size
 
   /**
-   * 5. DB 書き込み（4 テーブルを 1 transaction でアトミックに）
-   * Service が境界を制御し、各 Repository に tx を渡す（auth-service と同流派）
+   * 5. DB 書き込み (4 テーブル / 1 transaction)
    */
-  await repo.transactionRunner.run(async (tx) => {
-    const session = await repo.playSessionRepository.create(
-      {
-        accuracy: input.accuracy,
-        crawledRepoId: state.crawledRepoId,
-        ghostSessionId: state.ghostSessionId,
-        languageId: state.languageId,
-        mistypeStats,
-        mode: state.mode,
-        playedAt: new Date(),
-        problemsCompleted,
-        problemsPlayed,
-        score,
-        typedChars: input.typedChars,
-        userId: state.userId,
-      },
-      tx,
-    )
-
-    await repo.playSessionProblemRepository.createMany(
-      session.id,
-      [...codeBlockByOrder.keys()].map((orderIndex) => ({
-        charsTyped: progress.get(orderIndex)!.charsTyped,
-        completed: progress.get(orderIndex)!.completed,
-        orderIndex,
-        problemId: state.problemIds[orderIndex],
-      })),
-      tx,
-    )
-
-    await repo.keystrokeLogRepository.create(session.id, input.keystrokeLog, tx)
-
-    await repo.userLifetimeStatsRepository.upsertOnFinish(
-      {
-        languageId: state.languageId,
-        mistypeStats,
-        score,
-        typedChars: input.typedChars,
-        userId: state.userId,
-      },
-      tx,
-    )
-  })
+  await persistFinishedSession(
+    {
+      accuracy: input.accuracy,
+      keystrokeLog: input.keystrokeLog,
+      mistypeStats,
+      problemProgress: progress,
+      problemsCompleted,
+      problemsPlayed,
+      score,
+      state,
+      typedChars: input.typedChars,
+    },
+    repo,
+  )
 
   /**
    * 6. Redis ステート削除（書き込み成功時のみ）
