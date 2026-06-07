@@ -67,8 +67,7 @@
     "stars": 130000,
     "description": "The React Framework",
     "homepage": "https://nextjs.org",
-    "topics": ["react", "ssr"],
-    "fallback": false
+    "topics": ["react", "ssr"]
   }
 }
 ```
@@ -77,7 +76,7 @@
 |---|---|---|
 | `session_id` | string (uuid v4) | Redis ステートの識別子。`/finish` でも使う |
 | `problems` | array (length=20) | 出題シーケンス。`order_index` は 0..19 |
-| `repo_info.fallback` | boolean | メイン repo だけで 20 問揃わず他 repo から補填されたら true |
+| `repo_info` | object | 抽選された repo のメタ情報（splash / リザルトコメントで使う） |
 
 ### エラー
 
@@ -85,7 +84,7 @@
 |---|---|---|---|
 | 400 | BAD_REQUEST | `language_id` が存在しない / 形式不正 | エラー表示、トップへ戻す |
 | 401 | UNAUTHORIZED | 認証なし / トークン期限切れ | サインイン画面へ |
-| 404 | NOT_FOUND | eligible repo が 0 件 / メイン+補填で 20 問揃わない（プール枯渇） | 「もう少しお待ちください」表示 |
+| 404 | NOT_FOUND | eligible repo が 0 件 / メイン repo に 20 問未満（プール仕様上は発生しない想定だが念のため返す） | 「もう少しお待ちください」表示 |
 | 500 | — | DB / Redis 障害 | リトライ案内 |
 
 ## 処理フロー
@@ -119,16 +118,9 @@ sequenceDiagram
     end
 
     Svc->>Prob: pickRandomByCrawledRepoId(repoId, 20)
-    Prob-->>Svc: problems[] (<= 20 件)
-
-    alt メイン repo の問題が 20 未満
-        Svc->>Prob: pickRandomEligibleByLanguageIdExcluding<br/>(languageId, 取得済み ids, 不足数)
-        Prob-->>Svc: 補填 problems[]
-        Note over Svc: repoFallback = true
-    end
-
-    alt メイン + 補填で 20 未満
-        Svc-->>Ctrl: err(NOT_FOUND 404 プール枯渇)
+    Prob-->>Svc: problems[]
+    alt 20 問未満（プール仕様上は発生しない想定の異常系）
+        Svc-->>Ctrl: err(NOT_FOUND 404)
         Ctrl-->>C: 404
     end
 
@@ -143,11 +135,10 @@ sequenceDiagram
 1. リクエスト Body を Zod スキーマで検証
 2. `languageId` の存在チェック（NG なら 400 BAD_REQUEST）
 3. `disabled=false` の eligible repo を `ORDER BY random()` で 1 件抽選（NG なら 404）
-4. メイン repo の `disabled=false` 問題から最大 20 問をランダム抽選
-5. 20 問に満たなければ他 repo の同言語問題から不足分を補填し `repoFallback=true` に
-6. 補填しても 20 問揃わなければ 404（プール枯渇）
-7. `sessionId` を UUID v4 で発行し、`PlaySessionState` を Redis に TTL 300 秒で保存
-8. クライアントに `{ session_id, problems[20], repo_info }` を返却
+4. メイン repo の `disabled=false` 問題から 20 問をランダム抽選
+5. 20 問揃わなければ 404（プール仕様で eligible repo は最低 30 問保証されているため通常は発生しない異常系）
+6. `sessionId` を UUID v4 で発行し、`PlaySessionState` を Redis に TTL 300 秒で保存
+7. クライアントに `{ session_id, problems[20], repo_info }` を返却
 
 ## Redis ステート
 
@@ -162,7 +153,6 @@ sequenceDiagram
   "languageId": 1,
   "mode": "solo",
   "crawledRepoId": 17,
-  "repoFallback": false,
   "ghostSessionId": null,
   "problemIds": [1234, 1235, 1236, "... 計 20 個"]
 }
@@ -173,9 +163,8 @@ sequenceDiagram
 - **`sessionId` は UUID v4 を Node 標準 `crypto.randomUUID()` で発行**。DB の auto-increment id とは別系統。Redis キー `play_session:{sessionId}` に紐づくだけの揮発トークンとして扱う
 - **Redis 値は JSON シリアライズ**（`SET play_session:{sessionId} '{...}' EX 300`）。`HSET` ではなく単純な `SET` にする理由は、`problemIds` が配列のため `HSET` だと別途 JSON エンコードが必要で実質メリットがないため。`refresh_token` リポジトリと同じ流派
 - **抽選はすべて Postgres の `ORDER BY random()` LIMIT** で行う。eligible repo は数百件 / 1 repo の problems は最大 100 件なので、`random()` の cost は無視できる。インデックス追加や複雑な確率テーブルは持ち込まない
-- **Repo 選定の eligible 条件は `disabled=false` のみ**。問題プール仕様より「採用候補 30 個未満の repo は `disabled=true` + `disabledReason="too_few_problems"`」なので、`disabled=false` の repo は最低 30 問持つことが保証される
-- **`storedCount >= 20` は条件に入れない**。`crawled_repos.storedCount` はクロール時の値で、後から `problems.disabled=true` で個別に絞られても更新されない。**実際の出題可能数は `SELECT count(*) FROM problems WHERE crawled_repo_id=? AND disabled=false` でしか分からない**ため、抽選後に問題数を見て fallback 判定する設計にする
-- **Fallback ロジックは "足りない分を他 repo からランダム抽出して補填"**。`repoFallback=true` をステートに残し、`/finish` で `play_sessions.repoFallback` に反映する。**メイン repo の identifier はあくまで最初に抽選された repo**（fallback で補填した repo の identifier は保持しない / リザルト画面の「ちなみに今回のリポジトリは」コメントは最初に引いた repo を表示する仕様のため）
+- **Repo 選定の eligible 条件は `disabled=false` のみ**。問題プール仕様より「採用候補 30 個未満の repo は `disabled=true` + `disabledReason="too_few_problems"`」なので、`disabled=false` の repo は最低 30 問持つことが保証される。20 問抽出は問題なく成立する
+- **fallback ロジックは持たない**（シンプルさ優先）。エッジケース（月次ライセンス再検証で同一 repo の problems が 11 件以上同時に disabled になる等）は実運用ではほぼ発生しないため、20 問取れなかった場合は素直に **404 で 1 回失敗 → ユーザーが再試行すると別の repo が抽選される** という挙動で十分。`/solo` の Service / Repository / state を最小に保つ
 - **認証必須**（ゲストプレイは Phase 2 以降）。`req.userId!` 前提で実装し、`PUBLIC_PATHS` には入れない。ゲスト対応は将来 step で `userId nullable` の Redis ステートに拡張する
 - **言語存在チェックは Service で行う**。`languageId` 不正は **400（BAD_REQUEST）** を返す（パスパラメータでなく body なので Zod スキーマでは「正の整数」までしか検証できない）
 - **eligible repo / problems が 0 件の場合は 503 相当だが、本プロジェクトの `Result` 型は `BAD_REQUEST | CONFLICT | FORBIDDEN | NOT_FOUND | UNAUTHORIZED` のみサポート**。新しい型を増やすのは影響範囲が広いので、**`NOT_FOUND`** で代用しメッセージで状況を表現する（運用ローンチ後にプール枯渇が起きたら別途検討）
@@ -195,7 +184,6 @@ import { z } from "zod"
  */
 const repoInfoSchema = z.object({
   description: z.string().nullable(),
-  fallback: z.boolean(),
   homepage: z.string().nullable(),
   name: z.string(),
   owner: z.string(),
@@ -272,7 +260,6 @@ export type PlaySessionState = {
    * インデックス = orderIndex（0..19）
    */
   problemIds: number[]
-  repoFallback: boolean
   userId: number
 }
 
@@ -294,7 +281,6 @@ export type PlaySessionProblem = {
  */
 export type RepoInfo = {
   description: string | null
-  fallback: boolean
   homepage: string | null
   name: string
   owner: string
@@ -358,7 +344,7 @@ export interface CrawledRepoRepository {
    */
   pickRandomEligibleByLanguageId(languageId: number): Promise<{
     id: number
-    repoInfo: Omit<RepoInfo, "fallback">
+    repoInfo: RepoInfo
   } | null>
 }
 
@@ -371,7 +357,7 @@ export class PrismaCrawledRepoRepository implements CrawledRepoRepository {
 
   async pickRandomEligibleByLanguageId(languageId: number): Promise<{
     id: number
-    repoInfo: Omit<RepoInfo, "fallback">
+    repoInfo: RepoInfo
   } | null> {
     /**
      * eligible 件数は数百のオーダーなので ORDER BY random() で十分軽量
@@ -412,7 +398,7 @@ export class PrismaCrawledRepoRepository implements CrawledRepoRepository {
 
 ### `apps/api/src/repository/prisma/problem-repository.ts`（新規）
 
-20 問抽選用。メイン repo / fallback 用の 2 つのクエリを生やす。
+20 問抽選用。1 repo からのランダム抽選のみ持つ。
 
 ```typescript
 import { PrismaClient } from "@repo/db"
@@ -424,16 +410,6 @@ export interface ProblemRepository {
    * 指定 repo から disabled=false の problems を最大 limit 件ランダム抽選
    */
   pickRandomByCrawledRepoId(crawledRepoId: number, limit: number): Promise<PlaySessionProblem[]>
-
-  /**
-   * fallback 用: excludeIds に含まれない eligible problems から最大 limit 件ランダム抽選
-   * 言語スコープを保つため languageId で絞る
-   */
-  pickRandomEligibleByLanguageIdExcluding(
-    languageId: number,
-    excludeIds: number[],
-    limit: number,
-  ): Promise<PlaySessionProblem[]>
 }
 
 export class PrismaProblemRepository implements ProblemRepository {
@@ -461,44 +437,7 @@ export class PrismaProblemRepository implements ProblemRepository {
       ORDER BY random()
       LIMIT ${limit}
     `
-    /** orderIndex は呼び出し側で連番付与する（fallback と結合する都合上） */
-    return rows.map((row) => ({
-      charCount: row.char_count,
-      codeBlock: row.code_block,
-      functionName: row.function_name,
-      id: row.id,
-      lineCount: row.line_count,
-      orderIndex: 0,
-      sourceUrl: row.source_url,
-    }))
-  }
-
-  async pickRandomEligibleByLanguageIdExcluding(
-    languageId: number,
-    excludeIds: number[],
-    limit: number,
-  ): Promise<PlaySessionProblem[]> {
-    /**
-     * excludeIds が空配列だと `NOT IN ()` で SQL エラーになるため
-     * sentinel として -1 を入れて常に非空にする（problems.id は positive）
-     */
-    const safeExcludeIds = excludeIds.length > 0 ? excludeIds : [-1]
-    const rows = await this._prisma.$queryRaw<Array<{
-      id: number
-      char_count: number
-      code_block: string
-      function_name: string
-      line_count: number
-      source_url: string
-    }>>`
-      SELECT id, char_count, code_block, function_name, line_count, source_url
-      FROM problems
-      WHERE language_id = ${languageId}
-        AND disabled = false
-        AND id NOT IN (${Prisma.join(safeExcludeIds)})
-      ORDER BY random()
-      LIMIT ${limit}
-    `
+    /** orderIndex は呼び出し側で 0..limit-1 を連番付与する */
     return rows.map((row) => ({
       charCount: row.char_count,
       codeBlock: row.code_block,
@@ -511,12 +450,6 @@ export class PrismaProblemRepository implements ProblemRepository {
   }
 }
 ```
-
-> `Prisma.join` は `@repo/db` 経由で import する。同 file 冒頭の import を以下に置き換える：
->
-> ```typescript
-> import { Prisma, PrismaClient } from "@repo/db"
-> ```
 
 ### `apps/api/src/repository/prisma/index.ts` への追加
 
@@ -648,10 +581,8 @@ export type CreateSoloSessionOutput = {
  *
  * 1. 言語存在チェック → なければ 400
  * 2. eligible repo を 1 件抽選 → 無ければ 404
- * 3. その repo から最大 20 問抽選
- * 4. 不足分は同言語の他 repo から補填（repoFallback=true）
- * 5. それでも 20 問揃わなければ 404（プールが致命的に枯渇）
- * 6. Redis にステート保存（TTL 300 秒）
+ * 3. その repo から 20 問抽選 → 20 問揃わなければ 404（プール仕様上は通常発生しない）
+ * 4. Redis にステート保存（TTL 300 秒）
  */
 export const createSoloSession = async (
   input: CreateSoloSessionInput,
@@ -671,38 +602,17 @@ export const createSoloSession = async (
     return err(notFoundError("No eligible repository for the given language"))
   }
 
-  /** 3. メイン repo から問題を抽選 */
-  const primaryProblems = await repo.problemRepository.pickRandomByCrawledRepoId(
+  /** 3. メイン repo から 20 問抽選。揃わなければ 404（pool 仕様上 eligible repo は 30 問保証なので通常発生しない） */
+  const problems = await repo.problemRepository.pickRandomByCrawledRepoId(
     mainRepo.id,
     PROBLEMS_PER_SESSION,
   )
-
-  /** 4. 足りなければ他 repo から補填 */
-  let problems = primaryProblems
-  let repoFallback = false
   if (problems.length < PROBLEMS_PER_SESSION) {
-    const remaining = PROBLEMS_PER_SESSION - problems.length
-    const fallbackProblems = await repo.problemRepository.pickRandomEligibleByLanguageIdExcluding(
-      input.languageId,
-      problems.map((p) => p.id),
-      remaining,
-    )
-    problems = [...problems, ...fallbackProblems]
-    repoFallback = fallbackProblems.length > 0
-    logger.info("PlaySessionService: Filled with fallback problems", {
-      crawledRepoId: mainRepo.id,
-      fallbackCount: fallbackProblems.length,
-      primaryCount: primaryProblems.length,
-    })
-  }
-
-  /** 5. それでも 20 問揃わない → プール枯渇 */
-  if (problems.length < PROBLEMS_PER_SESSION) {
-    logger.warn("PlaySessionService: Problem pool exhausted", {
+    logger.warn("PlaySessionService: Repo has insufficient problems", {
       available: problems.length,
-      languageId: input.languageId,
+      crawledRepoId: mainRepo.id,
     })
-    return err(notFoundError("Insufficient problems available"))
+    return err(notFoundError("Insufficient problems in the selected repository"))
   }
 
   /** orderIndex を 0..19 で振り直す */
@@ -711,7 +621,7 @@ export const createSoloSession = async (
     orderIndex: i,
   }))
 
-  /** 6. Redis にステート保存 */
+  /** 4. Redis にステート保存 */
   const sessionId = randomUUID()
   const state: PlaySessionState = {
     crawledRepoId: mainRepo.id,
@@ -719,7 +629,6 @@ export const createSoloSession = async (
     languageId: input.languageId,
     mode: "solo",
     problemIds: orderedProblems.map((p) => p.id),
-    repoFallback,
     userId: input.userId,
   }
   await repo.playSessionStateRepository.save(sessionId, state, PLAY_SESSION_TTL_SECONDS)
@@ -727,13 +636,12 @@ export const createSoloSession = async (
   logger.debug("PlaySessionService: Solo session created", {
     crawledRepoId: mainRepo.id,
     problemCount: orderedProblems.length,
-    repoFallback,
     sessionId,
   })
 
   return ok({
     problems: orderedProblems,
-    repoInfo: { ...mainRepo.repoInfo, fallback: repoFallback },
+    repoInfo: mainRepo.repoInfo,
     sessionId,
   })
 }
@@ -921,7 +829,6 @@ const mockPickRandomEligibleByLanguageId = vi.fn<(_0: number) => Promise<{
   repoInfo: { description: string | null; homepage: string | null; name: string; owner: string; stars: number; topics: string[] }
 } | null>>()
 const mockPickRandomByCrawledRepoId = vi.fn<(_0: number, _1: number) => Promise<PlaySessionProblem[]>>()
-const mockPickRandomEligibleByLanguageIdExcluding = vi.fn<(_0: number, _1: number[], _2: number) => Promise<PlaySessionProblem[]>>()
 const mockSave = vi.fn<(_0: string, _1: PlaySessionState, _2: number) => Promise<void>>()
 
 const mockLanguageRepository: LanguageRepository = { existsById: mockExistsById }
@@ -930,7 +837,6 @@ const mockCrawledRepoRepository: CrawledRepoRepository = {
 }
 const mockProblemRepository: ProblemRepository = {
   pickRandomByCrawledRepoId: mockPickRandomByCrawledRepoId,
-  pickRandomEligibleByLanguageIdExcluding: mockPickRandomEligibleByLanguageIdExcluding,
 }
 const mockPlaySessionStateRepository: PlaySessionStateRepository = {
   delete: vi.fn(),
@@ -966,7 +872,7 @@ describe("createSoloSession", () => {
   })
 
   describe("正常系", () => {
-    it("メイン repo から 20 問揃った場合、ok: true と repoFallback=false の state を返す", async () => {
+    it("メイン repo から 20 問揃った場合、ok: true と state を返す", async () => {
       mockExistsById.mockResolvedValue(true)
       mockPickRandomEligibleByLanguageId.mockResolvedValue(buildRepo())
       mockPickRandomByCrawledRepoId.mockResolvedValue(
@@ -986,40 +892,11 @@ describe("createSoloSession", () => {
       expect(result.ok).toBe(true)
       if (result.ok) {
         expect(result.value.problems).toHaveLength(20)
-        expect(result.value.repoInfo.fallback).toBe(false)
+        expect(result.value.problems[0].orderIndex).toBe(0)
+        expect(result.value.problems[19].orderIndex).toBe(19)
         expect(result.value.sessionId).toMatch(/^[0-9a-f-]{36}$/)
       }
       expect(mockSave).toHaveBeenCalledTimes(1)
-      expect(mockPickRandomEligibleByLanguageIdExcluding).not.toHaveBeenCalled()
-    })
-
-    it("メイン repo が 18 問しか返さない場合、他 repo から 2 問補填して repoFallback=true", async () => {
-      mockExistsById.mockResolvedValue(true)
-      mockPickRandomEligibleByLanguageId.mockResolvedValue(buildRepo())
-      mockPickRandomByCrawledRepoId.mockResolvedValue(
-        Array.from({ length: 18 }, (_, i) => buildProblem(i + 1)),
-      )
-      mockPickRandomEligibleByLanguageIdExcluding.mockResolvedValue([
-        buildProblem(101),
-        buildProblem(102),
-      ])
-
-      const result = await createSoloSession(
-        { languageId: 1, userId: 42 },
-        {
-          crawledRepoRepository: mockCrawledRepoRepository,
-          languageRepository: mockLanguageRepository,
-          playSessionStateRepository: mockPlaySessionStateRepository,
-          problemRepository: mockProblemRepository,
-        },
-      )
-
-      expect(result.ok).toBe(true)
-      if (result.ok) {
-        expect(result.value.problems).toHaveLength(20)
-        expect(result.value.repoInfo.fallback).toBe(true)
-        expect(result.value.problems[19].orderIndex).toBe(19)
-      }
     })
   })
 
@@ -1066,11 +943,12 @@ describe("createSoloSession", () => {
       }
     })
 
-    it("メイン+補填で 20 問揃わない場合、ok: false / 404 を返す", async () => {
+    it("メイン repo が 20 問未満（pool 仕様上の異常系）の場合、ok: false / 404 を返す", async () => {
       mockExistsById.mockResolvedValue(true)
       mockPickRandomEligibleByLanguageId.mockResolvedValue(buildRepo())
-      mockPickRandomByCrawledRepoId.mockResolvedValue([buildProblem(1), buildProblem(2)])
-      mockPickRandomEligibleByLanguageIdExcluding.mockResolvedValue([buildProblem(3)])
+      mockPickRandomByCrawledRepoId.mockResolvedValue(
+        Array.from({ length: 18 }, (_, i) => buildProblem(i + 1)),
+      )
 
       const result = await createSoloSession(
         { languageId: 1, userId: 42 },
@@ -1234,7 +1112,6 @@ describe("POST /api/play-sessions/solo", () => {
         problems: expect.any(Array),
         repo_info: {
           description: "Test repo",
-          fallback: false,
           homepage: null,
           name: "repo",
           owner: "owner",
@@ -1255,72 +1132,27 @@ describe("POST /api/play-sessions/solo", () => {
         ghostSessionId: null,
         languageId: language.id,
         mode: "solo",
-        repoFallback: false,
         userId: user.id,
       })
       expect(state!.problemIds).toHaveLength(20)
     })
+  })
 
-    it("メイン repo に 18 問しかない場合、他 repo から補填して fallback=true", async () => {
-      /** メイン repo: 18 問 */
-      const { language, repo: mainRepo } = await seedRepoWithProblems(18)
-      /** 補填先 repo: 同言語で 20 問 */
-      const fallbackRepo = await testPrisma.crawledRepo.create({
-        data: {
-          candidatesCount: 20,
-          commitSha: "def456",
-          crawledAt: new Date(),
-          defaultBranch: "main",
-          fullName: "owner2/repo2",
-          githubId: BigInt(789012),
-          languageId: language.id,
-          license: "MIT",
-          name: "repo2",
-          owner: "owner2",
-          stars: 800,
-          storedCount: 20,
-          topics: [],
-        },
-      })
-      await testPrisma.problem.createMany({
-        data: Array.from({ length: 20 }, (_, i) => ({
-          astHash: `hashB${i}`,
-          charCount: 100,
-          codeBlock: `function g${i}() {}`,
-          crawledRepoId: fallbackRepo.id,
-          functionName: `g${i}`,
-          languageId: language.id,
-          lineCount: 1,
-          sourceFilePath: `src/g${i}.ts`,
-          sourceLineEnd: 1,
-          sourceLineStart: 1,
-          sourceUrl: `https://github.com/owner2/repo2/blob/main/src/g${i}.ts#L1`,
-        })),
-      })
-
+  describe("異常系", () => {
+    it("メイン repo が 18 問しかない場合（pool 仕様上は通常発生しない異常系）、404 を返す", async () => {
+      /** eligible repo を 1 件だけ seed して 18 問を持たせる。
+       *  ランダム抽選で必ずこの repo が選ばれる前提で 404 を期待する */
+      const { language } = await seedRepoWithProblems(18)
       const { token } = await createTestUser()
+
       const res = await request(app)
         .post("/api/play-sessions/solo")
         .set("Authorization", `Bearer ${token}`)
         .send({ language_id: language.id })
 
-      expect(res.status).toBe(200)
-      expect(res.body.problems).toHaveLength(20)
-      expect(res.body.repo_info).toMatchObject({
-        fallback: true,
-        name: "repo",  /** メイン repo の identifier は維持 */
-        owner: "owner",
-      })
-
-      const state = await playSessionStateRepository.findById(res.body.session_id)
-      expect(state).toMatchObject({
-        crawledRepoId: mainRepo.id,  /** メイン repo の id を保持 */
-        repoFallback: true,
-      })
+      expect(res.status).toBe(404)
     })
-  })
 
-  describe("異常系", () => {
     it("認証なしの場合、401 を返す", async () => {
       const { language } = await seedRepoWithProblems(30)
 

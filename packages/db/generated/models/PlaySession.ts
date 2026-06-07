@@ -59,7 +59,6 @@ export type PlaySessionMinAggregateOutputType = {
   mode: string | null
   ghostSessionId: number | null
   crawledRepoId: number | null
-  repoFallback: boolean | null
   typedChars: number | null
   accuracy: number | null
   score: number | null
@@ -77,7 +76,6 @@ export type PlaySessionMaxAggregateOutputType = {
   mode: string | null
   ghostSessionId: number | null
   crawledRepoId: number | null
-  repoFallback: boolean | null
   typedChars: number | null
   accuracy: number | null
   score: number | null
@@ -95,7 +93,6 @@ export type PlaySessionCountAggregateOutputType = {
   mode: number
   ghostSessionId: number
   crawledRepoId: number
-  repoFallback: number
   typedChars: number
   accuracy: number
   score: number
@@ -142,7 +139,6 @@ export type PlaySessionMinAggregateInputType = {
   mode?: true
   ghostSessionId?: true
   crawledRepoId?: true
-  repoFallback?: true
   typedChars?: true
   accuracy?: true
   score?: true
@@ -160,7 +156,6 @@ export type PlaySessionMaxAggregateInputType = {
   mode?: true
   ghostSessionId?: true
   crawledRepoId?: true
-  repoFallback?: true
   typedChars?: true
   accuracy?: true
   score?: true
@@ -178,7 +173,6 @@ export type PlaySessionCountAggregateInputType = {
   mode?: true
   ghostSessionId?: true
   crawledRepoId?: true
-  repoFallback?: true
   typedChars?: true
   accuracy?: true
   score?: true
@@ -284,7 +278,6 @@ export type PlaySessionGroupByOutputType = {
   mode: string
   ghostSessionId: number | null
   crawledRepoId: number
-  repoFallback: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -326,7 +319,6 @@ export type PlaySessionWhereInput = {
   mode?: Prisma.StringFilter<"PlaySession"> | string
   ghostSessionId?: Prisma.IntNullableFilter<"PlaySession"> | number | null
   crawledRepoId?: Prisma.IntFilter<"PlaySession"> | number
-  repoFallback?: Prisma.BoolFilter<"PlaySession"> | boolean
   typedChars?: Prisma.IntFilter<"PlaySession"> | number
   accuracy?: Prisma.FloatFilter<"PlaySession"> | number
   score?: Prisma.IntFilter<"PlaySession"> | number
@@ -352,7 +344,6 @@ export type PlaySessionOrderByWithRelationInput = {
   mode?: Prisma.SortOrder
   ghostSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
   crawledRepoId?: Prisma.SortOrder
-  repoFallback?: Prisma.SortOrder
   typedChars?: Prisma.SortOrder
   accuracy?: Prisma.SortOrder
   score?: Prisma.SortOrder
@@ -381,7 +372,6 @@ export type PlaySessionWhereUniqueInput = Prisma.AtLeast<{
   mode?: Prisma.StringFilter<"PlaySession"> | string
   ghostSessionId?: Prisma.IntNullableFilter<"PlaySession"> | number | null
   crawledRepoId?: Prisma.IntFilter<"PlaySession"> | number
-  repoFallback?: Prisma.BoolFilter<"PlaySession"> | boolean
   typedChars?: Prisma.IntFilter<"PlaySession"> | number
   accuracy?: Prisma.FloatFilter<"PlaySession"> | number
   score?: Prisma.IntFilter<"PlaySession"> | number
@@ -407,7 +397,6 @@ export type PlaySessionOrderByWithAggregationInput = {
   mode?: Prisma.SortOrder
   ghostSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
   crawledRepoId?: Prisma.SortOrder
-  repoFallback?: Prisma.SortOrder
   typedChars?: Prisma.SortOrder
   accuracy?: Prisma.SortOrder
   score?: Prisma.SortOrder
@@ -434,7 +423,6 @@ export type PlaySessionScalarWhereWithAggregatesInput = {
   mode?: Prisma.StringWithAggregatesFilter<"PlaySession"> | string
   ghostSessionId?: Prisma.IntNullableWithAggregatesFilter<"PlaySession"> | number | null
   crawledRepoId?: Prisma.IntWithAggregatesFilter<"PlaySession"> | number
-  repoFallback?: Prisma.BoolWithAggregatesFilter<"PlaySession"> | boolean
   typedChars?: Prisma.IntWithAggregatesFilter<"PlaySession"> | number
   accuracy?: Prisma.FloatWithAggregatesFilter<"PlaySession"> | number
   score?: Prisma.IntWithAggregatesFilter<"PlaySession"> | number
@@ -448,7 +436,6 @@ export type PlaySessionScalarWhereWithAggregatesInput = {
 
 export type PlaySessionCreateInput = {
   mode: string
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -474,7 +461,6 @@ export type PlaySessionUncheckedCreateInput = {
   mode: string
   ghostSessionId?: number | null
   crawledRepoId: number
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -491,7 +477,6 @@ export type PlaySessionUncheckedCreateInput = {
 
 export type PlaySessionUpdateInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -517,7 +502,6 @@ export type PlaySessionUncheckedUpdateInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
   ghostSessionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   crawledRepoId?: Prisma.IntFieldUpdateOperationsInput | number
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -539,7 +523,6 @@ export type PlaySessionCreateManyInput = {
   mode: string
   ghostSessionId?: number | null
   crawledRepoId: number
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -553,7 +536,6 @@ export type PlaySessionCreateManyInput = {
 
 export type PlaySessionUpdateManyMutationInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -572,7 +554,6 @@ export type PlaySessionUncheckedUpdateManyInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
   ghostSessionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   crawledRepoId?: Prisma.IntFieldUpdateOperationsInput | number
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -606,7 +587,6 @@ export type PlaySessionCountOrderByAggregateInput = {
   mode?: Prisma.SortOrder
   ghostSessionId?: Prisma.SortOrder
   crawledRepoId?: Prisma.SortOrder
-  repoFallback?: Prisma.SortOrder
   typedChars?: Prisma.SortOrder
   accuracy?: Prisma.SortOrder
   score?: Prisma.SortOrder
@@ -638,7 +618,6 @@ export type PlaySessionMaxOrderByAggregateInput = {
   mode?: Prisma.SortOrder
   ghostSessionId?: Prisma.SortOrder
   crawledRepoId?: Prisma.SortOrder
-  repoFallback?: Prisma.SortOrder
   typedChars?: Prisma.SortOrder
   accuracy?: Prisma.SortOrder
   score?: Prisma.SortOrder
@@ -656,7 +635,6 @@ export type PlaySessionMinOrderByAggregateInput = {
   mode?: Prisma.SortOrder
   ghostSessionId?: Prisma.SortOrder
   crawledRepoId?: Prisma.SortOrder
-  repoFallback?: Prisma.SortOrder
   typedChars?: Prisma.SortOrder
   accuracy?: Prisma.SortOrder
   score?: Prisma.SortOrder
@@ -915,7 +893,6 @@ export type PlaySessionUpdateOneRequiredWithoutKeystrokeLogNestedInput = {
 
 export type PlaySessionCreateWithoutUserInput = {
   mode: string
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -939,7 +916,6 @@ export type PlaySessionUncheckedCreateWithoutUserInput = {
   mode: string
   ghostSessionId?: number | null
   crawledRepoId: number
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -990,7 +966,6 @@ export type PlaySessionScalarWhereInput = {
   mode?: Prisma.StringFilter<"PlaySession"> | string
   ghostSessionId?: Prisma.IntNullableFilter<"PlaySession"> | number | null
   crawledRepoId?: Prisma.IntFilter<"PlaySession"> | number
-  repoFallback?: Prisma.BoolFilter<"PlaySession"> | boolean
   typedChars?: Prisma.IntFilter<"PlaySession"> | number
   accuracy?: Prisma.FloatFilter<"PlaySession"> | number
   score?: Prisma.IntFilter<"PlaySession"> | number
@@ -1004,7 +979,6 @@ export type PlaySessionScalarWhereInput = {
 
 export type PlaySessionCreateWithoutLanguageInput = {
   mode: string
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1028,7 +1002,6 @@ export type PlaySessionUncheckedCreateWithoutLanguageInput = {
   mode: string
   ghostSessionId?: number | null
   crawledRepoId: number
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1071,7 +1044,6 @@ export type PlaySessionUpdateManyWithWhereWithoutLanguageInput = {
 
 export type PlaySessionCreateWithoutCrawledRepoInput = {
   mode: string
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1095,7 +1067,6 @@ export type PlaySessionUncheckedCreateWithoutCrawledRepoInput = {
   languageId: number
   mode: string
   ghostSessionId?: number | null
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1138,7 +1109,6 @@ export type PlaySessionUpdateManyWithWhereWithoutCrawledRepoInput = {
 
 export type PlaySessionCreateWithoutGhostedByInput = {
   mode: string
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1163,7 +1133,6 @@ export type PlaySessionUncheckedCreateWithoutGhostedByInput = {
   mode: string
   ghostSessionId?: number | null
   crawledRepoId: number
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1184,7 +1153,6 @@ export type PlaySessionCreateOrConnectWithoutGhostedByInput = {
 
 export type PlaySessionCreateWithoutGhostSessionInput = {
   mode: string
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1208,7 +1176,6 @@ export type PlaySessionUncheckedCreateWithoutGhostSessionInput = {
   languageId: number
   mode: string
   crawledRepoId: number
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1246,7 +1213,6 @@ export type PlaySessionUpdateToOneWithWhereWithoutGhostedByInput = {
 
 export type PlaySessionUpdateWithoutGhostedByInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1271,7 +1237,6 @@ export type PlaySessionUncheckedUpdateWithoutGhostedByInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
   ghostSessionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   crawledRepoId?: Prisma.IntFieldUpdateOperationsInput | number
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1303,7 +1268,6 @@ export type PlaySessionUpdateManyWithWhereWithoutGhostSessionInput = {
 
 export type PlaySessionCreateWithoutProblemsInput = {
   mode: string
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1328,7 +1292,6 @@ export type PlaySessionUncheckedCreateWithoutProblemsInput = {
   mode: string
   ghostSessionId?: number | null
   crawledRepoId: number
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1360,7 +1323,6 @@ export type PlaySessionUpdateToOneWithWhereWithoutProblemsInput = {
 
 export type PlaySessionUpdateWithoutProblemsInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1385,7 +1347,6 @@ export type PlaySessionUncheckedUpdateWithoutProblemsInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
   ghostSessionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   crawledRepoId?: Prisma.IntFieldUpdateOperationsInput | number
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1401,7 +1362,6 @@ export type PlaySessionUncheckedUpdateWithoutProblemsInput = {
 
 export type PlaySessionCreateWithoutKeystrokeLogInput = {
   mode: string
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1426,7 +1386,6 @@ export type PlaySessionUncheckedCreateWithoutKeystrokeLogInput = {
   mode: string
   ghostSessionId?: number | null
   crawledRepoId: number
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1458,7 +1417,6 @@ export type PlaySessionUpdateToOneWithWhereWithoutKeystrokeLogInput = {
 
 export type PlaySessionUpdateWithoutKeystrokeLogInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1483,7 +1441,6 @@ export type PlaySessionUncheckedUpdateWithoutKeystrokeLogInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
   ghostSessionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   crawledRepoId?: Prisma.IntFieldUpdateOperationsInput | number
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1503,7 +1460,6 @@ export type PlaySessionCreateManyUserInput = {
   mode: string
   ghostSessionId?: number | null
   crawledRepoId: number
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1517,7 +1473,6 @@ export type PlaySessionCreateManyUserInput = {
 
 export type PlaySessionUpdateWithoutUserInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1541,7 +1496,6 @@ export type PlaySessionUncheckedUpdateWithoutUserInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
   ghostSessionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   crawledRepoId?: Prisma.IntFieldUpdateOperationsInput | number
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1562,7 +1516,6 @@ export type PlaySessionUncheckedUpdateManyWithoutUserInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
   ghostSessionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   crawledRepoId?: Prisma.IntFieldUpdateOperationsInput | number
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1580,7 +1533,6 @@ export type PlaySessionCreateManyLanguageInput = {
   mode: string
   ghostSessionId?: number | null
   crawledRepoId: number
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1594,7 +1546,6 @@ export type PlaySessionCreateManyLanguageInput = {
 
 export type PlaySessionUpdateWithoutLanguageInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1618,7 +1569,6 @@ export type PlaySessionUncheckedUpdateWithoutLanguageInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
   ghostSessionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   crawledRepoId?: Prisma.IntFieldUpdateOperationsInput | number
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1639,7 +1589,6 @@ export type PlaySessionUncheckedUpdateManyWithoutLanguageInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
   ghostSessionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   crawledRepoId?: Prisma.IntFieldUpdateOperationsInput | number
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1657,7 +1606,6 @@ export type PlaySessionCreateManyCrawledRepoInput = {
   languageId: number
   mode: string
   ghostSessionId?: number | null
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1671,7 +1619,6 @@ export type PlaySessionCreateManyCrawledRepoInput = {
 
 export type PlaySessionUpdateWithoutCrawledRepoInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1695,7 +1642,6 @@ export type PlaySessionUncheckedUpdateWithoutCrawledRepoInput = {
   languageId?: Prisma.IntFieldUpdateOperationsInput | number
   mode?: Prisma.StringFieldUpdateOperationsInput | string
   ghostSessionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1716,7 +1662,6 @@ export type PlaySessionUncheckedUpdateManyWithoutCrawledRepoInput = {
   languageId?: Prisma.IntFieldUpdateOperationsInput | number
   mode?: Prisma.StringFieldUpdateOperationsInput | string
   ghostSessionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1734,7 +1679,6 @@ export type PlaySessionCreateManyGhostSessionInput = {
   languageId: number
   mode: string
   crawledRepoId: number
-  repoFallback?: boolean
   typedChars: number
   accuracy: number
   score: number
@@ -1748,7 +1692,6 @@ export type PlaySessionCreateManyGhostSessionInput = {
 
 export type PlaySessionUpdateWithoutGhostSessionInput = {
   mode?: Prisma.StringFieldUpdateOperationsInput | string
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1772,7 +1715,6 @@ export type PlaySessionUncheckedUpdateWithoutGhostSessionInput = {
   languageId?: Prisma.IntFieldUpdateOperationsInput | number
   mode?: Prisma.StringFieldUpdateOperationsInput | string
   crawledRepoId?: Prisma.IntFieldUpdateOperationsInput | number
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1793,7 +1735,6 @@ export type PlaySessionUncheckedUpdateManyWithoutGhostSessionInput = {
   languageId?: Prisma.IntFieldUpdateOperationsInput | number
   mode?: Prisma.StringFieldUpdateOperationsInput | string
   crawledRepoId?: Prisma.IntFieldUpdateOperationsInput | number
-  repoFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   typedChars?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1852,7 +1793,6 @@ export type PlaySessionSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   mode?: boolean
   ghostSessionId?: boolean
   crawledRepoId?: boolean
-  repoFallback?: boolean
   typedChars?: boolean
   accuracy?: boolean
   score?: boolean
@@ -1879,7 +1819,6 @@ export type PlaySessionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   mode?: boolean
   ghostSessionId?: boolean
   crawledRepoId?: boolean
-  repoFallback?: boolean
   typedChars?: boolean
   accuracy?: boolean
   score?: boolean
@@ -1902,7 +1841,6 @@ export type PlaySessionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   mode?: boolean
   ghostSessionId?: boolean
   crawledRepoId?: boolean
-  repoFallback?: boolean
   typedChars?: boolean
   accuracy?: boolean
   score?: boolean
@@ -1925,7 +1863,6 @@ export type PlaySessionSelectScalar = {
   mode?: boolean
   ghostSessionId?: boolean
   crawledRepoId?: boolean
-  repoFallback?: boolean
   typedChars?: boolean
   accuracy?: boolean
   score?: boolean
@@ -1937,7 +1874,7 @@ export type PlaySessionSelectScalar = {
   updatedAt?: boolean
 }
 
-export type PlaySessionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "languageId" | "mode" | "ghostSessionId" | "crawledRepoId" | "repoFallback" | "typedChars" | "accuracy" | "score" | "problemsPlayed" | "problemsCompleted" | "mistypeStats" | "playedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["playSession"]>
+export type PlaySessionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "languageId" | "mode" | "ghostSessionId" | "crawledRepoId" | "typedChars" | "accuracy" | "score" | "problemsPlayed" | "problemsCompleted" | "mistypeStats" | "playedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["playSession"]>
 export type PlaySessionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   language?: boolean | Prisma.LanguageDefaultArgs<ExtArgs>
@@ -1980,18 +1917,11 @@ export type $PlaySessionPayload<ExtArgs extends runtime.Types.Extensions.Interna
      * "solo" / "challenge_gods"
      */
     mode: string
-    /**
-     * challenge_gods 時に神セッション ID を保持。神セッション削除時は SetNull
-     */
     ghostSessionId: number | null
     /**
      * このセッションのメイン repo（神々モードは神が打った repo を継承）
      */
     crawledRepoId: number
-    /**
-     * 20 問が単一 repo で揃わず他 repo から補填された場合 true
-     */
-    repoFallback: boolean
     /**
      * 120 秒間で正しく入力できた累計文字数
      */
@@ -2458,7 +2388,6 @@ export interface PlaySessionFieldRefs {
   readonly mode: Prisma.FieldRef<"PlaySession", 'String'>
   readonly ghostSessionId: Prisma.FieldRef<"PlaySession", 'Int'>
   readonly crawledRepoId: Prisma.FieldRef<"PlaySession", 'Int'>
-  readonly repoFallback: Prisma.FieldRef<"PlaySession", 'Boolean'>
   readonly typedChars: Prisma.FieldRef<"PlaySession", 'Int'>
   readonly accuracy: Prisma.FieldRef<"PlaySession", 'Float'>
   readonly score: Prisma.FieldRef<"PlaySession", 'Int'>

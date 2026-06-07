@@ -6,7 +6,6 @@ CREATE TABLE "play_sessions" (
     "mode" TEXT NOT NULL,
     "ghost_session_id" INTEGER,
     "crawled_repo_id" INTEGER NOT NULL,
-    "repo_fallback" BOOLEAN NOT NULL DEFAULT false,
     "typed_chars" INTEGER NOT NULL,
     "accuracy" DOUBLE PRECISION NOT NULL,
     "score" INTEGER NOT NULL,

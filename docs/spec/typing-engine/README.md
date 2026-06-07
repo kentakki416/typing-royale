@@ -65,16 +65,16 @@
 
 タイピングコアエンジンは [`../problem-pool/README.md`](../problem-pool/README.md) から **同一 repo の関数 20 問 + `repoInfo`** を受け取り、それを 120 秒間で出題する責任を持つ。
 
-問題抽出ルール（関数の選別条件、AST、依存型の扱い、repo 抽選ロジック、fallback 等）は **すべて problem-pool に集約** する。本ドキュメントでは「何を受け取って、どう見せるか」だけを扱う。
+問題抽出ルール（関数の選別条件、AST、依存型の扱い、repo 抽選ロジック等）は **すべて problem-pool に集約** する。本ドキュメントでは「何を受け取って、どう見せるか」だけを扱う。
 
 | typing-engine が知っておくべき性質 | 詳細リンク |
 | --- | --- |
 | 1 問 = 1 つの関数（関数宣言・アロー関数・メソッド） | [`../problem-pool/README.md#関数単位の抽出方針`](../problem-pool/README.md#関数単位の抽出方針) |
 | 関数長は 80〜1500 文字に正規化済み | [`../problem-pool/README.md#問題として採用する条件`](../problem-pool/README.md#問題として採用する条件) |
 | **1 セッション = 同一 repo の 20 問**。サーバーが純粋ランダムに 1 repo を抽選 | [`../problem-pool/README.md#セッション単位の-repo-抽選ルール`](../problem-pool/README.md#セッション単位の-repo-抽選ルール) |
+| eligible repo は最低 30 問保証されているため fallback は持たず、20 問取れない場合は 404 で 1 回失敗→再試行 | （同上） |
 | 同一セッション内では同じ問題は出題されない | （同上） |
-| `repoInfo` がレスポンスに同梱される（owner / repo / stars / description / homepage / topics / fallback） | [`../problem-pool/README.md#repo-メタ情報の取得`](../problem-pool/README.md#repo-メタ情報の取得) |
-| `repoInfo.fallback=true` の場合あり：単一 repo で 20 問が揃わず他 repo から補填されたセッション | （同上） |
+| `repoInfo` がレスポンスに同梱される（owner / repo / stars / description / homepage / topics） | [`../problem-pool/README.md#repo-メタ情報の取得`](../problem-pool/README.md#repo-メタ情報の取得) |
 | 関数本体のみが表示される（依存型は同梱しない） | （同上） |
 | TypeScript の場合、`User` 等の未解決型名はテキストにそのまま現れる | （同上） |
 | **問題テキストからコメントは除去済み**（JSDoc・行コメント・行末コメントすべて） | [`../problem-pool/README.md#コメントの除去ポリシー`](../problem-pool/README.md#コメントの除去ポリシー) |
@@ -261,7 +261,7 @@ MVP では最小限の対策に絞る。より厳密な対策は [`./deferred-co
 
 | テーブル | 主要カラム | 説明 |
 | --- | --- | --- |
-| `play_sessions` | `id`, `userId(nullable)`, `languageId`, `mode(solo/challenge_gods)`, `ghostSessionId(nullable)`, `crawledRepoId(FK)`, `repoFallback(bool)`, `typedChars`, `accuracy`, `score`, `problemsPlayed`, `problemsCompleted`, `mistypeStats(jsonb)`, `playedAt` | プレイ結果 1 件。`crawledRepoId` はそのセッションのメイン repo（神々モードは神が打った repo を継承）。`repoFallback=true` は 20 問足切りで他 repo から補填されたセッション。`playedAt` は `/finish` のサーバー時刻 |
+| `play_sessions` | `id`, `userId(nullable)`, `languageId`, `mode(solo/challenge_gods)`, `ghostSessionId(nullable)`, `crawledRepoId(FK)`, `typedChars`, `accuracy`, `score`, `problemsPlayed`, `problemsCompleted`, `mistypeStats(jsonb)`, `playedAt` | プレイ結果 1 件。`crawledRepoId` はそのセッションのメイン repo（神々モードは神が打った repo を継承）。`playedAt` は `/finish` のサーバー時刻 |
 | `play_session_problems` | `id`, `playSessionId`, `problemId`, `orderIndex`, `charsTyped`, `completed(bool)` | セッション中に出題された問題のシーケンス |
 | `keystroke_logs` | `playSessionId(PK)`, `compressedLog(bytea)` | キーストロークログ（ゴースト・リプレイで利用） |
 

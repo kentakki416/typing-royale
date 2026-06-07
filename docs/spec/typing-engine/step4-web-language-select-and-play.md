@@ -444,11 +444,6 @@ export function Splash({ onFinished, repoInfo }: Props) {
         {repoInfo.description && (
           <p className="line-clamp-3 text-base text-zinc-200">{repoInfo.description}</p>
         )}
-        {repoInfo.fallback && (
-          <p className="text-xs text-yellow-300">
-            一部の問題は他リポジトリから補填されました
-          </p>
-        )}
       </div>
     </main>
   )

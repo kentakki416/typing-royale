@@ -216,7 +216,6 @@ export const PlaySessionScalarFieldEnum = {
   mode: 'mode',
   ghostSessionId: 'ghostSessionId',
   crawledRepoId: 'crawledRepoId',
-  repoFallback: 'repoFallback',
   typedChars: 'typedChars',
   accuracy: 'accuracy',
   score: 'score',
