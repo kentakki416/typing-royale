@@ -35,8 +35,18 @@ export class PlaySessionFinishController {
 
   async execute(req: AuthRequest, res: Response) {
     const { id } = finishPlaySessionPathParamSchema.parse(req.params)
-    const { accuracy, keystroke_log: keystrokeLog, typed_chars: typedChars } =
+    const { accuracy, keystroke_logs: rawKeystrokeLogs, typed_chars: typedChars } =
             finishPlaySessionRequestSchema.parse(req.body)
+
+    /**
+     * API は snake_case、Domain 型は camelCase で分離する方針なので各 entry を変換
+     */
+    const keystrokeLogs = rawKeystrokeLogs.map((entry) => ({
+      elapsedMs: entry.elapsed_ms,
+      inputChar: entry.input_char,
+      isCorrect: entry.is_correct,
+      problemIndex: entry.problem_index,
+    }))
 
     logger.info("PlaySessionFinishController: Finishing", {
       sessionId: id,
@@ -44,7 +54,7 @@ export class PlaySessionFinishController {
     })
 
     const result = await service.playSession.finishSession(
-      { accuracy, keystrokeLog, sessionId: id, typedChars },
+      { accuracy, keystrokeLogs, sessionId: id, typedChars },
       {
         keystrokeLogRepository: this.keystrokeLogRepository,
         playSessionProblemRepository: this.playSessionProblemRepository,

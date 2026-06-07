@@ -54,24 +54,24 @@ export type RepoInfo = {
  */
 export type KeystrokeEntry = {
     /**
+     * セッション開始からの経過ミリ秒（performance.now() 起点）
+     */
+    elapsedMs: number
+    /**
      * 実際に入力された文字（または "Enter" / "Backspace" 等の特殊キー名）
      */
-    ch: string
+    inputChar: string
     /**
      * その時点で期待されていた正解文字と一致したか
      */
-    ok: boolean
+    isCorrect: boolean
     /**
      * 何問目を打っていたか（0..19 の orderIndex）
      */
-    p: number
-    /**
-     * セッション開始からの経過ミリ秒（performance.now() 起点）
-     */
-    t: number
+    problemIndex: number
 }
 
-export type KeystrokeLog = KeystrokeEntry[]
+export type KeystrokeLogs = KeystrokeEntry[]
 
 /**
  * ニガテ文字集計（key=正解期待文字、value=誤打鍵回数）

@@ -33,13 +33,13 @@ const playSessionProblemSchema = z.object({
 
 /**
  * キーストロークログの 1 エントリ
- * 通常 ch は 1 文字、Enter / Backspace 等の特殊キー名は最大 20 文字
+ * 通常 input_char は 1 文字、Enter / Backspace 等の特殊キー名は最大 20 文字
  */
 const keystrokeEntrySchema = z.object({
-  ch: z.string().min(1).max(20),
-  ok: z.boolean(),
-  p: z.number().int().nonnegative().max(19),
-  t: z.number().nonnegative(),
+  elapsed_ms: z.number().nonnegative(),
+  input_char: z.string().min(1).max(20),
+  is_correct: z.boolean(),
+  problem_index: z.number().int().nonnegative().max(19),
 })
 
 /**
@@ -87,7 +87,7 @@ export const finishPlaySessionPathParamSchema = z.object({
  */
 export const finishPlaySessionRequestSchema = z.object({
   accuracy: z.number().min(0).max(1),
-  keystroke_log: z.array(keystrokeEntrySchema).max(2000),
+  keystroke_logs: z.array(keystrokeEntrySchema).max(2000),
   typed_chars: z.number().int().nonnegative().max(1500),
 })
 

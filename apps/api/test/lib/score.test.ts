@@ -50,12 +50,12 @@ describe("isWithinPhysicalLimits", () => {
 
 describe("aggregateProblemProgress", () => {
   describe("正常系", () => {
-    it("codeBlock 全文を ok=true で踏みきると completed=true", () => {
+    it("codeBlock 全文を isCorrect=true で踏みきると completed=true", () => {
       const codeBlocks = new Map([[0, "abc"]])
       const log = [
-        { ch: "a", ok: true, p: 0, t: 100 },
-        { ch: "b", ok: true, p: 0, t: 200 },
-        { ch: "c", ok: true, p: 0, t: 300 },
+        { elapsedMs: 100, inputChar: "a", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 200, inputChar: "b", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 300, inputChar: "c", isCorrect: true, problemIndex: 0 },
       ]
       const result = aggregateProblemProgress(log, codeBlocks)
       expect(result.get(0)).toEqual({ charsTyped: 3, completed: true })
@@ -64,20 +64,20 @@ describe("aggregateProblemProgress", () => {
     it("途中までしか踏まなかった問題は completed=false", () => {
       const codeBlocks = new Map([[0, "abcdef"]])
       const log = [
-        { ch: "a", ok: true, p: 0, t: 100 },
-        { ch: "b", ok: true, p: 0, t: 200 },
+        { elapsedMs: 100, inputChar: "a", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 200, inputChar: "b", isCorrect: true, problemIndex: 0 },
       ]
       const result = aggregateProblemProgress(log, codeBlocks)
       expect(result.get(0)).toEqual({ charsTyped: 2, completed: false })
     })
 
-    it("ok=false のエントリは charsTyped に含めない", () => {
+    it("isCorrect=false のエントリは charsTyped に含めない", () => {
       const codeBlocks = new Map([[0, "abc"]])
       const log = [
-        { ch: "a", ok: true, p: 0, t: 100 },
-        { ch: "x", ok: false, p: 0, t: 150 },
-        { ch: "b", ok: true, p: 0, t: 200 },
-        { ch: "c", ok: true, p: 0, t: 300 },
+        { elapsedMs: 100, inputChar: "a", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 150, inputChar: "x", isCorrect: false, problemIndex: 0 },
+        { elapsedMs: 200, inputChar: "b", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 300, inputChar: "c", isCorrect: true, problemIndex: 0 },
       ]
       const result = aggregateProblemProgress(log, codeBlocks)
       expect(result.get(0)).toEqual({ charsTyped: 3, completed: true })
@@ -86,9 +86,9 @@ describe("aggregateProblemProgress", () => {
     it("複数問題でも orderIndex 別に集計される", () => {
       const codeBlocks = new Map([[0, "ab"], [1, "xy"]])
       const log = [
-        { ch: "a", ok: true, p: 0, t: 100 },
-        { ch: "b", ok: true, p: 0, t: 200 },
-        { ch: "x", ok: true, p: 1, t: 300 },
+        { elapsedMs: 100, inputChar: "a", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 200, inputChar: "b", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 300, inputChar: "x", isCorrect: true, problemIndex: 1 },
       ]
       const result = aggregateProblemProgress(log, codeBlocks)
       expect(result.get(0)).toEqual({ charsTyped: 2, completed: true })
@@ -99,15 +99,15 @@ describe("aggregateProblemProgress", () => {
 
 describe("aggregateMistypeStats", () => {
   describe("正常系", () => {
-    it("ok=false 時に「正解期待文字」をキーに加算する", () => {
+    it("isCorrect=false 時に「正解期待文字」をキーに加算する", () => {
       const codeBlocks = new Map([[0, "hello"]])
       const log = [
-        { ch: "h", ok: true, p: 0, t: 100 },
-        { ch: "e", ok: true, p: 0, t: 200 },
-        { ch: "l", ok: true, p: 0, t: 300 },
-        { ch: "k", ok: false, p: 0, t: 400 },
-        { ch: "l", ok: true, p: 0, t: 500 },
-        { ch: "o", ok: true, p: 0, t: 600 },
+        { elapsedMs: 100, inputChar: "h", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 200, inputChar: "e", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 300, inputChar: "l", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 400, inputChar: "k", isCorrect: false, problemIndex: 0 },
+        { elapsedMs: 500, inputChar: "l", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 600, inputChar: "o", isCorrect: true, problemIndex: 0 },
       ]
       const result = aggregateMistypeStats(log, codeBlocks)
       expect(result).toEqual({ l: 1 })
@@ -116,24 +116,24 @@ describe("aggregateMistypeStats", () => {
     it("複数の誤打鍵が累積される", () => {
       const codeBlocks = new Map([[0, "abc"]])
       const log = [
-        { ch: "x", ok: false, p: 0, t: 100 },
-        { ch: "y", ok: false, p: 0, t: 150 },
-        { ch: "a", ok: true, p: 0, t: 200 },
-        { ch: "z", ok: false, p: 0, t: 250 },
-        { ch: "b", ok: true, p: 0, t: 300 },
+        { elapsedMs: 100, inputChar: "x", isCorrect: false, problemIndex: 0 },
+        { elapsedMs: 150, inputChar: "y", isCorrect: false, problemIndex: 0 },
+        { elapsedMs: 200, inputChar: "a", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 250, inputChar: "z", isCorrect: false, problemIndex: 0 },
+        { elapsedMs: 300, inputChar: "b", isCorrect: true, problemIndex: 0 },
       ]
       const result = aggregateMistypeStats(log, codeBlocks)
       expect(result).toEqual({ a: 2, b: 1 })
     })
 
-    it("複数問題でも cursor が p ごとに独立管理される", () => {
+    it("複数問題でも cursor が problemIndex ごとに独立管理される", () => {
       const codeBlocks = new Map([[0, "ab"], [1, "xy"]])
       const log = [
-        { ch: "a", ok: true, p: 0, t: 100 },
-        { ch: "z", ok: false, p: 1, t: 200 },
-        { ch: "b", ok: true, p: 0, t: 300 },
-        { ch: "x", ok: true, p: 1, t: 400 },
-        { ch: "z", ok: false, p: 1, t: 500 },
+        { elapsedMs: 100, inputChar: "a", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 200, inputChar: "z", isCorrect: false, problemIndex: 1 },
+        { elapsedMs: 300, inputChar: "b", isCorrect: true, problemIndex: 0 },
+        { elapsedMs: 400, inputChar: "x", isCorrect: true, problemIndex: 1 },
+        { elapsedMs: 500, inputChar: "z", isCorrect: false, problemIndex: 1 },
       ]
       const result = aggregateMistypeStats(log, codeBlocks)
       expect(result).toEqual({ x: 1, y: 1 })

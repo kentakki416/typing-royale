@@ -52,10 +52,10 @@
 {
   "typed_chars": 320,
   "accuracy": 0.95,
-  "keystroke_log": [
-    { "t": 145.2, "p": 0, "ch": "h", "ok": true },
-    { "t": 312.8, "p": 0, "ch": "k", "ok": false },
-    { "t": 478.1, "p": 0, "ch": "e", "ok": true }
+  "keystroke_logs": [
+    { "elapsed_ms": 145.2, "problem_index": 0, "input_char": "h", "is_correct": true },
+    { "elapsed_ms": 312.8, "problem_index": 0, "input_char": "k", "is_correct": false },
+    { "elapsed_ms": 478.1, "problem_index": 0, "input_char": "e", "is_correct": true }
   ]
 }
 ```
@@ -64,11 +64,11 @@
 |---|---|---|---|
 | `typed_chars` | number | 0..1500 | 120 秒で正しく打鍵できた累計文字数 |
 | `accuracy` | number | 0.0..1.0 | `correctKeystrokes / totalKeystrokes` |
-| `keystroke_log` | array | 最大 2000 要素 / 生 JSON 100KB 以下 | 各キー入力イベント |
-| `keystroke_log[].t` | number | >= 0 | セッション開始からの経過 ms（`performance.now()` 起点） |
-| `keystroke_log[].p` | number | 0..19 | 何問目を打っていたか（`orderIndex`） |
-| `keystroke_log[].ch` | string | 1..20 文字 | 入力された文字（または "Enter"/"Backspace" 等の特殊キー名） |
-| `keystroke_log[].ok` | boolean | — | その時点で期待文字と一致したか |
+| `keystroke_logs` | array | 最大 2000 要素 / 生 JSON 100KB 以下 | 各キー入力イベント |
+| `keystroke_logs[].t` | number | >= 0 | セッション開始からの経過 ms（`performance.now()` 起点） |
+| `keystroke_logs[].p` | number | 0..19 | 何問目を打っていたか（`orderIndex`） |
+| `keystroke_logs[].ch` | string | 1..20 文字 | 入力された文字（または "Enter"/"Backspace" 等の特殊キー名） |
+| `keystroke_logs[].ok` | boolean | — | その時点で期待文字と一致したか |
 
 > `score` はクライアントから受け取らない。送られても無視してサーバーで再計算する。
 
@@ -93,8 +93,8 @@
 | `score` | number (int) | **サーバー計算値**：`floor(typed_chars × accuracy)` |
 | `typed_chars` | number | 受け取った値をそのまま返す |
 | `accuracy` | number | 受け取った値をそのまま返す |
-| `problems_played` | number | keystroke_log の `p` ユニーク数 |
-| `problems_completed` | number | 各問題の codeBlock 末尾までを `ok=true` で踏みきった問題数 |
+| `problems_played` | number | keystroke_logs の `p` ユニーク数 |
+| `problems_completed` | number | 各問題の codeBlock 末尾までを `isCorrect=true` で踏みきった問題数 |
 | `mistype_stats` | object | サーバー集計のニガテ文字マップ（正解期待文字 → カウント） |
 | `persisted` | boolean | 認証済みプレイなら true。ゲスト対応時 false あり（Phase 2 以降） |
 
@@ -102,7 +102,7 @@
 
 | Status | type | 条件 |
 |---|---|---|
-| 400 | BAD_REQUEST | `typed_chars > 1500` / `accuracy` が 0..1 範囲外 / `keystroke_log` 100KB 超 |
+| 400 | BAD_REQUEST | `typed_chars > 1500` / `accuracy` が 0..1 範囲外 / `keystroke_logs` 100KB 超 |
 | 400 | — | Zod 検証失敗（型不一致、必須欠落） |
 | 401 | UNAUTHORIZED | 認証なし |
 | 404 | NOT_FOUND | Redis ステート無し（TTL 切れ / 既に finish 済み / sessionId 不正） |
@@ -115,7 +115,7 @@
 |---|---|---|
 | `computeScore` | `typedChars`, `accuracy` | `floor(typedChars * accuracy)` |
 | `isWithinPhysicalLimits` | `typedChars`, `accuracy` | `0 <= typedChars <= 1500 && 0 <= accuracy <= 1` |
-| `aggregateMistypeStats` | `keystrokeLog`, `codeBlocks` | `ok=false` 時の **正解期待文字** をキーに +1 |
+| `aggregateMistypeStats` | `keystrokeLog`, `codeBlocks` | `isCorrect=false` 時の **正解期待文字** をキーに +1 |
 | `aggregateProblemProgress` | `keystrokeLog`, `codeBlocks` | 各 `orderIndex` の `charsTyped`（正解打鍵数）と `completed`（末尾到達） |
 
 ## 処理フロー
@@ -130,7 +130,7 @@ sequenceDiagram
     participant Tx as PlaySessionRepo<br/>(Prisma $transaction)
     participant DB as Postgres
 
-    C->>Ctrl: POST /api/play-sessions/:id/finish<br/>{ typed_chars, accuracy, keystroke_log }
+    C->>Ctrl: POST /api/play-sessions/:id/finish<br/>{ typed_chars, accuracy, keystroke_logs }
     Ctrl->>Ctrl: path / body を Zod 検証
     Ctrl->>Svc: finishSession(input)
 
@@ -138,7 +138,7 @@ sequenceDiagram
     alt 範囲外
         Svc-->>Ctrl: err(BAD_REQUEST 400)
     end
-    Svc->>Svc: keystroke_log バイト数チェック<br/>≤ 100KB
+    Svc->>Svc: keystroke_logs バイト数チェック<br/>≤ 100KB
 
     Svc->>R: GET play_session:{sessionId}
     R-->>Svc: state JSON / null
@@ -171,7 +171,7 @@ sequenceDiagram
 ### 処理の流れ
 
 1. Path Param と Body を Zod スキーマで検証
-2. 物理限界チェック（`typed_chars <= 1500` / `accuracy ∈ [0,1]` / keystroke_log <= 100KB）
+2. 物理限界チェック（`typed_chars <= 1500` / `accuracy ∈ [0,1]` / keystroke_logs <= 100KB）
 3. Redis から `PlaySessionState` を取得（無ければ 404：TTL 切れ or 既 finish 済み）
 4. `state.problemIds` から問題本体を取得し、件数 mismatch なら 404（プール側で disabled 化等）
 5. サーバーで `score = floor(typedChars × accuracy)` を計算
@@ -186,9 +186,9 @@ sequenceDiagram
 - **スコア計算はサーバー権威**。クライアントから受け取った `score` は一切信用しない（送られても無視）。`score = floor(typedChars * accuracy)` で計算する。`floor` 採用理由：DB は `Int`、`typedChars × accuracy` は小数になり得るため、最終的に整数化が必要。`round` ではなく `floor` を選ぶのは「ユーザーに有利になる丸めを排除」のため
 - **物理限界チェック**：`typedChars > 1500` または `accuracy > 1.0` または `accuracy < 0.0` は HTTP 400 で拒否し DB に書かない。`typedChars < 0` も拒否
 - **DB 書き込みは Prisma transaction で 4 テーブルをアトミックに**。途中失敗で部分書き込みになるとマイページの累計値がずれるため。`PrismaTransactionRunner`（既存）を Service 経由で使う
-- **`mistypeStats` はサーバーで keystrokeLog から集計**。クライアント送信値は信用しない。`ok=false` のエントリについて「**そのとき期待されていた正解文字**（= 出題シーケンスから引ける）」をキーに 1 加算する。誤入力された文字（`ch`）ではなく **正解文字** で集計する（仕様 [`./README.md#誤打鍵集計ニガテ文字`](./README.md#誤打鍵集計ニガテ文字) より）
-- **`problemsPlayed` / `problemsCompleted` はキーストロークログから算出**。`problemsPlayed = max(p) + 1`、`problemsCompleted` は「各問題の最終 char が正解 `ok=true` で打たれた回数」で算出する
-- **`play_session_problems` の `charsTyped` / `completed` はキーストロークログから問題別に集計**。完走判定は「その問題の `codeBlock` 末尾文字までを正解 `ok=true` で踏み終えたか」
+- **`mistypeStats` はサーバーで keystrokeLog から集計**。クライアント送信値は信用しない。`isCorrect=false` のエントリについて「**そのとき期待されていた正解文字**（= 出題シーケンスから引ける）」をキーに 1 加算する。誤入力された文字（`ch`）ではなく **正解文字** で集計する（仕様 [`./README.md#誤打鍵集計ニガテ文字`](./README.md#誤打鍵集計ニガテ文字) より）
+- **`problemsPlayed` / `problemsCompleted` はキーストロークログから算出**。`problemsPlayed = max(p) + 1`、`problemsCompleted` は「各問題の最終 char が正解 `isCorrect=true` で打たれた回数」で算出する
+- **`play_session_problems` の `charsTyped` / `completed` はキーストロークログから問題別に集計**。完走判定は「その問題の `codeBlock` 末尾文字までを正解 `isCorrect=true` で踏み終えたか」
 - **`user_lifetime_stats` は upsert**。初回プレイで row が無い場合は作成、ある場合は加算。`bestScore` は max、`bestScoreByLanguage` は JSON で言語別の max
 - **`currentGrade` / `currentGradeReachedAt` の更新は step3 では実装しない**（Phase 4 の score-ranking 機能で実装）。`bestScore` 更新だけ行い、グレード判定は将来 step で追加
 - **`keystroke_logs.compressedLog` は gzip 圧縮**。Node 標準 `zlib.gzipSync(JSON.stringify(log))` を使う。バイト列をそのまま `bytea` カラムに突っ込む
@@ -198,14 +198,14 @@ sequenceDiagram
 
 ### `packages/schema/src/api-schema/play-session.ts` への追加
 
-`/solo` のスキーマに加えて `/finish` を追加。`keystroke_log` のエントリスキーマはここで定義する（ghost-battle の README に書かれた構造の Zod 化）。
+`/solo` のスキーマに加えて `/finish` を追加。`keystroke_logs` のエントリスキーマはここで定義する（ghost-battle の README に書かれた構造の Zod 化）。
 
 ```typescript
 const keystrokeEntrySchema = z.object({
-  ch: z.string().min(1).max(20),  /** 通常 1 文字。"Enter" / "Backspace" 等の特殊キー名は最大 20 文字 */
-  ok: z.boolean(),
-  p: z.number().int().nonnegative().max(19),  /** orderIndex 0..19 */
-  t: z.number().nonnegative(),  /** 経過 ms */
+  input_char: z.string().min(1).max(20),  /** 通常 1 文字。"Enter" / "Backspace" 等の特殊キー名は最大 20 文字 */
+  is_correct: z.boolean(),
+  problem_index: z.number().int().nonnegative().max(19),  /** orderIndex 0..19 */
+  elapsed_ms: z.number().nonnegative(),  /** 経過 ms */
 })
 
 /** POST /api/play-sessions/:id/finish - Path param */
@@ -216,7 +216,7 @@ export const finishPlaySessionPathParamSchema = z.object({
 /** POST /api/play-sessions/:id/finish - Request */
 export const finishPlaySessionRequestSchema = z.object({
   accuracy: z.number().min(0).max(1),
-  keystroke_log: z.array(keystrokeEntrySchema).max(2000),  /** 物理限界の安全側上限 */
+  keystroke_logs: z.array(keystrokeEntrySchema).max(2000),  /** 物理限界の安全側上限 */
   typed_chars: z.number().int().nonnegative().max(1500),
 })
 
@@ -242,13 +242,13 @@ export type FinishPlaySessionResponse = z.infer<typeof finishPlaySessionResponse
 
 ```typescript
 export type KeystrokeEntry = {
-  ch: string
-  ok: boolean
-  p: number
-  t: number
+  inputChar: string
+  isCorrect: boolean
+  problemIndex: number
+  elapsedMs: number
 }
 
-export type KeystrokeLog = KeystrokeEntry[]
+export type KeystrokeLogs = KeystrokeLogs
 
 export type MistypeStats = Record<string, number>
 
@@ -269,7 +269,7 @@ export type FinishResult = {
 ```typescript
 import { PrismaClient } from "@repo/db"
 
-import { KeystrokeLog, MistypeStats } from "../../types/domain"
+import { KeystrokeLogs, MistypeStats } from "../../types/domain"
 
 export type CreatePlaySessionInput = {
   accuracy: number
@@ -299,7 +299,7 @@ export interface PlaySessionRepository {
    * user_lifetime_stats の upsert もこの中で実行する
    */
   createWithChildrenAndUpdateStats(input: {
-    keystrokeLog: KeystrokeLog
+    keystrokeLog: KeystrokeLogs
     problems: CreatePlaySessionProblemInput[]
     session: CreatePlaySessionInput
   }): Promise<{ id: number }>
@@ -313,7 +313,7 @@ export class PrismaPlaySessionRepository implements PlaySessionRepository {
   }
 
   async createWithChildrenAndUpdateStats(input: {
-    keystrokeLog: KeystrokeLog
+    keystrokeLog: KeystrokeLogs
     problems: CreatePlaySessionProblemInput[]
     session: CreatePlaySessionInput
   }): Promise<{ id: number }> {
@@ -430,7 +430,7 @@ export {
 ### `apps/api/src/lib/score.ts`（新規 — 純粋関数）
 
 ```typescript
-import { KeystrokeLog, MistypeStats } from "../types/domain"
+import { KeystrokeLogs, MistypeStats } from "../types/domain"
 
 /**
  * 物理的に到達不可能なスコアを弾くための上限
@@ -439,7 +439,7 @@ import { KeystrokeLog, MistypeStats } from "../types/domain"
 export const PHYSICAL_LIMIT_TYPED_CHARS = 1500
 
 /**
- * keystroke_log の生 JSON サイズ上限（DoS 防御）
+ * keystroke_logs の生 JSON サイズ上限（DoS 防御）
  */
 export const MAX_KEYSTROKE_LOG_BYTES = 100 * 1024  /** 100KB */
 
@@ -464,13 +464,13 @@ export const isWithinPhysicalLimits = (typedChars: number, accuracy: number): bo
 }
 
 /**
- * keystroke_log から問題別の進捗を集計
+ * keystroke_logs から問題別の進捗を集計
  *
  * problemCodeBlocks: orderIndex (0..19) → codeBlock の Map
- * 各 orderIndex について「打鍵された char 数」「完走したか（末尾文字を ok=true で踏んだか）」を返す
+ * 各 orderIndex について「打鍵された char 数」「完走したか（末尾文字を isCorrect=true で踏んだか）」を返す
  */
 export const aggregateProblemProgress = (
-  log: KeystrokeLog,
+  log: KeystrokeLogs,
   problemCodeBlocks: Map<number, string>,
 ): Map<number, { charsTyped: number; completed: boolean }> => {
   const progress = new Map<number, { charsTyped: number; completed: boolean }>()
@@ -488,13 +488,13 @@ export const aggregateProblemProgress = (
 }
 
 /**
- * keystroke_log からニガテ文字（mistypeStats）を集計
+ * keystroke_logs からニガテ文字（mistypeStats）を集計
  *
- * 「ok=false の打鍵について、そのとき期待されていた正解文字を 1 加算」
+ * 「isCorrect=false の打鍵について、そのとき期待されていた正解文字を 1 加算」
  * 期待文字は問題の codeBlock の「現在位置」から引く
  */
 export const aggregateMistypeStats = (
-  log: KeystrokeLog,
+  log: KeystrokeLogs,
   problemCodeBlocks: Map<number, string>,
 ): MistypeStats => {
   const stats: MistypeStats = {}
@@ -531,7 +531,7 @@ import { logger } from "@repo/logger"
 import { MAX_KEYSTROKE_LOG_BYTES, aggregateMistypeStats, aggregateProblemProgress, computeScore, isWithinPhysicalLimits } from "../lib/score"
 import { PlaySessionRepository, ProblemRepository } from "../repository/prisma"
 import { PlaySessionStateRepository } from "../repository/redis"
-import { FinishResult, KeystrokeLog } from "../types/domain"
+import { FinishResult, KeystrokeLogs } from "../types/domain"
 
 type FinishSessionRepo = {
   playSessionRepository: PlaySessionRepository
@@ -541,7 +541,7 @@ type FinishSessionRepo = {
 
 export type FinishSessionInput = {
   accuracy: number
-  keystrokeLog: KeystrokeLog
+  keystrokeLog: KeystrokeLogs
   sessionId: string
   typedChars: number
 }
@@ -556,7 +556,7 @@ export const finishSession = async (
   if (!isWithinPhysicalLimits(input.typedChars, input.accuracy)) {
     return err(badRequestError("Out of physical limits"))
   }
-  /** keystroke_log の生 JSON サイズチェック */
+  /** keystroke_logs の生 JSON サイズチェック */
   const logSize = Buffer.byteLength(JSON.stringify(input.keystrokeLog), "utf8")
   if (logSize > MAX_KEYSTROKE_LOG_BYTES) {
     return err(badRequestError("Keystroke log too large"))
@@ -688,14 +688,14 @@ export class PlaySessionFinishController {
 
   async execute(req: AuthRequest, res: Response) {
     const { id } = finishPlaySessionPathParamSchema.parse(req.params)
-    const { accuracy, keystroke_log, typed_chars } = finishPlaySessionRequestSchema.parse(req.body)
+    const { accuracy, keystroke_logs, typed_chars } = finishPlaySessionRequestSchema.parse(req.body)
 
     logger.info("PlaySessionFinishController: Finishing", { sessionId: id, userId: req.userId })
 
     const result = await service.playSession.finishSession(
       {
         accuracy,
-        keystrokeLog: keystroke_log,
+        keystrokeLog: keystroke_logs,
         sessionId: id,
         typedChars: typed_chars,
       },
@@ -770,7 +770,7 @@ app.use(
 
 カバーする境界条件：
 - 正常系：完走済みセッション、途中完走、mistype 集計、`bestScore` 更新（初回）、`bestScore` 更新（既存値を上回る／下回る）
-- 異常系：物理限界超え（`typed_chars=1501`）、`accuracy>1.0`、`accuracy<0`、Redis state 無し（TTL 切れ）、問題セット mismatch（一部 problem が消えた）、keystroke_log が 100KB 超
+- 異常系：物理限界超え（`typed_chars=1501`）、`accuracy>1.0`、`accuracy<0`、Redis state 無し（TTL 切れ）、問題セット mismatch（一部 problem が消えた）、keystroke_logs が 100KB 超
 
 ```typescript
 describe("finishSession", () => {
@@ -779,7 +779,7 @@ describe("finishSession", () => {
       /** ... */
     })
 
-    it("keystroke_log の ok=false から expected 文字単位で mistypeStats が集計される", async () => {
+    it("keystroke_logs の isCorrect=false から expected 文字単位で mistypeStats が集計される", async () => {
       /** "hello" を打鍵中に "k" を誤入力 → mistypeStats["l"] = 1 */
     })
   })
@@ -789,7 +789,7 @@ describe("finishSession", () => {
     it("accuracy=1.5 の場合、400 を返す", async () => {})
     it("Redis state が存在しない場合、404 を返す", async () => {})
     it("問題セット mismatch の場合、404 を返す", async () => {})
-    it("keystroke_log が 100KB 超の場合、400 を返す", async () => {})
+    it("keystroke_logs が 100KB 超の場合、400 を返す", async () => {})
   })
 })
 ```
@@ -801,7 +801,7 @@ describe("finishSession", () => {
 - `computeScore(100, 0.5)` → `50`
 - `computeScore(100, 0.999)` → `99`（floor）
 - `aggregateMistypeStats`：複数問題にまたがるログでも `p` ごとに cursor 管理されることを確認
-- `aggregateProblemProgress`：codeBlock 全文を ok=true で踏みきれば `completed=true`、足りなければ `false`
+- `aggregateProblemProgress`：codeBlock 全文を isCorrect=true で踏みきれば `completed=true`、足りなければ `false`
 
 ### Controller インテグレーションテスト
 
@@ -850,10 +850,10 @@ curl -X POST "http://localhost:8080/api/play-sessions/$SESSION_ID/finish" \
   -d '{
     "typed_chars": 320,
     "accuracy": 0.95,
-    "keystroke_log": [
-      {"t": 145.2, "p": 0, "ch": "h", "ok": true},
-      {"t": 312.8, "p": 0, "ch": "k", "ok": false},
-      {"t": 478.1, "p": 0, "ch": "e", "ok": true}
+    "keystroke_logs": [
+      {"elapsed_ms": 145.2, "problem_index": 0, "input_char": "h", "is_correct": true},
+      {"elapsed_ms": 312.8, "problem_index": 0, "input_char": "k", "is_correct": false},
+      {"elapsed_ms": 478.1, "problem_index": 0, "input_char": "e", "is_correct": true}
     ]
   }' | jq .
 

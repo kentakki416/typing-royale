@@ -2,17 +2,18 @@ import { gzipSync } from "node:zlib"
 
 import { PrismaClient } from "@repo/db"
 
-import { KeystrokeLog } from "../../types/domain"
+import { KeystrokeLogs } from "../../types/domain"
 
 import { TransactionContext } from "./transaction-runner"
 
 /**
  * KeystrokeLog リポジトリのインターフェース
  *
- * gzip 圧縮は Repository 内部で行う（生 JSON は外部に渡さない）
+ * Prisma モデル名 `KeystrokeLog`（1 session = 1 row）に揃える。
+ * カラム `compressed_log` には KeystrokeLogs 配列を gzip 圧縮したものを保存する
  */
 export interface KeystrokeLogRepository {
-    create(playSessionId: number, log: KeystrokeLog, tx?: TransactionContext): Promise<void>
+    create(playSessionId: number, logs: KeystrokeLogs, tx?: TransactionContext): Promise<void>
 }
 
 /**
@@ -25,9 +26,9 @@ export class PrismaKeystrokeLogRepository implements KeystrokeLogRepository {
     this._prisma = prisma
   }
 
-  async create(playSessionId: number, log: KeystrokeLog, tx?: TransactionContext): Promise<void> {
+  async create(playSessionId: number, logs: KeystrokeLogs, tx?: TransactionContext): Promise<void> {
     const client = tx ?? this._prisma
-    const compressed = gzipSync(Buffer.from(JSON.stringify(log)))
+    const compressed = gzipSync(Buffer.from(JSON.stringify(logs)))
     await client.keystrokeLog.create({
       data: { compressedLog: compressed, playSessionId },
     })

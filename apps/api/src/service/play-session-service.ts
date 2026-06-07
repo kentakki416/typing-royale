@@ -24,7 +24,7 @@ import {
 import { PlaySessionStateRepository } from "../repository/redis"
 import {
   FinishResult,
-  KeystrokeLog,
+  KeystrokeLogs,
   MistypeStats,
   PlaySessionProblem,
   PlaySessionState,
@@ -142,7 +142,7 @@ type FinishSessionRepo = {
 
 export type FinishSessionInput = {
     accuracy: number
-    keystrokeLog: KeystrokeLog
+    keystrokeLogs: KeystrokeLogs
     sessionId: string
     typedChars: number
 }
@@ -169,7 +169,7 @@ const buildCodeBlockByOrder = (
 
 type PersistFinishedSessionInput = {
     accuracy: number
-    keystrokeLog: KeystrokeLog
+    keystrokeLogs: KeystrokeLogs
     mistypeStats: MistypeStats
     problemProgress: Map<number, { charsTyped: number; completed: boolean }>
     problemsCompleted: number
@@ -218,7 +218,7 @@ const persistFinishedSessionAtomic = async (
       tx,
     )
 
-    await repo.keystrokeLogRepository.create(session.id, data.keystrokeLog, tx)
+    await repo.keystrokeLogRepository.create(session.id, data.keystrokeLogs, tx)
 
     await repo.userLifetimeStatsRepository.upsertOnFinish(
       {
@@ -255,7 +255,7 @@ export const finishSession = async (
   if (!isWithinPhysicalLimits(input.typedChars, input.accuracy)) {
     return err(badRequestError("Out of physical limits"))
   }
-  const logSize = Buffer.byteLength(JSON.stringify(input.keystrokeLog), "utf8")
+  const logSize = Buffer.byteLength(JSON.stringify(input.keystrokeLogs), "utf8")
   if (logSize > MAX_KEYSTROKE_LOG_BYTES) {
     return err(badRequestError("Keystroke log too large"))
   }
@@ -285,10 +285,10 @@ export const finishSession = async (
    * 4. サーバー再集計
    */
   const score = computeScore(input.typedChars, input.accuracy)
-  const mistypeStats = aggregateMistypeStats(input.keystrokeLog, codeBlockByOrder)
-  const progress = aggregateProblemProgress(input.keystrokeLog, codeBlockByOrder)
+  const mistypeStats = aggregateMistypeStats(input.keystrokeLogs, codeBlockByOrder)
+  const progress = aggregateProblemProgress(input.keystrokeLogs, codeBlockByOrder)
   const problemsCompleted = [...progress.values()].filter((v) => v.completed).length
-  const problemsPlayed = new Set(input.keystrokeLog.map((e) => e.p)).size
+  const problemsPlayed = new Set(input.keystrokeLogs.map((e) => e.problemIndex)).size
 
   /**
    * 5. DB 書き込み (4 テーブル / 1 transaction)
@@ -296,7 +296,7 @@ export const finishSession = async (
   await persistFinishedSessionAtomic(
     {
       accuracy: input.accuracy,
-      keystrokeLog: input.keystrokeLog,
+      keystrokeLogs: input.keystrokeLogs,
       mistypeStats,
       problemProgress: progress,
       problemsCompleted,

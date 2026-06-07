@@ -9,14 +9,14 @@ import {
 } from "../../../src/repository/prisma"
 import { PlaySessionStateRepository } from "../../../src/repository/redis"
 import { finishSession } from "../../../src/service/play-session-service"
-import { KeystrokeLog, PlaySessionState } from "../../../src/types/domain"
+import { KeystrokeLogs, PlaySessionState } from "../../../src/types/domain"
 
 const mockFindById = vi.fn<(_0: string) => Promise<PlaySessionState | null>>()
 const mockDeleteState = vi.fn<(_0: string) => Promise<void>>()
 const mockFindManyByIds = vi.fn<(_0: number[]) => Promise<Array<{ id: number; codeBlock: string }>>>()
 const mockCreatePlaySession = vi.fn<(_0: unknown, _1?: TransactionContext) => Promise<{ id: number }>>()
 const mockCreateProblems = vi.fn<(_0: number, _1: unknown[], _2?: TransactionContext) => Promise<void>>()
-const mockCreateKeystrokeLog = vi.fn<(_0: number, _1: KeystrokeLog, _2?: TransactionContext) => Promise<void>>()
+const mockCreateKeystrokeLogs = vi.fn<(_0: number, _1: KeystrokeLogs, _2?: TransactionContext) => Promise<void>>()
 const mockUpsertOnFinish = vi.fn<(_0: unknown, _1?: TransactionContext) => Promise<void>>()
 const mockTxRun = vi.fn<<T>(fn: (tx: TransactionContext) => Promise<T>) => Promise<T>>()
 
@@ -40,7 +40,7 @@ const mockPlaySessionProblemRepository: PlaySessionProblemRepository = {
 }
 
 const mockKeystrokeLogRepository: KeystrokeLogRepository = {
-  create: mockCreateKeystrokeLog,
+  create: mockCreateKeystrokeLogs,
 }
 
 const mockUserLifetimeStatsRepository: UserLifetimeStatsRepository = {
@@ -74,10 +74,10 @@ const buildRepoCollection = () => ({
   userLifetimeStatsRepository: mockUserLifetimeStatsRepository,
 })
 
-const validLog: KeystrokeLog = [
-  { ch: "a", ok: true, p: 0, t: 100 },
-  { ch: "b", ok: true, p: 0, t: 200 },
-  { ch: "c", ok: true, p: 0, t: 300 },
+const validLog: KeystrokeLogs = [
+  { elapsedMs: 100, inputChar: "a", isCorrect: true, problemIndex: 0 },
+  { elapsedMs: 200, inputChar: "b", isCorrect: true, problemIndex: 0 },
+  { elapsedMs: 300, inputChar: "c", isCorrect: true, problemIndex: 0 },
 ]
 
 describe("finishSession", () => {
@@ -101,7 +101,7 @@ describe("finishSession", () => {
 
       // Act
       const result = await finishSession(
-        { accuracy: 0.95, keystrokeLog: validLog, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 320 },
+        { accuracy: 0.95, keystrokeLogs: validLog, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 320 },
         buildRepoCollection(),
       )
 
@@ -118,12 +118,12 @@ describe("finishSession", () => {
       expect(mockTxRun).toHaveBeenCalledTimes(1)
       expect(mockCreatePlaySession).toHaveBeenCalledTimes(1)
       expect(mockCreateProblems).toHaveBeenCalledTimes(1)
-      expect(mockCreateKeystrokeLog).toHaveBeenCalledTimes(1)
+      expect(mockCreateKeystrokeLogs).toHaveBeenCalledTimes(1)
       expect(mockUpsertOnFinish).toHaveBeenCalledTimes(1)
       expect(mockDeleteState).toHaveBeenCalledWith("550e8400-e29b-41d4-a716-446655440000")
     })
 
-    it("ok=false のキーストロークから正解期待文字単位で mistypeStats が集計される", async () => {
+    it("isCorrect=false のキーストロークから正解期待文字単位で mistypeStats が集計される", async () => {
       // Arrange
       mockFindById.mockResolvedValue(buildState({ problemIds: [100] }))
       mockFindManyByIds.mockResolvedValue([{ codeBlock: "hello", id: 100 }])
@@ -133,13 +133,13 @@ describe("finishSession", () => {
       const result = await finishSession(
         {
           accuracy: 0.83,
-          keystrokeLog: [
-            { ch: "h", ok: true, p: 0, t: 100 },
-            { ch: "e", ok: true, p: 0, t: 200 },
-            { ch: "l", ok: true, p: 0, t: 300 },
-            { ch: "k", ok: false, p: 0, t: 400 },
-            { ch: "l", ok: true, p: 0, t: 500 },
-            { ch: "o", ok: true, p: 0, t: 600 },
+          keystrokeLogs: [
+            { elapsedMs: 100, inputChar: "h", isCorrect: true, problemIndex: 0 },
+            { elapsedMs: 200, inputChar: "e", isCorrect: true, problemIndex: 0 },
+            { elapsedMs: 300, inputChar: "l", isCorrect: true, problemIndex: 0 },
+            { elapsedMs: 400, inputChar: "k", isCorrect: false, problemIndex: 0 },
+            { elapsedMs: 500, inputChar: "l", isCorrect: true, problemIndex: 0 },
+            { elapsedMs: 600, inputChar: "o", isCorrect: true, problemIndex: 0 },
           ],
           sessionId: "550e8400-e29b-41d4-a716-446655440000",
           typedChars: 5,
@@ -162,7 +162,7 @@ describe("finishSession", () => {
     it("typedChars=1501 の場合、ok: false / 400 を返し transaction が実行されない", async () => {
       // Act
       const result = await finishSession(
-        { accuracy: 0.5, keystrokeLog: [], sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 1501 },
+        { accuracy: 0.5, keystrokeLogs: [], sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 1501 },
         buildRepoCollection(),
       )
 
@@ -177,7 +177,7 @@ describe("finishSession", () => {
     it("accuracy=1.5 の場合、400 を返す", async () => {
       // Act
       const result = await finishSession(
-        { accuracy: 1.5, keystrokeLog: [], sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 100 },
+        { accuracy: 1.5, keystrokeLogs: [], sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 100 },
         buildRepoCollection(),
       )
 
@@ -194,7 +194,7 @@ describe("finishSession", () => {
 
       // Act
       const result = await finishSession(
-        { accuracy: 0.5, keystrokeLog: [], sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 100 },
+        { accuracy: 0.5, keystrokeLogs: [], sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 100 },
         buildRepoCollection(),
       )
 
@@ -220,7 +220,7 @@ describe("finishSession", () => {
 
       // Act
       const result = await finishSession(
-        { accuracy: 0.95, keystrokeLog: validLog, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 320 },
+        { accuracy: 0.95, keystrokeLogs: validLog, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 320 },
         buildRepoCollection(),
       )
 

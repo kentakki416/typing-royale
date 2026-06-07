@@ -134,10 +134,10 @@ describe("POST /api/play-sessions/:id/finish", () => {
         .set("Authorization", `Bearer ${token}`)
         .send({
           accuracy: 1,
-          keystroke_log: [
-            { ch: "a", ok: true, p: 0, t: 100 },
-            { ch: "b", ok: true, p: 0, t: 200 },
-            { ch: "c", ok: true, p: 0, t: 300 },
+          keystroke_logs: [
+            { elapsed_ms: 100, input_char: "a", is_correct: true, problem_index: 0 },
+            { elapsed_ms: 200, input_char: "b", is_correct: true, problem_index: 0 },
+            { elapsed_ms: 300, input_char: "c", is_correct: true, problem_index: 0 },
           ],
           typed_chars: 3,
         })
@@ -218,10 +218,10 @@ describe("POST /api/play-sessions/:id/finish", () => {
         .set("Authorization", `Bearer ${token}`)
         .send({
           accuracy: 1,
-          keystroke_log: [
-            { ch: "a", ok: true, p: 0, t: 100 },
-            { ch: "b", ok: true, p: 0, t: 200 },
-            { ch: "c", ok: true, p: 0, t: 300 },
+          keystroke_logs: [
+            { elapsed_ms: 100, input_char: "a", is_correct: true, problem_index: 0 },
+            { elapsed_ms: 200, input_char: "b", is_correct: true, problem_index: 0 },
+            { elapsed_ms: 300, input_char: "c", is_correct: true, problem_index: 0 },
           ],
           typed_chars: 3,
         })
@@ -251,13 +251,13 @@ describe("POST /api/play-sessions/:id/finish", () => {
         .set("Authorization", `Bearer ${token}`)
         .send({
           accuracy: 1,
-          keystroke_log: [
-            { ch: "a", ok: true, p: 0, t: 100 },
-            { ch: "b", ok: true, p: 0, t: 200 },
-            { ch: "c", ok: true, p: 0, t: 300 },
-            { ch: "d", ok: true, p: 1, t: 400 },
-            { ch: "e", ok: true, p: 1, t: 500 },
-            { ch: "f", ok: true, p: 1, t: 600 },
+          keystroke_logs: [
+            { elapsed_ms: 100, input_char: "a", is_correct: true, problem_index: 0 },
+            { elapsed_ms: 200, input_char: "b", is_correct: true, problem_index: 0 },
+            { elapsed_ms: 300, input_char: "c", is_correct: true, problem_index: 0 },
+            { elapsed_ms: 400, input_char: "d", is_correct: true, problem_index: 1 },
+            { elapsed_ms: 500, input_char: "e", is_correct: true, problem_index: 1 },
+            { elapsed_ms: 600, input_char: "f", is_correct: true, problem_index: 1 },
           ],
           typed_chars: 6,
         })
@@ -281,7 +281,7 @@ describe("POST /api/play-sessions/:id/finish", () => {
     it("認証なしの場合、401 を返す", async () => {
       const res = await request(app)
         .post("/api/play-sessions/550e8400-e29b-41d4-a716-446655440000/finish")
-        .send({ accuracy: 1, keystroke_log: [], typed_chars: 0 })
+        .send({ accuracy: 1, keystroke_logs: [], typed_chars: 0 })
 
       expect(res.status).toBe(401)
     })
@@ -292,7 +292,7 @@ describe("POST /api/play-sessions/:id/finish", () => {
       const res = await request(app)
         .post(`/api/play-sessions/${sessionId}/finish`)
         .set("Authorization", `Bearer ${token}`)
-        .send({ accuracy: 0.5, keystroke_log: [], typed_chars: 2000 })
+        .send({ accuracy: 0.5, keystroke_logs: [], typed_chars: 2000 })
 
       expect(res.status).toBe(400)
     })
@@ -303,7 +303,7 @@ describe("POST /api/play-sessions/:id/finish", () => {
       const res = await request(app)
         .post("/api/play-sessions/not-a-uuid/finish")
         .set("Authorization", `Bearer ${token}`)
-        .send({ accuracy: 0.5, keystroke_log: [], typed_chars: 100 })
+        .send({ accuracy: 0.5, keystroke_logs: [], typed_chars: 100 })
 
       expect(res.status).toBe(400)
     })
@@ -314,7 +314,7 @@ describe("POST /api/play-sessions/:id/finish", () => {
       const res = await request(app)
         .post("/api/play-sessions/550e8400-e29b-41d4-a716-446655440000/finish")
         .set("Authorization", `Bearer ${token}`)
-        .send({ accuracy: 0.5, keystroke_log: [], typed_chars: 100 })
+        .send({ accuracy: 0.5, keystroke_logs: [], typed_chars: 100 })
 
       expect(res.status).toBe(404)
     })
@@ -323,10 +323,10 @@ describe("POST /api/play-sessions/:id/finish", () => {
       const { sessionId, token } = await seedFinishContext()
       const body = {
         accuracy: 1,
-        keystroke_log: [
-          { ch: "a", ok: true, p: 0, t: 100 },
-          { ch: "b", ok: true, p: 0, t: 200 },
-          { ch: "c", ok: true, p: 0, t: 300 },
+        keystroke_logs: [
+          { elapsed_ms: 100, input_char: "a", is_correct: true, problem_index: 0 },
+          { elapsed_ms: 200, input_char: "b", is_correct: true, problem_index: 0 },
+          { elapsed_ms: 300, input_char: "c", is_correct: true, problem_index: 0 },
         ],
         typed_chars: 3,
       }

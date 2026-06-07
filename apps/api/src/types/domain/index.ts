@@ -11,7 +11,7 @@ export type { Memo } from "./memo"
 export type {
   FinishResult,
   KeystrokeEntry,
-  KeystrokeLog,
+  KeystrokeLogs,
   MistypeStats,
   PlaySessionMode,
   PlaySessionProblem,
