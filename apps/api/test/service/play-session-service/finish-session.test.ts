@@ -1,10 +1,15 @@
 import {
   KeystrokeLogRepository,
+  MyLanguageBest,
   PlaySessionProblemRepository,
   PlaySessionRepository,
   ProblemRepository,
   TransactionContext,
   TransactionRunner,
+  UpsertIfBestInput,
+  UpsertIfBestResult,
+  UpsertOnFinishResult,
+  UserLanguageBestRepository,
   UserLifetimeStatsRepository,
 } from "../../../src/repository/prisma"
 import { PlaySessionStateRepository } from "../../../src/repository/redis"
@@ -17,7 +22,11 @@ const mockFindManyByIds = vi.fn<(_0: number[]) => Promise<Array<{ id: number; co
 const mockCreatePlaySession = vi.fn<(_0: unknown, _1?: TransactionContext) => Promise<{ id: number }>>()
 const mockCreateProblems = vi.fn<(_0: number, _1: unknown[], _2?: TransactionContext) => Promise<void>>()
 const mockCreateKeystrokeLogs = vi.fn<(_0: number, _1: KeystrokeLogs, _2?: TransactionContext) => Promise<void>>()
-const mockUpsertOnFinish = vi.fn<(_0: unknown, _1?: TransactionContext) => Promise<void>>()
+const mockUpsertOnFinish = vi.fn<(_0: unknown, _1?: TransactionContext) => Promise<UpsertOnFinishResult>>()
+const mockUpsertIfBest = vi.fn<(_0: UpsertIfBestInput, _1?: TransactionContext) => Promise<UpsertIfBestResult>>()
+const mockFindMineBest = vi.fn<(_0: number, _1: number) => Promise<MyLanguageBest | null>>()
+const mockCountHigherRanked = vi.fn<(_0: number, _1: MyLanguageBest) => Promise<number>>()
+const mockFindTenthScore = vi.fn<(_0: number) => Promise<number | null>>()
 const mockTxRun = vi.fn<<T>(fn: (tx: TransactionContext) => Promise<T>) => Promise<T>>()
 
 const mockPlaySessionStateRepository: PlaySessionStateRepository = {
@@ -44,7 +53,17 @@ const mockKeystrokeLogRepository: KeystrokeLogRepository = {
 }
 
 const mockUserLifetimeStatsRepository: UserLifetimeStatsRepository = {
+  findByUserId: vi.fn(),
   upsertOnFinish: mockUpsertOnFinish,
+}
+
+const mockUserLanguageBestRepository: UserLanguageBestRepository = {
+  countHigherRanked: mockCountHigherRanked,
+  countRankableByLanguage: vi.fn(),
+  findMine: mockFindMineBest,
+  findTenthScore: mockFindTenthScore,
+  findTopByLanguage: vi.fn(),
+  upsertIfBest: mockUpsertIfBest,
 }
 
 /**
@@ -71,6 +90,7 @@ const buildRepoCollection = () => ({
   playSessionStateRepository: mockPlaySessionStateRepository,
   problemRepository: mockProblemRepository,
   transactionRunner: mockTransactionRunner,
+  userLanguageBestRepository: mockUserLanguageBestRepository,
   userLifetimeStatsRepository: mockUserLifetimeStatsRepository,
 })
 
@@ -87,10 +107,18 @@ describe("finishSession", () => {
      * デフォルトでは run の中身を実行する fake tx を渡す
      */
     mockTxRun.mockImplementation(async (fn) => fn({} as TransactionContext))
+    /**
+     * step3 で追加された Repository 群のデフォルト戻り値（gradeUp なし / ベスト未更新 / 順位無し）
+     */
+    mockUpsertOnFinish.mockResolvedValue({ gradeUp: null })
+    mockUpsertIfBest.mockResolvedValue({ updated: false })
+    mockFindMineBest.mockResolvedValue(null)
+    mockCountHigherRanked.mockResolvedValue(0)
+    mockFindTenthScore.mockResolvedValue(null)
   })
 
   describe("正常系", () => {
-    it("有効な集計値で 4 Repository が tx 付きで呼ばれ、Redis state が削除される", async () => {
+    it("有効な集計値で 5 Repository が tx 付きで呼ばれ、Redis state が削除される", async () => {
       // Arrange
       mockFindById.mockResolvedValue(buildState())
       mockFindManyByIds.mockResolvedValue([
@@ -110,8 +138,12 @@ describe("finishSession", () => {
       if (result.ok) {
         expect(result.value).toMatchObject({
           accuracy: 0.95,
+          bestScoreUpdated: false,
+          gradeUp: null,
+          newRank: null,
           persisted: true,
           score: 304,
+          topTenBoundaryScore: null,
           typedChars: 320,
         })
       }
@@ -120,7 +152,52 @@ describe("finishSession", () => {
       expect(mockCreateProblems).toHaveBeenCalledTimes(1)
       expect(mockCreateKeystrokeLogs).toHaveBeenCalledTimes(1)
       expect(mockUpsertOnFinish).toHaveBeenCalledTimes(1)
+      expect(mockUpsertIfBest).toHaveBeenCalledTimes(1)
       expect(mockDeleteState).toHaveBeenCalledWith("550e8400-e29b-41d4-a716-446655440000")
+    })
+
+    it("ベスト更新 + gradeUp が発生したケース、レスポンスに new_rank / grade_up / top_ten_boundary_score が乗る", async () => {
+      // Arrange
+      mockFindById.mockResolvedValue(buildState())
+      mockFindManyByIds.mockResolvedValue([
+        { codeBlock: "abc", id: 100 },
+        { codeBlock: "def", id: 101 },
+      ])
+      mockCreatePlaySession.mockResolvedValue({ id: 999 })
+      mockUpsertIfBest.mockResolvedValue({ updated: true })
+      mockUpsertOnFinish.mockResolvedValue({
+        gradeUp: {
+          from: { level: 4, name: "Senior Engineer", slug: "senior", threshold: 400 },
+          to: { level: 5, name: "Staff Engineer", slug: "staff", threshold: 600 },
+        },
+      })
+      mockFindMineBest.mockResolvedValue({
+        accuracy: 0.95,
+        bestPlaySessionId: 999,
+        playedAt: new Date(),
+        score: 600,
+        typedChars: 632,
+      })
+      mockCountHigherRanked.mockResolvedValue(86)
+      mockFindTenthScore.mockResolvedValue(540)
+
+      // Act
+      const result = await finishSession(
+        { accuracy: 0.95, keystrokeLogs: validLog, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 632 },
+        buildRepoCollection(),
+      )
+
+      // Assert
+      expect(result.ok).toBe(true)
+      if (result.ok) {
+        expect(result.value.bestScoreUpdated).toBe(true)
+        expect(result.value.newRank).toBe(87)
+        expect(result.value.topTenBoundaryScore).toBe(540)
+        expect(result.value.gradeUp).toEqual({
+          from: { level: 4, name: "Senior Engineer", slug: "senior" },
+          to: { level: 5, name: "Staff Engineer", slug: "staff" },
+        })
+      }
     })
 
     it("isCorrect=false のキーストロークから正解期待文字単位で mistypeStats が集計される", async () => {

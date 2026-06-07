@@ -7,6 +7,7 @@ import {
   PrismaPlaySessionRepository,
   PrismaProblemRepository,
   PrismaTransactionRunner,
+  PrismaUserLanguageBestRepository,
   PrismaUserLifetimeStatsRepository,
 } from "../../../src/repository/prisma"
 import { IoRedisPlaySessionStateRepository } from "../../../src/repository/redis"
@@ -27,6 +28,7 @@ const playSessionRepository = new PrismaPlaySessionRepository(testPrisma)
 const playSessionProblemRepository = new PrismaPlaySessionProblemRepository(testPrisma)
 const keystrokeLogRepository = new PrismaKeystrokeLogRepository(testPrisma)
 const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(testPrisma)
+const userLanguageBestRepository = new PrismaUserLanguageBestRepository(testPrisma)
 const transactionRunner = new PrismaTransactionRunner(testPrisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(testRedis)
 
@@ -41,6 +43,7 @@ app.use(
       playSessionStateRepository,
       problemRepository,
       transactionRunner,
+      userLanguageBestRepository,
       userLifetimeStatsRepository,
     ),
   }),
@@ -146,11 +149,17 @@ describe("POST /api/play-sessions/:id/finish", () => {
       expect(res.status).toBe(200)
       expect(res.body).toEqual({
         accuracy: 1,
+        best_score_updated: true,
+        /** score=3 は Intern (threshold=0) のまま → grade_up=null（Intern→Intern は通知しない） */
+        grade_up: null,
         mistype_stats: {},
+        new_rank: 1,
         persisted: true,
         problems_completed: 1,
         problems_played: 1,
         score: 3,
+        /** ベスト 1 件しか無いので 10 位は null */
+        top_ten_boundary_score: null,
         typed_chars: 3,
       })
 
@@ -194,12 +203,32 @@ describe("POST /api/play-sessions/:id/finish", () => {
 
       /**
        * user_lifetime_stats が初回 upsert で 1 行作成されている
+       * （score-ranking step3 で currentGrade も書き込まれる）
        */
       const stats = await testPrisma.userLifetimeStats.findUnique({ where: { userId: user.id } })
       expect(stats).toMatchObject({
         bestScore: 3,
+        /** score=3 は Intern (threshold=0) のまま */
+        currentGrade: "intern",
+        currentGradeReachedAt: null,
         totalSessions: 1,
         totalTypedChars: BigInt(3),
+        userId: user.id,
+      })
+
+      /**
+       * user_language_best が新規 upsert で 1 行作成されている（score-ranking step3）
+       */
+      const language = await testPrisma.language.findFirstOrThrow()
+      const best = await testPrisma.userLanguageBest.findUnique({
+        where: { userId_languageId: { languageId: language.id, userId: user.id } },
+      })
+      expect(best).toMatchObject({
+        accuracy: 1,
+        bestPlaySessionId: playSessions[0].id,
+        languageId: language.id,
+        score: 3,
+        typedChars: 3,
         userId: user.id,
       })
 
@@ -264,6 +293,8 @@ describe("POST /api/play-sessions/:id/finish", () => {
 
       // Assert
       expect(res.status).toBe(200)
+      /** score-ranking step3: 2 回目で best 更新されたので best_score_updated=true */
+      expect(res.body.best_score_updated).toBe(true)
       const stats = await testPrisma.userLifetimeStats.findUnique({ where: { userId: user.id } })
       expect(stats).toMatchObject({
         /**
@@ -274,6 +305,182 @@ describe("POST /api/play-sessions/:id/finish", () => {
         totalTypedChars: BigInt(9),
         userId: user.id,
       })
+
+      /**
+       * user_language_best も 2 回目セッションを指すように更新されている
+       */
+      const playSessions = await testPrisma.playSession.findMany({
+        orderBy: { id: "asc" },
+        where: { userId: user.id },
+      })
+      const best = await testPrisma.userLanguageBest.findUnique({
+        where: { userId_languageId: { languageId: language!.id, userId: user.id } },
+      })
+      expect(best).toMatchObject({
+        bestPlaySessionId: playSessions[1].id,
+        score: 6,
+      })
+    })
+
+    it("2 回目のスコアが既存ベスト以下なら user_language_best は据置（best_score_updated=false）", async () => {
+      // Arrange: 1 回目 (score=6)
+      const { problems, sessionId, token, user } = await seedFinishContext()
+      await request(app)
+        .post(`/api/play-sessions/${sessionId}/finish`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          accuracy: 1,
+          keystroke_logs: [
+            { elapsed_ms: 100, input_char: "a", is_correct: true, problem_index: 0 },
+            { elapsed_ms: 200, input_char: "b", is_correct: true, problem_index: 0 },
+            { elapsed_ms: 300, input_char: "c", is_correct: true, problem_index: 0 },
+            { elapsed_ms: 400, input_char: "d", is_correct: true, problem_index: 1 },
+            { elapsed_ms: 500, input_char: "e", is_correct: true, problem_index: 1 },
+            { elapsed_ms: 600, input_char: "f", is_correct: true, problem_index: 1 },
+          ],
+          typed_chars: 6,
+        })
+
+      const language = await testPrisma.language.findFirstOrThrow()
+      const firstBest = await testPrisma.userLanguageBest.findUniqueOrThrow({
+        where: { userId_languageId: { languageId: language.id, userId: user.id } },
+      })
+
+      // 2 回目: より低い score (3)
+      const sessionId2 = "550e8400-e29b-41d4-a716-446655440002"
+      const crawledRepo = await testPrisma.crawledRepo.findFirstOrThrow()
+      await playSessionStateRepository.save(
+        sessionId2,
+        {
+          crawledRepoId: crawledRepo.id,
+          ghostSessionId: null,
+          languageId: language.id,
+          mode: "solo",
+          problemIds: problems.map((p) => p.id),
+          userId: user.id,
+        },
+        300,
+      )
+
+      // Act
+      const res = await request(app)
+        .post(`/api/play-sessions/${sessionId2}/finish`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          accuracy: 1,
+          keystroke_logs: [
+            { elapsed_ms: 100, input_char: "a", is_correct: true, problem_index: 0 },
+            { elapsed_ms: 200, input_char: "b", is_correct: true, problem_index: 0 },
+            { elapsed_ms: 300, input_char: "c", is_correct: true, problem_index: 0 },
+          ],
+          typed_chars: 3,
+        })
+
+      // Assert
+      expect(res.status).toBe(200)
+      expect(res.body.best_score_updated).toBe(false)
+      expect(res.body.new_rank).toBe(1)
+
+      const bestAfter = await testPrisma.userLanguageBest.findUniqueOrThrow({
+        where: { userId_languageId: { languageId: language.id, userId: user.id } },
+      })
+      /** user_language_best は据置（1 回目の score=6 / bestPlaySessionId のまま） */
+      expect(bestAfter.score).toBe(6)
+      expect(bestAfter.bestPlaySessionId).toBe(firstBest.bestPlaySessionId)
+    })
+
+    it("グレード閾値を跨ぐスコアで grade_up が返り、user_lifetime_stats.currentGrade が更新される", async () => {
+      // Arrange: 既存ベスト 50 / Intern を seed
+      const { problems, sessionId, token, user } = await seedFinishContext()
+      const language = await testPrisma.language.findFirstOrThrow()
+      const crawledRepo = await testPrisma.crawledRepo.findFirstOrThrow()
+
+      const dummySession = await testPrisma.playSession.create({
+        data: {
+          accuracy: 0.9,
+          crawledRepoId: crawledRepo.id,
+          languageId: language.id,
+          mistypeStats: {},
+          mode: "solo",
+          playedAt: new Date("2026-05-01"),
+          problemsCompleted: 1,
+          problemsPlayed: 1,
+          score: 50,
+          typedChars: 50,
+          userId: user.id,
+        },
+      })
+      await testPrisma.userLifetimeStats.create({
+        data: {
+          bestScore: 50,
+          currentGrade: "intern",
+          totalSessions: 1,
+          totalTypedChars: BigInt(50),
+          userId: user.id,
+        },
+      })
+      await testPrisma.userLanguageBest.create({
+        data: {
+          accuracy: 0.9,
+          bestPlaySessionId: dummySession.id,
+          languageId: language.id,
+          playedAt: new Date("2026-05-01"),
+          score: 50,
+          typedChars: 50,
+          userId: user.id,
+        },
+      })
+
+      /**
+       * Redis state は seedFinishContext で 2 問分セットされている。
+       * 6 文字 × accuracy=1 → score=6... では junior に届かないので、
+       * 110 文字 × accuracy≒1 → score=110 で Intern (0) → Junior (100) を跨がせるための
+       * 別アプローチとして state.problemIds を上書きせず、accuracy を高く打鍵数を多くする
+       *
+       * ここでは seedFinishContext が用意した state を使わず、新たな state を作る:
+       */
+      const sessionId2 = "550e8400-e29b-41d4-a716-446655440003"
+      await playSessionStateRepository.save(
+        sessionId2,
+        {
+          crawledRepoId: crawledRepo.id,
+          ghostSessionId: null,
+          languageId: language.id,
+          mode: "solo",
+          problemIds: problems.map((p) => p.id),
+          userId: user.id,
+        },
+        300,
+      )
+      /** 既存の sessionId は使わないので Redis から削除（テストデータの汚染を避ける） */
+      await playSessionStateRepository.delete(sessionId)
+
+      // Act: 110 文字 × accuracy=1 → score=110 (Junior 閾値 100 を跨ぐ)
+      const longLog = Array.from({ length: 110 }, (_, i) => ({
+        elapsed_ms: 100 + i * 10,
+        input_char: i % 3 === 0 ? "a" : i % 3 === 1 ? "b" : "c",
+        is_correct: true,
+        problem_index: 0,
+      }))
+      const res = await request(app)
+        .post(`/api/play-sessions/${sessionId2}/finish`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ accuracy: 1, keystroke_logs: longLog, typed_chars: 110 })
+
+      // Assert
+      expect(res.status).toBe(200)
+      expect(res.body.best_score_updated).toBe(true)
+      expect(res.body.grade_up).toEqual({
+        from: { level: 1, name: "Intern", slug: "intern" },
+        to: { level: 2, name: "Junior Developer", slug: "junior" },
+      })
+
+      const stats = await testPrisma.userLifetimeStats.findUniqueOrThrow({
+        where: { userId: user.id },
+      })
+      expect(stats.bestScore).toBe(110)
+      expect(stats.currentGrade).toBe("junior")
+      expect(stats.currentGradeReachedAt).not.toBeNull()
     })
   })
 

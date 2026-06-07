@@ -1,5 +1,30 @@
 import { PrismaClient } from "@repo/db"
 
+import { TransactionContext } from "./transaction-runner"
+
+/**
+ * /finish で `user_language_best` に書き込む入力
+ */
+export type UpsertIfBestInput = {
+    accuracy: number
+    bestPlaySessionId: number
+    languageId: number
+    playedAt: Date
+    score: number
+    typedChars: number
+    userId: number
+}
+
+/**
+ * upsertIfBest の戻り値
+ *
+ * INSERT または既存より高いスコアで UPDATE したら true、
+ * 既存より低いスコアだったため変更しなかった場合は false
+ */
+export type UpsertIfBestResult = {
+    updated: boolean
+}
+
 /**
  * ランキング表示用エントリ（TOP N 用、ユーザー情報を含む）
  */
@@ -38,7 +63,9 @@ export interface UserLanguageBestRepository {
     countHigherRanked(languageId: number, myBest: MyLanguageBest): Promise<number>
     countRankableByLanguage(languageId: number): Promise<number>
     findMine(userId: number, languageId: number): Promise<MyLanguageBest | null>
+    findTenthScore(languageId: number): Promise<number | null>
     findTopByLanguage(languageId: number, limit: number): Promise<UserLanguageBestWithUser[]>
+    upsertIfBest(input: UpsertIfBestInput, tx?: TransactionContext): Promise<UpsertIfBestResult>
 }
 
 /**
@@ -127,5 +154,75 @@ export class PrismaUserLanguageBestRepository implements UserLanguageBestReposit
         user: { canPublicRanking: true },
       },
     })
+  }
+
+  async findTenthScore(languageId: number): Promise<number | null> {
+    const rows = await this._prisma.userLanguageBest.findMany({
+      orderBy: [
+        { score: "desc" },
+        { accuracy: "desc" },
+        { playedAt: "asc" },
+      ],
+      select: { score: true },
+      skip: 9,
+      take: 1,
+      where: {
+        languageId,
+        user: { canPublicRanking: true },
+      },
+    })
+    return rows.length === 0 ? null : rows[0].score
+  }
+
+  async upsertIfBest(
+    input: UpsertIfBestInput,
+    tx?: TransactionContext,
+  ): Promise<UpsertIfBestResult> {
+    const client = tx ?? this._prisma
+    const existing = await client.userLanguageBest.findUnique({
+      where: { userId_languageId: { languageId: input.languageId, userId: input.userId } },
+    })
+
+    if (existing === null) {
+      await client.userLanguageBest.create({
+        data: {
+          accuracy: input.accuracy,
+          bestPlaySessionId: input.bestPlaySessionId,
+          languageId: input.languageId,
+          playedAt: input.playedAt,
+          score: input.score,
+          typedChars: input.typedChars,
+          userId: input.userId,
+        },
+      })
+      return { updated: true }
+    }
+
+    /**
+     * 既存と同じ tie-break ルール: score DESC, accuracy DESC, playedAt ASC
+     * 新スコアが既存より「強い」場合のみ更新
+     */
+    const isBetter =
+            input.score > existing.score
+            || (input.score === existing.score && input.accuracy > existing.accuracy)
+            || (input.score === existing.score
+              && input.accuracy === existing.accuracy
+              && input.playedAt < existing.playedAt)
+
+    if (!isBetter) {
+      return { updated: false }
+    }
+
+    await client.userLanguageBest.update({
+      data: {
+        accuracy: input.accuracy,
+        bestPlaySessionId: input.bestPlaySessionId,
+        playedAt: input.playedAt,
+        score: input.score,
+        typedChars: input.typedChars,
+      },
+      where: { id: existing.id },
+    })
+    return { updated: true }
   }
 }

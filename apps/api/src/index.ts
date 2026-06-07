@@ -161,6 +161,7 @@ const playSessionFinishController = new PlaySessionFinishController(
   playSessionStateRepository,
   problemRepository,
   transactionRunner,
+  userLanguageBestRepository,
   userLifetimeStatsRepository,
 )
 const playSessionStartChallengeGodsController = new PlaySessionStartChallengeGodsController(

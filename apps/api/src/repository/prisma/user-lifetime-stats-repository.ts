@@ -1,5 +1,6 @@
 import { PrismaClient } from "@repo/db"
 
+import { calcGrade, Grade } from "../../lib/grade"
 import { MistypeStats } from "../../types/domain"
 
 import { TransactionContext } from "./transaction-runner"
@@ -16,6 +17,15 @@ export type UpsertOnFinishInput = {
 }
 
 /**
+ * upsertOnFinish の戻り値
+ *
+ * グレードレベルが上がった場合のみ from/to を返す。同一グレードに留まれば null
+ */
+export type UpsertOnFinishResult = {
+    gradeUp: { from: Grade; to: Grade } | null
+}
+
+/**
  * グレード判定 / 進捗表示に使う累計値の subset
  */
 export type UserLifetimeStatsSummary = {
@@ -27,11 +37,11 @@ export type UserLifetimeStatsSummary = {
  * UserLifetimeStats リポジトリのインターフェース
  *
  * /finish 完了時にユーザーごとの累計値を upsert で加算する。
- * 言語別 bestScore / 生涯 mistypeStats のマージもここで行う
+ * 言語別 bestScore / 生涯 mistypeStats のマージ + currentGrade 更新を 1 トランザクションで行う
  */
 export interface UserLifetimeStatsRepository {
     findByUserId(userId: number): Promise<UserLifetimeStatsSummary | null>
-    upsertOnFinish(input: UpsertOnFinishInput, tx?: TransactionContext): Promise<void>
+    upsertOnFinish(input: UpsertOnFinishInput, tx?: TransactionContext): Promise<UpsertOnFinishResult>
 }
 
 /**
@@ -52,7 +62,10 @@ export class PrismaUserLifetimeStatsRepository implements UserLifetimeStatsRepos
     return row
   }
 
-  async upsertOnFinish(input: UpsertOnFinishInput, tx?: TransactionContext): Promise<void> {
+  async upsertOnFinish(
+    input: UpsertOnFinishInput,
+    tx?: TransactionContext,
+  ): Promise<UpsertOnFinishResult> {
     const client = tx ?? this._prisma
     const existing = await client.userLifetimeStats.findUnique({ where: { userId: input.userId } })
 
@@ -63,22 +76,38 @@ export class PrismaUserLifetimeStatsRepository implements UserLifetimeStatsRepos
     const langKey = String(input.languageId)
 
     if (!existing) {
+      const newGrade = calcGrade(input.score)
       await client.userLifetimeStats.create({
         data: {
           bestScore: input.score,
           bestScoreByLanguage: { [langKey]: input.score },
+          currentGrade: newGrade.slug,
+          currentGradeReachedAt: newGrade.level > 1 ? new Date() : null,
           lifetimeMistypeStats: input.mistypeStats,
           totalSessions: 1,
           totalTypedChars: BigInt(input.typedChars),
           userId: input.userId,
         },
       })
-      return
+      /**
+       * 初回プレイで Intern より上のグレードに到達した場合のみ祝賀通知
+       * （初プレイで Intern のままなら通知不要）
+       */
+      return {
+        gradeUp: newGrade.level > 1
+          ? { from: calcGrade(0), to: newGrade }
+          : null,
+      }
     }
 
     /**
      * 既存値とのマージ
      */
+    const prevBest = existing.bestScore
+    const newBest = Math.max(prevBest, input.score)
+    const prevGrade = calcGrade(prevBest)
+    const newGrade = calcGrade(newBest)
+
     const currentByLang = (existing.bestScoreByLanguage ?? {}) as Record<string, number>
     const newByLang = {
       ...currentByLang,
@@ -90,15 +119,27 @@ export class PrismaUserLifetimeStatsRepository implements UserLifetimeStatsRepos
       newMistype[key] = (newMistype[key] ?? 0) + count
     }
 
+    const gradeLeveledUp = newGrade.level > prevGrade.level
+
     await client.userLifetimeStats.update({
       data: {
-        bestScore: Math.max(existing.bestScore, input.score),
+        bestScore: newBest,
         bestScoreByLanguage: newByLang,
+        currentGrade: newGrade.slug,
+        /**
+         * グレードレベルが上がったときのみ達成日時を更新
+         * （マイページの「YYYY-MM-DD 達成」表示用）
+         */
+        currentGradeReachedAt: gradeLeveledUp ? new Date() : existing.currentGradeReachedAt,
         lifetimeMistypeStats: newMistype,
         totalSessions: existing.totalSessions + 1,
         totalTypedChars: existing.totalTypedChars + BigInt(input.typedChars),
       },
       where: { userId: input.userId },
     })
+
+    return {
+      gradeUp: gradeLeveledUp ? { from: prevGrade, to: newGrade } : null,
+    }
   }
 }

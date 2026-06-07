@@ -9,6 +9,7 @@ export type { Memo } from "./memo"
 
 // PlaySession
 export type {
+  FinishGrade,
   FinishResult,
   KeystrokeEntry,
   KeystrokeLogs,

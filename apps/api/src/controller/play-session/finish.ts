@@ -10,6 +10,7 @@ import {
   PlaySessionRepository,
   ProblemRepository,
   TransactionRunner,
+  UserLanguageBestRepository,
   UserLifetimeStatsRepository,
 } from "../../repository/prisma"
 import { PlaySessionStateRepository } from "../../repository/redis"
@@ -19,8 +20,10 @@ import * as service from "../../service"
  * POST /api/play-sessions/:id/finish
  *
  * 120 秒タイマー終了時にクライアントから集計値と keystroke log を受け取り、
- * サーバーで再集計して 4 テーブル（play_sessions / play_session_problems /
- * keystroke_logs / user_lifetime_stats）に atomic 書き込み + Redis state 削除を行う
+ * サーバーで再集計して 5 テーブル（play_sessions / play_session_problems /
+ * keystroke_logs / user_lifetime_stats / user_language_best）に atomic 書き込み +
+ * Redis state 削除を行う。レスポンスには new_rank / top_ten_boundary_score /
+ * grade_up / best_score_updated を含める（score-ranking step3）
  */
 export class PlaySessionFinishController {
   constructor(
@@ -30,6 +33,7 @@ export class PlaySessionFinishController {
         private playSessionStateRepository: PlaySessionStateRepository,
         private problemRepository: ProblemRepository,
         private transactionRunner: TransactionRunner,
+        private userLanguageBestRepository: UserLanguageBestRepository,
         private userLifetimeStatsRepository: UserLifetimeStatsRepository,
   ) {}
 
@@ -62,6 +66,7 @@ export class PlaySessionFinishController {
         playSessionStateRepository: this.playSessionStateRepository,
         problemRepository: this.problemRepository,
         transactionRunner: this.transactionRunner,
+        userLanguageBestRepository: this.userLanguageBestRepository,
         userLifetimeStatsRepository: this.userLifetimeStatsRepository,
       },
     )
@@ -76,11 +81,28 @@ export class PlaySessionFinishController {
 
     const response = finishPlaySessionResponseSchema.parse({
       accuracy: result.value.accuracy,
+      best_score_updated: result.value.bestScoreUpdated,
+      grade_up: result.value.gradeUp === null
+        ? null
+        : {
+          from: {
+            level: result.value.gradeUp.from.level,
+            name: result.value.gradeUp.from.name,
+            slug: result.value.gradeUp.from.slug,
+          },
+          to: {
+            level: result.value.gradeUp.to.level,
+            name: result.value.gradeUp.to.name,
+            slug: result.value.gradeUp.to.slug,
+          },
+        },
       mistype_stats: result.value.mistypeStats,
+      new_rank: result.value.newRank,
       persisted: result.value.persisted,
       problems_completed: result.value.problemsCompleted,
       problems_played: result.value.problemsPlayed,
       score: result.value.score,
+      top_ten_boundary_score: result.value.topTenBoundaryScore,
       typed_chars: result.value.typedChars,
     })
     return res.status(200).json(response)
