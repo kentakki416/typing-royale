@@ -235,6 +235,7 @@ export type UserWhereInput = {
   accounts?: Prisma.AuthAccountListRelationFilter
   playSessions?: Prisma.PlaySessionListRelationFilter
   lifetimeStats?: Prisma.XOR<Prisma.UserLifetimeStatsNullableScalarRelationFilter, Prisma.UserLifetimeStatsWhereInput> | null
+  languageBests?: Prisma.UserLanguageBestListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -248,6 +249,7 @@ export type UserOrderByWithRelationInput = {
   accounts?: Prisma.AuthAccountOrderByRelationAggregateInput
   playSessions?: Prisma.PlaySessionOrderByRelationAggregateInput
   lifetimeStats?: Prisma.UserLifetimeStatsOrderByWithRelationInput
+  languageBests?: Prisma.UserLanguageBestOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -264,6 +266,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   accounts?: Prisma.AuthAccountListRelationFilter
   playSessions?: Prisma.PlaySessionListRelationFilter
   lifetimeStats?: Prisma.XOR<Prisma.UserLifetimeStatsNullableScalarRelationFilter, Prisma.UserLifetimeStatsWhereInput> | null
+  languageBests?: Prisma.UserLanguageBestListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -304,6 +307,7 @@ export type UserCreateInput = {
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
   playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
+  languageBests?: Prisma.UserLanguageBestCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -317,6 +321,7 @@ export type UserUncheckedCreateInput = {
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
   playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
+  languageBests?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -329,6 +334,7 @@ export type UserUpdateInput = {
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
   playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
+  languageBests?: Prisma.UserLanguageBestUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -342,6 +348,7 @@ export type UserUncheckedUpdateInput = {
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
   playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
+  languageBests?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -466,6 +473,20 @@ export type UserUpdateOneRequiredWithoutLifetimeStatsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutLifetimeStatsInput, Prisma.UserUpdateWithoutLifetimeStatsInput>, Prisma.UserUncheckedUpdateWithoutLifetimeStatsInput>
 }
 
+export type UserCreateNestedOneWithoutLanguageBestsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutLanguageBestsInput, Prisma.UserUncheckedCreateWithoutLanguageBestsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutLanguageBestsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutLanguageBestsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutLanguageBestsInput, Prisma.UserUncheckedCreateWithoutLanguageBestsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutLanguageBestsInput
+  upsert?: Prisma.UserUpsertWithoutLanguageBestsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutLanguageBestsInput, Prisma.UserUpdateWithoutLanguageBestsInput>, Prisma.UserUncheckedUpdateWithoutLanguageBestsInput>
+}
+
 export type UserCreateWithoutAccountsInput = {
   email?: string | null
   displayName?: string | null
@@ -475,6 +496,7 @@ export type UserCreateWithoutAccountsInput = {
   updatedAt?: Date | string
   playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
+  languageBests?: Prisma.UserLanguageBestCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAccountsInput = {
@@ -487,6 +509,7 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   updatedAt?: Date | string
   playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
+  languageBests?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAccountsInput = {
@@ -514,6 +537,7 @@ export type UserUpdateWithoutAccountsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
+  languageBests?: Prisma.UserLanguageBestUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -526,6 +550,7 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
+  languageBests?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutPlaySessionsInput = {
@@ -537,6 +562,7 @@ export type UserCreateWithoutPlaySessionsInput = {
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
+  languageBests?: Prisma.UserLanguageBestCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPlaySessionsInput = {
@@ -549,6 +575,7 @@ export type UserUncheckedCreateWithoutPlaySessionsInput = {
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
+  languageBests?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPlaySessionsInput = {
@@ -576,6 +603,7 @@ export type UserUpdateWithoutPlaySessionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
+  languageBests?: Prisma.UserLanguageBestUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPlaySessionsInput = {
@@ -588,6 +616,7 @@ export type UserUncheckedUpdateWithoutPlaySessionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
+  languageBests?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutLifetimeStatsInput = {
@@ -599,6 +628,7 @@ export type UserCreateWithoutLifetimeStatsInput = {
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
   playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
+  languageBests?: Prisma.UserLanguageBestCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutLifetimeStatsInput = {
@@ -611,6 +641,7 @@ export type UserUncheckedCreateWithoutLifetimeStatsInput = {
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
   playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
+  languageBests?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutLifetimeStatsInput = {
@@ -638,6 +669,7 @@ export type UserUpdateWithoutLifetimeStatsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
   playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
+  languageBests?: Prisma.UserLanguageBestUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutLifetimeStatsInput = {
@@ -650,6 +682,73 @@ export type UserUncheckedUpdateWithoutLifetimeStatsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
   playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
+  languageBests?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutLanguageBestsInput = {
+  email?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  canPublicRanking?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
+  playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
+  lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutLanguageBestsInput = {
+  id?: number
+  email?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  canPublicRanking?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
+  playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutLanguageBestsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutLanguageBestsInput, Prisma.UserUncheckedCreateWithoutLanguageBestsInput>
+}
+
+export type UserUpsertWithoutLanguageBestsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutLanguageBestsInput, Prisma.UserUncheckedUpdateWithoutLanguageBestsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutLanguageBestsInput, Prisma.UserUncheckedCreateWithoutLanguageBestsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutLanguageBestsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutLanguageBestsInput, Prisma.UserUncheckedUpdateWithoutLanguageBestsInput>
+}
+
+export type UserUpdateWithoutLanguageBestsInput = {
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
+  playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutLanguageBestsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
+  playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
 }
 
 
@@ -660,11 +759,13 @@ export type UserUncheckedUpdateWithoutLifetimeStatsInput = {
 export type UserCountOutputType = {
   accounts: number
   playSessions: number
+  languageBests: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   accounts?: boolean | UserCountOutputTypeCountAccountsArgs
   playSessions?: boolean | UserCountOutputTypeCountPlaySessionsArgs
+  languageBests?: boolean | UserCountOutputTypeCountLanguageBestsArgs
 }
 
 /**
@@ -691,6 +792,13 @@ export type UserCountOutputTypeCountPlaySessionsArgs<ExtArgs extends runtime.Typ
   where?: Prisma.PlaySessionWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountLanguageBestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UserLanguageBestWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -703,6 +811,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
   playSessions?: boolean | Prisma.User$playSessionsArgs<ExtArgs>
   lifetimeStats?: boolean | Prisma.User$lifetimeStatsArgs<ExtArgs>
+  languageBests?: boolean | Prisma.User$languageBestsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -741,6 +850,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
   playSessions?: boolean | Prisma.User$playSessionsArgs<ExtArgs>
   lifetimeStats?: boolean | Prisma.User$lifetimeStatsArgs<ExtArgs>
+  languageBests?: boolean | Prisma.User$languageBestsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -752,6 +862,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     accounts: Prisma.$AuthAccountPayload<ExtArgs>[]
     playSessions: Prisma.$PlaySessionPayload<ExtArgs>[]
     lifetimeStats: Prisma.$UserLifetimeStatsPayload<ExtArgs> | null
+    languageBests: Prisma.$UserLanguageBestPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -1167,6 +1278,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   accounts<T extends Prisma.User$accountsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$accountsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuthAccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   playSessions<T extends Prisma.User$playSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$playSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PlaySessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   lifetimeStats<T extends Prisma.User$lifetimeStatsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$lifetimeStatsArgs<ExtArgs>>): Prisma.Prisma__UserLifetimeStatsClient<runtime.Types.Result.GetResult<Prisma.$UserLifetimeStatsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  languageBests<T extends Prisma.User$languageBestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$languageBestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserLanguageBestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1660,6 +1772,30 @@ export type User$lifetimeStatsArgs<ExtArgs extends runtime.Types.Extensions.Inte
    */
   include?: Prisma.UserLifetimeStatsInclude<ExtArgs> | null
   where?: Prisma.UserLifetimeStatsWhereInput
+}
+
+/**
+ * User.languageBests
+ */
+export type User$languageBestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UserLanguageBest
+   */
+  select?: Prisma.UserLanguageBestSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UserLanguageBest
+   */
+  omit?: Prisma.UserLanguageBestOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserLanguageBestInclude<ExtArgs> | null
+  where?: Prisma.UserLanguageBestWhereInput
+  orderBy?: Prisma.UserLanguageBestOrderByWithRelationInput | Prisma.UserLanguageBestOrderByWithRelationInput[]
+  cursor?: Prisma.UserLanguageBestWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UserLanguageBestScalarFieldEnum | Prisma.UserLanguageBestScalarFieldEnum[]
 }
 
 /**

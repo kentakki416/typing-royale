@@ -99,3 +99,8 @@ export type KeystrokeLog = Prisma.KeystrokeLogModel
  * 
  */
 export type UserLifetimeStats = Prisma.UserLifetimeStatsModel
+/**
+ * Model UserLanguageBest
+ * 
+ */
+export type UserLanguageBest = Prisma.UserLanguageBestModel

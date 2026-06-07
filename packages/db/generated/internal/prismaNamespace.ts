@@ -395,7 +395,8 @@ export const ModelName = {
   PlaySession: 'PlaySession',
   PlaySessionProblem: 'PlaySessionProblem',
   KeystrokeLog: 'KeystrokeLog',
-  UserLifetimeStats: 'UserLifetimeStats'
+  UserLifetimeStats: 'UserLifetimeStats',
+  UserLanguageBest: 'UserLanguageBest'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -411,7 +412,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "authAccount" | "memo" | "user" | "language" | "crawledRepo" | "problem" | "crawlerRun" | "crawlerRunItem" | "playSession" | "playSessionProblem" | "keystrokeLog" | "userLifetimeStats"
+    modelProps: "authAccount" | "memo" | "user" | "language" | "crawledRepo" | "problem" | "crawlerRun" | "crawlerRunItem" | "playSession" | "playSessionProblem" | "keystrokeLog" | "userLifetimeStats" | "userLanguageBest"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1303,6 +1304,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    UserLanguageBest: {
+      payload: Prisma.$UserLanguageBestPayload<ExtArgs>
+      fields: Prisma.UserLanguageBestFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserLanguageBestFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLanguageBestPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserLanguageBestFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLanguageBestPayload>
+        }
+        findFirst: {
+          args: Prisma.UserLanguageBestFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLanguageBestPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserLanguageBestFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLanguageBestPayload>
+        }
+        findMany: {
+          args: Prisma.UserLanguageBestFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLanguageBestPayload>[]
+        }
+        create: {
+          args: Prisma.UserLanguageBestCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLanguageBestPayload>
+        }
+        createMany: {
+          args: Prisma.UserLanguageBestCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserLanguageBestCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLanguageBestPayload>[]
+        }
+        delete: {
+          args: Prisma.UserLanguageBestDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLanguageBestPayload>
+        }
+        update: {
+          args: Prisma.UserLanguageBestUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLanguageBestPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserLanguageBestDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserLanguageBestUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserLanguageBestUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLanguageBestPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserLanguageBestUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserLanguageBestPayload>
+        }
+        aggregate: {
+          args: Prisma.UserLanguageBestAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserLanguageBest>
+        }
+        groupBy: {
+          args: Prisma.UserLanguageBestGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserLanguageBestGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserLanguageBestCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserLanguageBestCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1531,6 +1606,22 @@ export const UserLifetimeStatsScalarFieldEnum = {
 } as const
 
 export type UserLifetimeStatsScalarFieldEnum = (typeof UserLifetimeStatsScalarFieldEnum)[keyof typeof UserLifetimeStatsScalarFieldEnum]
+
+
+export const UserLanguageBestScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  languageId: 'languageId',
+  bestPlaySessionId: 'bestPlaySessionId',
+  score: 'score',
+  accuracy: 'accuracy',
+  typedChars: 'typedChars',
+  playedAt: 'playedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserLanguageBestScalarFieldEnum = (typeof UserLanguageBestScalarFieldEnum)[keyof typeof UserLanguageBestScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1813,6 +1904,7 @@ export type GlobalOmitConfig = {
   playSessionProblem?: Prisma.PlaySessionProblemOmit
   keystrokeLog?: Prisma.KeystrokeLogOmit
   userLifetimeStats?: Prisma.UserLifetimeStatsOmit
+  userLanguageBest?: Prisma.UserLanguageBestOmit
 }
 
 /* Types for Logging */
