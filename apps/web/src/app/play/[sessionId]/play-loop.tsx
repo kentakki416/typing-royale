@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 
-import { StartSoloPlaySessionResponse } from "@repo/api-schema"
+import { FinishPlaySessionResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { Topbar } from "@/components/topbar"
 
@@ -16,7 +16,11 @@ type KeystrokeEntry = {
 }
 
 type Props = {
-  onFinished: () => void
+  /**
+   * /finish のレスポンスを ResultScreen に渡すため、結果データ付きで通知
+   * （API 失敗時は null が渡る）
+   */
+  onFinished: (result: FinishPlaySessionResponse | null) => void
   problems: Problem[]
   sessionId: string
 }
@@ -60,8 +64,9 @@ export function PlayLoop({ onFinished, problems, sessionId }: Props) {
     finishedRef.current = true
 
     const accuracy = totalRef.current === 0 ? 0 : correctRef.current / totalRef.current
+    let result: FinishPlaySessionResponse | null = null
     try {
-      await fetch(`/api/play-sessions/${sessionId}/finish`, {
+      const res = await fetch(`/api/play-sessions/${sessionId}/finish`, {
         body: JSON.stringify({
           accuracy,
           keystroke_logs: logRef.current.map((entry) => ({
@@ -75,12 +80,15 @@ export function PlayLoop({ onFinished, problems, sessionId }: Props) {
         headers: { "Content-Type": "application/json" },
         method: "POST",
       })
+      if (res.ok) {
+        result = await res.json() as FinishPlaySessionResponse
+      }
     } catch {
       /**
-       * step5 でリザルトに「保存に失敗」を表示。本 step では握りつぶす
+       * 通信失敗時は null を返し、ResultScreen 側でフォールバック表示
        */
     }
-    onFinished()
+    onFinished(result)
   }
 
   /**
