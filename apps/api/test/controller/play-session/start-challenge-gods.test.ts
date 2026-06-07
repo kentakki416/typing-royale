@@ -6,7 +6,7 @@ import {
   PrismaLanguageRepository,
   PrismaPlaySessionRepository,
   PrismaProblemRepository,
-  StubRankingSnapshotRepository,
+  PrismaRankingSnapshotRepository,
 } from "../../../src/repository/prisma"
 import { IoRedisPlaySessionStateRepository } from "../../../src/repository/redis"
 import { playSessionRouter } from "../../../src/routes/play-session-router"
@@ -25,7 +25,7 @@ const playSessionRepository = new PrismaPlaySessionRepository(testPrisma)
 const keystrokeLogRepository = new PrismaKeystrokeLogRepository(testPrisma)
 const problemRepository = new PrismaProblemRepository(testPrisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(testRedis)
-const rankingSnapshotRepository = new StubRankingSnapshotRepository()
+const rankingSnapshotRepository = new PrismaRankingSnapshotRepository(testPrisma)
 
 const app = createTestApp()
 app.use(
@@ -89,10 +89,10 @@ describe("POST /api/play-sessions/challenge-gods", () => {
       expect(res.status).toBe(400)
     })
 
-    it("Stub RankingSnapshotRepository では 409 Conflict を返す", async () => {
+    it("user_language_best が空の場合、候補が見つからず 409 Conflict を返す", async () => {
       /**
-       * StubRankingSnapshotRepository は常に空配列を返すため、本 step では 409 が想定通り。
-       * 実装が PrismaRankingSnapshotRepository に差し替わる Phase 4 完了後に有効化される
+       * 本 PR で StubRankingSnapshotRepository は削除済み。Prisma 実装が
+       * user_language_best を読むため、テーブルが空なら候補なしで 409 になる
        */
       const language = await testPrisma.language.create({ data: { name: "TypeScript", slug: "typescript" } })
       const { token } = await createTestUser()

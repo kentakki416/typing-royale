@@ -16,12 +16,21 @@ export type UpsertOnFinishInput = {
 }
 
 /**
+ * グレード判定 / 進捗表示に使う累計値の subset
+ */
+export type UserLifetimeStatsSummary = {
+    bestScore: number
+    currentGrade: string | null
+}
+
+/**
  * UserLifetimeStats リポジトリのインターフェース
  *
  * /finish 完了時にユーザーごとの累計値を upsert で加算する。
  * 言語別 bestScore / 生涯 mistypeStats のマージもここで行う
  */
 export interface UserLifetimeStatsRepository {
+    findByUserId(userId: number): Promise<UserLifetimeStatsSummary | null>
     upsertOnFinish(input: UpsertOnFinishInput, tx?: TransactionContext): Promise<void>
 }
 
@@ -33,6 +42,14 @@ export class PrismaUserLifetimeStatsRepository implements UserLifetimeStatsRepos
 
   constructor(prisma: PrismaClient) {
     this._prisma = prisma
+  }
+
+  async findByUserId(userId: number): Promise<UserLifetimeStatsSummary | null> {
+    const row = await this._prisma.userLifetimeStats.findUnique({
+      select: { bestScore: true, currentGrade: true },
+      where: { userId },
+    })
+    return row
   }
 
   async upsertOnFinish(input: UpsertOnFinishInput, tx?: TransactionContext): Promise<void> {
