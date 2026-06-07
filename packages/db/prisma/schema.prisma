@@ -1,77 +1,80 @@
 // Jest(CJS環境)で import.meta エラーを回避するため moduleFormat = "cjs" を指定
 generator client {
-    provider     = "prisma-client"
-    output       = "../generated"
-    moduleFormat = "cjs"
+  provider     = "prisma-client"
+  output       = "../generated"
+  moduleFormat = "cjs"
 }
 
 // Data source
 datasource db {
-    provider = "postgresql"
+  provider = "postgresql"
 }
 
 // 認証アカウント（複数プロバイダー対応）
 // OAuth プロバイダのアクセストークンは保持しない（docs/spec/github-auth/README.md「アクセストークン非保存方針」）
 model AuthAccount {
-    id                Int      @id @default(autoincrement())
-    userId            Int      @map("user_id")
-    /// "google" | "github" | "dev"
-    provider          String
-    /// プロバイダー側のユーザー ID
-    providerAccountId String   @map("provider_account_id")
-    createdAt         DateTime @default(now()) @map("created_at")
-    updatedAt         DateTime @updatedAt @map("updated_at")
+  id                Int      @id @default(autoincrement())
+  userId            Int      @map("user_id")
+  /// "google" | "github" | "dev"
+  provider          String
+  /// プロバイダー側のユーザー ID
+  providerAccountId String   @map("provider_account_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-    @@unique([provider, providerAccountId])
-    @@index([userId])
-    @@map("auth_accounts")
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("auth_accounts")
 }
 
 // メモ
 model Memo {
-    id        Int      @id @default(autoincrement())
-    title     String   @db.VarChar(255)
-    body      String   @db.Text
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(255)
+  body      String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-    @@map("memos")
+  @@map("memos")
 }
 
 // ユーザー（認証プロバイダー非依存）
 model User {
-    id               Int      @id @default(autoincrement())
-    /// dev-login や将来のメール連絡用にオプショナルで保持（MVP の GitHub OAuth では収集しない）
-    email            String?  @unique
-    /// GitHub username 等を初期値に持つ、ユーザー表示用の名前
-    displayName      String?  @map("display_name")
-    avatarUrl        String?  @map("avatar_url")
-    /// false の場合はランキング集計から完全に除外される（順位そのものが計算されない）
-    canPublicRanking Boolean  @default(true) @map("can_public_ranking")
-    createdAt        DateTime @default(now()) @map("created_at")
-    updatedAt        DateTime @updatedAt @map("updated_at")
+  id               Int      @id @default(autoincrement())
+  /// dev-login や将来のメール連絡用にオプショナルで保持（MVP の GitHub OAuth では収集しない）
+  email            String?  @unique
+  /// GitHub username 等を初期値に持つ、ユーザー表示用の名前
+  displayName      String?  @map("display_name")
+  avatarUrl        String?  @map("avatar_url")
+  /// false の場合はランキング集計から完全に除外される（順位そのものが計算されない）
+  canPublicRanking Boolean  @default(true) @map("can_public_ranking")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
-    accounts AuthAccount[]
+  accounts      AuthAccount[]
+  playSessions  PlaySession[]
+  lifetimeStats UserLifetimeStats?
 
-    @@map("users")
+  @@map("users")
 }
 
 // 問題プールが扱う言語マスタ
 // 初期データは seed で TypeScript / JavaScript を upsert
 model Language {
-    id        Int      @id @default(autoincrement())
-    name      String   @unique
-    slug      String   @unique
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-    crawledRepos    CrawledRepo[]
-    problems        Problem[]
-    crawlerRunItems CrawlerRunItem[]
+  crawledRepos    CrawledRepo[]
+  problems        Problem[]
+  crawlerRunItems CrawlerRunItem[]
+  playSessions    PlaySession[]
 
-    @@map("languages")
+  @@map("languages")
 }
 
 // クロール対象 / 結果リポジトリ
@@ -80,32 +83,33 @@ model Language {
 // 「過去に採用されたか」は `storedCount > 0` で判定できるので、別途 eligible フラグは持たない
 // docs/spec/problem-pool/README.md「DB 設計」参照
 model CrawledRepo {
-    id              Int      @id @default(autoincrement())
-    githubId        BigInt   @unique @map("github_id") /// GitHub 上の repo id（API レスポンスの `id`）
-    languageId      Int      @map("language_id")
-    owner           String
-    name            String
-    fullName        String   @map("full_name") /// "owner/name"
-    description     String?
-    homepage        String?
-    topics          Json     @default("[]")
-    stars           Int
-    license         String
-    defaultBranch   String   @map("default_branch")
-    commitSha       String   @map("commit_sha") /// クロール時の HEAD SHA
-    candidatesCount Int      @default(0) @map("candidates_count") /// AST 解析で採用条件を満たした総数（サンプリング前、> 100 もあり得る）
-    storedCount     Int      @default(0) @map("stored_count") /// 実際に problems に保存された件数（≤ 100、≤ candidatesCount）。> 0 = 過去に採用された
-    disabled        Boolean  @default(false) /// 出題対象外（クローラ失敗 / 採用候補不足 / ライセンス変更 / 運営判断 等）
-    disabledReason  String?  @map("disabled_reason") /// "too_few_problems" / "not_found" / "server_error" / "license_changed" / "rate_limit_exceeded" / "license_not_allowed"
-    crawledAt       DateTime @map("crawled_at")
-    createdAt       DateTime @default(now()) @map("created_at")
-    updatedAt       DateTime @updatedAt @map("updated_at")
+  id              Int      @id @default(autoincrement())
+  githubId        BigInt   @unique @map("github_id") /// GitHub 上の repo id（API レスポンスの `id`）
+  languageId      Int      @map("language_id")
+  owner           String
+  name            String
+  fullName        String   @map("full_name") /// "owner/name"
+  description     String?
+  homepage        String?
+  topics          Json     @default("[]")
+  stars           Int
+  license         String
+  defaultBranch   String   @map("default_branch")
+  commitSha       String   @map("commit_sha") /// クロール時の HEAD SHA
+  candidatesCount Int      @default(0) @map("candidates_count") /// AST 解析で採用条件を満たした総数（サンプリング前、> 100 もあり得る）
+  storedCount     Int      @default(0) @map("stored_count") /// 実際に problems に保存された件数（≤ 100、≤ candidatesCount）。> 0 = 過去に採用された
+  disabled        Boolean  @default(false) /// 出題対象外（クローラ失敗 / 採用候補不足 / ライセンス変更 / 運営判断 等）
+  disabledReason  String?  @map("disabled_reason") /// "too_few_problems" / "not_found" / "server_error" / "license_changed" / "rate_limit_exceeded" / "license_not_allowed"
+  crawledAt       DateTime @map("crawled_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-    language Language  @relation(fields: [languageId], references: [id])
-    problems Problem[]
+  language     Language      @relation(fields: [languageId], references: [id])
+  problems     Problem[]
+  playSessions PlaySession[]
 
-    @@index([languageId, disabled])
-    @@map("crawled_repos")
+  @@index([languageId, disabled])
+  @@map("crawled_repos")
 }
 
 // タイピング問題本体
@@ -113,71 +117,159 @@ model CrawledRepo {
 // `languageId` は crawledRepo.languageId と同じ値を非正規化保存（出題クエリで JOIN 回避）
 // `@@unique([languageId, astHash])` で言語ごとに重複排除（言語横断の hash 衝突を許容）
 model Problem {
-    id              Int      @id @default(autoincrement())
-    crawledRepoId   Int      @map("crawled_repo_id")
-    languageId      Int      @map("language_id")
-    sourceFilePath  String   @map("source_file_path")
-    sourceLineStart Int      @map("source_line_start")
-    sourceLineEnd   Int      @map("source_line_end")
-    sourceUrl       String   @map("source_url") /// GitHub 行範囲ハイライト付き URL
-    functionName    String   @map("function_name")
-    codeBlock       String   @map("code_block") /// コメント除去済みのタイピング対象コード
-    charCount       Int      @map("char_count")
-    lineCount       Int      @map("line_count")
-    astHash         String   @map("ast_hash") /// SHA-256 hex 64 文字、コピペ重複排除用
-    disabled        Boolean  @default(false) /// ライセンス再検証や運営の手動無効化で出題対象から外す
-    createdAt       DateTime @default(now()) @map("created_at")
-    updatedAt       DateTime @updatedAt @map("updated_at")
+  id              Int      @id @default(autoincrement())
+  crawledRepoId   Int      @map("crawled_repo_id")
+  languageId      Int      @map("language_id")
+  sourceFilePath  String   @map("source_file_path")
+  sourceLineStart Int      @map("source_line_start")
+  sourceLineEnd   Int      @map("source_line_end")
+  sourceUrl       String   @map("source_url") /// GitHub 行範囲ハイライト付き URL
+  functionName    String   @map("function_name")
+  codeBlock       String   @map("code_block") /// コメント除去済みのタイピング対象コード
+  charCount       Int      @map("char_count")
+  lineCount       Int      @map("line_count")
+  astHash         String   @map("ast_hash") /// SHA-256 hex 64 文字、コピペ重複排除用
+  disabled        Boolean  @default(false) /// ライセンス再検証や運営の手動無効化で出題対象から外す
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-    crawledRepo CrawledRepo @relation(fields: [crawledRepoId], references: [id])
-    language    Language    @relation(fields: [languageId], references: [id])
+  crawledRepo         CrawledRepo          @relation(fields: [crawledRepoId], references: [id])
+  language            Language             @relation(fields: [languageId], references: [id])
+  playSessionProblems PlaySessionProblem[]
 
-    @@unique([languageId, astHash])
-    @@index([crawledRepoId])
-    @@index([languageId, disabled])
-    @@map("problems")
+  @@unique([languageId, astHash])
+  @@index([crawledRepoId])
+  @@index([languageId, disabled])
+  @@map("problems")
 }
 
 // クローラ実行の run 全体（1 回の `pnpm crawler:run` で 1 行）
 // 個別 repo の成否は子テーブル CrawlerRunItem 参照
 model CrawlerRun {
-    id             Int       @id @default(autoincrement())
-    runType        String    @map("run_type") /// "crawler_<slug>" (e.g. "crawler_typescript") / "license_recheck"
-    status         String    /// "running" / "success" / "failed"
-    reposProcessed Int       @default(0) @map("repos_processed") /// この run で試行した repo 数（成功・失敗・skipped すべて含む。CrawlerRunItem 行数と一致）
-    problemsAdded  Int       @default(0) @map("problems_added") /// この run で problems に INSERT された総件数（子の problems_added の合計）
-    startedAt      DateTime  @map("started_at")
-    endedAt        DateTime? @map("ended_at")
-    error          Json?
-    createdAt      DateTime  @default(now()) @map("created_at")
-    updatedAt      DateTime  @updatedAt @map("updated_at")
+  id             Int       @id @default(autoincrement())
+  runType        String    @map("run_type") /// "crawler_<slug>" (e.g. "crawler_typescript") / "license_recheck"
+  status         String /// "running" / "success" / "failed"
+  reposProcessed Int       @default(0) @map("repos_processed") /// この run で試行した repo 数（成功・失敗・skipped すべて含む。CrawlerRunItem 行数と一致）
+  problemsAdded  Int       @default(0) @map("problems_added") /// この run で problems に INSERT された総件数（子の problems_added の合計）
+  startedAt      DateTime  @map("started_at")
+  endedAt        DateTime? @map("ended_at")
+  error          Json?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-    items CrawlerRunItem[]
+  items CrawlerRunItem[]
 
-    @@index([runType, status, startedAt(sort: Desc)])
-    @@map("crawler_runs")
+  @@index([runType, status, startedAt(sort: Desc)])
+  @@map("crawler_runs")
 }
 
 // クローラ run 内の個別 repo 1 行の履歴
 // 連続 2 回失敗の判定（Slack 通知）や、ブートストラップ時の途中失敗の特定に使う
 model CrawlerRunItem {
-    id            Int       @id @default(autoincrement())
-    crawlerRunId  Int       @map("crawler_run_id")
-    languageId    Int       @map("language_id")
-    targetOwner   String    @map("target_owner")
-    targetRepo    String    @map("target_repo")
-    status        String    /// "success" / "failed" / "skipped"
-    problemsAdded Int       @default(0) @map("problems_added") /// この repo で problems に INSERT された件数。failed / skipped は常に 0
-    startedAt     DateTime  @map("started_at")
-    endedAt       DateTime? @map("ended_at")
-    error         Json?
-    createdAt     DateTime  @default(now()) @map("created_at")
-    updatedAt     DateTime  @updatedAt @map("updated_at")
+  id            Int       @id @default(autoincrement())
+  crawlerRunId  Int       @map("crawler_run_id")
+  languageId    Int       @map("language_id")
+  targetOwner   String    @map("target_owner")
+  targetRepo    String    @map("target_repo")
+  status        String /// "success" / "failed" / "skipped"
+  problemsAdded Int       @default(0) @map("problems_added") /// この repo で problems に INSERT された件数。failed / skipped は常に 0
+  startedAt     DateTime  @map("started_at")
+  endedAt       DateTime? @map("ended_at")
+  error         Json?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
-    crawlerRun CrawlerRun @relation(fields: [crawlerRunId], references: [id], onDelete: Cascade)
-    language   Language   @relation(fields: [languageId], references: [id])
+  crawlerRun CrawlerRun @relation(fields: [crawlerRunId], references: [id], onDelete: Cascade)
+  language   Language   @relation(fields: [languageId], references: [id])
 
-    @@index([crawlerRunId, status])
-    @@index([languageId, status, startedAt(sort: Desc)])
-    @@map("crawler_run_items")
+  @@index([crawlerRunId, status])
+  @@index([languageId, status, startedAt(sort: Desc)])
+  @@map("crawler_run_items")
+}
+
+// プレイ結果の 1 セッション
+// 認証済みプレイのみ DB に保存（ゲストプレイは IndexedDB バッファ、docs/spec/typing-engine/README.md「セッション保存ポリシー」）
+// `mode` は文字列固定値 "solo" / "challenge_gods"（enum にしないのは将来モード追加時に migration を避けるため）
+model PlaySession {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @map("user_id")
+  languageId        Int      @map("language_id")
+  mode              String /// "solo" / "challenge_gods"
+  ghostSessionId    Int?     @map("ghost_session_id") //　charengeモードで対戦した相手のセッションID
+  crawledRepoId     Int      @map("crawled_repo_id") /// このセッションのメイン repo（神々モードは神が打った repo を継承）
+  typedChars        Int      @map("typed_chars") /// 120 秒間で正しく入力できた累計文字数
+  accuracy          Float /// 正解打鍵数 / 総打鍵数（0.0〜1.0）
+  score             Int /// typedChars × accuracy をサーバーで計算した値
+  problemsPlayed    Int      @map("problems_played") /// セッション中に出題された問題数
+  problemsCompleted Int      @map("problems_completed") /// 完走した問題数
+  mistypeStats      Json     @map("mistype_stats") /// 文字別誤打鍵カウント。例: { "a": 3, ";": 5, "{": 2 }
+  playedAt          DateTime @map("played_at") /// /finish のサーバー時刻。ランキング集計の期間判定にも使う
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language     Language             @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  crawledRepo  CrawledRepo          @relation(fields: [crawledRepoId], references: [id], onDelete: Restrict)
+  ghostSession PlaySession?         @relation("GhostReference", fields: [ghostSessionId], references: [id], onDelete: SetNull)
+  ghostedBy    PlaySession[]        @relation("GhostReference")
+  problems     PlaySessionProblem[]
+  keystrokeLog KeystrokeLog?
+
+  @@index([userId, playedAt(sort: Desc)]) /// マイページの履歴表示用
+  @@index([languageId, score(sort: Desc)]) /// score-ranking の言語別 × スコア降順集計
+  @@index([languageId, playedAt(sort: Desc)]) /// score-ranking の期間別集計（日/週/月）
+  @@map("play_sessions")
+}
+
+// セッション中に出題された問題のシーケンス（0..19）
+model PlaySessionProblem {
+  id            Int      @id @default(autoincrement())
+  playSessionId Int      @map("play_session_id")
+  problemId     Int      @map("problem_id")
+  orderIndex    Int      @map("order_index") /// 0 から始まる出題順
+  charsTyped    Int      @map("chars_typed") /// 完走しなくても部分入力分を保存（120 秒切れ時に途中だった問題用）
+  completed     Boolean /// 関数を最終文字まで完走したか
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  playSession PlaySession @relation(fields: [playSessionId], references: [id], onDelete: Cascade)
+  problem     Problem     @relation(fields: [problemId], references: [id], onDelete: Restrict)
+
+  @@unique([playSessionId, orderIndex])
+  @@index([playSessionId, orderIndex])
+  @@map("play_session_problems")
+}
+
+// キーストロークログ（ゴースト併走・リプレイ閲覧で利用）
+// gzip 圧縮済み JSON 配列。形式は docs/spec/ghost-battle/README.md「キーストロークログのデータ構造」参照
+model KeystrokeLog {
+  playSessionId Int      @id @map("play_session_id") /// PlaySession と 1:1
+  compressedLog Bytes    @map("compressed_log")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  playSession PlaySession @relation(fields: [playSessionId], references: [id], onDelete: Cascade)
+
+  @@map("keystroke_logs")
+}
+
+// ユーザー生涯統計（特典・グレード判定・マイページの累計表示に利用）
+// `bestScoreByLanguage` / `currentGrade` / `streakDays` / `lastPlayedDate` は Phase 4（score-ranking）で書き込み開始
+model UserLifetimeStats {
+  userId                Int       @id @map("user_id")
+  totalTypedChars       BigInt    @default(0) @map("total_typed_chars") /// 全プレイ通算の正解打鍵数
+  totalSessions         Int       @default(0) @map("total_sessions")
+  bestScore             Int       @default(0) @map("best_score") /// 全言語通算のベストスコア（グレード判定の基準）
+  bestScoreByLanguage   Json      @default("{}") @map("best_score_by_language") /// 例: { "typescript": 543, "javascript": 213 }
+  currentGrade          String?   @map("current_grade") /// エンジニアグレード slug。Phase 4 で更新開始
+  currentGradeReachedAt DateTime? @map("current_grade_reached_at")
+  lifetimeMistypeStats  Json      @default("{}") @map("lifetime_mistype_stats")
+  streakDays            Int       @default(0) @map("streak_days") /// 連続プレイ日数
+  lastPlayedDate        DateTime? @map("last_played_date") @db.Date /// 連続日数判定用（タイムゾーンは JST 想定）
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_lifetime_stats")
 }

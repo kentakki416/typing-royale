@@ -58,7 +58,11 @@ export const ModelName = {
   CrawledRepo: 'CrawledRepo',
   Problem: 'Problem',
   CrawlerRun: 'CrawlerRun',
-  CrawlerRunItem: 'CrawlerRunItem'
+  CrawlerRunItem: 'CrawlerRunItem',
+  PlaySession: 'PlaySession',
+  PlaySessionProblem: 'PlaySessionProblem',
+  KeystrokeLog: 'KeystrokeLog',
+  UserLifetimeStats: 'UserLifetimeStats'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -203,6 +207,69 @@ export const CrawlerRunItemScalarFieldEnum = {
 } as const
 
 export type CrawlerRunItemScalarFieldEnum = (typeof CrawlerRunItemScalarFieldEnum)[keyof typeof CrawlerRunItemScalarFieldEnum]
+
+
+export const PlaySessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  languageId: 'languageId',
+  mode: 'mode',
+  ghostSessionId: 'ghostSessionId',
+  crawledRepoId: 'crawledRepoId',
+  typedChars: 'typedChars',
+  accuracy: 'accuracy',
+  score: 'score',
+  problemsPlayed: 'problemsPlayed',
+  problemsCompleted: 'problemsCompleted',
+  mistypeStats: 'mistypeStats',
+  playedAt: 'playedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PlaySessionScalarFieldEnum = (typeof PlaySessionScalarFieldEnum)[keyof typeof PlaySessionScalarFieldEnum]
+
+
+export const PlaySessionProblemScalarFieldEnum = {
+  id: 'id',
+  playSessionId: 'playSessionId',
+  problemId: 'problemId',
+  orderIndex: 'orderIndex',
+  charsTyped: 'charsTyped',
+  completed: 'completed',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PlaySessionProblemScalarFieldEnum = (typeof PlaySessionProblemScalarFieldEnum)[keyof typeof PlaySessionProblemScalarFieldEnum]
+
+
+export const KeystrokeLogScalarFieldEnum = {
+  playSessionId: 'playSessionId',
+  compressedLog: 'compressedLog',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type KeystrokeLogScalarFieldEnum = (typeof KeystrokeLogScalarFieldEnum)[keyof typeof KeystrokeLogScalarFieldEnum]
+
+
+export const UserLifetimeStatsScalarFieldEnum = {
+  userId: 'userId',
+  totalTypedChars: 'totalTypedChars',
+  totalSessions: 'totalSessions',
+  bestScore: 'bestScore',
+  bestScoreByLanguage: 'bestScoreByLanguage',
+  currentGrade: 'currentGrade',
+  currentGradeReachedAt: 'currentGradeReachedAt',
+  lifetimeMistypeStats: 'lifetimeMistypeStats',
+  streakDays: 'streakDays',
+  lastPlayedDate: 'lastPlayedDate',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserLifetimeStatsScalarFieldEnum = (typeof UserLifetimeStatsScalarFieldEnum)[keyof typeof UserLifetimeStatsScalarFieldEnum]
 
 
 export const SortOrder = {

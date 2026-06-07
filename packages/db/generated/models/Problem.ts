@@ -322,6 +322,7 @@ export type ProblemWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Problem"> | Date | string
   crawledRepo?: Prisma.XOR<Prisma.CrawledRepoScalarRelationFilter, Prisma.CrawledRepoWhereInput>
   language?: Prisma.XOR<Prisma.LanguageScalarRelationFilter, Prisma.LanguageWhereInput>
+  playSessionProblems?: Prisma.PlaySessionProblemListRelationFilter
 }
 
 export type ProblemOrderByWithRelationInput = {
@@ -342,6 +343,7 @@ export type ProblemOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   crawledRepo?: Prisma.CrawledRepoOrderByWithRelationInput
   language?: Prisma.LanguageOrderByWithRelationInput
+  playSessionProblems?: Prisma.PlaySessionProblemOrderByRelationAggregateInput
 }
 
 export type ProblemWhereUniqueInput = Prisma.AtLeast<{
@@ -366,6 +368,7 @@ export type ProblemWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Problem"> | Date | string
   crawledRepo?: Prisma.XOR<Prisma.CrawledRepoScalarRelationFilter, Prisma.CrawledRepoWhereInput>
   language?: Prisma.XOR<Prisma.LanguageScalarRelationFilter, Prisma.LanguageWhereInput>
+  playSessionProblems?: Prisma.PlaySessionProblemListRelationFilter
 }, "id" | "languageId_astHash">
 
 export type ProblemOrderByWithAggregationInput = {
@@ -427,6 +430,7 @@ export type ProblemCreateInput = {
   updatedAt?: Date | string
   crawledRepo: Prisma.CrawledRepoCreateNestedOneWithoutProblemsInput
   language: Prisma.LanguageCreateNestedOneWithoutProblemsInput
+  playSessionProblems?: Prisma.PlaySessionProblemCreateNestedManyWithoutProblemInput
 }
 
 export type ProblemUncheckedCreateInput = {
@@ -445,6 +449,7 @@ export type ProblemUncheckedCreateInput = {
   disabled?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  playSessionProblems?: Prisma.PlaySessionProblemUncheckedCreateNestedManyWithoutProblemInput
 }
 
 export type ProblemUpdateInput = {
@@ -462,6 +467,7 @@ export type ProblemUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   crawledRepo?: Prisma.CrawledRepoUpdateOneRequiredWithoutProblemsNestedInput
   language?: Prisma.LanguageUpdateOneRequiredWithoutProblemsNestedInput
+  playSessionProblems?: Prisma.PlaySessionProblemUpdateManyWithoutProblemNestedInput
 }
 
 export type ProblemUncheckedUpdateInput = {
@@ -480,6 +486,7 @@ export type ProblemUncheckedUpdateInput = {
   disabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  playSessionProblems?: Prisma.PlaySessionProblemUncheckedUpdateManyWithoutProblemNestedInput
 }
 
 export type ProblemCreateManyInput = {
@@ -622,6 +629,11 @@ export type ProblemSumOrderByAggregateInput = {
   lineCount?: Prisma.SortOrder
 }
 
+export type ProblemScalarRelationFilter = {
+  is?: Prisma.ProblemWhereInput
+  isNot?: Prisma.ProblemWhereInput
+}
+
 export type ProblemCreateNestedManyWithoutLanguageInput = {
   create?: Prisma.XOR<Prisma.ProblemCreateWithoutLanguageInput, Prisma.ProblemUncheckedCreateWithoutLanguageInput> | Prisma.ProblemCreateWithoutLanguageInput[] | Prisma.ProblemUncheckedCreateWithoutLanguageInput[]
   connectOrCreate?: Prisma.ProblemCreateOrConnectWithoutLanguageInput | Prisma.ProblemCreateOrConnectWithoutLanguageInput[]
@@ -706,6 +718,20 @@ export type ProblemUncheckedUpdateManyWithoutCrawledRepoNestedInput = {
   deleteMany?: Prisma.ProblemScalarWhereInput | Prisma.ProblemScalarWhereInput[]
 }
 
+export type ProblemCreateNestedOneWithoutPlaySessionProblemsInput = {
+  create?: Prisma.XOR<Prisma.ProblemCreateWithoutPlaySessionProblemsInput, Prisma.ProblemUncheckedCreateWithoutPlaySessionProblemsInput>
+  connectOrCreate?: Prisma.ProblemCreateOrConnectWithoutPlaySessionProblemsInput
+  connect?: Prisma.ProblemWhereUniqueInput
+}
+
+export type ProblemUpdateOneRequiredWithoutPlaySessionProblemsNestedInput = {
+  create?: Prisma.XOR<Prisma.ProblemCreateWithoutPlaySessionProblemsInput, Prisma.ProblemUncheckedCreateWithoutPlaySessionProblemsInput>
+  connectOrCreate?: Prisma.ProblemCreateOrConnectWithoutPlaySessionProblemsInput
+  upsert?: Prisma.ProblemUpsertWithoutPlaySessionProblemsInput
+  connect?: Prisma.ProblemWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProblemUpdateToOneWithWhereWithoutPlaySessionProblemsInput, Prisma.ProblemUpdateWithoutPlaySessionProblemsInput>, Prisma.ProblemUncheckedUpdateWithoutPlaySessionProblemsInput>
+}
+
 export type ProblemCreateWithoutLanguageInput = {
   sourceFilePath: string
   sourceLineStart: number
@@ -720,6 +746,7 @@ export type ProblemCreateWithoutLanguageInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   crawledRepo: Prisma.CrawledRepoCreateNestedOneWithoutProblemsInput
+  playSessionProblems?: Prisma.PlaySessionProblemCreateNestedManyWithoutProblemInput
 }
 
 export type ProblemUncheckedCreateWithoutLanguageInput = {
@@ -737,6 +764,7 @@ export type ProblemUncheckedCreateWithoutLanguageInput = {
   disabled?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  playSessionProblems?: Prisma.PlaySessionProblemUncheckedCreateNestedManyWithoutProblemInput
 }
 
 export type ProblemCreateOrConnectWithoutLanguageInput = {
@@ -800,6 +828,7 @@ export type ProblemCreateWithoutCrawledRepoInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   language: Prisma.LanguageCreateNestedOneWithoutProblemsInput
+  playSessionProblems?: Prisma.PlaySessionProblemCreateNestedManyWithoutProblemInput
 }
 
 export type ProblemUncheckedCreateWithoutCrawledRepoInput = {
@@ -817,6 +846,7 @@ export type ProblemUncheckedCreateWithoutCrawledRepoInput = {
   disabled?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  playSessionProblems?: Prisma.PlaySessionProblemUncheckedCreateNestedManyWithoutProblemInput
 }
 
 export type ProblemCreateOrConnectWithoutCrawledRepoInput = {
@@ -843,6 +873,92 @@ export type ProblemUpdateWithWhereUniqueWithoutCrawledRepoInput = {
 export type ProblemUpdateManyWithWhereWithoutCrawledRepoInput = {
   where: Prisma.ProblemScalarWhereInput
   data: Prisma.XOR<Prisma.ProblemUpdateManyMutationInput, Prisma.ProblemUncheckedUpdateManyWithoutCrawledRepoInput>
+}
+
+export type ProblemCreateWithoutPlaySessionProblemsInput = {
+  sourceFilePath: string
+  sourceLineStart: number
+  sourceLineEnd: number
+  sourceUrl: string
+  functionName: string
+  codeBlock: string
+  charCount: number
+  lineCount: number
+  astHash: string
+  disabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  crawledRepo: Prisma.CrawledRepoCreateNestedOneWithoutProblemsInput
+  language: Prisma.LanguageCreateNestedOneWithoutProblemsInput
+}
+
+export type ProblemUncheckedCreateWithoutPlaySessionProblemsInput = {
+  id?: number
+  crawledRepoId: number
+  languageId: number
+  sourceFilePath: string
+  sourceLineStart: number
+  sourceLineEnd: number
+  sourceUrl: string
+  functionName: string
+  codeBlock: string
+  charCount: number
+  lineCount: number
+  astHash: string
+  disabled?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type ProblemCreateOrConnectWithoutPlaySessionProblemsInput = {
+  where: Prisma.ProblemWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProblemCreateWithoutPlaySessionProblemsInput, Prisma.ProblemUncheckedCreateWithoutPlaySessionProblemsInput>
+}
+
+export type ProblemUpsertWithoutPlaySessionProblemsInput = {
+  update: Prisma.XOR<Prisma.ProblemUpdateWithoutPlaySessionProblemsInput, Prisma.ProblemUncheckedUpdateWithoutPlaySessionProblemsInput>
+  create: Prisma.XOR<Prisma.ProblemCreateWithoutPlaySessionProblemsInput, Prisma.ProblemUncheckedCreateWithoutPlaySessionProblemsInput>
+  where?: Prisma.ProblemWhereInput
+}
+
+export type ProblemUpdateToOneWithWhereWithoutPlaySessionProblemsInput = {
+  where?: Prisma.ProblemWhereInput
+  data: Prisma.XOR<Prisma.ProblemUpdateWithoutPlaySessionProblemsInput, Prisma.ProblemUncheckedUpdateWithoutPlaySessionProblemsInput>
+}
+
+export type ProblemUpdateWithoutPlaySessionProblemsInput = {
+  sourceFilePath?: Prisma.StringFieldUpdateOperationsInput | string
+  sourceLineStart?: Prisma.IntFieldUpdateOperationsInput | number
+  sourceLineEnd?: Prisma.IntFieldUpdateOperationsInput | number
+  sourceUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  functionName?: Prisma.StringFieldUpdateOperationsInput | string
+  codeBlock?: Prisma.StringFieldUpdateOperationsInput | string
+  charCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lineCount?: Prisma.IntFieldUpdateOperationsInput | number
+  astHash?: Prisma.StringFieldUpdateOperationsInput | string
+  disabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  crawledRepo?: Prisma.CrawledRepoUpdateOneRequiredWithoutProblemsNestedInput
+  language?: Prisma.LanguageUpdateOneRequiredWithoutProblemsNestedInput
+}
+
+export type ProblemUncheckedUpdateWithoutPlaySessionProblemsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  crawledRepoId?: Prisma.IntFieldUpdateOperationsInput | number
+  languageId?: Prisma.IntFieldUpdateOperationsInput | number
+  sourceFilePath?: Prisma.StringFieldUpdateOperationsInput | string
+  sourceLineStart?: Prisma.IntFieldUpdateOperationsInput | number
+  sourceLineEnd?: Prisma.IntFieldUpdateOperationsInput | number
+  sourceUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  functionName?: Prisma.StringFieldUpdateOperationsInput | string
+  codeBlock?: Prisma.StringFieldUpdateOperationsInput | string
+  charCount?: Prisma.IntFieldUpdateOperationsInput | number
+  lineCount?: Prisma.IntFieldUpdateOperationsInput | number
+  astHash?: Prisma.StringFieldUpdateOperationsInput | string
+  disabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ProblemCreateManyLanguageInput = {
@@ -876,6 +992,7 @@ export type ProblemUpdateWithoutLanguageInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   crawledRepo?: Prisma.CrawledRepoUpdateOneRequiredWithoutProblemsNestedInput
+  playSessionProblems?: Prisma.PlaySessionProblemUpdateManyWithoutProblemNestedInput
 }
 
 export type ProblemUncheckedUpdateWithoutLanguageInput = {
@@ -893,6 +1010,7 @@ export type ProblemUncheckedUpdateWithoutLanguageInput = {
   disabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  playSessionProblems?: Prisma.PlaySessionProblemUncheckedUpdateManyWithoutProblemNestedInput
 }
 
 export type ProblemUncheckedUpdateManyWithoutLanguageInput = {
@@ -943,6 +1061,7 @@ export type ProblemUpdateWithoutCrawledRepoInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   language?: Prisma.LanguageUpdateOneRequiredWithoutProblemsNestedInput
+  playSessionProblems?: Prisma.PlaySessionProblemUpdateManyWithoutProblemNestedInput
 }
 
 export type ProblemUncheckedUpdateWithoutCrawledRepoInput = {
@@ -960,6 +1079,7 @@ export type ProblemUncheckedUpdateWithoutCrawledRepoInput = {
   disabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  playSessionProblems?: Prisma.PlaySessionProblemUncheckedUpdateManyWithoutProblemNestedInput
 }
 
 export type ProblemUncheckedUpdateManyWithoutCrawledRepoInput = {
@@ -980,6 +1100,35 @@ export type ProblemUncheckedUpdateManyWithoutCrawledRepoInput = {
 }
 
 
+/**
+ * Count Type ProblemCountOutputType
+ */
+
+export type ProblemCountOutputType = {
+  playSessionProblems: number
+}
+
+export type ProblemCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  playSessionProblems?: boolean | ProblemCountOutputTypeCountPlaySessionProblemsArgs
+}
+
+/**
+ * ProblemCountOutputType without action
+ */
+export type ProblemCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ProblemCountOutputType
+   */
+  select?: Prisma.ProblemCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * ProblemCountOutputType without action
+ */
+export type ProblemCountOutputTypeCountPlaySessionProblemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PlaySessionProblemWhereInput
+}
+
 
 export type ProblemSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -999,6 +1148,8 @@ export type ProblemSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   updatedAt?: boolean
   crawledRepo?: boolean | Prisma.CrawledRepoDefaultArgs<ExtArgs>
   language?: boolean | Prisma.LanguageDefaultArgs<ExtArgs>
+  playSessionProblems?: boolean | Prisma.Problem$playSessionProblemsArgs<ExtArgs>
+  _count?: boolean | Prisma.ProblemCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["problem"]>
 
 export type ProblemSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1063,6 +1214,8 @@ export type ProblemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
 export type ProblemInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   crawledRepo?: boolean | Prisma.CrawledRepoDefaultArgs<ExtArgs>
   language?: boolean | Prisma.LanguageDefaultArgs<ExtArgs>
+  playSessionProblems?: boolean | Prisma.Problem$playSessionProblemsArgs<ExtArgs>
+  _count?: boolean | Prisma.ProblemCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProblemIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   crawledRepo?: boolean | Prisma.CrawledRepoDefaultArgs<ExtArgs>
@@ -1078,6 +1231,7 @@ export type $ProblemPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   objects: {
     crawledRepo: Prisma.$CrawledRepoPayload<ExtArgs>
     language: Prisma.$LanguagePayload<ExtArgs>
+    playSessionProblems: Prisma.$PlaySessionProblemPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -1503,6 +1657,7 @@ export interface Prisma__ProblemClient<T, Null = never, ExtArgs extends runtime.
   readonly [Symbol.toStringTag]: "PrismaPromise"
   crawledRepo<T extends Prisma.CrawledRepoDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CrawledRepoDefaultArgs<ExtArgs>>): Prisma.Prisma__CrawledRepoClient<runtime.Types.Result.GetResult<Prisma.$CrawledRepoPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   language<T extends Prisma.LanguageDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.LanguageDefaultArgs<ExtArgs>>): Prisma.Prisma__LanguageClient<runtime.Types.Result.GetResult<Prisma.$LanguagePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  playSessionProblems<T extends Prisma.Problem$playSessionProblemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Problem$playSessionProblemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PlaySessionProblemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1945,6 +2100,30 @@ export type ProblemDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Limit how many Problems to delete.
    */
   limit?: number
+}
+
+/**
+ * Problem.playSessionProblems
+ */
+export type Problem$playSessionProblemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PlaySessionProblem
+   */
+  select?: Prisma.PlaySessionProblemSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PlaySessionProblem
+   */
+  omit?: Prisma.PlaySessionProblemOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PlaySessionProblemInclude<ExtArgs> | null
+  where?: Prisma.PlaySessionProblemWhereInput
+  orderBy?: Prisma.PlaySessionProblemOrderByWithRelationInput | Prisma.PlaySessionProblemOrderByWithRelationInput[]
+  cursor?: Prisma.PlaySessionProblemWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PlaySessionProblemScalarFieldEnum | Prisma.PlaySessionProblemScalarFieldEnum[]
 }
 
 /**

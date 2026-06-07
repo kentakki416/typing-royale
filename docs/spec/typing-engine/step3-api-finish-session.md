@@ -281,7 +281,6 @@ export type CreatePlaySessionInput = {
   playedAt: Date
   problemsCompleted: number
   problemsPlayed: number
-  repoFallback: boolean
   score: number
   typedChars: number
   userId: number
@@ -331,7 +330,6 @@ export class PrismaPlaySessionRepository implements PlaySessionRepository {
           playedAt: input.session.playedAt,
           problemsCompleted: input.session.problemsCompleted,
           problemsPlayed: input.session.problemsPlayed,
-          repoFallback: input.session.repoFallback,
           score: input.session.score,
           typedChars: input.session.typedChars,
           userId: input.session.userId,
@@ -616,7 +614,6 @@ export const finishSession = async (
       playedAt: new Date(),
       problemsCompleted,
       problemsPlayed,
-      repoFallback: state.repoFallback,
       score,
       typedChars: input.typedChars,
       userId: state.userId,

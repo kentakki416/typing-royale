@@ -71,8 +71,7 @@ step2 の `/solo` と **多くを共有**：Redis ステート構造・PlaySessi
     "stars": 230000,
     "description": "...",
     "homepage": "https://react.dev",
-    "topics": ["react"],
-    "fallback": false
+    "topics": ["react"]
   },
   "ghost_session_id": 8842,
   "ghost_user_display": {
@@ -92,7 +91,7 @@ step2 の `/solo` と **多くを共有**：Redis ステート構造・PlaySessi
 |---|---|---|
 | `session_id` | uuid | プレイヤー自身の Redis セッション識別子 |
 | `problems` | array(20) | 神の過去セッションの先頭 20 問を **同じ順序で** 引き写し |
-| `repo_info` | object | 神が打った repo の情報をそのまま継承（`fallback` は神セッションのもの） |
+| `repo_info` | object | 神が打った repo の情報をそのまま継承 |
 | `ghost_session_id` | number | DB の `play_sessions.id`。神の過去 1 セッション |
 | `ghost_user_display` | object | 神の表示情報（グレード付き） |
 | `ghost_keystroke_log` | array | 神のキーストロークログ全件。`keystroke_logs.compressed_log` を gzip 解凍 + JSON.parse |
@@ -136,7 +135,7 @@ sequenceDiagram
     Note over Svc: candidates から 1 人ランダム抽選
 
     Svc->>PS: findById(ghostSessionId)<br/>(神のベストスコアセッション)
-    PS-->>Svc: { id, crawledRepoId, problemIds, repoFallback, ghostUserDisplay info, repo_info join }
+    PS-->>Svc: { id, crawledRepoId, problemIds, ghostUserDisplay info, repo_info join }
     alt セッション欠落（神削除等）
         Note over Svc: 候補から除外して別の神を選び直す<br/>最大 candidates.length 回リトライ
         Svc->>PS: 別候補で再試行
@@ -151,7 +150,7 @@ sequenceDiagram
 
     Note over Svc: 神セッションの play_session_problems から<br/>orderIndex 順に problem_id を取得し<br/>problems.findManyByIds で codeBlock 等を引く
 
-    Svc->>Svc: sessionId = randomUUID()<br/>state = { mode: "challenge_gods", ghostSessionId, problemIds, crawledRepoId, repoFallback }
+    Svc->>Svc: sessionId = randomUUID()<br/>state = { mode: "challenge_gods", ghostSessionId, problemIds, crawledRepoId }
     Svc->>Redis: SET play_session:{sessionId} TTL=300
     Svc-->>Ctrl: ok({ sessionId, problems, repoInfo, ghostSessionId, ghostUserDisplay, ghostKeystrokeLog })
     Ctrl-->>C: 200
@@ -164,7 +163,7 @@ sequenceDiagram
 3. `RankingSnapshotRepository.getTopByLanguage` でオールタイムトップ 10 を取得
 4. 自分自身（`req.userId`）を候補から除外、候補 0 件なら 409 CONFLICT
 5. 候補リストからランダムに 1 人を抽選
-6. その神の `bestPlaySessionId` から `findGhostSourceById` でセッション詳細（`problemIds` / `crawledRepoId` / `repo_info` / `repoFallback`）を取得
+6. その神の `bestPlaySessionId` から `findGhostSourceById` でセッション詳細（`problemIds` / `crawledRepoId` / `repo_info`）を取得
 7. `keystroke_logs.compressed_log` を gunzip + JSON.parse して取得
 8. セッション欠落 or log 取得不可なら次の候補にスキップ（最大候補数分リトライ）
 9. 全候補で取得できなければ 409 CONFLICT（神々モード起動不能）
@@ -194,7 +193,6 @@ step2 の構造をそのまま使う。差分は `mode` と `ghostSessionId` の
   "languageId": 1,
   "mode": "challenge_gods",
   "crawledRepoId": 17,
-  "repoFallback": false,
   "ghostSessionId": 8842,
   "problemIds": [...神セッションから引き写した 20 問]
 }
@@ -320,7 +318,6 @@ export interface PlaySessionRepository {
     languageId: number
     /** play_session_problems を orderIndex 順に並べた problem_id 配列 */
     problemIds: number[]
-    repoFallback: boolean
   } | null>
 }
 ```
@@ -391,7 +388,6 @@ export const createChallengeGodsSession = async (
     languageId: input.languageId,
     mode: "challenge_gods",
     problemIds: orderedProblems.map((p) => p.id),
-    repoFallback: ghost.ghostSession.repoFallback,
     userId: input.userId,
   }
   await repo.playSessionStateRepository.save(sessionId, state, PLAY_SESSION_TTL_SECONDS)
@@ -406,7 +402,7 @@ export const createChallengeGodsSession = async (
       grade: ghost.entry.userDisplay.currentGrade,
     },
     problems: orderedProblems,
-    repoInfo: { ...ghost.ghostSession.crawledRepo, fallback: ghost.ghostSession.repoFallback },
+    repoInfo: ghost.ghostSession.crawledRepo,
     sessionId,
   })
 }

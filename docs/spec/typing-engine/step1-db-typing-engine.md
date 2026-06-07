@@ -31,7 +31,6 @@ model PlaySession {
   mode              String    /// "solo" / "challenge_gods"（Phase 3 では "solo" のみ）
   ghostSessionId    Int?      @map("ghost_session_id") /// challenge_gods モード時に神のセッション ID を保持。神セッション削除時は SetNull
   crawledRepoId     Int       @map("crawled_repo_id") /// このセッションのメイン repo（神々モードは神が打った repo を継承）
-  repoFallback      Boolean   @default(false) @map("repo_fallback") /// 20 問が単一 repo で揃わず他 repo から補填された場合 true
   typedChars        Int       @map("typed_chars") /// 120 秒間で正しく入力できた累計文字数
   accuracy          Float     /// 正解打鍵数 / 総打鍵数（0.0〜1.0）
   score             Int       /// typedChars × accuracy をサーバーで計算した値

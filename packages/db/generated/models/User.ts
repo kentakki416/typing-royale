@@ -233,6 +233,8 @@ export type UserWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   accounts?: Prisma.AuthAccountListRelationFilter
+  playSessions?: Prisma.PlaySessionListRelationFilter
+  lifetimeStats?: Prisma.XOR<Prisma.UserLifetimeStatsNullableScalarRelationFilter, Prisma.UserLifetimeStatsWhereInput> | null
 }
 
 export type UserOrderByWithRelationInput = {
@@ -244,6 +246,8 @@ export type UserOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   accounts?: Prisma.AuthAccountOrderByRelationAggregateInput
+  playSessions?: Prisma.PlaySessionOrderByRelationAggregateInput
+  lifetimeStats?: Prisma.UserLifetimeStatsOrderByWithRelationInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -258,6 +262,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   accounts?: Prisma.AuthAccountListRelationFilter
+  playSessions?: Prisma.PlaySessionListRelationFilter
+  lifetimeStats?: Prisma.XOR<Prisma.UserLifetimeStatsNullableScalarRelationFilter, Prisma.UserLifetimeStatsWhereInput> | null
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -296,6 +302,8 @@ export type UserCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
+  playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
+  lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -307,6 +315,8 @@ export type UserUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
+  playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -317,6 +327,8 @@ export type UserUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
+  playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -328,6 +340,8 @@ export type UserUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
+  playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -424,6 +438,34 @@ export type BoolFieldUpdateOperationsInput = {
   set?: boolean
 }
 
+export type UserCreateNestedOneWithoutPlaySessionsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutPlaySessionsInput, Prisma.UserUncheckedCreateWithoutPlaySessionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutPlaySessionsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutPlaySessionsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutPlaySessionsInput, Prisma.UserUncheckedCreateWithoutPlaySessionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutPlaySessionsInput
+  upsert?: Prisma.UserUpsertWithoutPlaySessionsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutPlaySessionsInput, Prisma.UserUpdateWithoutPlaySessionsInput>, Prisma.UserUncheckedUpdateWithoutPlaySessionsInput>
+}
+
+export type UserCreateNestedOneWithoutLifetimeStatsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutLifetimeStatsInput, Prisma.UserUncheckedCreateWithoutLifetimeStatsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutLifetimeStatsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutLifetimeStatsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutLifetimeStatsInput, Prisma.UserUncheckedCreateWithoutLifetimeStatsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutLifetimeStatsInput
+  upsert?: Prisma.UserUpsertWithoutLifetimeStatsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutLifetimeStatsInput, Prisma.UserUpdateWithoutLifetimeStatsInput>, Prisma.UserUncheckedUpdateWithoutLifetimeStatsInput>
+}
+
 export type UserCreateWithoutAccountsInput = {
   email?: string | null
   displayName?: string | null
@@ -431,6 +473,8 @@ export type UserCreateWithoutAccountsInput = {
   canPublicRanking?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
+  lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAccountsInput = {
@@ -441,6 +485,8 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   canPublicRanking?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAccountsInput = {
@@ -466,6 +512,8 @@ export type UserUpdateWithoutAccountsInput = {
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -476,6 +524,132 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
+}
+
+export type UserCreateWithoutPlaySessionsInput = {
+  email?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  canPublicRanking?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
+  lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutPlaySessionsInput = {
+  id?: number
+  email?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  canPublicRanking?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutPlaySessionsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutPlaySessionsInput, Prisma.UserUncheckedCreateWithoutPlaySessionsInput>
+}
+
+export type UserUpsertWithoutPlaySessionsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutPlaySessionsInput, Prisma.UserUncheckedUpdateWithoutPlaySessionsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutPlaySessionsInput, Prisma.UserUncheckedCreateWithoutPlaySessionsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutPlaySessionsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutPlaySessionsInput, Prisma.UserUncheckedUpdateWithoutPlaySessionsInput>
+}
+
+export type UserUpdateWithoutPlaySessionsInput = {
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutPlaySessionsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
+}
+
+export type UserCreateWithoutLifetimeStatsInput = {
+  email?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  canPublicRanking?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
+  playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutLifetimeStatsInput = {
+  id?: number
+  email?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  canPublicRanking?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
+  playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutLifetimeStatsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutLifetimeStatsInput, Prisma.UserUncheckedCreateWithoutLifetimeStatsInput>
+}
+
+export type UserUpsertWithoutLifetimeStatsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutLifetimeStatsInput, Prisma.UserUncheckedUpdateWithoutLifetimeStatsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutLifetimeStatsInput, Prisma.UserUncheckedCreateWithoutLifetimeStatsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutLifetimeStatsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutLifetimeStatsInput, Prisma.UserUncheckedUpdateWithoutLifetimeStatsInput>
+}
+
+export type UserUpdateWithoutLifetimeStatsInput = {
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
+  playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutLifetimeStatsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
+  playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -485,10 +659,12 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
 
 export type UserCountOutputType = {
   accounts: number
+  playSessions: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   accounts?: boolean | UserCountOutputTypeCountAccountsArgs
+  playSessions?: boolean | UserCountOutputTypeCountPlaySessionsArgs
 }
 
 /**
@@ -508,6 +684,13 @@ export type UserCountOutputTypeCountAccountsArgs<ExtArgs extends runtime.Types.E
   where?: Prisma.AuthAccountWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountPlaySessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PlaySessionWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -518,6 +701,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   createdAt?: boolean
   updatedAt?: boolean
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
+  playSessions?: boolean | Prisma.User$playSessionsArgs<ExtArgs>
+  lifetimeStats?: boolean | Prisma.User$lifetimeStatsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -554,6 +739,8 @@ export type UserSelectScalar = {
 export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "displayName" | "avatarUrl" | "canPublicRanking" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
+  playSessions?: boolean | Prisma.User$playSessionsArgs<ExtArgs>
+  lifetimeStats?: boolean | Prisma.User$lifetimeStatsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -563,6 +750,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   name: "User"
   objects: {
     accounts: Prisma.$AuthAccountPayload<ExtArgs>[]
+    playSessions: Prisma.$PlaySessionPayload<ExtArgs>[]
+    lifetimeStats: Prisma.$UserLifetimeStatsPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -976,6 +1165,8 @@ readonly fields: UserFieldRefs;
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   accounts<T extends Prisma.User$accountsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$accountsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuthAccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  playSessions<T extends Prisma.User$playSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$playSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PlaySessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  lifetimeStats<T extends Prisma.User$lifetimeStatsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$lifetimeStatsArgs<ExtArgs>>): Prisma.Prisma__UserLifetimeStatsClient<runtime.Types.Result.GetResult<Prisma.$UserLifetimeStatsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1426,6 +1617,49 @@ export type User$accountsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.AuthAccountScalarFieldEnum | Prisma.AuthAccountScalarFieldEnum[]
+}
+
+/**
+ * User.playSessions
+ */
+export type User$playSessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PlaySession
+   */
+  select?: Prisma.PlaySessionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PlaySession
+   */
+  omit?: Prisma.PlaySessionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PlaySessionInclude<ExtArgs> | null
+  where?: Prisma.PlaySessionWhereInput
+  orderBy?: Prisma.PlaySessionOrderByWithRelationInput | Prisma.PlaySessionOrderByWithRelationInput[]
+  cursor?: Prisma.PlaySessionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PlaySessionScalarFieldEnum | Prisma.PlaySessionScalarFieldEnum[]
+}
+
+/**
+ * User.lifetimeStats
+ */
+export type User$lifetimeStatsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UserLifetimeStats
+   */
+  select?: Prisma.UserLifetimeStatsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UserLifetimeStats
+   */
+  omit?: Prisma.UserLifetimeStatsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserLifetimeStatsInclude<ExtArgs> | null
+  where?: Prisma.UserLifetimeStatsWhereInput
 }
 
 /**
