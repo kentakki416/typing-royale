@@ -184,7 +184,7 @@ type PersistFinishedSessionInput = {
  * user_lifetime_stats) を 1 transaction でアトミックに書き込む。
  * Service が境界を制御し、各 Repository に tx を渡す（auth-service と同流派）
  */
-const persistFinishedSession = async (
+const persistFinishedSessionAtomic = async (
   data: PersistFinishedSessionInput,
   repo: FinishSessionRepo,
 ): Promise<void> => {
@@ -240,7 +240,7 @@ const persistFinishedSession = async (
  * 2. Redis から PlaySessionState を取得（無ければ 404）
  * 3. state.problemIds から問題本体を取得し、件数 mismatch なら 404
  * 4. サーバーで score / mistypeStats / problemProgress を再集計
- * 5. 4 テーブルを 1 transaction で書き込み (persistFinishedSession)
+ * 5. 4 テーブルを 1 transaction で書き込み (persistFinishedSessionAtomic)
  * 6. Redis state を削除
  */
 export const finishSession = async (
@@ -293,7 +293,7 @@ export const finishSession = async (
   /**
    * 5. DB 書き込み (4 テーブル / 1 transaction)
    */
-  await persistFinishedSession(
+  await persistFinishedSessionAtomic(
     {
       accuracy: input.accuracy,
       keystrokeLog: input.keystrokeLog,
