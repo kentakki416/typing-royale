@@ -22,10 +22,12 @@ import {
   RankingSnapshotRepository,
   RankingTopEntry,
   TransactionRunner,
+  UserLanguageBestRepository,
   UserLifetimeStatsRepository,
 } from "../repository/prisma"
 import { PlaySessionStateRepository } from "../repository/redis"
 import {
+  FinishGrade,
   FinishResult,
   KeystrokeLogs,
   MistypeStats,
@@ -140,6 +142,7 @@ type FinishSessionRepo = {
     playSessionStateRepository: PlaySessionStateRepository
     problemRepository: ProblemRepository
     transactionRunner: TransactionRunner
+    userLanguageBestRepository: UserLanguageBestRepository
     userLifetimeStatsRepository: UserLifetimeStatsRepository
 }
 
@@ -174,6 +177,7 @@ type PersistFinishedSessionInput = {
     accuracy: number
     keystrokeLogs: KeystrokeLogs
     mistypeStats: MistypeStats
+    playedAt: Date
     problemProgress: Map<number, { charsTyped: number; completed: boolean }>
     problemsCompleted: number
     problemsPlayed: number
@@ -182,16 +186,25 @@ type PersistFinishedSessionInput = {
     typedChars: number
 }
 
+type PersistFinishedSessionResult = {
+    bestScoreUpdated: boolean
+    gradeUp: { from: FinishGrade; to: FinishGrade } | null
+}
+
 /**
- * 4 テーブル (play_sessions / play_session_problems / keystroke_logs /
- * user_lifetime_stats) を 1 transaction でアトミックに書き込む。
- * Service が境界を制御し、各 Repository に tx を渡す（auth-service と同流派）
+ * 5 テーブル (play_sessions / play_session_problems / keystroke_logs /
+ * user_lifetime_stats / user_language_best) を 1 transaction でアトミックに
+ * 書き込む。Service が境界を制御し、各 Repository に tx を渡す（auth-service と同流派）
+ *
+ * 戻り値:
+ * - bestScoreUpdated: 言語別ベストが更新されたか
+ * - gradeUp: 全言語通算 bestScore のグレードレベルが上がった場合のみ from/to を返す
  */
 const persistFinishedSessionAtomic = async (
   data: PersistFinishedSessionInput,
   repo: FinishSessionRepo,
-): Promise<void> => {
-  await repo.transactionRunner.run(async (tx) => {
+): Promise<PersistFinishedSessionResult> => {
+  return repo.transactionRunner.run(async (tx) => {
     const session = await repo.playSessionRepository.create(
       {
         accuracy: data.accuracy,
@@ -200,7 +213,7 @@ const persistFinishedSessionAtomic = async (
         languageId: data.state.languageId,
         mistypeStats: data.mistypeStats,
         mode: data.state.mode,
-        playedAt: new Date(),
+        playedAt: data.playedAt,
         problemsCompleted: data.problemsCompleted,
         problemsPlayed: data.problemsPlayed,
         score: data.score,
@@ -223,7 +236,7 @@ const persistFinishedSessionAtomic = async (
 
     await repo.keystrokeLogRepository.create(session.id, data.keystrokeLogs, tx)
 
-    await repo.userLifetimeStatsRepository.upsertOnFinish(
+    const statsResult = await repo.userLifetimeStatsRepository.upsertOnFinish(
       {
         languageId: data.state.languageId,
         mistypeStats: data.mistypeStats,
@@ -233,6 +246,21 @@ const persistFinishedSessionAtomic = async (
       },
       tx,
     )
+
+    const bestResult = await repo.userLanguageBestRepository.upsertIfBest(
+      {
+        accuracy: data.accuracy,
+        bestPlaySessionId: session.id,
+        languageId: data.state.languageId,
+        playedAt: data.playedAt,
+        score: data.score,
+        typedChars: data.typedChars,
+        userId: data.state.userId,
+      },
+      tx,
+    )
+
+    return { bestScoreUpdated: bestResult.updated, gradeUp: statsResult.gradeUp }
   })
 }
 
@@ -294,13 +322,15 @@ export const finishSession = async (
   const problemsPlayed = new Set(input.keystrokeLogs.map((e) => e.problemIndex)).size
 
   /**
-   * 5. DB 書き込み (4 テーブル / 1 transaction)
+   * 5. DB 書き込み (5 テーブル / 1 transaction)
    */
-  await persistFinishedSessionAtomic(
+  const playedAt = new Date()
+  const { bestScoreUpdated, gradeUp } = await persistFinishedSessionAtomic(
     {
       accuracy: input.accuracy,
       keystrokeLogs: input.keystrokeLogs,
       mistypeStats,
+      playedAt,
       problemProgress: progress,
       problemsCompleted,
       problemsPlayed,
@@ -316,7 +346,23 @@ export const finishSession = async (
    */
   await repo.playSessionStateRepository.delete(input.sessionId)
 
+  /**
+   * 7. ランキング系の追加クエリ（トランザクション後）
+   * - 自分の最新ベスト + 自分より上位の数 → new_rank
+   * - 10 位スコア（10 件未満なら null）
+   */
+  const updatedBest = await repo.userLanguageBestRepository.findMine(
+    state.userId,
+    state.languageId,
+  )
+  const newRank = updatedBest === null
+    ? null
+    : (await repo.userLanguageBestRepository.countHigherRanked(state.languageId, updatedBest)) + 1
+  const topTenBoundaryScore = await repo.userLanguageBestRepository.findTenthScore(state.languageId)
+
   logger.info("PlaySessionService: Session finished", {
+    bestScoreUpdated,
+    newRank,
     score,
     sessionId: input.sessionId,
     userId: state.userId,
@@ -324,11 +370,20 @@ export const finishSession = async (
 
   return ok({
     accuracy: input.accuracy,
+    bestScoreUpdated,
+    gradeUp: gradeUp === null
+      ? null
+      : {
+        from: { level: gradeUp.from.level, name: gradeUp.from.name, slug: gradeUp.from.slug },
+        to: { level: gradeUp.to.level, name: gradeUp.to.name, slug: gradeUp.to.slug },
+      },
     mistypeStats,
+    newRank,
     persisted: true,
     problemsCompleted,
     problemsPlayed,
     score,
+    topTenBoundaryScore,
     typedChars: input.typedChars,
   })
 }

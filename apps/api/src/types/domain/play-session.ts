@@ -79,9 +79,20 @@ export type KeystrokeLogs = KeystrokeEntry[]
 export type MistypeStats = Record<string, number>
 
 /**
+ * /finish のレスポンスに含むグレード（score-ranking step3 で追加）
+ * lib/grade.ts の Grade 型と同じ shape だが、循環参照を避けるため domain 側にも定義する
+ */
+export type FinishGrade = {
+    level: number
+    name: string
+    slug: string
+}
+
+/**
  * /finish のサーバー集計結果（クライアント送信値を再計算したもの）
  */
 export type FinishResult = {
+    /** 既存 */
     accuracy: number
     mistypeStats: MistypeStats
     persisted: boolean
@@ -89,4 +100,10 @@ export type FinishResult = {
     problemsPlayed: number
     score: number
     typedChars: number
+
+    /** score-ranking step3 で追加 */
+    bestScoreUpdated: boolean
+    gradeUp: { from: FinishGrade; to: FinishGrade } | null
+    newRank: number | null
+    topTenBoundaryScore: number | null
 }

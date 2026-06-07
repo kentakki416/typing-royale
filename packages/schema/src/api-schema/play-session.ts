@@ -92,9 +92,19 @@ export const finishPlaySessionRequestSchema = z.object({
 })
 
 /**
+ * グレード 1 件（score-ranking step3 で /finish レスポンスに同梱）
+ */
+const finishGradeSchema = z.object({
+  level: z.number().int().min(1).max(8),
+  name: z.string(),
+  slug: z.string(),
+})
+
+/**
  * /finish のレスポンス
  */
 export const finishPlaySessionResponseSchema = z.object({
+  /** 既存 */
   accuracy: z.number(),
   mistype_stats: mistypeStatsSchema,
   persisted: z.boolean(),
@@ -102,6 +112,15 @@ export const finishPlaySessionResponseSchema = z.object({
   problems_played: z.number().int().nonnegative(),
   score: z.number().int().nonnegative(),
   typed_chars: z.number().int().nonnegative(),
+
+  /** score-ranking step3 で追加 */
+  best_score_updated: z.boolean(),
+  grade_up: z.object({
+    from: finishGradeSchema,
+    to: finishGradeSchema,
+  }).nullable(),
+  new_rank: z.number().int().min(1).nullable(),
+  top_ten_boundary_score: z.number().int().nonnegative().nullable(),
 })
 
 export type FinishPlaySessionPathParam = z.infer<typeof finishPlaySessionPathParamSchema>
