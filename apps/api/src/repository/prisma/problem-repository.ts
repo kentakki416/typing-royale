@@ -5,9 +5,15 @@ import { PlaySessionProblem } from "../../types/domain"
 /**
  * Problem リポジトリのインターフェース
  *
- * step2 では `/solo` の問題抽選のみ。書き込みは apps/cron 側の責務
+ * 書き込みは apps/cron 側の責務
  */
 export interface ProblemRepository {
+    /**
+     * 指定 ids の problems を取得する（順序は保証しない）
+     * /finish で sticky shuffled problemIds から codeBlock を引くのに使う
+     */
+    findManyByIds(ids: number[]): Promise<Array<{ id: number; codeBlock: string }>>
+
     /**
      * 指定 repo から disabled=false の problems を最大 limit 件ランダム抽選
      * orderIndex は呼び出し側で 0..limit-1 を連番付与する
@@ -23,6 +29,15 @@ export class PrismaProblemRepository implements ProblemRepository {
 
   constructor(prisma: PrismaClient) {
     this._prisma = prisma
+  }
+
+  async findManyByIds(ids: number[]): Promise<Array<{ id: number; codeBlock: string }>> {
+    if (ids.length === 0) return []
+    const rows = await this._prisma.problem.findMany({
+      select: { codeBlock: true, id: true },
+      where: { id: { in: ids } },
+    })
+    return rows
   }
 
   async pickRandomByCrawledRepoId(

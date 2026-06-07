@@ -19,6 +19,7 @@ import { MemoDeleteController } from "./controller/memo/delete"
 import { MemoDetailController } from "./controller/memo/detail"
 import { MemoListController } from "./controller/memo/list"
 import { MemoUpdateController } from "./controller/memo/update"
+import { PlaySessionFinishController } from "./controller/play-session/finish"
 import { PlaySessionStartSoloController } from "./controller/play-session/start-solo"
 import { UserDeleteController } from "./controller/user/delete"
 import { UserGetController } from "./controller/user/get"
@@ -33,6 +34,7 @@ import {
   PrismaDatabaseHealthRepository,
   PrismaLanguageRepository,
   PrismaMemoRepository,
+  PrismaPlaySessionRepository,
   PrismaProblemRepository,
   PrismaTransactionRunner,
   PrismaUserRepository,
@@ -65,6 +67,7 @@ const refreshTokenRepository = new IoRedisRefreshTokenRepository(redis)
 const languageRepository = new PrismaLanguageRepository(prisma)
 const crawledRepoRepository = new PrismaCrawledRepoRepository(prisma)
 const problemRepository = new PrismaProblemRepository(prisma)
+const playSessionRepository = new PrismaPlaySessionRepository(prisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(redis)
 
 /**
@@ -129,6 +132,11 @@ const memoDeleteController = new MemoDeleteController(memoRepository)
 const playSessionStartSoloController = new PlaySessionStartSoloController(
   crawledRepoRepository,
   languageRepository,
+  playSessionStateRepository,
+  problemRepository,
+)
+const playSessionFinishController = new PlaySessionFinishController(
+  playSessionRepository,
   playSessionStateRepository,
   problemRepository,
 )
@@ -201,6 +209,7 @@ app.use(
 app.use(
   "/api/play-sessions",
   playSessionRouter({
+    finish: playSessionFinishController,
     startSolo: playSessionStartSoloController,
   })
 )
