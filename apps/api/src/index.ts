@@ -32,11 +32,14 @@ import {
   PrismaAuthAccountRepository,
   PrismaCrawledRepoRepository,
   PrismaDatabaseHealthRepository,
+  PrismaKeystrokeLogRepository,
   PrismaLanguageRepository,
   PrismaMemoRepository,
+  PrismaPlaySessionProblemRepository,
   PrismaPlaySessionRepository,
   PrismaProblemRepository,
   PrismaTransactionRunner,
+  PrismaUserLifetimeStatsRepository,
   PrismaUserRepository,
 } from "./repository/prisma"
 import { IoRedisHealthRepository, IoRedisPlaySessionStateRepository, IoRedisRefreshTokenRepository } from "./repository/redis"
@@ -68,6 +71,9 @@ const languageRepository = new PrismaLanguageRepository(prisma)
 const crawledRepoRepository = new PrismaCrawledRepoRepository(prisma)
 const problemRepository = new PrismaProblemRepository(prisma)
 const playSessionRepository = new PrismaPlaySessionRepository(prisma)
+const playSessionProblemRepository = new PrismaPlaySessionProblemRepository(prisma)
+const keystrokeLogRepository = new PrismaKeystrokeLogRepository(prisma)
+const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(prisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(redis)
 
 /**
@@ -136,9 +142,13 @@ const playSessionStartSoloController = new PlaySessionStartSoloController(
   problemRepository,
 )
 const playSessionFinishController = new PlaySessionFinishController(
+  keystrokeLogRepository,
+  playSessionProblemRepository,
   playSessionRepository,
   playSessionStateRepository,
   problemRepository,
+  transactionRunner,
+  userLifetimeStatsRepository,
 )
 
 const app = express()

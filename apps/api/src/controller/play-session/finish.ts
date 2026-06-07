@@ -4,7 +4,14 @@ import { ErrorResponse, finishPlaySessionPathParamSchema, finishPlaySessionReque
 import { logger } from "@repo/logger"
 
 import { AuthRequest } from "../../middleware/auth"
-import { PlaySessionRepository, ProblemRepository } from "../../repository/prisma"
+import {
+  KeystrokeLogRepository,
+  PlaySessionProblemRepository,
+  PlaySessionRepository,
+  ProblemRepository,
+  TransactionRunner,
+  UserLifetimeStatsRepository,
+} from "../../repository/prisma"
 import { PlaySessionStateRepository } from "../../repository/redis"
 import * as service from "../../service"
 
@@ -12,13 +19,18 @@ import * as service from "../../service"
  * POST /api/play-sessions/:id/finish
  *
  * 120 秒タイマー終了時にクライアントから集計値と keystroke log を受け取り、
- * サーバーで再集計して DB に 4 テーブルアトミック書き込み + Redis state 削除を行う
+ * サーバーで再集計して 4 テーブル（play_sessions / play_session_problems /
+ * keystroke_logs / user_lifetime_stats）に atomic 書き込み + Redis state 削除を行う
  */
 export class PlaySessionFinishController {
   constructor(
+        private keystrokeLogRepository: KeystrokeLogRepository,
+        private playSessionProblemRepository: PlaySessionProblemRepository,
         private playSessionRepository: PlaySessionRepository,
         private playSessionStateRepository: PlaySessionStateRepository,
         private problemRepository: ProblemRepository,
+        private transactionRunner: TransactionRunner,
+        private userLifetimeStatsRepository: UserLifetimeStatsRepository,
   ) {}
 
   async execute(req: AuthRequest, res: Response) {
@@ -34,9 +46,13 @@ export class PlaySessionFinishController {
     const result = await service.playSession.finishSession(
       { accuracy, keystrokeLog, sessionId: id, typedChars },
       {
+        keystrokeLogRepository: this.keystrokeLogRepository,
+        playSessionProblemRepository: this.playSessionProblemRepository,
         playSessionRepository: this.playSessionRepository,
         playSessionStateRepository: this.playSessionStateRepository,
         problemRepository: this.problemRepository,
+        transactionRunner: this.transactionRunner,
+        userLifetimeStatsRepository: this.userLifetimeStatsRepository,
       },
     )
 

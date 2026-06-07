@@ -13,9 +13,13 @@ import {
 } from "../lib/score"
 import {
   CrawledRepoRepository,
+  KeystrokeLogRepository,
   LanguageRepository,
+  PlaySessionProblemRepository,
   PlaySessionRepository,
   ProblemRepository,
+  TransactionRunner,
+  UserLifetimeStatsRepository,
 } from "../repository/prisma"
 import { PlaySessionStateRepository } from "../repository/redis"
 import {
@@ -126,9 +130,13 @@ export const createSoloSession = async (
 }
 
 type FinishSessionRepo = {
+    keystrokeLogRepository: KeystrokeLogRepository
+    playSessionProblemRepository: PlaySessionProblemRepository
     playSessionRepository: PlaySessionRepository
     playSessionStateRepository: PlaySessionStateRepository
     problemRepository: ProblemRepository
+    transactionRunner: TransactionRunner
+    userLifetimeStatsRepository: UserLifetimeStatsRepository
 }
 
 export type FinishSessionInput = {
@@ -139,7 +147,7 @@ export type FinishSessionInput = {
 }
 
 /**
- * /finish のサーバー集計とアトミック DB 書き込み
+ * タイピングセッションのスコア集計とアトミック DB 書き込み
  *
  * 1. 物理限界チェック（typedChars / accuracy / log size）
  * 2. Redis から PlaySessionState を取得（無ければ 404）
@@ -206,30 +214,51 @@ export const finishSession = async (
   const problemsPlayed = playedSet.size
 
   /**
-   * 5. DB 書き込み（4 テーブルアトミックに）
+   * 5. DB 書き込み（4 テーブルを 1 transaction でアトミックに）
+   * Service が境界を制御し、各 Repository に tx を渡す（auth-service と同流派）
    */
-  await repo.playSessionRepository.createWithChildrenAndUpdateStats({
-    keystrokeLog: input.keystrokeLog,
-    problems: [...codeBlockByOrder.keys()].map((orderIndex) => ({
-      charsTyped: progress.get(orderIndex)!.charsTyped,
-      completed: progress.get(orderIndex)!.completed,
-      orderIndex,
-      problemId: state.problemIds[orderIndex],
-    })),
-    session: {
-      accuracy: input.accuracy,
-      crawledRepoId: state.crawledRepoId,
-      ghostSessionId: state.ghostSessionId,
-      languageId: state.languageId,
-      mistypeStats,
-      mode: state.mode,
-      playedAt: new Date(),
-      problemsCompleted,
-      problemsPlayed,
-      score,
-      typedChars: input.typedChars,
-      userId: state.userId,
-    },
+  await repo.transactionRunner.run(async (tx) => {
+    const session = await repo.playSessionRepository.create(
+      {
+        accuracy: input.accuracy,
+        crawledRepoId: state.crawledRepoId,
+        ghostSessionId: state.ghostSessionId,
+        languageId: state.languageId,
+        mistypeStats,
+        mode: state.mode,
+        playedAt: new Date(),
+        problemsCompleted,
+        problemsPlayed,
+        score,
+        typedChars: input.typedChars,
+        userId: state.userId,
+      },
+      tx,
+    )
+
+    await repo.playSessionProblemRepository.createMany(
+      session.id,
+      [...codeBlockByOrder.keys()].map((orderIndex) => ({
+        charsTyped: progress.get(orderIndex)!.charsTyped,
+        completed: progress.get(orderIndex)!.completed,
+        orderIndex,
+        problemId: state.problemIds[orderIndex],
+      })),
+      tx,
+    )
+
+    await repo.keystrokeLogRepository.create(session.id, input.keystrokeLog, tx)
+
+    await repo.userLifetimeStatsRepository.upsertOnFinish(
+      {
+        languageId: state.languageId,
+        mistypeStats,
+        score,
+        typedChars: input.typedChars,
+        userId: state.userId,
+      },
+      tx,
+    )
   })
 
   /**

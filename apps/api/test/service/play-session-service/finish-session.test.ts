@@ -1,15 +1,27 @@
-import { PlaySessionRepository, ProblemRepository } from "../../../src/repository/prisma"
+import {
+  KeystrokeLogRepository,
+  PlaySessionProblemRepository,
+  PlaySessionRepository,
+  ProblemRepository,
+  TransactionContext,
+  TransactionRunner,
+  UserLifetimeStatsRepository,
+} from "../../../src/repository/prisma"
 import { PlaySessionStateRepository } from "../../../src/repository/redis"
 import { finishSession } from "../../../src/service/play-session-service"
 import { KeystrokeLog, PlaySessionState } from "../../../src/types/domain"
 
 const mockFindById = vi.fn<(_0: string) => Promise<PlaySessionState | null>>()
-const mockDelete = vi.fn<(_0: string) => Promise<void>>()
+const mockDeleteState = vi.fn<(_0: string) => Promise<void>>()
 const mockFindManyByIds = vi.fn<(_0: number[]) => Promise<Array<{ id: number; codeBlock: string }>>>()
-const mockCreate = vi.fn<(_0: Parameters<PlaySessionRepository["createWithChildrenAndUpdateStats"]>[0]) => Promise<{ id: number }>>()
+const mockCreatePlaySession = vi.fn<(_0: unknown, _1?: TransactionContext) => Promise<{ id: number }>>()
+const mockCreateProblems = vi.fn<(_0: number, _1: unknown[], _2?: TransactionContext) => Promise<void>>()
+const mockCreateKeystrokeLog = vi.fn<(_0: number, _1: KeystrokeLog, _2?: TransactionContext) => Promise<void>>()
+const mockUpsertOnFinish = vi.fn<(_0: unknown, _1?: TransactionContext) => Promise<void>>()
+const mockTxRun = vi.fn<<T>(fn: (tx: TransactionContext) => Promise<T>) => Promise<T>>()
 
 const mockPlaySessionStateRepository: PlaySessionStateRepository = {
-  delete: mockDelete,
+  delete: mockDeleteState,
   findById: mockFindById,
   save: vi.fn(),
 }
@@ -20,7 +32,26 @@ const mockProblemRepository: ProblemRepository = {
 }
 
 const mockPlaySessionRepository: PlaySessionRepository = {
-  createWithChildrenAndUpdateStats: mockCreate,
+  create: mockCreatePlaySession,
+}
+
+const mockPlaySessionProblemRepository: PlaySessionProblemRepository = {
+  createMany: mockCreateProblems,
+}
+
+const mockKeystrokeLogRepository: KeystrokeLogRepository = {
+  create: mockCreateKeystrokeLog,
+}
+
+const mockUserLifetimeStatsRepository: UserLifetimeStatsRepository = {
+  upsertOnFinish: mockUpsertOnFinish,
+}
+
+/**
+ * TransactionRunner はテストでは tx を `{}` として渡し、内部の関数を実行するだけ
+ */
+const mockTransactionRunner: TransactionRunner = {
+  run: mockTxRun as unknown as TransactionRunner["run"],
 }
 
 const buildState = (overrides?: Partial<PlaySessionState>): PlaySessionState => ({
@@ -34,9 +65,13 @@ const buildState = (overrides?: Partial<PlaySessionState>): PlaySessionState => 
 })
 
 const buildRepoCollection = () => ({
+  keystrokeLogRepository: mockKeystrokeLogRepository,
+  playSessionProblemRepository: mockPlaySessionProblemRepository,
   playSessionRepository: mockPlaySessionRepository,
   playSessionStateRepository: mockPlaySessionStateRepository,
   problemRepository: mockProblemRepository,
+  transactionRunner: mockTransactionRunner,
+  userLifetimeStatsRepository: mockUserLifetimeStatsRepository,
 })
 
 const validLog: KeystrokeLog = [
@@ -48,17 +83,21 @@ const validLog: KeystrokeLog = [
 describe("finishSession", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    /**
+     * デフォルトでは run の中身を実行する fake tx を渡す
+     */
+    mockTxRun.mockImplementation(async (fn) => fn({} as TransactionContext))
   })
 
   describe("正常系", () => {
-    it("有効な集計値で 4 テーブル書き込みが要求され、Redis state が削除される", async () => {
+    it("有効な集計値で 4 Repository が tx 付きで呼ばれ、Redis state が削除される", async () => {
       // Arrange
       mockFindById.mockResolvedValue(buildState())
       mockFindManyByIds.mockResolvedValue([
         { codeBlock: "abc", id: 100 },
         { codeBlock: "def", id: 101 },
       ])
-      mockCreate.mockResolvedValue({ id: 999 })
+      mockCreatePlaySession.mockResolvedValue({ id: 999 })
 
       // Act
       const result = await finishSession(
@@ -76,15 +115,19 @@ describe("finishSession", () => {
           typedChars: 320,
         })
       }
-      expect(mockCreate).toHaveBeenCalledTimes(1)
-      expect(mockDelete).toHaveBeenCalledWith("550e8400-e29b-41d4-a716-446655440000")
+      expect(mockTxRun).toHaveBeenCalledTimes(1)
+      expect(mockCreatePlaySession).toHaveBeenCalledTimes(1)
+      expect(mockCreateProblems).toHaveBeenCalledTimes(1)
+      expect(mockCreateKeystrokeLog).toHaveBeenCalledTimes(1)
+      expect(mockUpsertOnFinish).toHaveBeenCalledTimes(1)
+      expect(mockDeleteState).toHaveBeenCalledWith("550e8400-e29b-41d4-a716-446655440000")
     })
 
     it("ok=false のキーストロークから正解期待文字単位で mistypeStats が集計される", async () => {
       // Arrange
       mockFindById.mockResolvedValue(buildState({ problemIds: [100] }))
       mockFindManyByIds.mockResolvedValue([{ codeBlock: "hello", id: 100 }])
-      mockCreate.mockResolvedValue({ id: 999 })
+      mockCreatePlaySession.mockResolvedValue({ id: 999 })
 
       // Act
       const result = await finishSession(
@@ -116,7 +159,7 @@ describe("finishSession", () => {
   })
 
   describe("異常系", () => {
-    it("typedChars=1501 の場合、ok: false / 400 を返し DB に書き込まれない", async () => {
+    it("typedChars=1501 の場合、ok: false / 400 を返し transaction が実行されない", async () => {
       // Act
       const result = await finishSession(
         { accuracy: 0.5, keystrokeLog: [], sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 1501 },
@@ -128,7 +171,7 @@ describe("finishSession", () => {
       if (!result.ok) {
         expect(result.error.statusCode).toBe(400)
       }
-      expect(mockCreate).not.toHaveBeenCalled()
+      expect(mockTxRun).not.toHaveBeenCalled()
     })
 
     it("accuracy=1.5 の場合、400 を返す", async () => {
@@ -161,7 +204,7 @@ describe("finishSession", () => {
         expect(result.error.statusCode).toBe(404)
         expect(result.error.type).toBe("NOT_FOUND")
       }
-      expect(mockCreate).not.toHaveBeenCalled()
+      expect(mockTxRun).not.toHaveBeenCalled()
     })
 
     it("問題セット mismatch の場合、404 を返す", async () => {
@@ -186,7 +229,7 @@ describe("finishSession", () => {
       if (!result.ok) {
         expect(result.error.statusCode).toBe(404)
       }
-      expect(mockCreate).not.toHaveBeenCalled()
+      expect(mockTxRun).not.toHaveBeenCalled()
     })
   })
 })

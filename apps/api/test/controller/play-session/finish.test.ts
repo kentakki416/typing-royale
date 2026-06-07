@@ -2,8 +2,12 @@ import request from "supertest"
 
 import { PlaySessionFinishController } from "../../../src/controller/play-session/finish"
 import {
+  PrismaKeystrokeLogRepository,
+  PrismaPlaySessionProblemRepository,
   PrismaPlaySessionRepository,
   PrismaProblemRepository,
+  PrismaTransactionRunner,
+  PrismaUserLifetimeStatsRepository,
 } from "../../../src/repository/prisma"
 import { IoRedisPlaySessionStateRepository } from "../../../src/repository/redis"
 import { playSessionRouter } from "../../../src/routes/play-session-router"
@@ -20,6 +24,10 @@ import {
 
 const problemRepository = new PrismaProblemRepository(testPrisma)
 const playSessionRepository = new PrismaPlaySessionRepository(testPrisma)
+const playSessionProblemRepository = new PrismaPlaySessionProblemRepository(testPrisma)
+const keystrokeLogRepository = new PrismaKeystrokeLogRepository(testPrisma)
+const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(testPrisma)
+const transactionRunner = new PrismaTransactionRunner(testPrisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(testRedis)
 
 const app = createTestApp()
@@ -27,9 +35,13 @@ app.use(
   "/api/play-sessions",
   playSessionRouter({
     finish: new PlaySessionFinishController(
+      keystrokeLogRepository,
+      playSessionProblemRepository,
       playSessionRepository,
       playSessionStateRepository,
       problemRepository,
+      transactionRunner,
+      userLifetimeStatsRepository,
     ),
   }),
 )

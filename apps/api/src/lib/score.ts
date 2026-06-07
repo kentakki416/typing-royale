@@ -73,7 +73,9 @@ export const aggregateMistypeStats = (
    * orderIndex ごとに「現在位置（次に期待する文字 index）」を持つ
    */
   const cursor = new Map<number, number>()
-  for (const orderIndex of problemCodeBlocks.keys()) cursor.set(orderIndex, 0)
+  for (const orderIndex of problemCodeBlocks.keys()) {
+    cursor.set(orderIndex, 0)
+  }
 
   for (const entry of log) {
     const code = problemCodeBlocks.get(entry.p)
