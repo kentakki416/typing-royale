@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { FinishPlaySessionResponse, GetMyRankingResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { GradeProgressBar } from "@/components/grade-progress-bar"
+import { TopTenCommentModal } from "@/components/top-ten-comment-modal"
 import { Topbar } from "@/components/topbar"
 import { gradeBadgeClass } from "@/libs/grade"
 
@@ -34,6 +35,8 @@ type Props = {
 export function ResultScreen({ repoInfo, result }: Props) {
   const [me, setMe] = useState<GetMyRankingResponse | null>(null)
   const [meFetchFailed, setMeFetchFailed] = useState(false)
+  const [hofModalOpen, setHofModalOpen] = useState(false)
+  const [hofPromptDismissed, setHofPromptDismissed] = useState(false)
 
   useEffect(() => {
     if (result === null) return
@@ -123,14 +126,43 @@ export function ResultScreen({ repoInfo, result }: Props) {
         </div>
 
         {isTopTenEntry && (
-          <div className="card mb-16" style={{ borderColor: "rgba(255, 213, 74, 0.5)" }}>
-            <div className="text-center">
-              <strong style={{ color: "var(--gold-light)" }}>🏆 TOP 10 入り見込み！</strong>
-              <p className="text-sm text-muted mt-8">
-                Hall of Fame コメントの入力モーダルは Rewards 機能で実装予定
-              </p>
+          <>
+            <div className="card mb-16" style={{ borderColor: "rgba(255, 213, 74, 0.5)" }}>
+              <div className="text-center">
+                <strong style={{ color: "var(--gold-light)" }}>🏆 TOP 10 入り見込み！</strong>
+                <p className="text-sm text-muted mt-8 mb-16">
+                  Hall of Fame に掲載されます。記念にコメントを残しませんか？
+                </p>
+                {hofPromptDismissed ? (
+                  <p className="text-sm text-muted">
+                    コメントはマイページからいつでも編集できます
+                  </p>
+                ) : (
+                  <div className="flex gap-12" style={{ justifyContent: "center" }}>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setHofModalOpen(true)}
+                      type="button"
+                    >
+                      コメントを残す
+                    </button>
+                    <button
+                      className="btn"
+                      onClick={() => setHofPromptDismissed(true)}
+                      type="button"
+                    >
+                      あとで書く
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+            <TopTenCommentModal
+              language="typescript"
+              onClose={() => { setHofModalOpen(false); setHofPromptDismissed(true) }}
+              open={hofModalOpen}
+            />
+          </>
         )}
 
         {result.grade_up !== null && (

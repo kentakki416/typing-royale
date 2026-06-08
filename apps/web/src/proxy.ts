@@ -20,6 +20,10 @@ const PUBLIC_PATHS = [
    */
   "/ranking",
   "/players",
+  /**
+   * rewards: Hall of Fame は公開ページ
+   */
+  "/hall-of-fame",
   ...DEV_ONLY_PUBLIC_PATHS,
 ]
 

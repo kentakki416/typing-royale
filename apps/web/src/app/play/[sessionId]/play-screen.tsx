@@ -46,7 +46,7 @@ export function PlayScreen({ sessionId }: { sessionId: string }) {
      */
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setStart(JSON.parse(raw) as CachedStart)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     setPhase("splash")
   }, [sessionId])
 
