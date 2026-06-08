@@ -31,10 +31,13 @@ import { PlaySessionStartSoloController } from "./controller/play-session/start-
 import { PlayerDetailController } from "./controller/player/detail"
 import { RankingListController } from "./controller/ranking/list"
 import { RankingMeController } from "./controller/ranking/me"
+import { RewardsCardCreateController } from "./controller/rewards/cards"
+import { RewardsListMeController } from "./controller/rewards/me"
 import { UserDeleteController } from "./controller/user/delete"
 import { UserGetController } from "./controller/user/get"
 import { UserUpdateController } from "./controller/user/update"
 import { env } from "./env"
+import { LocalCardStorage } from "./lib/card-storage"
 import { authMiddleware } from "./middleware/auth"
 import { errorHandler } from "./middleware/error-handler"
 import { requestLogger } from "./middleware/request-logger"
@@ -51,6 +54,7 @@ import {
   PrismaPlaySessionRepository,
   PrismaProblemRepository,
   PrismaRankingSnapshotRepository,
+  PrismaRewardRepository,
   PrismaTransactionRunner,
   PrismaUserLanguageBestRepository,
   PrismaUserLifetimeStatsRepository,
@@ -65,6 +69,7 @@ import { memoRouter } from "./routes/memo-router"
 import { playSessionRouter } from "./routes/play-session-router"
 import { playerRouter } from "./routes/player-router"
 import { rankingRouter } from "./routes/ranking-router"
+import { rewardsRouter } from "./routes/rewards-router"
 import { userRouter } from "./routes/user-router"
 
 /**
@@ -95,7 +100,13 @@ const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(prisma
 const userLanguageBestRepository = new PrismaUserLanguageBestRepository(prisma)
 const badgeConfigRepository = new PrismaBadgeConfigRepository(prisma)
 const hallOfFameEntryRepository = new PrismaHallOfFameEntryRepository(prisma)
+const rewardRepository = new PrismaRewardRepository(prisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(redis)
+
+/**
+ * 達成カード PNG ストレージ (MVP: local filesystem)
+ */
+const cardStorage = new LocalCardStorage(env.REWARDS_CACHE_DIR, env.REWARDS_PUBLIC_URL_PREFIX)
 /**
  * `user_language_best` を source とするリアルタイム集計実装
  * （score-ranking step2 で StubRankingSnapshotRepository から差し替え。
@@ -169,14 +180,17 @@ const playSessionStartSoloController = new PlaySessionStartSoloController(
   problemRepository,
 )
 const playSessionFinishController = new PlaySessionFinishController(
+  cardStorage,
   keystrokeLogRepository,
   playSessionProblemRepository,
   playSessionRepository,
   playSessionStateRepository,
   problemRepository,
+  rewardRepository,
   transactionRunner,
   userLanguageBestRepository,
   userLifetimeStatsRepository,
+  userRepository,
 )
 const playSessionStartChallengeGodsController = new PlaySessionStartChallengeGodsController(
   keystrokeLogRepository,
@@ -239,6 +253,17 @@ const hallOfFameCommentUpdateController = new HallOfFameCommentUpdateController(
   hallOfFameEntryRepository,
   languageRepository,
 )
+
+/**
+ * Rewards Controller のインスタンス化
+ */
+const rewardsCardCreateController = new RewardsCardCreateController(
+  cardStorage,
+  rewardRepository,
+  userLifetimeStatsRepository,
+  userRepository,
+)
+const rewardsListMeController = new RewardsListMeController(rewardRepository)
 
 const app = express()
 
@@ -311,6 +336,19 @@ app.use(
     list: hallOfFameListController,
   })
 )
+app.use(
+  "/api/rewards",
+  rewardsRouter({
+    cards: rewardsCardCreateController,
+    me: rewardsListMeController,
+  })
+)
+
+/**
+ * 達成カード PNG の静的配信
+ * (REWARDS_PUBLIC_URL_PREFIX 直下 = REWARDS_CACHE_DIR)
+ */
+app.use(env.REWARDS_PUBLIC_URL_PREFIX, express.static(env.REWARDS_CACHE_DIR))
 app.use(
   "/api/memo",
   memoRouter({

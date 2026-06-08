@@ -1,9 +1,11 @@
+import { CardStorage } from "../../../src/lib/card-storage"
 import {
   KeystrokeLogRepository,
   MyLanguageBest,
   PlaySessionProblemRepository,
   PlaySessionRepository,
   ProblemRepository,
+  RewardRepository,
   TransactionContext,
   TransactionRunner,
   UpsertIfBestInput,
@@ -11,6 +13,7 @@ import {
   UpsertOnFinishResult,
   UserLanguageBestRepository,
   UserLifetimeStatsRepository,
+  UserRepository,
 } from "../../../src/repository/prisma"
 import { PlaySessionStateRepository } from "../../../src/repository/redis"
 import { finishSession } from "../../../src/service/play-session-service"
@@ -60,6 +63,7 @@ const mockUserLifetimeStatsRepository: UserLifetimeStatsRepository = {
 const mockUserLanguageBestRepository: UserLanguageBestRepository = {
   countHigherRanked: mockCountHigherRanked,
   countRankableByLanguage: vi.fn(),
+  findAllByUserId: vi.fn(),
   findMine: mockFindMineBest,
   findTenthScore: mockFindTenthScore,
   findTopByLanguage: vi.fn(),
@@ -73,6 +77,31 @@ const mockTransactionRunner: TransactionRunner = {
   run: mockTxRun as unknown as TransactionRunner["run"],
 }
 
+const mockUserRepository: UserRepository = {
+  create: vi.fn(),
+  delete: vi.fn(),
+  findByDisplayName: vi.fn(),
+  findByEmail: vi.fn(),
+  findById: vi.fn(),
+  findPublicProfile: vi.fn(),
+  update: vi.fn(),
+}
+
+const mockRewardRepository: RewardRepository = {
+  findByUserId: vi.fn(),
+  findOneByUserTypePayload: vi.fn(),
+  upsert: vi.fn(),
+}
+
+/**
+ * gradeUp 時の達成カード生成は試行されるが、CardStorage への実書き込みは不要なので
+ * stub の vi.fn() で OK。失敗してもログ警告のみで finish 全体は成功する
+ */
+const mockCardStorage: CardStorage = {
+  delete: vi.fn(),
+  save: vi.fn(),
+}
+
 const buildState = (overrides?: Partial<PlaySessionState>): PlaySessionState => ({
   crawledRepoId: 17,
   ghostSessionId: null,
@@ -84,14 +113,17 @@ const buildState = (overrides?: Partial<PlaySessionState>): PlaySessionState => 
 })
 
 const buildRepoCollection = () => ({
+  cardStorage: mockCardStorage,
   keystrokeLogRepository: mockKeystrokeLogRepository,
   playSessionProblemRepository: mockPlaySessionProblemRepository,
   playSessionRepository: mockPlaySessionRepository,
   playSessionStateRepository: mockPlaySessionStateRepository,
   problemRepository: mockProblemRepository,
+  rewardRepository: mockRewardRepository,
   transactionRunner: mockTransactionRunner,
   userLanguageBestRepository: mockUserLanguageBestRepository,
   userLifetimeStatsRepository: mockUserLifetimeStatsRepository,
+  userRepository: mockUserRepository,
 })
 
 const validLog: KeystrokeLogs = [

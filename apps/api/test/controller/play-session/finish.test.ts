@@ -1,14 +1,17 @@
 import request from "supertest"
 
 import { PlaySessionFinishController } from "../../../src/controller/play-session/finish"
+import { LocalCardStorage } from "../../../src/lib/card-storage"
 import {
   PrismaKeystrokeLogRepository,
   PrismaPlaySessionProblemRepository,
   PrismaPlaySessionRepository,
   PrismaProblemRepository,
+  PrismaRewardRepository,
   PrismaTransactionRunner,
   PrismaUserLanguageBestRepository,
   PrismaUserLifetimeStatsRepository,
+  PrismaUserRepository,
 } from "../../../src/repository/prisma"
 import { IoRedisPlaySessionStateRepository } from "../../../src/repository/redis"
 import { playSessionRouter } from "../../../src/routes/play-session-router"
@@ -29,22 +32,31 @@ const playSessionProblemRepository = new PrismaPlaySessionProblemRepository(test
 const keystrokeLogRepository = new PrismaKeystrokeLogRepository(testPrisma)
 const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(testPrisma)
 const userLanguageBestRepository = new PrismaUserLanguageBestRepository(testPrisma)
+const userRepository = new PrismaUserRepository(testPrisma)
+const rewardRepository = new PrismaRewardRepository(testPrisma)
 const transactionRunner = new PrismaTransactionRunner(testPrisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(testRedis)
+/**
+ * 達成カード PNG ストレージ (test では /tmp 配下)
+ */
+const cardStorage = new LocalCardStorage("/tmp/typing-royale-rewards-test", "/cache/rewards")
 
 const app = createTestApp()
 app.use(
   "/api/play-sessions",
   playSessionRouter({
     finish: new PlaySessionFinishController(
+      cardStorage,
       keystrokeLogRepository,
       playSessionProblemRepository,
       playSessionRepository,
       playSessionStateRepository,
       problemRepository,
+      rewardRepository,
       transactionRunner,
       userLanguageBestRepository,
       userLifetimeStatsRepository,
+      userRepository,
     ),
   }),
 )
