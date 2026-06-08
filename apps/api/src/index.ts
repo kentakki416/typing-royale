@@ -31,6 +31,7 @@ import { PlaySessionStartSoloController } from "./controller/play-session/start-
 import { PlayerDetailController } from "./controller/player/detail"
 import { RankingListController } from "./controller/ranking/list"
 import { RankingMeController } from "./controller/ranking/me"
+import { ReplayFeaturedController } from "./controller/replay/featured"
 import { ReplayGetController } from "./controller/replay/get"
 import { RewardsCardCreateController } from "./controller/rewards/cards"
 import { RewardsListMeController } from "./controller/rewards/me"
@@ -273,6 +274,7 @@ const rewardsListMeController = new RewardsListMeController(rewardRepository)
  * Replay Controller のインスタンス化
  */
 const replayGetController = new ReplayGetController(keystrokeLogRepository, replayRepository)
+const replayFeaturedController = new ReplayFeaturedController(replayRepository)
 
 const app = express()
 
@@ -386,6 +388,7 @@ app.use(
 app.use(
   "/api/replays",
   replayRouter({
+    featured: replayFeaturedController,
     get: replayGetController,
   })
 )
