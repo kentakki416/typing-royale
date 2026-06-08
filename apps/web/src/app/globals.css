@@ -1993,3 +1993,104 @@ code.inline {
   color: var(--text-secondary);
 }
 .speed-pill.active { background: var(--accent); color: #0d1117; border-color: var(--accent); }
+
+/**
+ * Play screen dynamic backdrop (typedChars に応じて 6 tier で色変化)
+ *
+ *   tier 1 (0-99)    : 青
+ *   tier 2 (100-199) : 緑
+ *   tier 3 (200-299) : 紫
+ *   tier 4 (300-399) : 赤
+ *   tier 5 (400-499) : 金
+ *   tier 6 (500+)    : 虹 (回転する conic-gradient)
+ *
+ * 各 tier は radial-gradient の "オーラ" が画面中央から呼吸するように脈動する。
+ * tier 切替は background-color transition 0.8s で滑らかに。
+ * play-screen クラス越しに body の下に固定配置 (z-index: 0、play-screen の container は z-index 1)。
+ */
+.play-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background-color: var(--bg-base);
+  transition: background-color 0.8s ease;
+}
+/**
+ * 左右対称の二層オーラ。中央軸 50% を共通基準にし、上下方向だけ ±15% ずらして対称配置。
+ * mix-blend-mode: screen で色が乗算でなく加算され、暗背景に華やかに浮かぶ
+ */
+.play-backdrop::before,
+.play-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle at 50% 50%, var(--tier-color, transparent) 0%, transparent 55%);
+  animation: backdrop-pulse 6s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+.play-backdrop::after {
+  background: radial-gradient(circle at 50% 50%, var(--tier-color-2, transparent) 0%, transparent 65%);
+  animation-duration: 9s;
+  animation-direction: reverse;
+  filter: blur(18px);
+}
+.play-backdrop.tier-1 { --tier-color: rgba(94, 168, 255, 0.7);  --tier-color-2: rgba(58, 142, 255, 0.55); }
+.play-backdrop.tier-2 { --tier-color: rgba(110, 255, 178, 0.7); --tier-color-2: rgba(58, 200, 138, 0.55); }
+.play-backdrop.tier-3 { --tier-color: rgba(206, 150, 255, 0.72);--tier-color-2: rgba(160, 90, 240, 0.58); }
+.play-backdrop.tier-4 { --tier-color: rgba(255, 110, 130, 0.72);--tier-color-2: rgba(232, 50, 80, 0.6); }
+.play-backdrop.tier-5 { --tier-color: rgba(255, 230, 130, 0.78);--tier-color-2: rgba(255, 196, 50, 0.62); }
+.play-backdrop.tier-6::before {
+  background: conic-gradient(
+    from var(--rb-angle, 0deg),
+    #ff3a4e, #ff8a3a, #ffd54a, #58ff8f, #3a8eff, #bd93f9, #ff3aff, #ff3a4e
+  );
+  animation: backdrop-rainbow 8s linear infinite;
+  opacity: 0.55;
+  filter: blur(24px);
+  mix-blend-mode: normal;
+}
+.play-backdrop.tier-6::after {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.18) 0%, transparent 60%);
+  animation: backdrop-pulse 4s ease-in-out infinite;
+  mix-blend-mode: overlay;
+}
+
+/**
+ * 白い玉のパーティクル。React 側で 12 個生成、CSS 変数 (--left / --delay / --duration / --size)
+ * で各粒子の位置と動きをばらつかせる。下から上へ「弾けるように昇る」モーション
+ */
+.play-particle {
+  position: absolute;
+  bottom: -8%;
+  left: var(--left, 50%);
+  width: var(--size, 8px);
+  height: var(--size, 8px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ffffff 0%, rgba(255, 255, 255, 0.85) 40%, rgba(255, 255, 255, 0) 70%);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6), 0 0 24px rgba(255, 255, 255, 0.3);
+  opacity: 0;
+  animation: particle-rise var(--duration, 6s) ease-in var(--delay, 0s) infinite;
+}
+
+@property --rb-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes backdrop-pulse {
+  0%, 100% { transform: scale(0.95); opacity: 0.85; }
+  50%      { transform: scale(1.12); opacity: 1;    }
+}
+@keyframes backdrop-rainbow {
+  0%   { --rb-angle: 0deg;   }
+  100% { --rb-angle: 360deg; }
+}
+@keyframes particle-rise {
+  0%   { transform: translateY(0) scale(0.4); opacity: 0; }
+  15%  { transform: translateY(-20vh) scale(1); opacity: 1; }
+  70%  { transform: translateY(-90vh) scale(1); opacity: 0.9; }
+  100% { transform: translateY(-110vh) scale(0.2); opacity: 0; }
+}

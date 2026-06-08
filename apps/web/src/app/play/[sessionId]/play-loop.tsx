@@ -1,12 +1,31 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 
 import { FinishPlaySessionResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { Topbar } from "@/components/topbar"
 
 import type { GhostKeystrokeLogs, GhostSummary, GhostUserDisplay } from "./types"
+
+/**
+ * 12 個のパーティクル設定。横位置 / 遅延 / 速度 / サイズを散らして
+ * 「白い玉が下から弾けて昇っていく」演出を作る
+ */
+const PARTICLE_CONFIG = [
+  { delay: 0.0, duration: 6.5, left: 8, size: 10 },
+  { delay: 1.4, duration: 7.2, left: 18, size: 6 },
+  { delay: 0.7, duration: 5.8, left: 28, size: 14 },
+  { delay: 2.2, duration: 6.8, left: 38, size: 8 },
+  { delay: 0.3, duration: 7.5, left: 47, size: 12 },
+  { delay: 1.8, duration: 6.1, left: 54, size: 9 },
+  { delay: 0.9, duration: 7.0, left: 62, size: 7 },
+  { delay: 2.6, duration: 5.6, left: 72, size: 13 },
+  { delay: 1.1, duration: 6.4, left: 82, size: 8 },
+  { delay: 0.5, duration: 7.8, left: 92, size: 10 },
+  { delay: 3.0, duration: 6.6, left: 14, size: 6 },
+  { delay: 2.0, duration: 7.1, left: 78, size: 11 },
+]
 
 type Problem = StartSoloPlaySessionResponse["problems"][number]
 
@@ -281,15 +300,40 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
   const modeBadge = mode === "challenge_gods" ? "⚡ 神々に挑戦" : "通常モード"
   const isChallenge = mode === "challenge_gods" && ghostUserDisplay !== null
 
+  /**
+   * typedChars 閾値で背景 tier を決定 (青→緑→紫→赤→金→虹)
+   */
+  const backdropTier = typedChars >= 500 ? 6
+    : typedChars >= 400 ? 5
+      : typedChars >= 300 ? 4
+        : typedChars >= 200 ? 3
+          : typedChars >= 100 ? 2
+            : 1
+
   const diff = typedChars - ghostTypedChars
   const diffSign = diff > 0 ? "+" : ""
   const diffClass = diff > 0 ? "success" : diff < 0 ? "error" : ""
 
   return (
     <>
+      <div aria-hidden="true" className={`play-backdrop tier-${backdropTier}`}>
+        {PARTICLE_CONFIG.map((p, i) => (
+          <span
+            className="play-particle"
+            key={i}
+            style={{
+              "--delay": `${p.delay}s`,
+              "--duration": `${p.duration}s`,
+              "--left": `${p.left}%`,
+              "--size": `${p.size}px`,
+            } as React.CSSProperties}
+          />
+        ))}
+      </div>
+
       <Topbar languageBadge="TypeScript" modeBadge={modeBadge} />
 
-      <div className="container">
+      <div className="container" style={{ position: "relative", zIndex: 1 }}>
         <div className="play-hud">
           <div className="hud-cell">
             <div className="hud-label">残り時間</div>
