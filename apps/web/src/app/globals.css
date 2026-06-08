@@ -340,6 +340,33 @@ h3 { font-size: 16px; margin-bottom: 8px; }
   to { --god-angle: 360deg; }
 }
 
+/**
+ * Green button — for authentication / confirmation actions (e.g. GitHub sign-in).
+ * Distinct from .btn-primary (blue) which is reserved for play-related main actions.
+ */
+.btn-green {
+  position: relative;
+  isolation: isolate;
+  color: #0a2a14;
+  border-color: #1f8a4a;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, 0.15) 100%),
+    linear-gradient(180deg, #6fdc8c 0%, #2da44e 100%);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 4px 0 #176f3b,
+    0 6px 14px rgba(45, 164, 78, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+}
+.btn-green:active {
+  box-shadow:
+    0 2px 0 #176f3b,
+    0 3px 8px rgba(45, 164, 78, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+}
+
 .btn-gold {
   position: relative;
   isolation: isolate;

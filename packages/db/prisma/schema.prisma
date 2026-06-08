@@ -349,11 +349,10 @@ model HallOfFameEntry {
 }
 
 // ユーザーごとの SVG バッジ表示設定
-// docs/spec/rewards/README.md「動的 SVG バッジの配信戦略」参照
+// テーマは持たず常に黒背景で統一。docs/spec/rewards/README.md「動的 SVG バッジの配信戦略」参照
 model BadgeConfig {
   userId       Int      @id @map("user_id")
   displayItems Json     @default("[\"grade\", \"best_score\"]") @map("display_items") /// 表示要素 slug 配列 (grade / best_score / rank / streak_days / typed_chars / username)
-  theme        String   @default("dark") /// "dark" / "light"
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

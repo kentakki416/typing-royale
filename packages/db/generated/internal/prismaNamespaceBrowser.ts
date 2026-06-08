@@ -323,7 +323,6 @@ export type HallOfFameEntryScalarFieldEnum = (typeof HallOfFameEntryScalarFieldE
 export const BadgeConfigScalarFieldEnum = {
   userId: 'userId',
   displayItems: 'displayItems',
-  theme: 'theme',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

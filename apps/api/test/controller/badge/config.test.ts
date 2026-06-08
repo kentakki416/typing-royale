@@ -44,7 +44,6 @@ describe("GET /api/user/badge-config", () => {
       expect(res.status).toBe(200)
       expect(res.body).toEqual({
         display_items: ["grade", "best_score"],
-        theme: "dark",
         updated_at: expect.any(String),
       })
     })
@@ -54,7 +53,6 @@ describe("GET /api/user/badge-config", () => {
       await testPrisma.badgeConfig.create({
         data: {
           displayItems: ["grade", "rank", "streak_days"],
-          theme: "light",
           userId: user.id,
         },
       })
@@ -66,7 +64,6 @@ describe("GET /api/user/badge-config", () => {
       expect(res.status).toBe(200)
       expect(res.body).toMatchObject({
         display_items: ["grade", "rank", "streak_days"],
-        theme: "light",
       })
     })
   })
@@ -88,18 +85,16 @@ describe("PUT /api/user/badge-config", () => {
       const res = await request(app)
         .put("/api/user/badge-config")
         .set("Authorization", `Bearer ${token}`)
-        .send({ display_items: ["grade", "rank"], theme: "light" })
+        .send({ display_items: ["grade", "rank"] })
 
       expect(res.status).toBe(200)
       expect(res.body).toMatchObject({
         display_items: ["grade", "rank"],
-        theme: "light",
       })
 
       const row = await testPrisma.badgeConfig.findUnique({ where: { userId: user.id } })
       expect(row).toMatchObject({
         displayItems: ["grade", "rank"],
-        theme: "light",
         userId: user.id,
       })
     })
@@ -107,18 +102,17 @@ describe("PUT /api/user/badge-config", () => {
     it("upsert 上書き", async () => {
       const { token, user } = await createTestUser()
       await testPrisma.badgeConfig.create({
-        data: { displayItems: ["grade"], theme: "dark", userId: user.id },
+        data: { displayItems: ["grade"], userId: user.id },
       })
 
       const res = await request(app)
         .put("/api/user/badge-config")
         .set("Authorization", `Bearer ${token}`)
-        .send({ display_items: ["username", "typed_chars"], theme: "light" })
+        .send({ display_items: ["username", "typed_chars"] })
 
       expect(res.status).toBe(200)
       const row = await testPrisma.badgeConfig.findUniqueOrThrow({ where: { userId: user.id } })
       expect(row.displayItems).toEqual(["username", "typed_chars"])
-      expect(row.theme).toBe("light")
     })
   })
 
@@ -129,7 +123,7 @@ describe("PUT /api/user/badge-config", () => {
       const res = await request(app)
         .put("/api/user/badge-config")
         .set("Authorization", `Bearer ${token}`)
-        .send({ display_items: [], theme: "dark" })
+        .send({ display_items: [] })
 
       expect(res.status).toBe(400)
     })
@@ -142,7 +136,6 @@ describe("PUT /api/user/badge-config", () => {
         .set("Authorization", `Bearer ${token}`)
         .send({
           display_items: ["grade", "best_score", "rank", "streak_days", "typed_chars", "username"],
-          theme: "dark",
         })
 
       expect(res.status).toBe(400)
@@ -154,18 +147,7 @@ describe("PUT /api/user/badge-config", () => {
       const res = await request(app)
         .put("/api/user/badge-config")
         .set("Authorization", `Bearer ${token}`)
-        .send({ display_items: ["invalid_slug"], theme: "dark" })
-
-      expect(res.status).toBe(400)
-    })
-
-    it("不正な theme で 400", async () => {
-      const { token } = await createTestUser()
-
-      const res = await request(app)
-        .put("/api/user/badge-config")
-        .set("Authorization", `Bearer ${token}`)
-        .send({ display_items: ["grade"], theme: "rainbow" })
+        .send({ display_items: ["invalid_slug"] })
 
       expect(res.status).toBe(400)
     })
@@ -173,7 +155,7 @@ describe("PUT /api/user/badge-config", () => {
     it("認証なしで 401", async () => {
       const res = await request(app)
         .put("/api/user/badge-config")
-        .send({ display_items: ["grade"], theme: "dark" })
+        .send({ display_items: ["grade"] })
 
       expect(res.status).toBe(401)
     })
