@@ -31,6 +31,7 @@ import { PlaySessionStartSoloController } from "./controller/play-session/start-
 import { PlayerDetailController } from "./controller/player/detail"
 import { RankingListController } from "./controller/ranking/list"
 import { RankingMeController } from "./controller/ranking/me"
+import { ReplayGetController } from "./controller/replay/get"
 import { RewardsCardCreateController } from "./controller/rewards/cards"
 import { RewardsListMeController } from "./controller/rewards/me"
 import { UserDeleteController } from "./controller/user/delete"
@@ -54,6 +55,7 @@ import {
   PrismaPlaySessionRepository,
   PrismaProblemRepository,
   PrismaRankingSnapshotRepository,
+  PrismaReplayRepository,
   PrismaRewardRepository,
   PrismaTransactionRunner,
   PrismaUserLanguageBestRepository,
@@ -69,6 +71,7 @@ import { memoRouter } from "./routes/memo-router"
 import { playSessionRouter } from "./routes/play-session-router"
 import { playerRouter } from "./routes/player-router"
 import { rankingRouter } from "./routes/ranking-router"
+import { replayRouter } from "./routes/replay-router"
 import { rewardsRouter } from "./routes/rewards-router"
 import { userRouter } from "./routes/user-router"
 
@@ -101,6 +104,7 @@ const userLanguageBestRepository = new PrismaUserLanguageBestRepository(prisma)
 const badgeConfigRepository = new PrismaBadgeConfigRepository(prisma)
 const hallOfFameEntryRepository = new PrismaHallOfFameEntryRepository(prisma)
 const rewardRepository = new PrismaRewardRepository(prisma)
+const replayRepository = new PrismaReplayRepository(prisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(redis)
 
 /**
@@ -265,6 +269,11 @@ const rewardsCardCreateController = new RewardsCardCreateController(
 )
 const rewardsListMeController = new RewardsListMeController(rewardRepository)
 
+/**
+ * Replay Controller のインスタンス化
+ */
+const replayGetController = new ReplayGetController(keystrokeLogRepository, replayRepository)
+
 const app = express()
 
 /**
@@ -372,6 +381,12 @@ app.use(
   rankingRouter({
     list: rankingListController,
     me: rankingMeController,
+  })
+)
+app.use(
+  "/api/replays",
+  replayRouter({
+    get: replayGetController,
   })
 )
 app.use(

@@ -60,8 +60,13 @@ export function RankingTable({ entries, meBestPlaySessionId }: Props) {
               <td className="numeric">{e.typed_chars.toLocaleString()}</td>
               <td className="numeric">{(e.accuracy * 100).toFixed(1)}%</td>
               <td>
-                {/* リプレイは Rewards / replay フェーズで実装。本 step ではアイコンのみ */}
-                <span className="badge text-muted" title="リプレイは後続フェーズで実装">▶</span>
+                <Link
+                  className="badge accent"
+                  href={`/replay/${e.best_play_session_id}`}
+                  title="リプレイを見る"
+                >
+                  ▶ 視聴
+                </Link>
               </td>
             </tr>
           ))}
