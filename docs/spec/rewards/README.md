@@ -106,29 +106,28 @@ UI 上に **「Coming Soon」** として 5 種を予告する。プレースホ
 
 **設計思想**：コメントは **感情のピークで取る**。プレイ完了直後のリザルト画面で、トップ 10 入りが見込まれるユーザーに即時コメント入力モーダルを出す。
 
-#### 暫定判定とトリガー
+#### 即時判定とトリガー
 
-- `POST /api/play-sessions/:id/finish` のレスポンスに **`topTenBoundaryScore`**（直近 snapshot の言語別 10 位スコア）を含める。
+- `POST /api/play-sessions/:id/finish` のレスポンスに **`topTenBoundaryScore`**（リアルタイム集計の言語別 10 位スコア）を含める（score-ranking step3 で実装済み）。
 - クライアント側で `myScore > topTenBoundaryScore` ならコメント入力モーダルを表示。
-- バッチ集計前のため「**🎉 トップ 10 入り見込み！**」と暫定であることを UI に明示。
+- score-ranking はリアルタイム集計（`user_language_best` を都度 `ORDER BY score DESC LIMIT 10`）のため、`/finish` 完了時点ですでに順位が確定している。コメントを送れば **即時に公開される**（バッチ待ち無し）。
 
-#### draft → 公開昇格
+#### draft の扱い
 
-- 入力されたコメントは `hall_of_fame_entries.commentDraft` に下書き保存（公開はしない）。
-- 次の毎時バッチでトップ 10 入賞が **確定** したタイミングで `commentDraft` の中身を `comment` に昇格・公開。
-- バッチで圏外に押し出された場合：`commentDraft` は保持。次に入賞したタイミングで自動公開、もしくはマイページでの再編集を促す。
+- 入力されたコメントは `hall_of_fame_entries.comment` に直接保存して即時公開（リアルタイム集計のため draft / 昇格の 2 段階が不要）。
+- 後日ベスト記録が他者に抜かれて圏外（11 位以下）に押し出された場合：行は Hall of Fame 表示から外れる。ただし `hall_of_fame_entries` 行自体は削除せず、再入賞時に元の `comment` を流用できる。
 
 #### 編集
 
 - 入賞中は **マイページ > Hall of Fame コメント** からいつでも編集可能。
-- 編集すると即座に `comment` に反映（次バッチを待たない）。
+- 編集すると即座に `comment` に反映。
 - 編集履歴は[`Hall of Fame コメントの保護`](#hall-of-fame-コメントの保護)に従い保持。
 
 #### スキップ動線
 
 - リザルト画面のモーダルは **「あとで書く」** で閉じられる。
-- 閉じても入賞は無効化されない（バッチで自然に確定）。
-- 入賞時にコメント未入力のままだとデフォルト表示は「（コメントなし）」もしくは行ごと省略。
+- 閉じても入賞は無効化されない。
+- 入賞時にコメント未入力のままだと Hall of Fame ページでの表示は「（コメントなし）」もしくは行ごと省略。
 
 ### Hall of Fame コメントの保護
 
@@ -177,8 +176,8 @@ UI 上に **「Coming Soon」** として 5 種を予告する。プレースホ
 | GET | `/api/rewards/me` | 自分の獲得済み特典一覧 |
 | POST | `/api/rewards/cards` | 達成カード PNG を生成（or 取得） |
 | GET | `/badge/:username.svg` | 動的 SVG バッジ（クエリで表示項目指定可） |
-| GET | `/api/hall-of-fame` | 言語別 Hall of Fame 取得 |
-| POST | `/api/hall-of-fame/comments/draft` | リザルト画面から送信されるコメント下書き（`commentDraft` に保存）。バッチで入賞確定時に `comment` に昇格 |
+| GET | `/api/hall-of-fame` | 言語別 Hall of Fame 取得（リアルタイム集計） |
+| POST | `/api/hall-of-fame/comments` | リザルト画面から送信されるコメント（即時公開、`comment` に直接保存） |
 | PATCH | `/api/hall-of-fame/comments/:entryId` | 入賞中ユーザーがコメントを編集（即時反映） |
 
 3D アイコン生成 API（`POST /api/rewards/3d-icons`）は MVP では作らない。Phase 2 で追加検討。
@@ -187,34 +186,31 @@ UI 上に **「Coming Soon」** として 5 種を予告する。プレースホ
 
 | テーブル | 主要カラム | 説明 |
 | --- | --- | --- |
-| `rewards` | `id`, `userId`, `type(badge/card/hall_of_fame)`, `payload(jsonb)`, `assetUrl(nullable)`, `grantedAt` | 獲得済み特典。`type` は MVP では 3 種類。将来 `3d` / `lottie` / `trading_card` / `procedural_art` 等を追加 |
-| `hall_of_fame_entries` | `id`, `languageId`, `rank`, `userId`, `playSessionId`, `comment(nullable)`, `commentDraft(nullable)`, `featuredAt` | Hall of Fame 掲載。`commentDraft` はリザルト画面で下書き保存されたコメント。バッチで入賞確定時に `comment` に昇格 |
-| `badge_configs` | `userId(PK)`, `displayItems(jsonb)`, `theme`, `updatedAt` | ユーザーごとのバッジ表示設定 |
+| `rewards` | `id`, `userId`, `type(card/grade_up)`, `payload(jsonb)`, `assetUrl(nullable)`, `grantedAt` | 獲得済み特典（達成カード PNG の生成記録）。`type` は MVP では `card` / `grade_up` の 2 種類。将来 `3d` / `lottie` / `trading_card` 等を追加。バッジ / Hall of Fame は別テーブルで管理するため本テーブルに行を作らない |
+| `hall_of_fame_entries` | `id`, `userId`, `languageId`, `bestPlaySessionId`, `comment(nullable)`, `commentSubmittedAt(nullable)`, `createdAt`, `updatedAt` | Hall of Fame コメント。リアルタイム集計のため rank カラムは持たず、表示時に `user_language_best` を `ORDER BY score DESC LIMIT 10` した結果と JOIN して合成する。`@@unique([userId, languageId])` |
+| `badge_configs` | `userId(PK)`, `displayItems(jsonb)`, `theme`, `createdAt`, `updatedAt` | ユーザーごとのバッジ表示設定。`displayItems` は表示要素の slug 配列 (`["grade", "best_score", "rank"]` 等)、`theme` は `"dark" / "light"` |
 
 ## フロー図
 
 ```mermaid
 flowchart TD
-    Play[プレイ完了] --> Stats[user_lifetime_stats 更新]
-    Stats --> Check{特典獲得条件をチェック}
-    Check -->|グレードアップ| GenGradeCard[達成カード PNG 生成<br/>"You reached Senior Engineer!"<br/>S3 保存]
-    Check -->|累計文字数 達成| GenCard[達成カード PNG 生成<br/>S3 保存]
-    Check -->|score > topTenBoundary| Top10Modal[リザルト画面で<br/>トップ10入りモーダル表示<br/>コメント下書き保存]
-    Check -->|常時| Badge[badge_configs 更新<br/>SVG キャッシュ無効化]
-    Top10Modal --> Draft[(commentDraft 保存)]
-    GenGradeCard --> Notify[マイページに通知＋DL リンク]
-    GenCard --> Notify
-    Badge --> CDN[CDN キャッシュ無効化]
+    Play[プレイ完了] --> Finish[POST /api/play-sessions/:id/finish<br/>score-ranking step3 で実装済み]
+    Finish -->|grade_up != null| GenGradeCard[達成カード PNG 生成<br/>"You reached Senior Engineer!"<br/>S3 保存]
+    Finish -->|score > top_ten_boundary_score| Top10Modal[リザルト画面で<br/>トップ10入りモーダル表示]
+    Top10Modal -->|送信| SaveComment[POST /api/hall-of-fame/comments<br/>comment に即時保存・公開]
+    Top10Modal -->|あとで書く| Skip[何もしない<br/>マイページから後で編集可能]
+    GenGradeCard --> Notify[マイページ特典タブに表示＋DL リンク]
 
-    Batch[毎時バッチ] --> CheckBatch{ranking_snapshots で<br/>本当にトップ10?}
-    CheckBatch -->|Yes| Promote[commentDraft → comment 昇格<br/>Hall of Fame 公開]
-    CheckBatch -->|No| HoldDraft[draft 保持<br/>次回入賞時に再判定]
-    Promote --> Notify
+    EditPage[マイページ > Hall of Fame コメント編集] --> Patch[PATCH /api/hall-of-fame/comments/:entryId]
+    Patch --> Public[即時反映]
+
+    HoFView[Hall of Fame ページ] --> ListAPI[GET /api/hall-of-fame?language=...]
+    ListAPI --> Join[user_language_best を ORDER BY score DESC LIMIT 10<br/>+ hall_of_fame_entries.comment を JOIN]
 
     User[README に貼ったバッジ閲覧者] --> CDN
     CDN -->|キャッシュヒット| Img[SVG 配信]
     CDN -->|ミス| BadgeAPI[GET /badge/:username.svg]
-    BadgeAPI --> DB[(DB 読み取り)]
-    BadgeAPI --> Render[SVG 生成・キャッシュ保存]
+    BadgeAPI --> DB[(DB 読み取り<br/>users + user_lifetime_stats + badge_configs)]
+    BadgeAPI --> Render[SVG 生成・5〜15 分 TTL でレスポンス]
     Render --> CDN
 ```
