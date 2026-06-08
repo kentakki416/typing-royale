@@ -79,6 +79,7 @@ export default async function HallOfFamePage({
                   <th>プレイヤー</th>
                   <th className="numeric">ベスト</th>
                   <th>コメント</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -102,6 +103,15 @@ export default async function HallOfFamePage({
                       ) : (
                         <span>{e.comment}</span>
                       )}
+                    </td>
+                    <td>
+                      <Link
+                        className="badge accent"
+                        href={`/replay/${e.best_play_session_id}`}
+                        title="リプレイを見る"
+                      >
+                        ▶ リプレイ
+                      </Link>
                     </td>
                   </tr>
                 ))}
