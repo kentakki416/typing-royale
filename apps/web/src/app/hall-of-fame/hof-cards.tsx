@@ -4,6 +4,8 @@ import { useState } from "react"
 
 import type { GetHallOfFameResponse } from "@repo/api-schema"
 
+import { CrownSvg } from "@/components/crown-svg"
+
 import { CurtainModal } from "./curtain-modal"
 
 type Entry = GetHallOfFameResponse["entries"][number]
@@ -59,7 +61,7 @@ export function HofCards({ entries }: Props) {
               role="button"
               tabIndex={0}
             >
-              <CrownSvg slug={meta.slug} />
+              <CrownWrapper slug={meta.slug} />
               <span className="tap-hint">👆 タップ</span>
               <div className={`hof-rank ${meta.slug}`}>{meta.label}</div>
               <div className="hof-info">
@@ -107,42 +109,14 @@ const PlayerAvatar = ({ avatarUrl, displayName, large }: { avatarUrl: string | n
 }
 
 /**
- * 3 色共通形状の冠 SVG。docs/mocks/hall-of-fame.html のパスを縮約して再利用
+ * 既存 .hof-crown 位置スタイル (left -10px / top -18px / rotate -14deg) を維持しつつ
+ * 立体表現の CrownSvg を埋め込む
  */
-const CrownSvg = ({ slug }: { slug: "gold" | "silver" | "bronze" }) => {
-  const gradient = GRADIENTS[slug]
-  const gradId = `crown-${slug}-card`
-  return (
-    <span className={`hof-crown ${slug}`} aria-hidden="true">
-      <svg viewBox="0 0 56 40" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={gradient.top} />
-            <stop offset="55%" stopColor={gradient.mid} />
-            <stop offset="100%" stopColor={gradient.bottom} />
-          </linearGradient>
-        </defs>
-        <path
-          d="M2 14 L10 30 L18 16 L28 4 L38 16 L46 30 L54 14 L52 36 L4 36 Z"
-          fill={`url(#${gradId})`}
-          stroke={gradient.stroke}
-          strokeLinejoin="round"
-          strokeWidth="1.5"
-        />
-        <rect fill={`url(#${gradId})`} height="6" rx="1.5" stroke={gradient.stroke} strokeWidth="1.5" width="48" x="4" y="33" />
-        <circle cx="2" cy="14" fill={`url(#${gradId})`} r="3" stroke={gradient.stroke} strokeWidth="1.2" />
-        <circle cx="28" cy="4" fill={`url(#${gradId})`} r="3.5" stroke={gradient.stroke} strokeWidth="1.2" />
-        <circle cx="54" cy="14" fill={`url(#${gradId})`} r="3" stroke={gradient.stroke} strokeWidth="1.2" />
-      </svg>
-    </span>
-  )
-}
-
-const GRADIENTS: Record<"gold" | "silver" | "bronze", { top: string; mid: string; bottom: string; stroke: string }> = {
-  bronze: { bottom: "#74462a", mid: "#d2956b", stroke: "#3d2a18", top: "#f5d6b8" },
-  gold: { bottom: "#b8860b", mid: "#ffd54a", stroke: "#5a4408", top: "#fff8d0" },
-  silver: { bottom: "#8a939e", mid: "#d8dee9", stroke: "#4a5260", top: "#ffffff" },
-}
+const CrownWrapper = ({ slug }: { slug: "gold" | "silver" | "bronze" }) => (
+  <span aria-hidden="true" className={`hof-crown ${slug}`}>
+    <CrownSvg scope={`hof-card-${slug}`} slug={slug} variant="card" />
+  </span>
+)
 
 const GRADE_LEVELS: Record<string, number> = {
   distinguished: 7,
