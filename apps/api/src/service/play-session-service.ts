@@ -463,9 +463,6 @@ export type CreateChallengeGodsOutput = {
  * 5. 全候補で取得できなければ 409 Conflict
  * 6. 神セッションの problemIds から problems 本体を取得し orderIndex 順に並べる
  * 7. Redis state を save（mode=challenge_gods, ghostSessionId セット）
- *
- * Phase 4 (score-ranking) の ranking_snapshots が出来るまでは Stub が空配列を
- * 返すため、本 API は常に 409 Conflict を返す
  */
 export const createChallengeGodsSession = async (
   input: CreateChallengeGodsInput,

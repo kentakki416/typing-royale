@@ -10,7 +10,20 @@ import { TopTenCommentModal } from "@/components/top-ten-comment-modal"
 import { Topbar } from "@/components/topbar"
 import { gradeBadgeClass } from "@/libs/grade"
 
+import { GhostResultModal } from "./ghost-result-modal"
+import type { GhostSummary, GhostUserDisplay } from "./types"
+
 type Props = {
+  /**
+   * 神々モードの神サマリ（PlayLoop から渡される）
+   */
+  ghostSummary: GhostSummary | null
+  /**
+   * 神々モードの神情報（sessionStorage 復元）
+   */
+  ghostUserDisplay: GhostUserDisplay | null
+  mode: "challenge_gods" | "solo"
+  problems: StartSoloPlaySessionResponse["problems"]
   repoInfo: StartSoloPlaySessionResponse["repo_info"]
   /**
    * /finish のレスポンス。通信失敗時は null
@@ -32,7 +45,7 @@ type Props = {
  * - リポジトリコメント
  * - もう一度プレイ / 言語を変える / シェアボタン
  */
-export function ResultScreen({ repoInfo, result }: Props) {
+export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, repoInfo, result }: Props) {
   const [me, setMe] = useState<GetMyRankingResponse | null>(null)
   const [meFetchFailed, setMeFetchFailed] = useState(false)
   const [hofModalOpen, setHofModalOpen] = useState(false)
@@ -91,7 +104,9 @@ export function ResultScreen({ repoInfo, result }: Props) {
           </h1>
           <div className="flex gap-8" style={{ flexWrap: "wrap", justifyContent: "center" }}>
             <span className="badge accent">TypeScript</span>
-            <span className="badge">通常モード</span>
+            <span className={`badge ${mode === "challenge_gods" ? "gold" : ""}`}>
+              {mode === "challenge_gods" ? "⚡ 神々に挑戦" : "通常モード"}
+            </span>
             {me !== null && (
               <span
                 className={`badge-grade ${gradeBadgeClass(me.grade.name)}`}
@@ -309,6 +324,15 @@ export function ResultScreen({ repoInfo, result }: Props) {
       <div className="footer">
         <a href="#">利用規約</a> · <a href="#">プライバシー</a>
       </div>
+
+      {mode === "challenge_gods" && ghostSummary !== null && ghostUserDisplay !== null && (
+        <GhostResultModal
+          ghostSummary={ghostSummary}
+          ghostUserDisplay={ghostUserDisplay}
+          problems={problems}
+          result={result}
+        />
+      )}
     </>
   )
 }

@@ -180,10 +180,11 @@ type KeystrokeLogs = KeystrokeEntry[]
 
 | メソッド | パス | 説明 |
 | --- | --- | --- |
-| POST | `/api/play-sessions/challenge-gods` | `{ languageId }` を渡すと、サーバーがランダムに神を選定し、神の出題シーケンス先頭 20 問、`ghostSessionId`、神の表示名、**神が打った repo の `repoInfo`** を返す。トップ 10 不在時は HTTP 409 |
-| GET | `/api/ghosts/:playSessionId` | 指定セッションのキーストロークログを取得（gzip）。`POST /api/play-sessions/challenge-gods` のレスポンスから取得した `ghostSessionId` を使う。出題シーケンスは `/challenge-gods` のレスポンスに同梱済み |
+| POST | `/api/play-sessions/challenge-gods` | `{ languageId }` を渡すと、サーバーがランダムに神を選定し、神の出題シーケンス先頭 20 問、`ghostSessionId`、神の表示名、**神が打った repo の `repoInfo`**、および **`ghost_keystroke_logs`（神のキーストロークログ）** をまとめて返す。トップ 10 不在 / 全候補で keystroke log 取得不能の場合は HTTP 409 |
 
 通常モードと同じく、プレイ完了時は `POST /api/play-sessions/:id/finish` で結果保存（`sessionId` 経由でサーバーが Redis から `mode` を参照し挙動を切り替える）。
+
+> **設計メモ**: 当初は `GET /api/ghosts/:playSessionId` を別 endpoint として持つ予定だったが、神のキーストロークログを `/challenge-gods` のレスポンスに同梱する形に最適化した（追加 round-trip / 別キャッシュ層が不要）。シーク・倍速再生付きで観戦したい場合は [`../replay-viewer/README.md`](../replay-viewer/README.md) で別途実装する。
 
 ユーザーが相手を選ぶ API（候補一覧取得）は **持たない**（ランダム抽選のため）。
 

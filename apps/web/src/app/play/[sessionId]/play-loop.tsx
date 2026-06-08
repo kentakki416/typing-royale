@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from "react"
 
-import { FinishPlaySessionResponse, StartChallengeGodsResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
+import { FinishPlaySessionResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { Topbar } from "@/components/topbar"
 
+import type { GhostKeystrokeLogs, GhostSummary, GhostUserDisplay } from "./types"
+
 type Problem = StartSoloPlaySessionResponse["problems"][number]
-type GhostUserDisplay = StartChallengeGodsResponse["ghost_user_display"]
 
 type KeystrokeEntry = {
   elapsedMs: number
@@ -18,15 +19,19 @@ type KeystrokeEntry = {
 
 type Props = {
   /**
+   * 神々モードのみ：神のキーストロークログ
+   */
+  ghostKeystrokeLogs: GhostKeystrokeLogs | null
+  /**
    * 神々モードのみ：神の表示情報
    */
   ghostUserDisplay: GhostUserDisplay | null
   mode: "challenge_gods" | "solo"
   /**
    * /finish のレスポンスを ResultScreen に渡すため、結果データ付きで通知
-   * （API 失敗時は null が渡る）
+   * （API 失敗時は null が渡る）。神々モードでは GhostSummary も同時に渡す
    */
-  onFinished: (result: FinishPlaySessionResponse | null) => void
+  onFinished: (result: FinishPlaySessionResponse | null, ghostSummary: GhostSummary | null) => void
   problems: Problem[]
   sessionId: string
 }
@@ -40,8 +45,10 @@ const SESSION_DURATION_MS = 120_000
  * - document の keydown を購読して入力判定 + keystroke log 蓄積
  * - 関数完走で次の問題へ自動切替
  * - 120 秒経過 / 全完走で /finish を 1 回だけ叩く
+ * - 神々モード時は同じ rAF tick で ghost の elapsedMs に応じてログを消費し、
+ *   神の累計文字数 / 現在問題 / 正確率をリアルタイム更新する
  */
-export function PlayLoop({ ghostUserDisplay, mode, onFinished, problems, sessionId }: Props) {
+export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinished, problems, sessionId }: Props) {
   const [problemIndex, setProblemIndex] = useState(0)
   const [cursorPos, setCursorPos] = useState(0)
   const [typedChars, setTypedChars] = useState(0)
@@ -49,6 +56,13 @@ export function PlayLoop({ ghostUserDisplay, mode, onFinished, problems, session
   const [correctKeystrokes, setCorrectKeystrokes] = useState(0)
   const [remainingMs, setRemainingMs] = useState(SESSION_DURATION_MS)
   const [imeOn, setImeOn] = useState(false)
+
+  /**
+   * 神々モードの ghost 状態
+   */
+  const [ghostTypedChars, setGhostTypedChars] = useState(0)
+  const [ghostAccuracy, setGhostAccuracy] = useState(0)
+  const [ghostProblemIndex, setGhostProblemIndex] = useState(0)
 
   /**
    * rAF / keydown ハンドラから読み書きする mutable ref
@@ -61,6 +75,22 @@ export function PlayLoop({ ghostUserDisplay, mode, onFinished, problems, session
   const correctRef = useRef(0)
   const logRef = useRef<KeystrokeEntry[]>([])
   const finishedRef = useRef(false)
+
+  /**
+   * 神々モード：ghost log を elapsedMs 順に消費していくカーソル
+   */
+  const ghostLogRef = useRef<GhostKeystrokeLogs>(ghostKeystrokeLogs ?? [])
+  const ghostCursorRef = useRef(0)
+  const ghostTypedCharsRef = useRef(0)
+  const ghostCorrectRef = useRef(0)
+  const ghostTotalRef = useRef(0)
+  const ghostProblemIndexRef = useRef(0)
+  /**
+   * 各問題の神の完走状況。problemIndex がインクリメントしたタイミングでひとつ前を完走扱いに
+   */
+  const ghostPerProblemRef = useRef<{ completed: boolean; orderIndex: number; typedChars: number }[]>(
+    problems.map((_, i) => ({ completed: false, orderIndex: i, typedChars: 0 })),
+  )
 
   /**
    * /finish を 1 回だけ叩いて結果フェーズへ遷移
@@ -94,7 +124,16 @@ export function PlayLoop({ ghostUserDisplay, mode, onFinished, problems, session
        * 通信失敗時は null を返し、ResultScreen 側でフォールバック表示
        */
     }
-    onFinished(result)
+    const ghostSummary: GhostSummary | null = mode === "challenge_gods"
+      ? {
+        accuracy: ghostTotalRef.current === 0 ? 0 : ghostCorrectRef.current / ghostTotalRef.current,
+        perProblem: ghostPerProblemRef.current,
+        problemIndex: ghostProblemIndexRef.current,
+        totalKeystrokes: ghostTotalRef.current,
+        typedChars: ghostTypedCharsRef.current,
+      }
+      : null
+    onFinished(result, ghostSummary)
   }
 
   /**
@@ -106,7 +145,7 @@ export function PlayLoop({ ghostUserDisplay, mode, onFinished, problems, session
   }, [])
 
   /**
-   * 120 秒タイマー（rAF）
+   * 120 秒タイマー（rAF）。神々モードでは同じ tick で ghost log も進める
    */
   useEffect(() => {
     startAtRef.current = performance.now()
@@ -115,6 +154,38 @@ export function PlayLoop({ ghostUserDisplay, mode, onFinished, problems, session
       const elapsed = performance.now() - startAtRef.current
       const remaining = Math.max(0, SESSION_DURATION_MS - elapsed)
       setRemainingMs(remaining)
+
+      if (mode === "challenge_gods") {
+        const log = ghostLogRef.current
+        let consumed = false
+        while (ghostCursorRef.current < log.length && log[ghostCursorRef.current].elapsed_ms <= elapsed) {
+          const entry = log[ghostCursorRef.current]
+          ghostTotalRef.current += 1
+          if (entry.is_correct) {
+            ghostCorrectRef.current += 1
+            ghostTypedCharsRef.current += 1
+            const slot = ghostPerProblemRef.current[entry.problem_index]
+            if (slot) {
+              slot.typedChars += 1
+            }
+          }
+          if (entry.problem_index > ghostProblemIndexRef.current) {
+            const prev = ghostPerProblemRef.current[ghostProblemIndexRef.current]
+            if (prev) {
+              prev.completed = true
+            }
+            ghostProblemIndexRef.current = entry.problem_index
+          }
+          ghostCursorRef.current += 1
+          consumed = true
+        }
+        if (consumed) {
+          setGhostTypedChars(ghostTypedCharsRef.current)
+          setGhostProblemIndex(ghostProblemIndexRef.current)
+          setGhostAccuracy(ghostTotalRef.current === 0 ? 0 : ghostCorrectRef.current / ghostTotalRef.current)
+        }
+      }
+
       if (remaining <= 0) {
         void finish()
         return
@@ -208,48 +279,79 @@ export function PlayLoop({ ghostUserDisplay, mode, onFinished, problems, session
   const remainingClass = remainingSec <= 30 ? "error" : remainingSec <= 60 ? "accent" : "success"
 
   const modeBadge = mode === "challenge_gods" ? "⚡ 神々に挑戦" : "通常モード"
+  const isChallenge = mode === "challenge_gods" && ghostUserDisplay !== null
+
+  const diff = typedChars - ghostTypedChars
+  const diffSign = diff > 0 ? "+" : ""
+  const diffClass = diff > 0 ? "success" : diff < 0 ? "error" : ""
 
   return (
     <>
       <Topbar languageBadge="TypeScript" modeBadge={modeBadge} />
 
       <div className="container">
-        {mode === "challenge_gods" && ghostUserDisplay && (
-          <div className="card mb-16" style={{ borderColor: "rgba(255, 213, 74, 0.4)" }}>
-            <div className="flex-between">
-              <div>
-                <div className="text-xs text-muted" style={{ letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                  対戦相手
-                </div>
-                <div className="text-sm" style={{ color: "var(--gold-light)", fontWeight: 600, marginTop: "4px" }}>
-                  {ghostUserDisplay.grade} {ghostUserDisplay.display_name}
-                </div>
-              </div>
-              <div className="text-mono text-sm" style={{ color: "var(--gold)" }}>
-                神のベスト: {ghostUserDisplay.best_score} pts
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="play-hud">
           <div className="hud-cell">
             <div className="hud-label">残り時間</div>
             <div className={`hud-value ${remainingClass}`}>{remainingSec}s</div>
           </div>
-          <div className="hud-cell">
-            <div className="hud-label">累計文字数</div>
-            <div className="hud-value accent">{typedChars}</div>
-          </div>
-          <div className="hud-cell">
-            <div className="hud-label">正確率</div>
-            <div className="hud-value success">{(accuracy * 100).toFixed(1)}%</div>
-          </div>
-          <div className="hud-cell">
-            <div className="hud-label">完走 / 出題</div>
-            <div className="hud-value">{problemIndex} / {problems.length}</div>
-          </div>
+          {isChallenge ? (
+            <>
+              <div className="hud-cell">
+                <div className="hud-label">あなた</div>
+                <div className="hud-value accent">{typedChars}</div>
+              </div>
+              <div className="hud-cell">
+                <div className="hud-label">神</div>
+                <div className="hud-value" style={{ color: "var(--gold)" }}>{ghostTypedChars}</div>
+              </div>
+              <div className="hud-cell">
+                <div className="hud-label">差</div>
+                <div className={`hud-value ${diffClass}`}>{diffSign}{diff}</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="hud-cell">
+                <div className="hud-label">累計文字数</div>
+                <div className="hud-value accent">{typedChars}</div>
+              </div>
+              <div className="hud-cell">
+                <div className="hud-label">正確率</div>
+                <div className="hud-value success">{(accuracy * 100).toFixed(1)}%</div>
+              </div>
+              <div className="hud-cell">
+                <div className="hud-label">完走 / 出題</div>
+                <div className="hud-value">{problemIndex} / {problems.length}</div>
+              </div>
+            </>
+          )}
         </div>
+
+        {isChallenge && (
+          <div className="race">
+            <div className="race-row">
+              <div className="race-label"><span className="race-dot" />あなた</div>
+              <div className="race-bar">
+                <div
+                  className="race-bar-fill"
+                  style={{ width: `${pct(typedChars, problems)}%` }}
+                />
+              </div>
+              <div className="race-percent">{typedChars}</div>
+            </div>
+            <div className="race-row">
+              <div className="race-label"><span className="race-dot ghost" />神</div>
+              <div className="race-bar">
+                <div
+                  className="race-bar-fill ghost"
+                  style={{ width: `${pct(ghostTypedChars, problems)}%` }}
+                />
+              </div>
+              <div className="race-percent">{ghostTypedChars}</div>
+            </div>
+          </div>
+        )}
 
         {imeOn && (
           <div className="card" style={{ borderColor: "var(--warning)", color: "var(--warning)", marginTop: "16px" }}>
@@ -257,22 +359,53 @@ export function PlayLoop({ ghostUserDisplay, mode, onFinished, problems, session
           </div>
         )}
 
-        <div className="editor-area" style={{ marginTop: "16px" }}>
-          {currentProblem && (
-            <div className="code-block-source">
-              <span>📦 {currentProblem.function_name}</span>
-              <a href={currentProblem.source_url} rel="noreferrer noopener" target="_blank">
-                GitHub で見る ↗
-              </a>
+        <div className="row gap-16" style={{ marginTop: "16px" }}>
+          <div className="col">
+            <div className="editor-area">
+              {currentProblem && (
+                <div className="code-block-source">
+                  <span>📦 {currentProblem.function_name}</span>
+                  <a href={currentProblem.source_url} rel="noreferrer noopener" target="_blank">
+                    GitHub で見る ↗
+                  </a>
+                </div>
+              )}
+              <pre className="code-block">
+                {allDone ? (
+                  <span className="success">お見事！全問完走</span>
+                ) : currentProblem ? (
+                  renderCode(currentProblem.code_block, cursorPos)
+                ) : null}
+              </pre>
             </div>
+          </div>
+          {isChallenge && ghostUserDisplay && (
+            <aside className="col-sidebar">
+              <div className="card god-frame">
+                <div className="card-header">
+                  <div className="card-title" style={{ color: "var(--gold-light)" }}>⚡ 今回の神</div>
+                </div>
+                <div className="flex-center gap-12 mb-8">
+                  <span className="avatar">
+                    {ghostUserDisplay.display_name.slice(0, 2).toUpperCase()}
+                  </span>
+                  <div>
+                    <div className="player-name">{ghostUserDisplay.display_name}</div>
+                    <div className="text-sm text-muted">{ghostUserDisplay.grade}</div>
+                  </div>
+                </div>
+                <div className="text-mono text-sm" style={{ color: "var(--gold)" }}>
+                  問題 {Math.min(ghostProblemIndex + 1, problems.length)} / {problems.length}
+                </div>
+                <div className="text-mono text-sm text-muted">
+                  正確率 {(ghostAccuracy * 100).toFixed(1)}%
+                </div>
+                <div className="text-mono text-sm text-muted">
+                  神のベスト: {ghostUserDisplay.best_score} pts
+                </div>
+              </div>
+            </aside>
           )}
-          <pre className="code-block">
-            {allDone ? (
-              <span className="success">お見事！全問完走</span>
-            ) : currentProblem ? (
-              renderCode(currentProblem.code_block, cursorPos)
-            ) : null}
-          </pre>
         </div>
 
         <div className="play-foot">
@@ -294,4 +427,10 @@ const renderCode = (code: string, cursor: number) => {
       <span className="untyped">{code.slice(cursor + 1)}</span>
     </>
   )
+}
+
+const pct = (chars: number, problems: Problem[]): number => {
+  const total = problems.reduce((s, p) => s + p.char_count, 0)
+  if (total === 0) return 0
+  return Math.min(100, (chars / total) * 100)
 }
