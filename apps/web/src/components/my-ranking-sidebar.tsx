@@ -2,7 +2,8 @@ import Link from "next/link"
 
 import type { GetMyRankingResponse } from "@repo/api-schema"
 
-import { computeGradeProgress, gradeBadgeClass } from "@/libs/grade"
+import { GradeProgressBar } from "@/components/grade-progress-bar"
+import { gradeBadgeClass } from "@/libs/grade"
 
 type Props = {
     language: "javascript" | "typescript"
@@ -60,9 +61,6 @@ export function MyRankingSidebar({ language, me, totalPlayers }: Props) {
     )
   }
 
-  const progress = computeGradeProgress(me.best_score)
-  const progressPercent = Math.max(0, Math.min(1, progress.progress)) * 100
-
   return (
     <div className="card mb-16">
       <div className="card-header">
@@ -87,7 +85,7 @@ export function MyRankingSidebar({ language, me, totalPlayers }: Props) {
           {me.grade.name}
         </span>
       </div>
-      <div className="text-sm">
+      <div className="text-sm mb-8">
         <div className="flex-between mb-8">
           <span className="text-muted">ベストスコア</span>
           <span className="text-mono">{me.best_score.toLocaleString()} pts</span>
@@ -103,21 +101,7 @@ export function MyRankingSidebar({ language, me, totalPlayers }: Props) {
           </div>
         )}
       </div>
-      {me.next_grade !== null && progress.next !== null && (
-        <>
-          <div className="progress mt-8">
-            <div
-              className="progress-fill"
-              style={{ width: `${progressPercent.toFixed(1)}%` }}
-            />
-          </div>
-          <div className="text-sm text-muted text-center mt-8">
-            {progress.current.threshold} ←{" "}
-            <strong style={{ color: "var(--text-primary)" }}>{me.best_score}</strong>{" "}
-            → {progress.next.threshold}
-          </div>
-        </>
-      )}
+      <GradeProgressBar bestScore={me.best_score} nextGrade={me.next_grade} />
     </div>
   )
 }
