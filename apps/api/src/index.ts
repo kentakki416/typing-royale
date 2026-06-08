@@ -15,6 +15,9 @@ import { AuthRefreshController } from "./controller/auth/refresh"
 import { BadgeConfigGetController } from "./controller/badge/config-get"
 import { BadgeConfigUpdateController } from "./controller/badge/config-update"
 import { BadgeSvgController } from "./controller/badge/svg"
+import { HallOfFameCommentCreateController } from "./controller/hall-of-fame/comment-create"
+import { HallOfFameCommentUpdateController } from "./controller/hall-of-fame/comment-update"
+import { HallOfFameListController } from "./controller/hall-of-fame/list"
 import { HealthLivenessController } from "./controller/health/liveness"
 import { HealthReadinessController } from "./controller/health/readiness"
 import { MemoCreateController } from "./controller/memo/create"
@@ -40,6 +43,7 @@ import {
   PrismaBadgeConfigRepository,
   PrismaCrawledRepoRepository,
   PrismaDatabaseHealthRepository,
+  PrismaHallOfFameEntryRepository,
   PrismaKeystrokeLogRepository,
   PrismaLanguageRepository,
   PrismaMemoRepository,
@@ -55,6 +59,7 @@ import {
 import { IoRedisHealthRepository, IoRedisPlaySessionStateRepository, IoRedisRefreshTokenRepository } from "./repository/redis"
 import { authRouter } from "./routes/auth-router"
 import { badgeRouter } from "./routes/badge-router"
+import { hallOfFameRouter } from "./routes/hall-of-fame-router"
 import { healthRouter } from "./routes/health-router"
 import { memoRouter } from "./routes/memo-router"
 import { playSessionRouter } from "./routes/play-session-router"
@@ -89,6 +94,7 @@ const keystrokeLogRepository = new PrismaKeystrokeLogRepository(prisma)
 const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(prisma)
 const userLanguageBestRepository = new PrismaUserLanguageBestRepository(prisma)
 const badgeConfigRepository = new PrismaBadgeConfigRepository(prisma)
+const hallOfFameEntryRepository = new PrismaHallOfFameEntryRepository(prisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(redis)
 /**
  * `user_language_best` を source とするリアルタイム集計実装
@@ -216,6 +222,24 @@ const badgeSvgController = new BadgeSvgController(
 const badgeConfigGetController = new BadgeConfigGetController(badgeConfigRepository)
 const badgeConfigUpdateController = new BadgeConfigUpdateController(badgeConfigRepository)
 
+/**
+ * Hall of Fame Controller のインスタンス化
+ */
+const hallOfFameListController = new HallOfFameListController(
+  hallOfFameEntryRepository,
+  languageRepository,
+  userLanguageBestRepository,
+)
+const hallOfFameCommentCreateController = new HallOfFameCommentCreateController(
+  hallOfFameEntryRepository,
+  languageRepository,
+  userLanguageBestRepository,
+)
+const hallOfFameCommentUpdateController = new HallOfFameCommentUpdateController(
+  hallOfFameEntryRepository,
+  languageRepository,
+)
+
 const app = express()
 
 /**
@@ -277,6 +301,14 @@ app.use(
   "/badge",
   badgeRouter({
     svg: badgeSvgController,
+  })
+)
+app.use(
+  "/api/hall-of-fame",
+  hallOfFameRouter({
+    commentCreate: hallOfFameCommentCreateController,
+    commentUpdate: hallOfFameCommentUpdateController,
+    list: hallOfFameListController,
   })
 )
 app.use(
