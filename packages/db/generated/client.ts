@@ -104,3 +104,18 @@ export type UserLifetimeStats = Prisma.UserLifetimeStatsModel
  * 
  */
 export type UserLanguageBest = Prisma.UserLanguageBestModel
+/**
+ * Model Reward
+ * 
+ */
+export type Reward = Prisma.RewardModel
+/**
+ * Model HallOfFameEntry
+ * 
+ */
+export type HallOfFameEntry = Prisma.HallOfFameEntryModel
+/**
+ * Model BadgeConfig
+ * 
+ */
+export type BadgeConfig = Prisma.BadgeConfigModel

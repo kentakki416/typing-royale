@@ -63,7 +63,10 @@ export const ModelName = {
   PlaySessionProblem: 'PlaySessionProblem',
   KeystrokeLog: 'KeystrokeLog',
   UserLifetimeStats: 'UserLifetimeStats',
-  UserLanguageBest: 'UserLanguageBest'
+  UserLanguageBest: 'UserLanguageBest',
+  Reward: 'Reward',
+  HallOfFameEntry: 'HallOfFameEntry',
+  BadgeConfig: 'BadgeConfig'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -287,6 +290,45 @@ export const UserLanguageBestScalarFieldEnum = {
 } as const
 
 export type UserLanguageBestScalarFieldEnum = (typeof UserLanguageBestScalarFieldEnum)[keyof typeof UserLanguageBestScalarFieldEnum]
+
+
+export const RewardScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  type: 'type',
+  payload: 'payload',
+  assetUrl: 'assetUrl',
+  grantedAt: 'grantedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RewardScalarFieldEnum = (typeof RewardScalarFieldEnum)[keyof typeof RewardScalarFieldEnum]
+
+
+export const HallOfFameEntryScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  languageId: 'languageId',
+  bestPlaySessionId: 'bestPlaySessionId',
+  comment: 'comment',
+  commentSubmittedAt: 'commentSubmittedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type HallOfFameEntryScalarFieldEnum = (typeof HallOfFameEntryScalarFieldEnum)[keyof typeof HallOfFameEntryScalarFieldEnum]
+
+
+export const BadgeConfigScalarFieldEnum = {
+  userId: 'userId',
+  displayItems: 'displayItems',
+  theme: 'theme',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BadgeConfigScalarFieldEnum = (typeof BadgeConfigScalarFieldEnum)[keyof typeof BadgeConfigScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -53,10 +53,13 @@ model User {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  accounts      AuthAccount[]
-  playSessions  PlaySession[]
-  lifetimeStats UserLifetimeStats?
-  languageBests UserLanguageBest[]
+  accounts          AuthAccount[]
+  playSessions      PlaySession[]
+  lifetimeStats     UserLifetimeStats?
+  languageBests     UserLanguageBest[]
+  rewards           Reward[]
+  hallOfFameEntries HallOfFameEntry[]
+  badgeConfig       BadgeConfig?
 
   @@map("users")
 }
@@ -75,6 +78,7 @@ model Language {
   crawlerRunItems   CrawlerRunItem[]
   playSessions      PlaySession[]
   userLanguageBests UserLanguageBest[]
+  hallOfFameEntries HallOfFameEntry[]
 
   @@map("languages")
 }
@@ -217,6 +221,7 @@ model PlaySession {
   problems           PlaySessionProblem[]
   keystrokeLog       KeystrokeLog?
   bestOfUserLanguage UserLanguageBest[]
+  hallOfFameEntries  HallOfFameEntry[]
 
   @@index([userId, playedAt(sort: Desc)]) /// マイページの履歴表示用
   @@index([languageId, score(sort: Desc)]) /// score-ranking の言語別 × スコア降順集計
@@ -300,4 +305,59 @@ model UserLanguageBest {
   @@index([languageId, score(sort: Desc)]) /// GET /api/rankings の主クエリ (ORDER BY score DESC LIMIT)
   @@index([userId]) /// GET /api/players/:userId / GET /api/rankings/me の自分のベスト引き
   @@map("user_language_best")
+}
+
+// 達成カード PNG の生成記録
+// type=card は累計達成系 (10K 文字 等)、type=grade_up はグレードアップ達成カード
+// docs/spec/rewards/README.md「達成カード PNG の生成」参照
+model Reward {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  type      String /// "card" / "grade_up"。将来 "3d" / "lottie" / "trading_card" を追加
+  payload   Json /// 例: { "grade_slug": "senior" } / { "milestone_label": "10K_chars" }
+  assetUrl  String?  @map("asset_url") /// S3 / ローカルファイル URL。生成失敗時のみ null
+  grantedAt DateTime @map("granted_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, grantedAt(sort: Desc)]) /// マイページ特典タブの最新順表示
+  @@map("rewards")
+}
+
+// Hall of Fame コメント (1 ユーザー × 1 言語 = 1 行)
+// rank は保存しない (リアルタイム集計のため、user_language_best を ORDER BY して JOIN)
+// docs/spec/rewards/README.md「Hall of Fame コメントの入力タイミング」参照
+model HallOfFameEntry {
+  id                 Int       @id @default(autoincrement())
+  userId             Int       @map("user_id")
+  languageId         Int       @map("language_id")
+  bestPlaySessionId  Int       @map("best_play_session_id") /// この入賞を確定させた PlaySession
+  comment            String?   @db.VarChar(300) /// 最大 300 文字。null = 未入力
+  commentSubmittedAt DateTime? @map("comment_submitted_at") /// コメント最初の送信時刻 (履歴用)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language    Language    @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  playSession PlaySession @relation(fields: [bestPlaySessionId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, languageId]) /// 1 ユーザー × 1 言語 = 1 コメント
+  @@index([languageId]) /// Hall of Fame ページの言語別取得 (rank 順は user_language_best を ORDER BY して LEFT JOIN)
+  @@map("hall_of_fame_entries")
+}
+
+// ユーザーごとの SVG バッジ表示設定
+// docs/spec/rewards/README.md「動的 SVG バッジの配信戦略」参照
+model BadgeConfig {
+  userId       Int      @id @map("user_id")
+  displayItems Json     @default("[\"grade\", \"best_score\"]") @map("display_items") /// 表示要素 slug 配列 (grade / best_score / rank / streak_days / typed_chars / username)
+  theme        String   @default("dark") /// "dark" / "light"
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("badge_configs")
 }
