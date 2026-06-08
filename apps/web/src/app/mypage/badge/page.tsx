@@ -36,6 +36,7 @@ export default async function MyPageBadge() {
           <a className="tab" href="#">特典</a>
           <a className="tab" href="#">プレイ履歴</a>
           <Link className="tab active" href="/mypage/badge">バッジ</Link>
+          <Link className="tab" href="/mypage/hall-of-fame-comments">Hall of Fame</Link>
           <Link className="tab" href="/mypage/account">設定</Link>
         </div>
 
