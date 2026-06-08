@@ -12,6 +12,9 @@ import { AuthGithubController } from "./controller/auth/github"
 import { AuthGoogleController } from "./controller/auth/google"
 import { AuthLogoutController } from "./controller/auth/logout"
 import { AuthRefreshController } from "./controller/auth/refresh"
+import { BadgeConfigGetController } from "./controller/badge/config-get"
+import { BadgeConfigUpdateController } from "./controller/badge/config-update"
+import { BadgeSvgController } from "./controller/badge/svg"
 import { HealthLivenessController } from "./controller/health/liveness"
 import { HealthReadinessController } from "./controller/health/readiness"
 import { MemoCreateController } from "./controller/memo/create"
@@ -34,6 +37,7 @@ import { errorHandler } from "./middleware/error-handler"
 import { requestLogger } from "./middleware/request-logger"
 import {
   PrismaAuthAccountRepository,
+  PrismaBadgeConfigRepository,
   PrismaCrawledRepoRepository,
   PrismaDatabaseHealthRepository,
   PrismaKeystrokeLogRepository,
@@ -50,6 +54,7 @@ import {
 } from "./repository/prisma"
 import { IoRedisHealthRepository, IoRedisPlaySessionStateRepository, IoRedisRefreshTokenRepository } from "./repository/redis"
 import { authRouter } from "./routes/auth-router"
+import { badgeRouter } from "./routes/badge-router"
 import { healthRouter } from "./routes/health-router"
 import { memoRouter } from "./routes/memo-router"
 import { playSessionRouter } from "./routes/play-session-router"
@@ -83,6 +88,7 @@ const playSessionProblemRepository = new PrismaPlaySessionProblemRepository(pris
 const keystrokeLogRepository = new PrismaKeystrokeLogRepository(prisma)
 const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(prisma)
 const userLanguageBestRepository = new PrismaUserLanguageBestRepository(prisma)
+const badgeConfigRepository = new PrismaBadgeConfigRepository(prisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(redis)
 /**
  * `user_language_best` を source とするリアルタイム集計実装
@@ -197,6 +203,19 @@ const playerDetailController = new PlayerDetailController(
   userRepository,
 )
 
+/**
+ * Badge Controller のインスタンス化
+ */
+const badgeSvgController = new BadgeSvgController(
+  badgeConfigRepository,
+  languageRepository,
+  userLanguageBestRepository,
+  userLifetimeStatsRepository,
+  userRepository,
+)
+const badgeConfigGetController = new BadgeConfigGetController(badgeConfigRepository)
+const badgeConfigUpdateController = new BadgeConfigUpdateController(badgeConfigRepository)
+
 const app = express()
 
 /**
@@ -247,9 +266,17 @@ app.use(
 app.use(
   "/api/user",
   userRouter({
+    badgeConfigGet: badgeConfigGetController,
+    badgeConfigUpdate: badgeConfigUpdateController,
     delete: userDeleteController,
     get: userGetController,
     update: userUpdateController,
+  })
+)
+app.use(
+  "/badge",
+  badgeRouter({
+    svg: badgeSvgController,
   })
 )
 app.use(

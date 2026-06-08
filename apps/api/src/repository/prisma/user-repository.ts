@@ -43,6 +43,7 @@ export type PublicProfileUser = {
 export interface UserRepository {
     create(data: CreateUserInput, tx?: TransactionContext): Promise<User>
     delete(id: number): Promise<void>
+    findByDisplayName(displayName: string): Promise<PublicProfileUser | null>
     findByEmail(email: string): Promise<User | null>
     findById(id: number): Promise<User | null>
     findPublicProfile(userId: number): Promise<PublicProfileUser | null>
@@ -69,6 +70,31 @@ export class PrismaUserRepository implements UserRepository {
     const prismaUser = await this._prisma.user.findUnique({ where: { email } })
     if (!prismaUser) return null
     return this._toDomainUser(prismaUser)
+  }
+
+  async findByDisplayName(displayName: string): Promise<PublicProfileUser | null> {
+    /**
+     * displayName は現状 @@unique でない (GitHub username の衝突を将来想定する場合あり)
+     * MVP では最初に hit した 1 件を返す
+     */
+    const row = await this._prisma.user.findFirst({
+      select: {
+        id: true,
+        avatarUrl: true,
+        canPublicRanking: true,
+        createdAt: true,
+        displayName: true,
+      },
+      where: { displayName },
+    })
+    if (row === null) return null
+    return {
+      avatarUrl: row.avatarUrl,
+      canPublicRanking: row.canPublicRanking,
+      createdAt: row.createdAt,
+      displayName: row.displayName ?? `user${row.id}`,
+      id: row.id,
+    }
   }
 
   async findPublicProfile(userId: number): Promise<PublicProfileUser | null> {

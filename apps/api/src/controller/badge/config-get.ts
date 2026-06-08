@@ -1,0 +1,33 @@
+import { Response } from "express"
+
+import { getBadgeConfigResponseSchema } from "@repo/api-schema"
+import { logger } from "@repo/logger"
+
+import { AuthRequest } from "../../middleware/auth"
+import { BadgeConfigRepository } from "../../repository/prisma"
+import * as service from "../../service"
+
+/**
+ * GET /api/user/badge-config
+ *
+ * 自分のバッジ表示設定を返す。未保存ユーザーでも defaults を返す（200）
+ */
+export class BadgeConfigGetController {
+  constructor(private badgeConfigRepository: BadgeConfigRepository) {}
+
+  async execute(req: AuthRequest, res: Response) {
+    logger.info("BadgeConfigGetController: fetching", { userId: req.userId })
+
+    const config = await service.badge.getConfig(
+      { userId: req.userId! },
+      { badgeConfigRepository: this.badgeConfigRepository },
+    )
+
+    const response = getBadgeConfigResponseSchema.parse({
+      display_items: config.displayItems,
+      theme: config.theme,
+      updated_at: config.updatedAt.toISOString(),
+    })
+    return res.status(200).json(response)
+  }
+}
