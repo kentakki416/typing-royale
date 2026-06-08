@@ -1,11 +1,13 @@
 "use client"
 
 import Link from "next/link"
+import { useEffect, useState } from "react"
 
-import { FinishPlaySessionResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
+import { FinishPlaySessionResponse, GetMyRankingResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
+import { GradeProgressBar } from "@/components/grade-progress-bar"
 import { Topbar } from "@/components/topbar"
-import { computeGradeProgress, gradeBadgeClass } from "@/libs/grade"
+import { gradeBadgeClass } from "@/libs/grade"
 
 type Props = {
   repoInfo: StartSoloPlaySessionResponse["repo_info"]
@@ -19,15 +21,39 @@ type Props = {
  * リザルト画面（mock: result.html 準拠）
  *
  * 表示要素:
- * - SESSION COMPLETE + スコア + 言語・モード・グレード badge
+ * - SESSION COMPLETE + スコア + 言語・モード・グレード badge + ベスト更新バッジ
  * - 4 stat (累計文字数 / 正確率 / 完走関数数 / 出題数)
- * - ランキング placeholder（GET /api/rankings/me は score-ranking 機能で実装予定）
- * - エンジニアグレード（現在ベストスコアと次グレードまでの進捗バー）
+ * - 全期間ランキング: /finish の new_rank をリアルタイム表示
+ * - エンジニアグレード: 全言語通算 bestScore + 次グレードまでの進捗バー
+ * - グレードアップ祝賀バナー（grade_up !== null）
+ * - TOP 10 入りバナー（score > top_ten_boundary_score）
  * - よく間違える文字 (mistype top 5)
  * - リポジトリコメント
  * - もう一度プレイ / 言語を変える / シェアボタン
  */
 export function ResultScreen({ repoInfo, result }: Props) {
+  const [me, setMe] = useState<GetMyRankingResponse | null>(null)
+  const [meFetchFailed, setMeFetchFailed] = useState(false)
+
+  useEffect(() => {
+    if (result === null) return
+    /** TS 固定でフェッチ（言語選択を引き継ぐ仕組みは後続 step で対応） */
+    const loadMyRanking = async () => {
+      try {
+        const res = await fetch("/api/internal/my-ranking?language=typescript")
+        if (!res.ok) {
+          setMeFetchFailed(true)
+          return
+        }
+        const data = await res.json() as GetMyRankingResponse
+        setMe(data)
+      } catch {
+        setMeFetchFailed(true)
+      }
+    }
+    void loadMyRanking()
+  }, [result])
+
   if (result === null) {
     return (
       <>
@@ -43,10 +69,12 @@ export function ResultScreen({ repoInfo, result }: Props) {
     )
   }
 
-  const grade = computeGradeProgress(result.score)
   const topMistypes = Object.entries(result.mistype_stats)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
+
+  const isTopTenEntry = result.top_ten_boundary_score !== null
+    && result.score > result.top_ten_boundary_score
 
   return (
     <>
@@ -61,9 +89,17 @@ export function ResultScreen({ repoInfo, result }: Props) {
           <div className="flex gap-8" style={{ flexWrap: "wrap", justifyContent: "center" }}>
             <span className="badge accent">TypeScript</span>
             <span className="badge">通常モード</span>
-            <span className={`badge-grade ${gradeBadgeClass(grade.current.name)}`} data-level={grade.current.level}>
-              {grade.current.name}
-            </span>
+            {me !== null && (
+              <span
+                className={`badge-grade ${gradeBadgeClass(me.grade.name)}`}
+                data-level={me.grade.level}
+              >
+                {me.grade.name}
+              </span>
+            )}
+            {result.best_score_updated && (
+              <span className="badge success">✨ ベスト更新</span>
+            )}
           </div>
         </div>
 
@@ -86,62 +122,88 @@ export function ResultScreen({ repoInfo, result }: Props) {
           </div>
         </div>
 
+        {isTopTenEntry && (
+          <div className="card mb-16" style={{ borderColor: "rgba(255, 213, 74, 0.5)" }}>
+            <div className="text-center">
+              <strong style={{ color: "var(--gold-light)" }}>🏆 TOP 10 入り見込み！</strong>
+              <p className="text-sm text-muted mt-8">
+                Hall of Fame コメントの入力モーダルは Rewards 機能で実装予定
+              </p>
+            </div>
+          </div>
+        )}
+
+        {result.grade_up !== null && (
+          <div className="card mb-16" style={{ borderColor: "var(--accent)" }}>
+            <div className="text-center">
+              <strong style={{ color: "var(--accent)" }}>
+                🎉 {result.grade_up.from.name} → {result.grade_up.to.name} 昇格！
+              </strong>
+              <p className="text-sm text-muted mt-8">
+                達成カードは Rewards 機能で自動生成されます
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="card mb-16">
           <div className="card-header">
             <div className="card-title">🏆 全期間ランキング</div>
+            <Link className="text-sm" href="/ranking">ランキング全体 →</Link>
           </div>
-          <div className="text-center mb-16">
-            <div className="text-mono text-muted" style={{ fontSize: "18px" }}>
-              順位は集計後に表示されます
-            </div>
-          </div>
-          <div className="text-sm text-muted text-center">
-            次回バッチ集計時に確定します
-          </div>
-        </div>
-
-        <div className="card mb-16" style={{ borderColor: "rgba(189, 147, 249, 0.3)" }}>
-          <div className="card-header">
-            <div className="card-title">⚡ エンジニアグレード</div>
-            <span className={`badge-grade ${gradeBadgeClass(grade.current.name)}`} data-level={grade.current.level}>
-              {grade.current.name}
-            </span>
-          </div>
-          <div className="text-sm mb-8">
-            <div className="flex-between mb-8">
-              <span className="text-muted">今回のスコア</span>
-              <span className="text-mono">{result.score} pts</span>
-            </div>
-            {grade.next && grade.pointsToNext !== null && (
-              <div className="flex-between">
-                <span className="text-muted">
-                  次の <strong style={{ color: "var(--gold-light)" }}>{grade.next.name}</strong> まで
-                </span>
-                <span className="text-mono" style={{ color: "var(--gold)" }}>
-                  あと {grade.pointsToNext} pts
-                </span>
+          {result.new_rank !== null ? (
+            <>
+              <div className="text-center mb-16">
+                <div
+                  className="text-mono"
+                  style={{ color: "var(--accent)", fontSize: "36px", fontWeight: 700 }}
+                >
+                  #{result.new_rank}
+                </div>
+                <div className="text-sm text-muted">
+                  TypeScript
+                  {me !== null && ` · ${me.total_ranked_players.toLocaleString()} 人中`}
+                </div>
               </div>
-            )}
-          </div>
-          <div className="progress mb-8">
-            <div
-              className="progress-fill"
-              style={{
-                background:
-                  "linear-gradient(180deg, rgba(255,255,255,0.45) 0%, transparent 45%, rgba(0,0,0,0.15) 100%), linear-gradient(180deg, #d8b9ff 0%, #9659e8 100%)",
-                width: `${(grade.progress * 100).toFixed(1)}%`,
-              }}
-            />
-          </div>
-          {grade.next && (
+              <div className="text-sm text-muted text-center">現在の順位を即時表示</div>
+            </>
+          ) : (
             <div className="text-sm text-muted text-center">
-              {grade.current.threshold} → {result.score} →{" "}
-              <strong style={{ color: "var(--gold-light)" }}>
-                {grade.next.threshold} ({grade.next.name})
-              </strong>
+              {meFetchFailed ? "順位を取得できませんでした" : "順位を計算中..."}
             </div>
           )}
         </div>
+
+        {me !== null && me.best_score !== null && (
+          <div className="card mb-16" style={{ borderColor: "rgba(189, 147, 249, 0.3)" }}>
+            <div className="card-header">
+              <div className="card-title">⚡ エンジニアグレード</div>
+              <span
+                className={`badge-grade ${gradeBadgeClass(me.grade.name)}`}
+                data-level={me.grade.level}
+              >
+                {me.grade.name}
+              </span>
+            </div>
+            <div className="text-sm mb-8">
+              <div className="flex-between mb-8">
+                <span className="text-muted">現在のベストスコア（全言語通算）</span>
+                <span className="text-mono">{me.best_score} pts</span>
+              </div>
+              {me.next_grade !== null && (
+                <div className="flex-between">
+                  <span className="text-muted">
+                    次の <strong style={{ color: "var(--gold-light)" }}>{me.next_grade.name}</strong> まで
+                  </span>
+                  <span className="text-mono" style={{ color: "var(--gold)" }}>
+                    あと {me.next_grade.score_needed} pts
+                  </span>
+                </div>
+              )}
+            </div>
+            <GradeProgressBar bestScore={me.best_score} nextGrade={me.next_grade} />
+          </div>
+        )}
 
         {topMistypes.length > 0 && (
           <div className="card mb-16">
