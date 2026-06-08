@@ -18,8 +18,7 @@ import * as service from "../../service"
  * POST /api/play-sessions/challenge-gods
  *
  * 神々モードのプレイセッションを開始する。認証必須。
- * Phase 4 (score-ranking) の ranking_snapshots が出来るまでは Stub が空配列を
- * 返すため、本 API は常に 409 Conflict を返す
+ * トップ 10 不在 / 全候補のキーストロークログ取得不能の場合は 409 Conflict を返す
  */
 export class PlaySessionStartChallengeGodsController {
   constructor(

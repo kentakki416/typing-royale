@@ -7,6 +7,7 @@ import { FinishPlaySessionResponse, StartChallengeGodsResponse, StartSoloPlaySes
 import { PlayLoop } from "./play-loop"
 import { ResultScreen } from "./result-screen"
 import { Splash } from "./splash"
+import type { GhostSummary } from "./types"
 
 type CachedStart = {
   ghostKeystrokeLogs?: StartChallengeGodsResponse["ghost_keystroke_logs"] | null
@@ -25,12 +26,13 @@ type Phase = "loading" | "playing" | "result" | "splash"
  * Phase: loading → splash → playing → result
  *
  * /finish のレスポンスは PlayLoop の onFinished で渡される（result phase で
- * ResultScreen に渡す）
+ * ResultScreen に渡す）。神々モードでは GhostSummary も同時に PlayLoop から渡る
  */
 export function PlayScreen({ sessionId }: { sessionId: string }) {
   const [phase, setPhase] = useState<Phase>("loading")
   const [start, setStart] = useState<CachedStart | null>(null)
   const [result, setResult] = useState<FinishPlaySessionResponse | null>(null)
+  const [ghostSummary, setGhostSummary] = useState<GhostSummary | null>(null)
 
   useEffect(() => {
     const raw = sessionStorage.getItem(`play:${sessionId}`)
@@ -61,17 +63,28 @@ export function PlayScreen({ sessionId }: { sessionId: string }) {
   if (phase === "playing") {
     return (
       <PlayLoop
+        ghostKeystrokeLogs={start.ghostKeystrokeLogs ?? null}
         ghostUserDisplay={start.ghostUserDisplay ?? null}
         mode={start.mode ?? "solo"}
         problems={start.problems}
         sessionId={sessionId}
-        onFinished={(r) => {
+        onFinished={(r, summary) => {
           setResult(r)
+          setGhostSummary(summary)
           setPhase("result")
         }}
       />
     )
   }
 
-  return <ResultScreen repoInfo={start.repoInfo} result={result} />
+  return (
+    <ResultScreen
+      ghostSummary={ghostSummary}
+      ghostUserDisplay={start.ghostUserDisplay ?? null}
+      mode={start.mode ?? "solo"}
+      problems={start.problems}
+      repoInfo={start.repoInfo}
+      result={result}
+    />
+  )
 }

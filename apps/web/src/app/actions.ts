@@ -25,8 +25,8 @@ type StartSessionResult =
  * セッション開始（通常モード / 神々モード共通の Server Action）
  *
  * mode に応じて /api/play-sessions/solo または /api/play-sessions/challenge-gods を叩く。
- * 神々モードは ranking_snapshots 未整備の現状では HTTP 409 になるため、その場合は
- * 専用エラーメッセージを返す。
+ * 神々モードはトップ 10 不在 / ゴーストデータ取得不能時に HTTP 409 を返し、
+ * その場合は通常モードへ誘導するエラーメッセージを表示する。
  */
 export const startPlaySession = async (
   languageId: number,
@@ -49,10 +49,9 @@ export const startPlaySession = async (
       }
     } catch {
       /**
-       * apiClient はエラーで throw するだけで status を持たないため、現状はメッセージで割り切る。
-       * Phase 4 (ranking_snapshots) 完成前は 409 が想定動作
+       * apiClient はエラーで throw するだけで status を持たないため、メッセージで割り切る
        */
-      return { error: "「神々に挑戦」は近日公開予定です（ランキング集計が整い次第有効化されます）。" }
+      return { error: "対戦相手の神を準備できませんでした。通常プレイを試すか、しばらく経ってから再度お試しください。" }
     }
   }
 
