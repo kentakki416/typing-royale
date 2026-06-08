@@ -125,6 +125,17 @@ const apiEnvSchema = z
      * Redis 接続 URL（個別指定がある場合は @repo/redis がそちらを優先）
      */
     REDIS_URL: z.string().url().optional(),
+
+    /**
+     * rewards 機能の達成カード PNG キャッシュ先 (filesystem)
+     * 本番 S3 対応は別 PR。MVP はローカル FS で運用
+     */
+    REWARDS_CACHE_DIR: z.string().default("/tmp/typing-royale-rewards"),
+
+    /**
+     * Express の `/cache/rewards` 静的配信パス。クライアントはこの prefix で PNG を取得する
+     */
+    REWARDS_PUBLIC_URL_PREFIX: z.string().default("/cache/rewards"),
   })
   .superRefine((env, ctx) => {
     /**

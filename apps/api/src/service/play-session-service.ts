@@ -4,6 +4,7 @@ import { badRequestError, conflictError, err, notFoundError, ok, Result } from "
 import { logger } from "@repo/logger"
 
 import { PLAY_SESSION_TTL_SECONDS, PROBLEMS_PER_SESSION } from "../const"
+import { CardStorage } from "../lib/card-storage"
 import {
   aggregateMistypeStats,
   aggregateProblemProgress,
@@ -21,9 +22,11 @@ import {
   ProblemRepository,
   RankingSnapshotRepository,
   RankingTopEntry,
+  RewardRepository,
   TransactionRunner,
   UserLanguageBestRepository,
   UserLifetimeStatsRepository,
+  UserRepository,
 } from "../repository/prisma"
 import { PlaySessionStateRepository } from "../repository/redis"
 import {
@@ -35,6 +38,8 @@ import {
   PlaySessionState,
   RepoInfo,
 } from "../types/domain"
+
+import * as rewardsService from "./rewards-service"
 
 type SoloSessionRepo = {
     crawledRepoRepository: CrawledRepoRepository
@@ -136,14 +141,17 @@ export const createSoloSession = async (
 }
 
 type FinishSessionRepo = {
+    cardStorage: CardStorage
     keystrokeLogRepository: KeystrokeLogRepository
     playSessionProblemRepository: PlaySessionProblemRepository
     playSessionRepository: PlaySessionRepository
     playSessionStateRepository: PlaySessionStateRepository
     problemRepository: ProblemRepository
+    rewardRepository: RewardRepository
     transactionRunner: TransactionRunner
     userLanguageBestRepository: UserLanguageBestRepository
     userLifetimeStatsRepository: UserLifetimeStatsRepository
+    userRepository: UserRepository
 }
 
 export type FinishSessionInput = {
@@ -359,6 +367,35 @@ export const finishSession = async (
     ? null
     : (await repo.userLanguageBestRepository.countHigherRanked(state.languageId, updatedBest)) + 1
   const topTenBoundaryScore = await repo.userLanguageBestRepository.findTenthScore(state.languageId)
+
+  /**
+   * 8. グレードアップが発生していれば達成カード PNG を自動生成 (rewards step6)
+   * 失敗しても /finish 全体は成功扱い: rewards 行は assetUrl=null で残り、
+   * マイページから再生成リクエストが可能
+   */
+  if (gradeUp !== null) {
+    try {
+      await rewardsService.createCard(
+        {
+          payload: { grade_slug: gradeUp.to.slug },
+          type: "grade_up",
+          userId: state.userId,
+        },
+        {
+          cardStorage: repo.cardStorage,
+          rewardRepository: repo.rewardRepository,
+          userLifetimeStatsRepository: repo.userLifetimeStatsRepository,
+          userRepository: repo.userRepository,
+        },
+      )
+    } catch (err) {
+      logger.warn("PlaySessionService: achievement card generation failed", {
+        error: err instanceof Error ? err.message : String(err),
+        gradeSlug: gradeUp.to.slug,
+        userId: state.userId,
+      })
+    }
+  }
 
   logger.info("PlaySessionService: Session finished", {
     bestScoreUpdated,

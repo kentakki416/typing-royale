@@ -3,15 +3,18 @@ import { Response } from "express"
 import { ErrorResponse, finishPlaySessionPathParamSchema, finishPlaySessionRequestSchema, finishPlaySessionResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { CardStorage } from "../../lib/card-storage"
 import { AuthRequest } from "../../middleware/auth"
 import {
   KeystrokeLogRepository,
   PlaySessionProblemRepository,
   PlaySessionRepository,
   ProblemRepository,
+  RewardRepository,
   TransactionRunner,
   UserLanguageBestRepository,
   UserLifetimeStatsRepository,
+  UserRepository,
 } from "../../repository/prisma"
 import { PlaySessionStateRepository } from "../../repository/redis"
 import * as service from "../../service"
@@ -27,14 +30,17 @@ import * as service from "../../service"
  */
 export class PlaySessionFinishController {
   constructor(
+        private cardStorage: CardStorage,
         private keystrokeLogRepository: KeystrokeLogRepository,
         private playSessionProblemRepository: PlaySessionProblemRepository,
         private playSessionRepository: PlaySessionRepository,
         private playSessionStateRepository: PlaySessionStateRepository,
         private problemRepository: ProblemRepository,
+        private rewardRepository: RewardRepository,
         private transactionRunner: TransactionRunner,
         private userLanguageBestRepository: UserLanguageBestRepository,
         private userLifetimeStatsRepository: UserLifetimeStatsRepository,
+        private userRepository: UserRepository,
   ) {}
 
   async execute(req: AuthRequest, res: Response) {
@@ -60,14 +66,17 @@ export class PlaySessionFinishController {
     const result = await service.playSession.finishSession(
       { accuracy, keystrokeLogs, sessionId: id, typedChars },
       {
+        cardStorage: this.cardStorage,
         keystrokeLogRepository: this.keystrokeLogRepository,
         playSessionProblemRepository: this.playSessionProblemRepository,
         playSessionRepository: this.playSessionRepository,
         playSessionStateRepository: this.playSessionStateRepository,
         problemRepository: this.problemRepository,
+        rewardRepository: this.rewardRepository,
         transactionRunner: this.transactionRunner,
         userLanguageBestRepository: this.userLanguageBestRepository,
         userLifetimeStatsRepository: this.userLifetimeStatsRepository,
+        userRepository: this.userRepository,
       },
     )
 
