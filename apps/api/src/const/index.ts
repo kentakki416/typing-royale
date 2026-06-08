@@ -19,6 +19,7 @@ export const PUBLIC_PATHS: readonly string[] = [
   "/api/auth/refresh",
   "/api/health",
   "/api/memo",
+  "/api/players",
   "/api/rankings",
   ...DEV_ONLY_PUBLIC_PATHS,
 ]

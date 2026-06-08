@@ -54,6 +54,14 @@ export type MyLanguageBest = {
 }
 
 /**
+ * プレイヤー詳細ページ用の言語別ベスト（言語情報込み）
+ */
+export type UserLanguageBestWithLanguage = MyLanguageBest & {
+    language: { id: number; name: string; slug: string }
+    languageId: number
+}
+
+/**
  * UserLanguageBest リポジトリのインターフェース
  *
  * `user_language_best` を source としてリアルタイム集計でランキングを返す。
@@ -62,6 +70,7 @@ export type MyLanguageBest = {
 export interface UserLanguageBestRepository {
     countHigherRanked(languageId: number, myBest: MyLanguageBest): Promise<number>
     countRankableByLanguage(languageId: number): Promise<number>
+    findAllByUserId(userId: number): Promise<UserLanguageBestWithLanguage[]>
     findMine(userId: number, languageId: number): Promise<MyLanguageBest | null>
     findTenthScore(languageId: number): Promise<number | null>
     findTopByLanguage(languageId: number, limit: number): Promise<UserLanguageBestWithUser[]>
@@ -112,6 +121,25 @@ export class PrismaUserLanguageBestRepository implements UserLanguageBestReposit
         displayName: row.user.displayName ?? `user${row.user.id}`,
         id: row.user.id,
       },
+    }))
+  }
+
+  async findAllByUserId(userId: number): Promise<UserLanguageBestWithLanguage[]> {
+    const rows = await this._prisma.userLanguageBest.findMany({
+      include: {
+        language: { select: { id: true, name: true, slug: true } },
+      },
+      orderBy: { language: { id: "asc" } },
+      where: { userId },
+    })
+    return rows.map((row) => ({
+      accuracy: row.accuracy,
+      bestPlaySessionId: row.bestPlaySessionId,
+      language: row.language,
+      languageId: row.languageId,
+      playedAt: row.playedAt,
+      score: row.score,
+      typedChars: row.typedChars,
     }))
   }
 
