@@ -52,6 +52,32 @@ export function AccountForm({ initialUser }: Props) {
             <p className="text-xs text-muted mt-8">1〜50 文字。ランキング・リプレイで表示されます。</p>
           </div>
 
+          <div className="mb-16">
+            <label className="text-sm" htmlFor="favorite_repo_url">お気に入りリポジトリ URL</label>
+            <input
+              defaultValue={displayUser.favorite_repo_url ?? ""}
+              id="favorite_repo_url"
+              maxLength={200}
+              name="favorite_repo_url"
+              placeholder="https://github.com/owner/repo"
+              style={{
+                background: "var(--bg-base)",
+                border: "1px solid var(--border)",
+                borderRadius: "6px",
+                color: "var(--text-primary)",
+                display: "block",
+                fontFamily: "var(--font-sans)",
+                marginTop: "6px",
+                padding: "8px 12px",
+                width: "100%",
+              }}
+              type="url"
+            />
+            <p className="text-xs text-muted mt-8">
+              Hall of Fame モーダルで「お気に入りリポジトリ」として公開されます。空欄で削除。
+            </p>
+          </div>
+
           <div className="flex-between mb-16">
             <div>
               <label className="text-sm" htmlFor="can_public_ranking">ランキング掲載</label>

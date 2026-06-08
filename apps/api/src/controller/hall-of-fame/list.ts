@@ -64,6 +64,7 @@ export class HallOfFameListController {
           avatar_url: e.user.avatarUrl,
           current_grade: e.user.currentGrade,
           display_name: e.user.displayName,
+          favorite_repo_url: e.user.favoriteRepoUrl,
         },
       })),
       language: result.value.language,

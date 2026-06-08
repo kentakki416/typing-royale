@@ -19,18 +19,39 @@ export const updateProfileAction = async (
 ): Promise<{ error?: string; success?: boolean; user?: UpdateUserResponse }> => {
   const displayNameRaw = formData.get("display_name")
   const canPublicRankingRaw = formData.get("can_public_ranking")
+  const favoriteRepoUrlRaw = formData.get("favorite_repo_url")
 
   const displayName = typeof displayNameRaw === "string" ? displayNameRaw.trim() : undefined
   const canPublicRanking = canPublicRankingRaw === "on" || canPublicRankingRaw === "true"
+  /**
+   * 空文字は null（クリア）、未入力は undefined（変更なし）として扱う
+   */
+  const favoriteRepoUrlTrimmed = typeof favoriteRepoUrlRaw === "string" ? favoriteRepoUrlRaw.trim() : undefined
+  const favoriteRepoUrl = favoriteRepoUrlTrimmed === undefined
+    ? undefined
+    : favoriteRepoUrlTrimmed === ""
+      ? null
+      : favoriteRepoUrlTrimmed
 
   if (displayName !== undefined && (displayName.length < 1 || displayName.length > 50)) {
     return { error: "表示名は 1〜50 文字で入力してください。" }
+  }
+  if (typeof favoriteRepoUrl === "string") {
+    if (favoriteRepoUrl.length > 200) {
+      return { error: "お気に入りリポジトリ URL は 200 文字以下で入力してください。" }
+    }
+    try {
+      new URL(favoriteRepoUrl)
+    } catch {
+      return { error: "お気に入りリポジトリ URL は http(s) 形式で入力してください。" }
+    }
   }
 
   try {
     const updated = await apiClient.patch<UpdateUserResponse>("/api/user", {
       can_public_ranking: canPublicRanking,
       display_name: displayName,
+      favorite_repo_url: favoriteRepoUrl,
     })
     return { success: true, user: updateUserResponseSchema.parse(updated) }
   } catch {

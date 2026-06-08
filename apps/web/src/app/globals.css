@@ -1852,8 +1852,8 @@ code.inline {
   transform: translate(-50%, -50%) scale(0.7);
   opacity: 0;
   width: min(640px, calc(100% - 48px));
-  max-height: calc(100vh - 48px);
-  overflow-y: auto;
+  /* 王冠が左上にはみ出して見えるよう overflow を解放 */
+  overflow: visible;
   background:
     radial-gradient(ellipse 100% 50% at 50% 0%, var(--c-modal-glow), transparent 60%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 14%, transparent 88%, rgba(0, 0, 0, 0.2) 100%),
@@ -1896,8 +1896,8 @@ code.inline {
 .god-modal-crown {
   position: absolute;
   top: -28px;
-  left: 50%;
-  transform: translateX(-50%) rotate(-4deg);
+  left: -16px;
+  transform: rotate(-14deg);
   width: 88px;
   height: 64px;
   filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.55))

@@ -23,6 +23,10 @@ export type CreateUserInput = {
 export type UpdateUserInput = {
     canPublicRanking?: boolean
     displayName?: string
+    /**
+     * undefined で変更なし、null で空欄リセット
+     */
+    favoriteRepoUrl?: string | null
 }
 
 /**
@@ -136,6 +140,7 @@ export class PrismaUserRepository implements UserRepository {
       data: {
         ...(data.canPublicRanking !== undefined && { canPublicRanking: data.canPublicRanking }),
         ...(data.displayName !== undefined && { displayName: data.displayName }),
+        ...(data.favoriteRepoUrl !== undefined && { favoriteRepoUrl: data.favoriteRepoUrl }),
       },
       where: { id },
     })
@@ -160,6 +165,7 @@ export class PrismaUserRepository implements UserRepository {
       createdAt: prismaUser.createdAt,
       displayName: prismaUser.displayName,
       email: prismaUser.email,
+      favoriteRepoUrl: prismaUser.favoriteRepoUrl,
       id: prismaUser.id,
       updatedAt: prismaUser.updatedAt,
     }

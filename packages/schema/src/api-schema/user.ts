@@ -12,6 +12,7 @@ const userSchema = z.object({
   created_at: z.string(),
   display_name: z.string().nullable(),
   email: z.string().nullable(),
+  favorite_repo_url: z.string().nullable(),
   id: z.number(),
 })
 
@@ -40,9 +41,17 @@ export const updateUserRequestSchema = z
   .object({
     can_public_ranking: z.boolean().optional(),
     display_name: z.string().trim().min(1).max(50).optional(),
+    /**
+     * プロフィール公開用のお気に入りリポジトリ URL。
+     * null で空欄リセット、undefined で変更なし。汎用 URL を許容（github.com 限定にしない）
+     */
+    favorite_repo_url: z.string().trim().max(200).url().nullable().optional(),
   })
   .refine(
-    (v) => v.can_public_ranking !== undefined || v.display_name !== undefined,
+    (v) =>
+      v.can_public_ranking !== undefined
+      || v.display_name !== undefined
+      || v.favorite_repo_url !== undefined,
     { message: "At least one field is required" },
   )
 

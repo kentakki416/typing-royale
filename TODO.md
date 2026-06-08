@@ -47,7 +47,7 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 - [x] `apps/api` の Dockerfile 作成（本番用 builder / runner マルチステージ。ローカル開発は `pnpm dev` で起動するため dev ステージは不要）
 - [x] `apps/cron/` ディレクトリ作成・`package.json`・Dockerfile（クローラ + ライセンス再検証 + ランキングバッチを兼ねる）
 - [x] `apps/cron/.env.local` を dotenvx で暗号化作成（apps/api と同じパターン、`.env.keys` は root から symlink）
-- [ ] `pnpm dev` で web / api / Postgres / Redis が同時起動できることを確認
+- [x] `pnpm dev` で web / api / Postgres / Redis が同時起動できることを確認
 - [x] ~~Sentry のローカルダミー DSN 設定~~ Sentry はプロジェクト全体から削除済み（観測は logger.error → CloudWatch Logs Insights で行う方針）
 - [x] `apps/api` に `/healthz` エンドポイント追加 ← 既存の `GET /api/health` (liveness) と `GET /api/health/ready` (readiness) で要件充足。ALB / ECS のヘルスチェックパスは Phase 9 でターゲットグループ設定時にこちらを指定する
 
@@ -81,9 +81,9 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 - [x] `apps/api/src/repository/prisma/auth-account-repository.ts` 拡張（provider 汎用化）
 - [x] `apps/api/src/lib/jwt.ts` 既存利用（access 15分 / refresh 7日）
 - [x] `apps/api/src/repository/redis/refresh-token-repository.ts` 既存利用
-- [ ] `POST /api/auth/refresh`、`POST /api/auth/logout`、`GET/PATCH/DELETE /api/me` の動作確認（既存共用）
-- [ ] `POST /api/play-sessions/claim` 新規（ゲストプレイのバッファをアカウント紐付け、Phase 3 と並行可）
-- [ ] 単体テスト（auth-service / github-oauth）
+- [x] `POST /api/auth/refresh`、`POST /api/auth/logout`、`GET/PATCH/DELETE /api/me` の動作確認（既存共用）
+- [ ] `POST /api/play-sessions/claim` 新規（ゲストプレイのバッファをアカウント紐付け、Phase 3 と並行可）← ゲストプレイは IndexedDB バッファ自体が Phase 3 で deferred
+- [x] 単体テスト（auth-service / github-oauth）
 
 ### apps/web（Next.js）
 
@@ -101,9 +101,9 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 ### 動作確認（ローカル）
 
 - [x] dev 環境で GitHub ログイン成功確認（2026-06-04 認証フロー完走 / migration 適用後）
-- [ ] httpOnly cookie に JWT が保存されることを確認
-- [ ] refresh token が Redis に保存されることを確認
-- [ ] アカウント削除で User / AuthAccount / refresh token が全削除されることを確認
+- [x] httpOnly cookie に JWT が保存されることを確認
+- [x] refresh token が Redis に保存されることを確認
+- [x] アカウント削除で User / AuthAccount / refresh token が全削除されることを確認（test/controller/user/delete.test.ts で網羅）
 
 ---
 
@@ -151,7 +151,7 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 - [x] コメント除去後のコードを目視確認（関数本体のみ、TS 型注釈は保持）
 - [x] graceful shutdown 動作確認（SIGTERM で `prisma.$disconnect()` ログ → exit 0）
 - [ ] **ローカルでブートストラップ実行**：`CRAWLER_REPOS_PER_RUN=5` で 5〜10 repo 一気に積み上げる動作確認
-- [ ] 失敗時のリトライ・disabled 化の挙動確認
+- [x] 失敗時のリトライ・disabled 化の挙動確認（test/service/crawler-service の正常系/異常系で網羅）
 - [x] **言語別ファイル拡張子の分離** (**2026-06-06 修正**): `GithubClient` のコンストラクタ引数で `targetExtensions: RegExp` を受け取る形に変更。TypeScript task では `/\.(ts|tsx)$/` を指定。listSourceFiles で未指定の場合は throw する。**動作確認**: 2 回目実行で vuejs/vue を選んで 100 problems 抽出、すべて `.ts/.tsx` で `.js/.jsx` は 0 件
 
 ---
@@ -162,28 +162,28 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### DB スキーマ追加
 
-- [ ] `play_sessions` テーブル定義（`crawledRepoId`, `repoFallback`, `mistypeStats`, `flagged` 等含む）
-- [ ] `play_session_problems` テーブル定義
-- [ ] `keystroke_logs` テーブル定義（gzip bytea）
-- [ ] Prisma マイグレーション
+- [x] `play_sessions` テーブル定義（`crawledRepoId`, `mistypeStats` 等含む。`flagged` / `repoFallback` は MVP では持たず deferred）
+- [x] `play_session_problems` テーブル定義
+- [x] `keystroke_logs` テーブル定義（gzip bytea）
+- [x] Prisma マイグレーション（`20260607023454_typing_engine_initial`）
 
 ### apps/api 実装（ソロモード）
 
-- [ ] `POST /api/play-sessions/solo` Controller
-  - [ ] `disabled=false AND storedCount > 0` の repo からランダム 1 選定
-  - [ ] 20 問抽出（fallback ロジック含む）
-  - [ ] `repoInfo` 構築
-  - [ ] Redis にステート保存（TTL 5 分）
-- [ ] `POST /api/play-sessions/:id/finish` Controller
-  - [ ] Redis ステート取得
-  - [ ] `score = typedChars × accuracy` 計算
-  - [ ] スコア上限チェック（120 秒で 1500 文字超 → HTTP 400）
-  - [ ] 認証済みなら DB 保存、ゲストならスキップ
-  - [ ] サーバー側で `mistypeStats` 集計（keystroke log から）
-  - [ ] `user_lifetime_stats` 更新（`totalTypedChars`、`bestScore` 等）
-  - [ ] Redis ステート削除
-- [ ] keystroke log を gzip 圧縮して保存
-- [ ] paste イベント検知（クライアント側、サーバーで二重チェック不要）
+- [x] `POST /api/play-sessions/solo` Controller
+  - [x] `disabled=false AND storedCount > 0` の repo からランダム 1 選定
+  - [x] 20 問抽出（既存問題のシャッフル）
+  - [x] `repoInfo` 構築
+  - [x] Redis にステート保存（TTL 5 分）
+- [x] `POST /api/play-sessions/:id/finish` Controller
+  - [x] Redis ステート取得
+  - [x] `score = typedChars × accuracy` 計算
+  - [x] スコア上限チェック（120 秒で 1500 文字超 → HTTP 400）
+  - [x] 認証済みなら DB 保存、ゲストならスキップ
+  - [x] サーバー側で `mistypeStats` 集計（keystroke log から）
+  - [x] `user_lifetime_stats` 更新（`totalTypedChars`、`bestScore` 等）
+  - [x] Redis ステート削除
+- [x] keystroke log を gzip 圧縮して保存
+- [x] paste イベント検知（クライアント側、サーバーで二重チェック不要）
 
 ### apps/web 実装（通常モード UI）
 
@@ -205,7 +205,7 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
   - [x] サイドに repo 名・関数名を控えめ表示（code-block-source バー）
   - [x] IME ON 検知 → 警告表示
 - [x] **キーストロークログ記録**（`KeystrokeLogs` 配列、`{ elapsedMs, inputChar, isCorrect, problemIndex }`）(PR #22 で型決定 / PR #23 で蓄積)
-- [~] **リザルト画面**（基本版、順位は Phase 4 で）← `docs/mocks/result.html` (本 step5 で実装中)
+- [x] **リザルト画面**（基本版、順位は Phase 4 で）← `docs/mocks/result.html` (Phase 4 完了後の最新版で順位表示も入れ込み済み)
   - [x] スコア・累計文字数・正確率・出題数 / 完走数（4 stat）
   - [x] 「今回のリポジトリ」カード（`repoInfo` から）
   - [x] ニガテ文字（`mistypeStats` 上位 5〜10）
@@ -228,9 +228,9 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### 動作確認（ローカル）
 
-- [ ] ローカルで言語選択 → スプラッシュ → 120 秒プレイ → リザルトの一連の流れ
-- [ ] サーバー側で `play_sessions` / `keystroke_logs` / `mistypeStats` が正しく保存される
-- [ ] ゲストでプレイ → ログイン → アカウントに紐付くフローの確認
+- [x] ローカルで言語選択 → スプラッシュ → 120 秒プレイ → リザルトの一連の流れ
+- [x] サーバー側で `play_sessions` / `keystroke_logs` / `mistypeStats` が正しく保存される
+- [ ] ゲストでプレイ → ログイン → アカウントに紐付くフローの確認 ← IndexedDB バッファ自体が MVP 後 deferred
 - [ ] 寿司打と並走テストでタイピング体感を比較
 
 ---
@@ -241,48 +241,47 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### DB スキーマ追加
 
-- [ ] `ranking_snapshots` テーブル定義（言語別 × トップ 1000、`snapshotUpdatedAt` 含む）
-- [ ] `user_lifetime_stats` テーブル定義（`bestScore`, `currentGrade`, `currentGradeReachedAt`, `lifetimeMistypeStats` 等含む）
-- [ ] Prisma マイグレーション
+- [x] `user_lifetime_stats` テーブル定義（`bestScore`, `currentGrade`, `currentGradeReachedAt`, `lifetimeMistypeStats` 等含む）
+- [x] `user_language_best` テーブル定義（リアルタイム集計用、`ranking_snapshots` cron は MVP では不要）
+- [x] Prisma マイグレーション
 
 ### apps/api 実装（ランキング）
 
-- [ ] **毎時バッチスクリプト** 実装（CLI コマンド `pnpm batch:ranking`、top-1000 ヒープ抽出、`WHERE publicRanking=true AND NOT flagged`）
-- [ ] `ranking_snapshots` 更新ロジック
-- [ ] Redis キャッシュ更新（バッチ完了時に該当キー失効）
-- [ ] `GET /api/rankings` Controller（言語別トップ 10 + `snapshotUpdatedAt`）
-- [ ] `GET /api/rankings/me` Controller（1000 位以内 or 圏外を判定して返す）
+- [x] **`user_language_best` を ORDER BY して都度集計するリアルタイム方式に変更**（cron バッチ不要、`docs/spec/score-ranking/README.md` 参照）
+- [x] `GET /api/rankings` Controller（言語別トップ 10）
+- [x] `GET /api/rankings/me` Controller（順位 + grade + next_grade を返す）
+- [x] `GET /api/players/:userId` Controller（プレイヤー詳細）
 
 ### グレード判定ロジック
 
-- [ ] `GRADES` 定数定義（Intern → Fellow の 8 段階）
-- [ ] `calcGrade(bestScore)` 関数実装
-- [ ] `/finish` 時の `bestScore` 更新時にグレード再判定
-- [ ] `currentGrade` / `currentGradeReachedAt` 更新
-- [ ] グレードアップ時はレスポンスに `gradeUp: { from, to }` を含める
+- [x] `GRADES` 定数定義（Intern → Fellow の 8 段階、`apps/api/src/lib/grade.ts`）
+- [x] `calcGrade(bestScore)` 関数実装
+- [x] `/finish` 時の `bestScore` 更新時にグレード再判定
+- [x] `currentGrade` / `currentGradeReachedAt` 更新
+- [x] グレードアップ時はレスポンスに `grade_up: { from, to }` を含める
 
 ### apps/web 実装
 
 > **UI は [`docs/mocks/`](docs/mocks/) のモックを参照**：`ranking.html` / `player-detail.html` / `mypage.html`。
 
-- [ ] ランキング画面（言語タブ切替、トップ 10 表示、自分の順位 or 「圏外」表示）← `docs/mocks/ranking.html`
-- [ ] プレイヤー詳細ページ ← `docs/mocks/player-detail.html`
-- [ ] **リザルト画面拡張**：
-  - [ ] 「現在のエンジニアグレード」表示（即時）
-  - [ ] 次グレードまでの進捗バー
-  - [ ] 「集計時刻 XX:XX 時点」の順位表示（圏外なら別表示）
-  - [ ] グレードアップ時の祝賀演出
-- [ ] **マイページ > ホーム画面**：
-  - [ ] グレード大表示 + 進捗バー
-  - [ ] ベストスコア / 全期間順位（or 圏外）/ 累計打鍵数 / 連続日数
-  - [ ] グレード昇格履歴
+- [x] ランキング画面（言語タブ切替、トップ 10 表示、自分の順位 or 「圏外」表示）← `docs/mocks/ranking.html`
+- [x] プレイヤー詳細ページ ← `docs/mocks/player-detail.html`
+- [x] **リザルト画面拡張**：
+  - [x] 「現在のエンジニアグレード」表示（即時）
+  - [x] 次グレードまでの進捗バー
+  - [x] 順位の即時表示（リアルタイム集計）
+  - [x] グレードアップ時の祝賀演出
+- [x] **マイページ > ホーム画面**：
+  - [x] グレード大表示 + 進捗バー
+  - [x] ベストスコア / 全期間順位 / 累計打鍵数
+  - [ ] 連続日数 / グレード昇格履歴 ← deferred (lifetimeStats.streakDays 自体は記録あり、表示のみ未実装)
 
 ### 動作確認（ローカル）
 
-- [ ] プレイ → DB 保存 → 手動バッチ実行 → ランキング画面に反映
-- [ ] グレードアップ時の挙動確認（リザルト演出 + マイページ反映）
-- [ ] 圏外ユーザーの UX 確認（順位の代わりにグレード進捗）
-- [ ] `publicRanking=false` 切り替えでランキングから除外されることを確認
+- [x] プレイ → DB 保存 → ランキング画面に即時反映
+- [x] グレードアップ時の挙動確認（リザルト演出 + マイページ反映）
+- [x] 圏外ユーザーの UX 確認（順位の代わりにグレード進捗）
+- [x] `publicRanking=false` 切り替えでランキングから除外されることを確認
 
 ---
 
@@ -292,7 +291,7 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### apps/api 実装
 
-- [x] `POST /api/play-sessions/challenge-gods` Controller (本 step6 で実装)
+- [x] `POST /api/play-sessions/challenge-gods` Controller
   - [x] オールタイムトップ 10 を `RankingSnapshotRepository.getTopByLanguage` から取得
   - [x] 自分自身を候補から除外、候補 0 件なら 409 Conflict
   - [x] 抽選した神の `play_session_problems` 先頭 20 問取得 (`PlaySessionRepository.findGhostSourceById`)
@@ -300,38 +299,35 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
   - [x] 神の `keystroke_logs.compressedLog` を gunzip + JSON.parse (`KeystrokeLogRepository.findByPlaySessionId`)
   - [x] 神セッション or log 取得不可なら次の候補へ（最大候補数分リトライ）
   - [x] Redis に `mode=challenge_gods` + `ghostSessionId` で保存
-  - [x] **score-ranking 完成までは `StubRankingSnapshotRepository` で常に 409 Conflict を返す**（DI 差し替えで有効化）
-- [ ] `GET /api/ghosts/:playSessionId` Controller
-  - [ ] `keystroke_logs.compressedLog` を gzip のまま返却 ← 本 step6 では /challenge-gods のレスポンスに同梱しており、別エンドポイントは不要かもしれない。ghost-battle feature で再検討
-  - [ ] HTTP `Cache-Control: public, max-age=86400`
+  - [x] **score-ranking 完成済み**（StubRankingSnapshotRepository は撤去、Prisma 実装で稼働中）
+- [x] **`GET /api/ghosts/:playSessionId` Controller は実装しない**（ghost-battle step1 の設計判断で、`/challenge-gods` のレスポンスに `ghost_keystroke_logs` を同梱する方式に最適化。リプレイ視聴は replay-viewer feature の `GET /api/replays/:id` 経由）
 
 ### apps/web 実装
 
 > **UI は [`docs/mocks/`](docs/mocks/) のモックを参照**：`play-ghost.html` / `modal-ghost-result.html`。
 
-- [x] 言語選択画面の「神々に挑戦」ボタンを `startPlaySession(_, "challenge_gods")` 経由で `/api/play-sessions/challenge-gods` に接続 (本 step6)
-  - [x] トップ 10 不在時（HTTP 409）は「近日公開予定です（ランキング集計が整い次第有効化されます）」を表示
+- [x] 言語選択画面の「神々に挑戦」ボタンを `startPlaySession(_, "challenge_gods")` 経由で `/api/play-sessions/challenge-gods` に接続
+  - [x] トップ 10 不在時（HTTP 409）はエラーメッセージで通常モードへ誘導
   - [x] sessionStorage に `ghostKeystrokeLogs / ghostSessionId / ghostUserDisplay / mode` を保存して /play/[sessionId] に引き継ぎ
-  - [x] PlayLoop で `mode="challenge_gods"` 時に topbar の modeBadge を「⚡ 神々に挑戦」に + 神の表示カード（grade + displayName + bestScore）をゴールド枠で表示
-- [ ] **神々モードプレイ画面**：← `docs/mocks/play-ghost.html`
-  - [ ] ヘッダーに「あなた：XXX 文字 / 神：YYY 文字」とリアルタイム差分バー
-  - [ ] サイドエリアに神の現在状態（「問題 3 / 12 行目」）
-  - [ ] 神の表示名にグレード名併記（例：「Principal Engineer kenta」）
-- [ ] **ゴースト再生エンジン**：
-  - [ ] gzip 解凍
-  - [ ] `requestAnimationFrame` で `t` の経過時刻に合わせて進行
-  - [ ] 神の累計文字数を秒単位で算出
-- [ ] **神々戦リザルト画面**：← `docs/mocks/modal-ghost-result.html`
-  - [ ] 勝敗・累計文字数差・正確率差・出題進捗の比較
-  - [ ] 「もう一度」「別の神」ボタン
-- [ ] **ゴーストデータ取得失敗時の再抽選**（最大 3 回、失敗で通常モードへ）
+  - [x] PlayLoop で `mode="challenge_gods"` 時に topbar の modeBadge を「⚡ 神々に挑戦」に
+- [x] **神々モードプレイ画面**（ghost-battle step1 完了）：← `docs/mocks/play-ghost.html`
+  - [x] HUD に「残り時間 / あなた / 神 / 差」の 4 セル
+  - [x] 全 20 問の合計文字数を分母にした race-bar（あなた / 神）
+  - [x] サイドに神カード（avatar + グレード + 表示名 + 進捗 + 正確率 + ベスト）
+- [x] **ゴースト再生エンジン**（ghost-battle step1 完了）：
+  - [x] 既存 120 秒 rAF tick で `ghost_keystroke_logs` を `elapsed_ms` に応じて消費
+  - [x] 神の累計文字数 / 現在問題 / 正確率を tick 毎に更新
+- [x] **神々戦リザルト画面**（ghost-battle step1 完了）：← `docs/mocks/modal-ghost-result.html`
+  - [x] 勝敗 / 累計文字数差 / 正確率差 / 出題シーケンスの達成状況
+  - [x] 「もう一度神々に挑戦」「通常プレイへ」（指名対戦不可、ランダム再抽選で言語選択へ戻す）
+- [x] **ゴーストデータ取得失敗時の再抽選**（API 側で最大 候補数分リトライ、全失敗で 409）
 
 ### 動作確認（ローカル）
 
-- [ ] テストユーザー数名でプレイし、トップ 10 のデータを作る
-- [ ] 神々モード起動 → ゴーストと併走 → リザルト
-- [ ] トップ 10 不在時のフォールバック（DB をクリアして検証）
-- [ ] ゴーストデータ欠落時の再抽選
+- [x] テストユーザー数名でプレイし、トップ 10 のデータを作る（dev seed + `seed-ghost-fixture.ts`）
+- [x] 神々モード起動 → ゴーストと併走 → リザルト
+- [x] トップ 10 不在時のフォールバック（DB をクリアして検証）
+- [x] ゴーストデータ欠落時の再抽選
 
 ---
 
@@ -341,36 +337,40 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### DB スキーマ追加
 
-- [ ] `play_sessions.persistReplay (bool)` カラム追加（トップ 10 入賞時に true）
+- [ ] `play_sessions.persistReplay (bool)` カラム追加 ← MVP では全 play_session を永続前提のため deferred（cleanup cron が未整備）
 - [ ] Prisma マイグレーション
 
 ### apps/api 実装
 
-- [ ] `GET /api/replays/:playSessionId` Controller
-  - [ ] `play_sessions` + `play_session_problems` + `keystroke_logs` + `problems` を組み合わせて返却
-  - [ ] HTTP `Cache-Control: public, max-age=604800`（7 日）
-- [ ] `GET /api/replays/featured` Controller（Hall of Fame 連携）
-- [ ] 毎時バッチでトップ 10 入賞プレイの `persistReplay=true` に更新
+- [x] `GET /api/replays/:playSessionId` Controller (replay-viewer step1)
+  - [x] `play_sessions` + `play_session_problems` + `keystroke_logs` + `problems` + `crawled_repos` を組み合わせて返却
+  - [x] canPublicRanking=false / keystroke 欠落で 404
+  - [ ] HTTP `Cache-Control: public, max-age=604800` ← CDN キャッシュは Phase 9 で
+- [x] `GET /api/replays/featured` Controller (replay-viewer step2、Hall of Fame コメント駆動)
+- [ ] 毎時バッチでトップ 10 入賞プレイの `persistReplay=true` に更新 ← persistReplay 自体 deferred
 
 ### apps/web 実装
 
 > **UI は [`docs/mocks/replay.html`](docs/mocks/replay.html) を参照**。
 
-- [ ] **リプレイ画面**：← `docs/mocks/replay.html`
-  - [ ] コード表示エリア（コメント除去後の codeBlock）
-  - [ ] キーストローク再描画エンジン（再生・一時停止・1.5x / 2x 倍速・シーク）
-  - [ ] プログレスバーは 120 秒全体、問題遷移マーカー表示
-  - [ ] 累計文字数 / 正確率 / 経過時間 / 「問題 3 / 8」表示
-  - [ ] 出典表示（repo / file / 行範囲 / ライセンス / コミット SHA / 関数名）
-  - [ ] 「GitHub で原文を見る（コメント付き）」リンク
-- [ ] ランキング画面に「リプレイを見る」ボタン
-- [ ] プレイヤー詳細ページにそのプレイヤーの代表リプレイ一覧
-- [ ] SNS シェアボタン（X / Reddit / Zenn）と OG カード
+- [x] **リプレイ画面** (replay-viewer step1)：← `docs/mocks/replay.html`
+  - [x] コード表示エリア（コメント除去後の codeBlock）
+  - [x] キーストローク再描画エンジン（再生・一時停止・0.5x/1x/1.5x/2x 倍速・シーク）
+  - [x] プログレスバーは 120 秒全体
+  - [x] 累計文字数 / 正確率 / 経過時間 / 「問題 X / N」表示
+  - [x] 出典表示（owner/repo / ライセンス / 関数名 + GitHub リンク）
+  - [x] 「GitHub で原文を見る」リンク（sourceUrl の行範囲ハイライト付き）
+  - [ ] 問題遷移マーカー表示 ← MVP では割愛、要望出たら追加
+- [x] ランキング画面に「▶ 視聴」リンク (replay-viewer step1)
+- [x] Hall of Fame 各エントリに「▶ リプレイ」リンク (replay-viewer step2)
+- [x] Landing に「✨ 注目のリプレイ」セクション (replay-viewer step2)
+- [ ] プレイヤー詳細ページにそのプレイヤーの代表リプレイ一覧 ← /players/[id] は既存だが代表リプレイ一覧は別 step
+- [ ] SNS シェアボタン（X / Reddit / Zenn）と OG カード ← 別 step (replay-viewer step3 候補)
 
 ### 動作確認（ローカル）
 
-- [ ] トップ 10 のリプレイを実際に閲覧
-- [ ] シーク・倍速の動作確認
+- [x] トップ 10 のリプレイを実際に閲覧
+- [x] シーク・倍速の動作確認
 - [ ] モバイル閲覧の動作確認（プレイは PC のみ）
 
 ---
@@ -381,67 +381,65 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### DB スキーマ追加
 
-- [ ] `rewards` テーブル定義（`type` enum: badge / card / hall_of_fame）
-- [ ] `hall_of_fame_entries` テーブル定義（`comment` + `commentDraft` カラム含む）
-- [ ] `badge_configs` テーブル定義（`displayItems` jsonb）
-- [ ] Prisma マイグレーション
+- [x] `rewards` テーブル定義（`type`: grade_up / card）
+- [x] `hall_of_fame_entries` テーブル定義（`comment` + `commentSubmittedAt`、MVP では draft 列なし＝即時公開）
+- [x] `badge_configs` テーブル定義（`displayItems` jsonb）
+- [x] Prisma マイグレーション
 
 > **UI は [`docs/mocks/`](docs/mocks/) のモックを参照**：`badge-customize.html` / `hall-of-fame.html` / `mypage-rewards.html` / `modal-achievement.html` / `modal-top10-comment.html`。
 
 ### 動的 SVG バッジ
 
-- [ ] `GET /badge/:username.svg` Controller
-- [ ] SVG テンプレート作成（グレード名 / スコア / ランク / 連続日数 / 累計の組み合わせ）
-- [ ] バッジカスタマイズ画面（マイページ）← `docs/mocks/badge-customize.html`
-- [ ] HTTP `Cache-Control: public, max-age=300, stale-while-revalidate=600`
-- [ ] `badge_configs` 更新時に CDN キャッシュ無効化（ローカルでは確認のみ、本番設定は Phase 9）
+- [x] `GET /badge/:username.svg` Controller (rewards step2)
+- [x] SVG テンプレート作成（display_items: grade / best_score / rank / streak_days / typed_chars / username）
+- [x] バッジカスタマイズ画面（マイページ） (rewards step3) ← `docs/mocks/badge-customize.html`
+- [ ] HTTP `Cache-Control: public, max-age=300, stale-while-revalidate=600` ← MVP は no-cache、CDN 最適化は Phase 9 で
+- [ ] `badge_configs` 更新時に CDN キャッシュ無効化（同上、本番設定は Phase 9）
 
 ### 達成カード PNG
 
-- [ ] `satori` + `resvg-js` セットアップ
-- [ ] カードテンプレート JSX 作成（グレード別の色・装飾分岐）
-- [ ] `POST /api/rewards/cards` Controller
-  - [ ] 生成 → ローカルファイル保存（dev）/ S3 保存（Phase 9 で接続）
-  - [ ] URL 返却
-- [ ] 達成条件チェック実装：
-  - [ ] グレードアップ時
-  - [ ] 累計 10,000 文字 / 100,000 文字 達成時
-  - [ ] 初トップ 10 入り時
-  - [ ] 7 日連続プレイ達成時
-- [ ] 達成通知モーダル（プレイ完了直後）← `docs/mocks/modal-achievement.html`
+- [x] `satori` + `resvg-js` セットアップ (rewards step6)
+- [x] カードテンプレート JSX 作成（グレード別グラデーション）
+- [x] `POST /api/rewards/cards` Controller
+  - [x] 生成 → LocalCardStorage に保存 / `/cache/rewards/:filename` で静的配信
+  - [x] URL 返却（idempotent upsert）
+- 達成条件チェック実装：
+  - [x] グレードアップ時（/finish で gradeUp 検知時に自動生成）
+  - [ ] 累計 10,000 文字 / 100,000 文字 達成時 ← deferred
+  - [ ] 初トップ 10 入り時 ← deferred
+  - [ ] 7 日連続プレイ達成時 ← deferred
+- [ ] 達成通知モーダル（プレイ完了直後）← `docs/mocks/modal-achievement.html` ← deferred（現在はリザルト内の祝賀バナーのみ）
 
 ### Hall of Fame
 
-- [ ] `GET /api/hall-of-fame` Controller（言語別トップ 10 + 公開コメント）
-- [ ] `POST /api/hall-of-fame/comments` Controller（本人コメント登録、NG ワードフィルタ）
-- [ ] `/finish` レスポンスに **`topTenBoundaryScore`**（直近 snapshot の言語別 10 位スコア）を含める
-- [ ] **リザルト画面のコメント入力モーダル**：← `docs/mocks/modal-top10-comment.html`
-  - [ ] `myScore > topTenBoundaryScore` でモーダル表示
-  - [ ] 「🎉 トップ 10 入り見込み！」と暫定 UI 明示
-  - [ ] 入力内容を `commentDraft` に下書き保存
-  - [ ] 「あとで書く」スキップ動線
-- [ ] **draft → 公開昇格バッチ**：
-  - [ ] 毎時ランキングバッチ後、入賞確定者の `commentDraft` を `comment` に昇格・公開
-  - [ ] 圏外押し出し時は `commentDraft` を保持（次回入賞で再昇格 or マイページ再編集を促す）
-  - [ ] NG ワードフィルタを `commentDraft` 保存時（一次）と `comment` 昇格時（二次）の二段で実施
-- [ ] **マイページ > Hall of Fame コメント編集**：
-  - [ ] 入賞中の編集は即座に `comment` 反映（次バッチ待たない）
-  - [ ] 編集履歴の保持
-- [ ] Hall of Fame 画面実装 ← `docs/mocks/hall-of-fame.html`
-- [ ] リプレイへの導線
+- [x] `GET /api/hall-of-fame` Controller (rewards step4、言語別トップ 10 + 公開コメント)
+- [x] `POST /api/hall-of-fame/comments` Controller（本人コメント登録、NG ワードフィルタ）
+- [x] `/finish` レスポンスに **`top_ten_boundary_score`** を含める
+- [x] **リザルト画面のコメント入力モーダル**：← `docs/mocks/modal-top10-comment.html`
+  - [x] `score > top_ten_boundary_score` でモーダル表示
+  - [x] 「🏆 TOP 10 入り見込み！」表示
+  - [x] 入力内容を即時 `comment` として公開（draft 機構は MVP では持たず）
+  - [x] 「あとで書く」スキップ動線
+- [ ] **draft → 公開昇格バッチ** ← MVP では draft 機構を持たず即時公開で運用
+- [x] **マイページ > Hall of Fame コメント編集**：
+  - [x] PATCH /api/hall-of-fame/comments/:entryId で即時反映
+- [x] Hall of Fame 画面実装 (rewards step5) ← `docs/mocks/hall-of-fame.html`
+- [x] **Hall of Fame 上位 3 名のクラウン + カーテン演出 + 神モーダル** (rewards step7)
+- [x] **users.favorite_repo_url** + マイページ設定 + Hall of Fame モーダルでの表示 (rewards step7)
+- [x] リプレイへの導線（HoF 各エントリに「▶ リプレイ」リンク、replay-viewer step2）
 
 ### マイページ > 特典タブ
 
-- [ ] 獲得済み特典の一覧 ← `docs/mocks/mypage-rewards.html`
-- [ ] バッジ URL のコピー機能
-- [ ] 達成カード PNG のダウンロード機能
-- [ ] **Coming Soon プレースホルダ枠**（3D / Lottie / カード / アート / 公式 X 紹介投稿）
+- [x] 獲得済み特典の一覧 (rewards step6) ← `docs/mocks/mypage-rewards.html`
+- [x] バッジ URL のコピー機能 (rewards step3)
+- [x] 達成カード PNG のダウンロード機能 (rewards step6)
+- [ ] **Coming Soon プレースホルダ枠**（3D / Lottie / カード / アート / 公式 X 紹介投稿）← deferred
 
 ### 動作確認（ローカル）
 
-- [ ] SVG バッジをローカルでブラウザ表示確認
-- [ ] グレードアップで達成カードが自動生成されローカル保存されることを確認
-- [ ] Hall of Fame のコメント入力 → draft → 公開昇格フロー確認
+- [x] SVG バッジをローカルでブラウザ表示確認
+- [x] グレードアップで達成カードが自動生成されローカル保存されることを確認
+- [x] Hall of Fame のコメント入力 → 即時公開フロー確認
 
 ---
 

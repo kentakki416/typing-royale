@@ -50,6 +50,8 @@ model User {
   avatarUrl        String?  @map("avatar_url")
   /// false の場合はランキング集計から完全に除外される（順位そのものが計算されない）
   canPublicRanking Boolean  @default(true) @map("can_public_ranking")
+  /// プロフィール公開用の「お気に入りリポジトリ URL」（マイページから設定、Hall of Fame モーダル等で表示）
+  favoriteRepoUrl  String?  @map("favorite_repo_url")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 

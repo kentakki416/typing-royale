@@ -1671,6 +1671,7 @@ export const UserScalarFieldEnum = {
   displayName: 'displayName',
   avatarUrl: 'avatarUrl',
   canPublicRanking: 'canPublicRanking',
+  favoriteRepoUrl: 'favoriteRepoUrl',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

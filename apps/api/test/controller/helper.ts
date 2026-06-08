@@ -54,6 +54,7 @@ export const createTestUser = async (overrides?: {
     createdAt: prismaUser.createdAt,
     displayName: prismaUser.displayName,
     email: prismaUser.email,
+    favoriteRepoUrl: prismaUser.favoriteRepoUrl,
     id: prismaUser.id,
     updatedAt: prismaUser.updatedAt,
   }
