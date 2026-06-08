@@ -86,7 +86,6 @@ describe("badge.render", () => {
       })
       mockFindBadgeConfig.mockResolvedValue({
         displayItems: ["grade", "best_score", "streak_days"],
-        theme: "dark",
         updatedAt: new Date(),
       })
 
@@ -118,9 +117,9 @@ describe("badge.render", () => {
       })
       mockFindBadgeConfig.mockResolvedValue({
         displayItems: ["rank"],
-        theme: "dark",
         updatedAt: new Date(),
       })
+
       mockFindBySlug.mockResolvedValue({ id: 1, slug: "typescript" })
       mockFindMine.mockResolvedValue({
         accuracy: 0.95,

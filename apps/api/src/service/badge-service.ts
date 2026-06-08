@@ -1,6 +1,6 @@
 import { logger } from "@repo/logger"
 
-import { BadgeData, BadgeTheme, buildBadgeSvg, getPrivateBadgeSvg } from "../lib/badge-svg"
+import { BadgeData, buildBadgeSvg, getPrivateBadgeSvg } from "../lib/badge-svg"
 import { calcGrade } from "../lib/grade"
 import {
   BadgeConfigRepository,
@@ -12,9 +12,6 @@ import {
 } from "../repository/prisma"
 
 const DEFAULT_DISPLAY_ITEMS = ["grade", "best_score"]
-const DEFAULT_THEME: BadgeTheme = "dark"
-
-const toTheme = (value: string): BadgeTheme => (value === "light" ? "light" : "dark")
 
 type RenderRepo = {
     badgeConfigRepository: BadgeConfigRepository
@@ -31,7 +28,7 @@ type RenderRepo = {
  * 2. user_lifetime_stats / badge_configs を取得（無ければ defaults）
  * 3. displayItems に "rank" が含まれていれば TS の user_language_best から
  *    順位を算出（無ければ null）
- * 4. SVG 文字列を組み立てて返す
+ * 4. SVG 文字列を組み立てて返す (常に黒テーマ)
  *
  * 404 を返さず常に SVG を返す（CDN キャッシュ前提）
  */
@@ -48,7 +45,7 @@ export const render = async (
 
   const lifetime = await repo.userLifetimeStatsRepository.findByUserId(user.id)
   const config = (await repo.badgeConfigRepository.findByUserId(user.id))
-    ?? { displayItems: DEFAULT_DISPLAY_ITEMS, theme: DEFAULT_THEME, updatedAt: new Date() }
+    ?? { displayItems: DEFAULT_DISPLAY_ITEMS, updatedAt: new Date() }
 
   let rank: number | null = null
   if (config.displayItems.includes("rank")) {
@@ -78,7 +75,6 @@ export const render = async (
   const svg = buildBadgeSvg({
     data,
     displayItems: config.displayItems,
-    theme: toTheme(config.theme),
   })
   return { svg }
 }
@@ -95,19 +91,18 @@ export const getConfig = async (
   repo: ConfigRepo,
 ): Promise<BadgeConfigRow> => {
   const row = await repo.badgeConfigRepository.findByUserId(input.userId)
-  return row ?? { displayItems: DEFAULT_DISPLAY_ITEMS, theme: DEFAULT_THEME, updatedAt: new Date(0) }
+  return row ?? { displayItems: DEFAULT_DISPLAY_ITEMS, updatedAt: new Date(0) }
 }
 
 /**
  * 自分のバッジ表示設定を upsert
  */
 export const upsertConfig = async (
-  input: { userId: number; displayItems: string[]; theme: string },
+  input: { userId: number; displayItems: string[] },
   repo: ConfigRepo,
 ): Promise<BadgeConfigRow> => {
-  logger.debug("BadgeService: upsertConfig", { displayItems: input.displayItems, theme: input.theme, userId: input.userId })
+  logger.debug("BadgeService: upsertConfig", { displayItems: input.displayItems, userId: input.userId })
   return repo.badgeConfigRepository.upsert(input.userId, {
     displayItems: input.displayItems,
-    theme: input.theme,
   })
 }

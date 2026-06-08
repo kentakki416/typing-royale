@@ -13,8 +13,6 @@ const DISPLAY_ITEM_SLUGS = [
   "username",
 ] as const
 
-const THEMES = ["dark", "light"] as const
-
 // ========================================================
 // GET /badge/:username.svg - 動的 SVG バッジ (公開)
 // ========================================================
@@ -32,22 +30,22 @@ export const getBadgeSvgPathParamSchema = z.object({
 export type GetBadgeSvgPathParam = z.infer<typeof getBadgeSvgPathParamSchema>
 
 // ========================================================
-// GET /api/users/me/badge-config - 自分のバッジ表示設定取得
+// GET /api/user/badge-config - 自分のバッジ表示設定取得
 // ========================================================
 
 /**
  * GET / PUT 共通のレスポンス
+ * テーマは持たず常に黒背景で統一
  */
 export const getBadgeConfigResponseSchema = z.object({
   display_items: z.array(z.enum(DISPLAY_ITEM_SLUGS)),
-  theme: z.enum(THEMES),
   updated_at: z.string().datetime(),
 })
 
 export type GetBadgeConfigResponse = z.infer<typeof getBadgeConfigResponseSchema>
 
 // ========================================================
-// PUT /api/users/me/badge-config - 自分のバッジ表示設定更新
+// PUT /api/user/badge-config - 自分のバッジ表示設定更新
 // ========================================================
 
 /**
@@ -55,7 +53,6 @@ export type GetBadgeConfigResponse = z.infer<typeof getBadgeConfigResponseSchema
  */
 export const updateBadgeConfigRequestSchema = z.object({
   display_items: z.array(z.enum(DISPLAY_ITEM_SLUGS)).min(1).max(5),
-  theme: z.enum(THEMES),
 })
 
 export type UpdateBadgeConfigRequest = z.infer<typeof updateBadgeConfigRequestSchema>

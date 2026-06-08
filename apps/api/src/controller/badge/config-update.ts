@@ -16,18 +16,17 @@ export class BadgeConfigUpdateController {
   constructor(private badgeConfigRepository: BadgeConfigRepository) {}
 
   async execute(req: AuthRequest, res: Response) {
-    const { display_items: displayItems, theme } = updateBadgeConfigRequestSchema.parse(req.body)
+    const { display_items: displayItems } = updateBadgeConfigRequestSchema.parse(req.body)
 
-    logger.info("BadgeConfigUpdateController: updating", { displayItems, theme, userId: req.userId })
+    logger.info("BadgeConfigUpdateController: updating", { displayItems, userId: req.userId })
 
     const config = await service.badge.upsertConfig(
-      { displayItems, theme, userId: req.userId! },
+      { displayItems, userId: req.userId! },
       { badgeConfigRepository: this.badgeConfigRepository },
     )
 
     const response = getBadgeConfigResponseSchema.parse({
       display_items: config.displayItems,
-      theme: config.theme,
       updated_at: config.updatedAt.toISOString(),
     })
     return res.status(200).json(response)

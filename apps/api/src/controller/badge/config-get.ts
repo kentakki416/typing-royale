@@ -25,7 +25,6 @@ export class BadgeConfigGetController {
 
     const response = getBadgeConfigResponseSchema.parse({
       display_items: config.displayItems,
-      theme: config.theme,
       updated_at: config.updatedAt.toISOString(),
     })
     return res.status(200).json(response)

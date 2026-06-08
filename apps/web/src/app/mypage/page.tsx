@@ -68,6 +68,7 @@ export default async function MyPage() {
           <Link className="tab active" href="/mypage">概要</Link>
           <a className="tab" href="#">特典</a>
           <a className="tab" href="#">プレイ履歴</a>
+          <Link className="tab" href="/mypage/badge">バッジ</Link>
           <Link className="tab" href="/mypage/account">設定</Link>
         </div>
 
