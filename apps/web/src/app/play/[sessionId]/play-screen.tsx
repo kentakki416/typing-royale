@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 
 import { FinishPlaySessionResponse, StartChallengeGodsResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
+import { Celebration } from "./celebration"
 import { PlayLoop } from "./play-loop"
 import { ResultScreen } from "./result-screen"
 import { Splash } from "./splash"
@@ -18,15 +19,16 @@ type CachedStart = {
   repoInfo: StartSoloPlaySessionResponse["repo_info"]
 }
 
-type Phase = "loading" | "playing" | "result" | "splash"
+type Phase = "celebration" | "loading" | "playing" | "result" | "splash"
 
 /**
  * プレイ画面の状態切替コンポーネント
  *
- * Phase: loading → splash → playing → result
+ * Phase: loading → splash → playing → celebration → result
  *
- * /finish のレスポンスは PlayLoop の onFinished で渡される（result phase で
- * ResultScreen に渡す）。神々モードでは GhostSummary も同時に PlayLoop から渡る
+ * /finish のレスポンスは PlayLoop の onFinished で渡される（celebration を挟んで
+ * result phase で ResultScreen に渡す）。神々モードでは GhostSummary も同時に
+ * PlayLoop から渡る。celebration は public/celebration.lottie を再生する祝福演出
  */
 export function PlayScreen({ sessionId }: { sessionId: string }) {
   const [phase, setPhase] = useState<Phase>("loading")
@@ -71,10 +73,14 @@ export function PlayScreen({ sessionId }: { sessionId: string }) {
         onFinished={(r, summary) => {
           setResult(r)
           setGhostSummary(summary)
-          setPhase("result")
+          setPhase("celebration")
         }}
       />
     )
+  }
+
+  if (phase === "celebration") {
+    return <Celebration onFinished={() => setPhase("result")} />
   }
 
   return (

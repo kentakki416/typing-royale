@@ -10,7 +10,7 @@
     "lint:fix": "eslint --fix"
   },
   "dependencies": {
-    "@lottiefiles/dotlottie-react": "^0.19.0",
+    "@lottiefiles/dotlottie-react": "^0.19.4",
     "@repo/api-schema": "workspace:^",
     "next": "16.2.6",
     "react": "19.2.0",
