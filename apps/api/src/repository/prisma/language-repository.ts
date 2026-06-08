@@ -15,6 +15,7 @@ export type LanguageRef = {
  */
 export interface LanguageRepository {
     existsById(id: number): Promise<boolean>
+    findById(id: number): Promise<LanguageRef | null>
     findBySlug(slug: string): Promise<LanguageRef | null>
 }
 
@@ -40,6 +41,14 @@ export class PrismaLanguageRepository implements LanguageRepository {
     const lang = await this._prisma.language.findUnique({
       select: { id: true, slug: true },
       where: { slug },
+    })
+    return lang
+  }
+
+  async findById(id: number): Promise<LanguageRef | null> {
+    const lang = await this._prisma.language.findUnique({
+      select: { id: true, slug: true },
+      where: { id },
     })
     return lang
   }

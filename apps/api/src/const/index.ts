@@ -17,6 +17,7 @@ export const PUBLIC_PATHS: readonly string[] = [
   "/api/auth/github",
   "/api/auth/google",
   "/api/auth/refresh",
+  "/api/hall-of-fame",
   "/api/health",
   "/api/memo",
   "/api/players",
@@ -30,6 +31,7 @@ export const PUBLIC_PATHS: readonly string[] = [
  * 例: `/api/rankings` は公開だが `/api/rankings/me` は認証必須
  */
 export const PROTECTED_PATHS: readonly string[] = [
+  "/api/hall-of-fame/comments",
   "/api/rankings/me",
 ]
 

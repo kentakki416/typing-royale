@@ -1,6 +1,7 @@
 export * from "./auth"
 export * from "./badge"
 export * from "./common"
+export * from "./hall-of-fame"
 export * from "./health"
 export * from "./memo"
 export * from "./play-session"

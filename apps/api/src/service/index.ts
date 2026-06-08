@@ -1,5 +1,6 @@
 export * as auth from "./auth-service"
 export * as badge from "./badge-service"
+export * as hallOfFame from "./hall-of-fame-service"
 export * as health from "./health-service"
 export * as memo from "./memo-service"
 export * as playSession from "./play-session-service"
