@@ -21,6 +21,10 @@ const PUBLIC_PATHS = [
   "/ranking",
   "/players",
   /**
+   * replay-viewer: 個別リプレイページは未ログインでも閲覧可能
+   */
+  "/replay",
+  /**
    * rewards: Hall of Fame は公開ページ
    */
   "/hall-of-fame",
