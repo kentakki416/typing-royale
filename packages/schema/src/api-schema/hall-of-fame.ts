@@ -25,6 +25,7 @@ const hallOfFameEntrySchema = z.object({
     avatar_url: z.string().url().nullable(),
     current_grade: z.string(),
     display_name: z.string(),
+    favorite_repo_url: z.string().nullable(),
   }),
   accuracy: z.number().min(0).max(1),
   best_play_session_id: z.number().int().positive(),

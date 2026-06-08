@@ -6,6 +6,8 @@ import type { GetHallOfFameResponse } from "@repo/api-schema"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
 
+import { HofCards } from "./hof-cards"
+
 export const metadata: Metadata = {
   title: "Hall of Fame - Typing Royale",
 }
@@ -19,10 +21,11 @@ const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
 }
 
 /**
- * Hall of Fame 公開ページ
+ * Hall of Fame 公開ページ（mock: hall-of-fame.html 準拠）
  *
- * 言語別 TOP 10 + 各エントリのコメントを表示。score-ranking の `/ranking` と同じく
- * 言語タブ は ?language=... query で永続化、Next.js Link で再フェッチ
+ * - 言語タブ切替
+ * - 上位 3 名はクラウン付き hof-card、クリックでカーテン演出 → 神モーダル
+ * - 4 位以下はテーブル形式でコメント + リプレイリンク表示
  */
 export default async function HallOfFamePage({
   searchParams,
@@ -36,17 +39,21 @@ export default async function HallOfFamePage({
 
   const data = await apiClient.get<GetHallOfFameResponse>(`/api/hall-of-fame?language=${language}`)
 
+  const topThree = data.entries.filter((e) => e.rank <= 3)
+  const rest = data.entries.filter((e) => e.rank > 3)
+
   return (
     <>
       <Topbar active="hall-of-fame" />
 
       <div className="container">
-        <div className="flex-between mb-24">
-          <h1>🏛 Hall of Fame</h1>
-          <div className="text-sm text-muted">入賞者のコメントを掲載</div>
+        <div className="text-center mb-24">
+          <div style={{ fontSize: "56px" }}>🏛</div>
+          <h1>Hall of Fame — 神々の殿堂</h1>
+          <p className="text-muted">言語別オールタイムトップ 10。上位 3 名は神々の称号付き。</p>
         </div>
 
-        <div className="flex-between mb-16">
+        <div className="text-center mb-24">
           <div className="pills">
             {SUPPORTED_LANGUAGES.map((lang) => (
               <Link
@@ -58,7 +65,6 @@ export default async function HallOfFamePage({
               </Link>
             ))}
           </div>
-          <Link className="text-sm" href="/ranking">ランキング全体 →</Link>
         </div>
 
         {data.entries.length === 0 ? (
@@ -71,53 +77,62 @@ export default async function HallOfFamePage({
             </Link>
           </div>
         ) : (
-          <div className="card mb-16">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th style={{ width: "48px" }}>順位</th>
-                  <th>プレイヤー</th>
-                  <th className="numeric">ベスト</th>
-                  <th>コメント</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.entries.map((e) => (
-                  <tr key={e.best_play_session_id}>
-                    <td>
-                      <span className={`rank-badge ${convertRankToMedalClass(e.rank)}`}>#{e.rank}</span>
-                    </td>
-                    <td>
-                      <div className="player-cell">
-                        <PlayerAvatar avatarUrl={e.user.avatar_url} displayName={e.user.display_name} />
-                        <Link href={`/players/${e.user.id}`}>
-                          <strong>@{e.user.display_name}</strong>
-                        </Link>
-                      </div>
-                    </td>
-                    <td className="numeric"><strong>{e.score.toLocaleString()}</strong></td>
-                    <td>
-                      {e.comment === null ? (
-                        <span className="text-muted text-sm">（コメントなし）</span>
-                      ) : (
-                        <span>{e.comment}</span>
-                      )}
-                    </td>
-                    <td>
-                      <Link
-                        className="badge accent"
-                        href={`/replay/${e.best_play_session_id}`}
-                        title="リプレイを見る"
-                      >
-                        ▶ リプレイ
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {topThree.length > 0 && <HofCards entries={topThree} />}
+
+            {rest.length > 0 && (
+              <div className="card mt-24">
+                <div className="card-header">
+                  <div className="card-title">4 位以下</div>
+                </div>
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: "48px" }}>順位</th>
+                      <th>プレイヤー</th>
+                      <th className="numeric">ベスト</th>
+                      <th>コメント</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rest.map((e) => (
+                      <tr key={e.best_play_session_id}>
+                        <td>
+                          <span className="rank-badge">#{e.rank}</span>
+                        </td>
+                        <td>
+                          <div className="player-cell">
+                            <PlayerAvatar avatarUrl={e.user.avatar_url} displayName={e.user.display_name} />
+                            <Link href={`/players/${e.user.id}`}>
+                              <strong>@{e.user.display_name}</strong>
+                            </Link>
+                          </div>
+                        </td>
+                        <td className="numeric"><strong>{e.score.toLocaleString()}</strong></td>
+                        <td>
+                          {e.comment === null ? (
+                            <span className="text-muted text-sm">（コメントなし）</span>
+                          ) : (
+                            <span>{e.comment}</span>
+                          )}
+                        </td>
+                        <td>
+                          <Link
+                            className="badge accent"
+                            href={`/replay/${e.best_play_session_id}`}
+                            title="リプレイを見る"
+                          >
+                            ▶ リプレイ
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -126,13 +141,6 @@ export default async function HallOfFamePage({
       </div>
     </>
   )
-}
-
-const convertRankToMedalClass = (rank: number): string => {
-  if (rank === 1) return "gold"
-  if (rank === 2) return "silver"
-  if (rank === 3) return "bronze"
-  return ""
 }
 
 const PlayerAvatar = ({ avatarUrl, displayName }: { avatarUrl: string | null; displayName: string }) => {

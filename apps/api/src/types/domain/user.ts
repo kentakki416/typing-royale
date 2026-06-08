@@ -16,6 +16,10 @@ export type User = {
      * dev-login や将来のメール連絡用にオプショナルで保持（MVP の GitHub OAuth では収集しない）
      */
     email: string | null
+    /**
+     * プロフィール公開用の「お気に入りリポジトリ URL」（マイページから設定）
+     */
+    favoriteRepoUrl: string | null
     id: number
     updatedAt: Date
 }

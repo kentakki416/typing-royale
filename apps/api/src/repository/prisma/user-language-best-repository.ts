@@ -38,6 +38,7 @@ export type UserLanguageBestWithUser = {
         avatarUrl: string | null
         currentGrade: string
         displayName: string
+        favoriteRepoUrl: string | null
         id: number
     }
 }
@@ -119,6 +120,7 @@ export class PrismaUserLanguageBestRepository implements UserLanguageBestReposit
         avatarUrl: row.user.avatarUrl,
         currentGrade: row.user.lifetimeStats?.currentGrade ?? "intern",
         displayName: row.user.displayName ?? `user${row.user.id}`,
+        favoriteRepoUrl: row.user.favoriteRepoUrl,
         id: row.user.id,
       },
     }))

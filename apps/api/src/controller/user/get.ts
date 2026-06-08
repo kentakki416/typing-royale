@@ -36,6 +36,7 @@ export class UserGetController {
       created_at: result.value.createdAt.toISOString(),
       display_name: result.value.displayName,
       email: result.value.email,
+      favorite_repo_url: result.value.favoriteRepoUrl,
       id: result.value.id,
     })
 

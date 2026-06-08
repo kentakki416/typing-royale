@@ -50,6 +50,7 @@ describe("GET /api/user", () => {
         created_at: expect.any(String),
         display_name: "Test User",
         email: "test@example.com",
+        favorite_repo_url: null,
         id: user.id,
       })
     })

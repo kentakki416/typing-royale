@@ -40,6 +40,7 @@ export type UserMinAggregateOutputType = {
   displayName: string | null
   avatarUrl: string | null
   canPublicRanking: boolean | null
+  favoriteRepoUrl: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,6 +51,7 @@ export type UserMaxAggregateOutputType = {
   displayName: string | null
   avatarUrl: string | null
   canPublicRanking: boolean | null
+  favoriteRepoUrl: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -60,6 +62,7 @@ export type UserCountAggregateOutputType = {
   displayName: number
   avatarUrl: number
   canPublicRanking: number
+  favoriteRepoUrl: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -80,6 +83,7 @@ export type UserMinAggregateInputType = {
   displayName?: true
   avatarUrl?: true
   canPublicRanking?: true
+  favoriteRepoUrl?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -90,6 +94,7 @@ export type UserMaxAggregateInputType = {
   displayName?: true
   avatarUrl?: true
   canPublicRanking?: true
+  favoriteRepoUrl?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -100,6 +105,7 @@ export type UserCountAggregateInputType = {
   displayName?: true
   avatarUrl?: true
   canPublicRanking?: true
+  favoriteRepoUrl?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -197,6 +203,7 @@ export type UserGroupByOutputType = {
   displayName: string | null
   avatarUrl: string | null
   canPublicRanking: boolean
+  favoriteRepoUrl: string | null
   createdAt: Date
   updatedAt: Date
   _count: UserCountAggregateOutputType | null
@@ -230,6 +237,7 @@ export type UserWhereInput = {
   displayName?: Prisma.StringNullableFilter<"User"> | string | null
   avatarUrl?: Prisma.StringNullableFilter<"User"> | string | null
   canPublicRanking?: Prisma.BoolFilter<"User"> | boolean
+  favoriteRepoUrl?: Prisma.StringNullableFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   accounts?: Prisma.AuthAccountListRelationFilter
@@ -247,6 +255,7 @@ export type UserOrderByWithRelationInput = {
   displayName?: Prisma.SortOrderInput | Prisma.SortOrder
   avatarUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   canPublicRanking?: Prisma.SortOrder
+  favoriteRepoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   accounts?: Prisma.AuthAccountOrderByRelationAggregateInput
@@ -267,6 +276,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   displayName?: Prisma.StringNullableFilter<"User"> | string | null
   avatarUrl?: Prisma.StringNullableFilter<"User"> | string | null
   canPublicRanking?: Prisma.BoolFilter<"User"> | boolean
+  favoriteRepoUrl?: Prisma.StringNullableFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   accounts?: Prisma.AuthAccountListRelationFilter
@@ -284,6 +294,7 @@ export type UserOrderByWithAggregationInput = {
   displayName?: Prisma.SortOrderInput | Prisma.SortOrder
   avatarUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   canPublicRanking?: Prisma.SortOrder
+  favoriteRepoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
@@ -302,6 +313,7 @@ export type UserScalarWhereWithAggregatesInput = {
   displayName?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   avatarUrl?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   canPublicRanking?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  favoriteRepoUrl?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
 }
@@ -311,6 +323,7 @@ export type UserCreateInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
@@ -328,6 +341,7 @@ export type UserUncheckedCreateInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
@@ -344,6 +358,7 @@ export type UserUpdateInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
@@ -361,6 +376,7 @@ export type UserUncheckedUpdateInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
@@ -378,6 +394,7 @@ export type UserCreateManyInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -387,6 +404,7 @@ export type UserUpdateManyMutationInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -397,6 +415,7 @@ export type UserUncheckedUpdateManyInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -412,6 +431,7 @@ export type UserCountOrderByAggregateInput = {
   displayName?: Prisma.SortOrder
   avatarUrl?: Prisma.SortOrder
   canPublicRanking?: Prisma.SortOrder
+  favoriteRepoUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -426,6 +446,7 @@ export type UserMaxOrderByAggregateInput = {
   displayName?: Prisma.SortOrder
   avatarUrl?: Prisma.SortOrder
   canPublicRanking?: Prisma.SortOrder
+  favoriteRepoUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -436,6 +457,7 @@ export type UserMinOrderByAggregateInput = {
   displayName?: Prisma.SortOrder
   avatarUrl?: Prisma.SortOrder
   canPublicRanking?: Prisma.SortOrder
+  favoriteRepoUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -555,6 +577,7 @@ export type UserCreateWithoutAccountsInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
@@ -571,6 +594,7 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
@@ -602,6 +626,7 @@ export type UserUpdateWithoutAccountsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
@@ -618,6 +643,7 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
@@ -633,6 +659,7 @@ export type UserCreateWithoutPlaySessionsInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
@@ -649,6 +676,7 @@ export type UserUncheckedCreateWithoutPlaySessionsInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
@@ -680,6 +708,7 @@ export type UserUpdateWithoutPlaySessionsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
@@ -696,6 +725,7 @@ export type UserUncheckedUpdateWithoutPlaySessionsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
@@ -711,6 +741,7 @@ export type UserCreateWithoutLifetimeStatsInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
@@ -727,6 +758,7 @@ export type UserUncheckedCreateWithoutLifetimeStatsInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
@@ -758,6 +790,7 @@ export type UserUpdateWithoutLifetimeStatsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
@@ -774,6 +807,7 @@ export type UserUncheckedUpdateWithoutLifetimeStatsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
@@ -789,6 +823,7 @@ export type UserCreateWithoutLanguageBestsInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
@@ -805,6 +840,7 @@ export type UserUncheckedCreateWithoutLanguageBestsInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
@@ -836,6 +872,7 @@ export type UserUpdateWithoutLanguageBestsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
@@ -852,6 +889,7 @@ export type UserUncheckedUpdateWithoutLanguageBestsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
@@ -867,6 +905,7 @@ export type UserCreateWithoutRewardsInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
@@ -883,6 +922,7 @@ export type UserUncheckedCreateWithoutRewardsInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
@@ -914,6 +954,7 @@ export type UserUpdateWithoutRewardsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
@@ -930,6 +971,7 @@ export type UserUncheckedUpdateWithoutRewardsInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
@@ -945,6 +987,7 @@ export type UserCreateWithoutHallOfFameEntriesInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
@@ -961,6 +1004,7 @@ export type UserUncheckedCreateWithoutHallOfFameEntriesInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
@@ -992,6 +1036,7 @@ export type UserUpdateWithoutHallOfFameEntriesInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
@@ -1008,6 +1053,7 @@ export type UserUncheckedUpdateWithoutHallOfFameEntriesInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
@@ -1023,6 +1069,7 @@ export type UserCreateWithoutBadgeConfigInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
@@ -1039,6 +1086,7 @@ export type UserUncheckedCreateWithoutBadgeConfigInput = {
   displayName?: string | null
   avatarUrl?: string | null
   canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
@@ -1070,6 +1118,7 @@ export type UserUpdateWithoutBadgeConfigInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
@@ -1086,6 +1135,7 @@ export type UserUncheckedUpdateWithoutBadgeConfigInput = {
   displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
@@ -1169,6 +1219,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   displayName?: boolean
   avatarUrl?: boolean
   canPublicRanking?: boolean
+  favoriteRepoUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
@@ -1187,6 +1238,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   displayName?: boolean
   avatarUrl?: boolean
   canPublicRanking?: boolean
+  favoriteRepoUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -1197,6 +1249,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   displayName?: boolean
   avatarUrl?: boolean
   canPublicRanking?: boolean
+  favoriteRepoUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -1207,11 +1260,12 @@ export type UserSelectScalar = {
   displayName?: boolean
   avatarUrl?: boolean
   canPublicRanking?: boolean
+  favoriteRepoUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "displayName" | "avatarUrl" | "canPublicRanking" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "displayName" | "avatarUrl" | "canPublicRanking" | "favoriteRepoUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
   playSessions?: boolean | Prisma.User$playSessionsArgs<ExtArgs>
@@ -1251,6 +1305,10 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
      * false の場合はランキング集計から完全に除外される（順位そのものが計算されない）
      */
     canPublicRanking: boolean
+    /**
+     * プロフィール公開用の「お気に入りリポジトリ URL」（マイページから設定、Hall of Fame モーダル等で表示）
+     */
+    favoriteRepoUrl: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["user"]>
@@ -1688,6 +1746,7 @@ export interface UserFieldRefs {
   readonly displayName: Prisma.FieldRef<"User", 'String'>
   readonly avatarUrl: Prisma.FieldRef<"User", 'String'>
   readonly canPublicRanking: Prisma.FieldRef<"User", 'Boolean'>
+  readonly favoriteRepoUrl: Prisma.FieldRef<"User", 'String'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
 }

@@ -26,6 +26,7 @@ export class UserUpdateController {
       {
         canPublicRanking: body.can_public_ranking,
         displayName: body.display_name,
+        favoriteRepoUrl: body.favorite_repo_url,
       },
       { userRepository: this.userRepository },
     )
@@ -44,6 +45,7 @@ export class UserUpdateController {
       created_at: result.value.createdAt.toISOString(),
       display_name: result.value.displayName,
       email: result.value.email,
+      favorite_repo_url: result.value.favoriteRepoUrl,
       id: result.value.id,
     })
 

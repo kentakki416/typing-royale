@@ -31,6 +31,10 @@ export const getUserById = async (
 export type UpdateUserInput = {
     canPublicRanking?: boolean
     displayName?: string
+    /**
+     * undefined で変更なし、null で空欄リセット
+     */
+    favoriteRepoUrl?: string | null
 }
 
 /**
