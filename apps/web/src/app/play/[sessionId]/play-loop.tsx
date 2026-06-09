@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react"
 import { FinishPlaySessionResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { Topbar } from "@/components/topbar"
+import { playFinish, playKeyHit, playKeyMiss, playTierUp, playUrgentTick, resumeAudio } from "@/libs/sound-fx"
 
 import type { GhostKeystrokeLogs, GhostSummary, GhostUserDisplay } from "./types"
 
@@ -63,6 +64,16 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
   const [imeOn, setImeOn] = useState(false)
 
   /**
+   * コンボ: 連続正解数。Miss でリセット
+   */
+  const [combo, setCombo] = useState(0)
+  const [maxCombo, setMaxCombo] = useState(0)
+  /**
+   * tier アップ / Miss / 残り 10 秒以下で短時間の演出 class を付与
+   */
+  const [flashKind, setFlashKind] = useState<"hit" | "miss" | "tier-up" | "urgent" | null>(null)
+
+  /**
    * 神々モードの ghost 状態
    */
   const [ghostTypedChars, setGhostTypedChars] = useState(0)
@@ -80,6 +91,30 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
   const correctRef = useRef(0)
   const logRef = useRef<KeystrokeEntry[]>([])
   const finishedRef = useRef(false)
+  /**
+   * keydown 内から最新値を読みたい combo / tier
+   */
+  const comboRef = useRef(0)
+  const maxComboRef = useRef(0)
+  const tierRef = useRef(1)
+  /**
+   * 残り 30 秒 / 10 秒の境界で 1 度だけ urgent 演出を出すための gate
+   */
+  const fired30Ref = useRef(false)
+  const fired10Ref = useRef(false)
+  /**
+   * flash class を消す setTimeout のキャンセル用
+   */
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const triggerFlash = (kind: "hit" | "miss" | "tier-up" | "urgent", ms: number) => {
+    if (flashTimerRef.current !== null) clearTimeout(flashTimerRef.current)
+    setFlashKind(kind)
+    flashTimerRef.current = setTimeout(() => {
+      setFlashKind(null)
+      flashTimerRef.current = null
+    }, ms)
+  }
 
   /**
    * 神々モード：ghost log を elapsedMs 順に消費していくカーソル
@@ -103,6 +138,7 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
   const finish = async () => {
     if (finishedRef.current) return
     finishedRef.current = true
+    playFinish()
 
     const accuracy = totalRef.current === 0 ? 0 : correctRef.current / totalRef.current
     let result: FinishPlaySessionResponse | null = null
@@ -159,6 +195,19 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
       const elapsed = performance.now() - startAtRef.current
       const remaining = Math.max(0, SESSION_DURATION_MS - elapsed)
       setRemainingMs(remaining)
+
+      /**
+       * 残り 30 秒 / 10 秒の境界でアラート演出 + SE
+       */
+      if (!fired30Ref.current && remaining <= 30_000 && remaining > 10_000) {
+        fired30Ref.current = true
+        triggerFlash("urgent", 600)
+      }
+      if (!fired10Ref.current && remaining <= 10_000 && remaining > 0) {
+        fired10Ref.current = true
+        playUrgentTick()
+        triggerFlash("urgent", 800)
+      }
 
       if (mode === "challenge_gods") {
         const log = ghostLogRef.current
@@ -240,6 +289,11 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
         problemIndex: problemIndexRef.current,
       })
 
+      /**
+       * 初回 keydown で AudioContext を resume（ブラウザ autoplay policy 対策）
+       */
+      resumeAudio()
+
       totalRef.current += 1
       setTotalKeystrokes(totalRef.current)
       if (isCorrect) {
@@ -251,6 +305,32 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
         setCursorPos(cursorPosRef.current)
 
         /**
+         * combo 増加 + max 更新 + 正解 SE
+         */
+        comboRef.current += 1
+        setCombo(comboRef.current)
+        if (comboRef.current > maxComboRef.current) {
+          maxComboRef.current = comboRef.current
+          setMaxCombo(maxComboRef.current)
+        }
+        playKeyHit()
+
+        /**
+         * tier change 検知 (typedChars 100/200/300/400/500 の境界)
+         */
+        const newTier = typedCharsRef.current >= 500 ? 6
+          : typedCharsRef.current >= 400 ? 5
+            : typedCharsRef.current >= 300 ? 4
+              : typedCharsRef.current >= 200 ? 3
+                : typedCharsRef.current >= 100 ? 2
+                  : 1
+        if (newTier > tierRef.current) {
+          tierRef.current = newTier
+          playTierUp()
+          triggerFlash("tier-up", 700)
+        }
+
+        /**
          * 関数完走判定
          */
         if (cursorPosRef.current >= currentProblem.code_block.length) {
@@ -259,6 +339,16 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
           setProblemIndex(problemIndexRef.current)
           setCursorPos(0)
         }
+      } else {
+        /**
+         * Miss: combo リセット + Miss SE + 短い shake 演出
+         */
+        if (comboRef.current > 0) {
+          comboRef.current = 0
+          setCombo(0)
+        }
+        playKeyMiss()
+        triggerFlash("miss", 250)
       }
     }
     const onPaste = (e: ClipboardEvent) => e.preventDefault()
@@ -300,9 +390,11 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
   const diffSign = diff > 0 ? "+" : ""
   const diffClass = diff > 0 ? "success" : diff < 0 ? "error" : ""
 
+  const screenClass = flashKind === null ? "" : `play-flash flash-${flashKind}`
+
   return (
     <>
-      <div aria-hidden="true" className={`play-backdrop tier-${backdropTier}`}>
+      <div aria-hidden="true" className={`play-backdrop tier-${backdropTier} ${screenClass}`}>
         {RING_DELAYS.map((d, i) => (
           <span
             className="play-ring"
@@ -314,7 +406,7 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
 
       <Topbar languageBadge="TypeScript" modeBadge={modeBadge} />
 
-      <div className="container" style={{ position: "relative", zIndex: 1 }}>
+      <div className={`container ${screenClass}`} style={{ position: "relative", zIndex: 1 }}>
         <div className="play-hud">
           <div className="hud-cell">
             <div className="hud-label">残り時間</div>
@@ -352,6 +444,14 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
             </>
           )}
         </div>
+
+        {combo >= 5 && (
+          <div className={`combo-banner combo-${comboTier(combo)}`} key={combo}>
+            <span className="combo-x">×</span>
+            <span className="combo-n">{combo}</span>
+            <span className="combo-label">COMBO</span>
+          </div>
+        )}
 
         {isChallenge && (
           <div className="race">
@@ -458,4 +558,14 @@ const pct = (chars: number, problems: Problem[]): number => {
   const total = problems.reduce((s, p) => s + p.char_count, 0)
   if (total === 0) return 0
   return Math.min(100, (chars / total) * 100)
+}
+
+/**
+ * combo 数で表示色のティアを返す (1: 青 / 2: 緑 / 3: 紫 / 4: 虹)
+ */
+const comboTier = (n: number): 1 | 2 | 3 | 4 => {
+  if (n >= 30) return 4
+  if (n >= 20) return 3
+  if (n >= 10) return 2
+  return 1
 }
