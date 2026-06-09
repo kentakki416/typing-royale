@@ -36,13 +36,16 @@ export type LicenseRecheckClient = {
 
 export const licenseRecheck = async (
   repo: LicenseRecheckRepo,
-  client: LicenseRecheckClient
+  client: LicenseRecheckClient,
+  options: { signal?: AbortSignal } = {}
 ): Promise<LicenseRecheckResult> => {
   const all = await repo.crawledRepoRepository.listForLicenseRecheck()
   let reposProcessed = 0
   let disabledRepos = 0
   let disabledProblems = 0
   for (const r of all) {
+    /** ループ先頭で shutdown を確認し、協調的に中断する */
+    if (options.signal?.aborted) break
     try {
       const meta = await retryWithBackoff(async () => client.github.getRepoMeta(r.owner, r.name))
       if (meta.license === null || !ALLOWED_LICENSES.has(meta.license)) {
