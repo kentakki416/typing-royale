@@ -11,15 +11,15 @@ type Props = {
 }
 
 /**
- * リザルト直前の祝福アニメーション
+ * リザルト画面に重ねて再生する祝福アニメーション
  *
- * /public/celebration.lottie をフルスクリーン暗背景で再生する。
- * 再生が onComplete を出さないケース (loop 動画 / 失敗) に備えて
- * MAX_DURATION_MS を経過したら強制的に onFinished を呼ぶ
+ * /public/celebration.lottie を半透明背景の overlay として再生し、
+ * 再生終了 (or fallback timeout、クリック) で onFinished を呼んで消える。
+ * リザルト内容は overlay の下で既にレンダリング済み。
  */
 const MAX_DURATION_MS = 4500
 
-export function Celebration({ onFinished }: Props) {
+export function CelebrationOverlay({ onFinished }: Props) {
   const [finished, setFinished] = useState(false)
   const onFinishedRef = useRef(onFinished)
 
@@ -50,7 +50,8 @@ export function Celebration({ onFinished }: Props) {
       onClick={handleFinish}
       style={{
         alignItems: "center",
-        background: "radial-gradient(ellipse at center, #1a1f2a 0%, #05080d 80%)",
+        /** リザルトが裏で見える半透明黒 + 中央 spot light */
+        background: "radial-gradient(ellipse at center, rgba(26, 31, 42, 0.55) 0%, rgba(5, 8, 13, 0.85) 80%)",
         cursor: "pointer",
         display: "flex",
         height: "100vh",

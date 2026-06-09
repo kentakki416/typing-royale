@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 
 import { FinishPlaySessionResponse, GetMyRankingResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
+import { CelebrationOverlay } from "@/components/celebration-overlay"
 import { GradeProgressBar } from "@/components/grade-progress-bar"
 import { TopTenCommentModal } from "@/components/top-ten-comment-modal"
 import { Topbar } from "@/components/topbar"
@@ -50,6 +51,8 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
   const [meFetchFailed, setMeFetchFailed] = useState(false)
   const [hofModalOpen, setHofModalOpen] = useState(false)
   const [hofPromptDismissed, setHofPromptDismissed] = useState(false)
+  /** リザルト到達時に 1 度だけ祝福 overlay を再生 */
+  const [showCelebration, setShowCelebration] = useState(true)
 
   useEffect(() => {
     if (result === null) return
@@ -333,6 +336,8 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
           result={result}
         />
       )}
+
+      {showCelebration && <CelebrationOverlay onFinished={() => setShowCelebration(false)} />}
     </>
   )
 }

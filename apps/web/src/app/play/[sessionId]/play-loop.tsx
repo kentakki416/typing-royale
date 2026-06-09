@@ -1,12 +1,17 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 
 import { FinishPlaySessionResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { Topbar } from "@/components/topbar"
 
 import type { GhostKeystrokeLogs, GhostSummary, GhostUserDisplay } from "./types"
+
+/**
+ * 中央から広がる ring pulse の delay 設定 (3 本を時間差で発射)
+ */
+const RING_DELAYS = [0, 1.2, 2.4]
 
 type Problem = StartSoloPlaySessionResponse["problems"][number]
 
@@ -281,15 +286,35 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
   const modeBadge = mode === "challenge_gods" ? "⚡ 神々に挑戦" : "通常モード"
   const isChallenge = mode === "challenge_gods" && ghostUserDisplay !== null
 
+  /**
+   * typedChars 閾値で背景 tier を決定 (青→緑→紫→赤→金→虹)
+   */
+  const backdropTier = typedChars >= 500 ? 6
+    : typedChars >= 400 ? 5
+      : typedChars >= 300 ? 4
+        : typedChars >= 200 ? 3
+          : typedChars >= 100 ? 2
+            : 1
+
   const diff = typedChars - ghostTypedChars
   const diffSign = diff > 0 ? "+" : ""
   const diffClass = diff > 0 ? "success" : diff < 0 ? "error" : ""
 
   return (
     <>
+      <div aria-hidden="true" className={`play-backdrop tier-${backdropTier}`}>
+        {RING_DELAYS.map((d, i) => (
+          <span
+            className="play-ring"
+            key={i}
+            style={{ "--ring-delay": `${d}s` } as React.CSSProperties}
+          />
+        ))}
+      </div>
+
       <Topbar languageBadge="TypeScript" modeBadge={modeBadge} />
 
-      <div className="container">
+      <div className="container" style={{ position: "relative", zIndex: 1 }}>
         <div className="play-hud">
           <div className="hud-cell">
             <div className="hud-label">残り時間</div>
