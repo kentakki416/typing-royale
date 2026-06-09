@@ -4,6 +4,7 @@ import { ErrorResponse, finishPlaySessionPathParamSchema, finishPlaySessionReque
 import { logger } from "@repo/logger"
 
 import { CardStorage } from "../../lib/card-storage"
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import {
   KeystrokeLogRepository,
@@ -44,9 +45,9 @@ export class PlaySessionFinishController {
   ) {}
 
   async execute(req: AuthRequest, res: Response) {
-    const { id } = finishPlaySessionPathParamSchema.parse(req.params)
+    const { id } = parseRequest(finishPlaySessionPathParamSchema, req.params)
     const { accuracy, keystroke_logs: rawKeystrokeLogs, typed_chars: typedChars } =
-            finishPlaySessionRequestSchema.parse(req.body)
+            parseRequest(finishPlaySessionRequestSchema, req.body)
 
     /**
      * API は snake_case、Domain 型は camelCase で分離する方針なので各 entry を変換
@@ -88,7 +89,7 @@ export class PlaySessionFinishController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    const response = finishPlaySessionResponseSchema.parse({
+    const response = parseResponse(finishPlaySessionResponseSchema, {
       accuracy: result.value.accuracy,
       best_score_updated: result.value.bestScoreUpdated,
       grade_up: result.value.gradeUp === null

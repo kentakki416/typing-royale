@@ -3,6 +3,7 @@ import { Response } from "express"
 import { getMyRewardsResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import { RewardRepository } from "../../repository/prisma"
 import * as service from "../../service"
@@ -23,7 +24,7 @@ export class RewardsListMeController {
       { rewardRepository: this.rewardRepository },
     )
 
-    const response = getMyRewardsResponseSchema.parse({
+    const response = parseResponse(getMyRewardsResponseSchema, {
       rewards: rewards.map((r) => ({
         asset_url: r.assetUrl,
         granted_at: r.grantedAt.toISOString(),

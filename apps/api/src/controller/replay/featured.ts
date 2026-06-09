@@ -3,6 +3,7 @@ import { Request, Response } from "express"
 import { getFeaturedReplaysQueryStringSchema, getFeaturedReplaysResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { ReplayRepository } from "../../repository/prisma"
 import * as service from "../../service"
 
@@ -18,7 +19,7 @@ export class ReplayFeaturedController {
   ) {}
 
   async execute(req: Request, res: Response) {
-    const { language, limit } = getFeaturedReplaysQueryStringSchema.parse(req.query)
+    const { language, limit } = parseRequest(getFeaturedReplaysQueryStringSchema, req.query)
 
     logger.info("ReplayFeaturedController: Listing featured replays", { language, limit })
 
@@ -27,7 +28,7 @@ export class ReplayFeaturedController {
       { replayRepository: this.replayRepository },
     )
 
-    const response = getFeaturedReplaysResponseSchema.parse({
+    const response = parseResponse(getFeaturedReplaysResponseSchema, {
       items: items.map((row) => ({
         comment: row.comment,
         comment_submitted_at: row.commentSubmittedAt.toISOString(),

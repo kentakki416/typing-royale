@@ -8,6 +8,7 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
 } from "../../lib/jwt"
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { RefreshTokenRepository } from "../../repository/redis"
 import * as service from "../../service"
 
@@ -20,7 +21,7 @@ export class AuthRefreshController {
   async execute(req: Request, res: Response) {
     logger.info("AuthRefreshController: Rotating refresh token")
 
-    const { refresh_token: refreshToken } = authRefreshRequestSchema.parse(req.body)
+    const { refresh_token: refreshToken } = parseRequest(authRefreshRequestSchema, req.body)
 
     const result = await service.auth.refreshTokens(
       { refreshToken },
@@ -40,7 +41,7 @@ export class AuthRefreshController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    const response = authRefreshResponseSchema.parse({
+    const response = parseResponse(authRefreshResponseSchema, {
       access_token: result.value.accessToken,
       refresh_token: result.value.refreshToken,
     })

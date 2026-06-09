@@ -2,6 +2,7 @@ import { Request, Response } from "express"
 
 import { healthReadinessResponseSchema } from "@repo/api-schema"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { DatabaseHealthRepository } from "../../repository/prisma"
 import { RedisHealthRepository } from "../../repository/redis"
 import * as service from "../../service"
@@ -35,7 +36,7 @@ export class HealthReadinessController {
     const { database, redis } = result.value
     const overallStatus = database.status === "ok" && redis.status === "ok" ? "ok" : "degraded"
 
-    const response = healthReadinessResponseSchema.parse({
+    const response = parseResponse(healthReadinessResponseSchema, {
       services: { database, redis },
       status: overallStatus,
     })

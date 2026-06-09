@@ -3,6 +3,7 @@ import { Response } from "express"
 import { updateUserRequestSchema, updateUserResponseSchema, ErrorResponse } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import { UserRepository } from "../../repository/prisma"
 import * as service from "../../service"
@@ -19,7 +20,7 @@ export class UserUpdateController {
   async execute(req: AuthRequest, res: Response) {
     logger.info("UserUpdateController: Updating authenticated user", { userId: req.userId })
 
-    const body = updateUserRequestSchema.parse(req.body)
+    const body = parseRequest(updateUserRequestSchema, req.body)
 
     const result = await service.user.updateUser(
       req.userId!,
@@ -39,7 +40,7 @@ export class UserUpdateController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    const response = updateUserResponseSchema.parse({
+    const response = parseResponse(updateUserResponseSchema, {
       avatar_url: result.value.avatarUrl,
       can_public_ranking: result.value.canPublicRanking,
       created_at: result.value.createdAt.toISOString(),

@@ -5,6 +5,7 @@ import { logger } from "@repo/logger"
 
 import { IGithubOAuthClient } from "../../client/github-oauth"
 import { generateAccessToken, generateRefreshToken } from "../../lib/jwt"
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import {
   AuthAccountRepository,
   TransactionRunner,
@@ -31,7 +32,7 @@ export class AuthGithubController {
   async execute(req: Request, res: Response) {
     logger.info("AuthGithubController: Verifying GitHub authorization code")
 
-    const { code, redirect_uri: redirectUri } = authGithubRequestSchema.parse(req.body)
+    const { code, redirect_uri: redirectUri } = parseRequest(authGithubRequestSchema, req.body)
 
     const result = await service.auth.authenticateWithGithub(
       { code, redirectUri },
@@ -55,7 +56,7 @@ export class AuthGithubController {
 
     const { accessToken, isNewUser, refreshToken, user } = result.value
 
-    const response = authGithubResponseSchema.parse({
+    const response = parseResponse(authGithubResponseSchema, {
       access_token: accessToken,
       is_new_user: isNewUser,
       refresh_token: refreshToken,

@@ -8,6 +8,7 @@ import {
 import { logger } from "@repo/logger"
 
 import { generateAccessToken, generateRefreshToken } from "../../lib/jwt"
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { UserRepository } from "../../repository/prisma"
 import { RefreshTokenRepository } from "../../repository/redis"
 import * as service from "../../service"
@@ -36,7 +37,7 @@ export class AuthDevLoginController {
 
     logger.info("AuthDevLoginController: dev-login")
 
-    const { email } = authDevLoginRequestSchema.parse(req.body)
+    const { email } = parseRequest(authDevLoginRequestSchema, req.body)
 
     const result = await service.auth.loginAsDevUser(
       { email },
@@ -57,7 +58,7 @@ export class AuthDevLoginController {
 
     const { accessToken, refreshToken, user } = result.value
 
-    const response = authDevLoginResponseSchema.parse({
+    const response = parseResponse(authDevLoginResponseSchema, {
       access_token: accessToken,
       refresh_token: refreshToken,
       user: {

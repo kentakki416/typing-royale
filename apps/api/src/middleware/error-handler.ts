@@ -3,17 +3,14 @@ import { NextFunction, Request, Response } from "express"
 import { ErrorResponse } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
-/**
- * ZodError かどうかを判定する（zod パッケージを直接依存せずに判定するため name チェック）
- */
-const isZodError = (err: unknown): err is Error & { issues: unknown[] } =>
-  err instanceof Error && err.name === "ZodError" && Array.isArray((err as { issues?: unknown }).issues)
+import { RequestSchemaMismatchError, ResponseSchemaMismatchError } from "../lib/parse-schema"
 
 /**
  * ルート内で発生したがキャッチされなかった例外を適切な HTTP ステータスで返す最終ハンドラ
  * Service が業務エラーを Result として返却する運用と対になる:
- *   - Result.err(4xx) → Controller が sendResult で返却
- *   - ZodError（バリデーション失敗） → ここで捕捉して 400
+ *   - Result.err(4xx) → Controller が if/else で透過返却
+ *   - RequestSchemaMismatchError → ここで捕捉して 400 (クライアント入力不正)
+ *   - ResponseSchemaMismatchError → ここで捕捉して 500 (サーバ起因の契約違反)
  *   - 想定外の例外（DB 障害・ライブラリの throw 等） → ここで捕捉して 500
  *
  * Express の「引数が4つのミドルウェア」はエラーハンドラとして扱われるため
@@ -29,15 +26,29 @@ export const errorHandler = (err: unknown, req: Request, res: Response, _next: N
   }
 
   /**
-   * Zod のバリデーション失敗は 400 Bad Request
+   * リクエスト検証失敗は 400 Bad Request
    */
-  if (isZodError(err)) {
-    logger.warn(`Validation error at ${req.method} ${req.path}`, { issues: err.issues })
+  if (err instanceof RequestSchemaMismatchError) {
+    logger.warn(`Request validation error at ${req.method} ${req.path}`, {
+      issues: err.zodError.issues,
+    })
     const errorResponse: ErrorResponse = {
       error: "Invalid request",
       status_code: 400,
     }
     return res.status(400).json(errorResponse)
+  }
+
+  /**
+   * レスポンス検証失敗は 500 Internal Server Error（サーバ側で契約違反）
+   */
+  if (err instanceof ResponseSchemaMismatchError) {
+    logger.error(`Response schema mismatch at ${req.method} ${req.path}`, err.zodError)
+    const errorResponse: ErrorResponse = {
+      error: "Internal Server Error",
+      status_code: 500,
+    }
+    return res.status(500).json(errorResponse)
   }
 
   /**

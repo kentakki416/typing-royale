@@ -155,10 +155,43 @@ async execute(req, res) {
 
 すべてのルート登録後に `app.use(errorHandler)` で登録される。
 
-- **ZodError** → 400 "Invalid request"（リクエスト検証失敗）
+- **`RequestSchemaMismatchError`** → 400 "Invalid request"（クライアント入力不正）
+- **`ResponseSchemaMismatchError`** → 500 "Internal Server Error"（サーバ起因の契約違反）
 - **その他の throw** → 500 "Internal Server Error"（DB 障害等の想定外エラー）
 
 Controller で try-catch を書く必要はない。
+
+### スキーマ検証は `parseRequest` / `parseResponse` ヘルパを使う（必須）
+
+Controller で `schema.parse(...)` を直接呼ばず、`src/lib/parse-schema.ts` の `parseRequest` / `parseResponse` を経由する。これにより **リクエスト検証失敗（クライアント入力不正、400）** と **レスポンス検証失敗（サーバ起因の契約違反、500）** がエラーハンドラで明確に区別される。
+
+```typescript
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
+
+async execute(req: Request, res: Response) {
+  /** リクエスト: 失敗時は RequestSchemaMismatchError → 400 */
+  const { id } = parseRequest(getMemoPathParamSchema, req.params)
+  const body  = parseRequest(updateMemoRequestSchema, req.body)
+  const q     = parseRequest(listMemoQueryStringSchema, req.query)
+
+  const result = await service.memo.updateMemo(id, body, { ... })
+  if (!result.ok) {
+    return res.status(result.error.statusCode).json({ error: result.error.message, status_code: result.error.statusCode })
+  }
+
+  /** レスポンス: 失敗時は ResponseSchemaMismatchError → 500 */
+  const response = parseResponse(updateMemoResponseSchema, {
+    id: result.value.id,
+    body: result.value.body,
+    /** ... */
+  })
+  return res.status(200).json(response)
+}
+```
+
+- ❌ `schema.parse(req.body)` を直接呼ぶ（ZodError がそのまま伝播し、リクエスト/レスポンスのエラー種別を区別できない）
+- ❌ `try { ... } catch (e) { if (e instanceof ZodError) ... }` で個別ハンドリング
+- ✅ 必ず `parseRequest` / `parseResponse` を経由
 
 ## Admin API 設計方針
 
