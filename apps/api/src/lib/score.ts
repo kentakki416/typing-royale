@@ -4,7 +4,7 @@ import { KeystrokeLogs, MistypeStats } from "../types/domain"
  * 物理的に到達不可能なスコアを弾くための上限
  * 120 秒 × 12 打鍵/秒 ≒ 1440 → 安全側で 1500 を採用
  */
-export const PHYSICAL_LIMIT_TYPED_CHARS = 1500
+const PHYSICAL_LIMIT_TYPED_CHARS = 1500
 
 /**
  * keystroke_logs の生 JSON サイズ上限（DoS 防御）
