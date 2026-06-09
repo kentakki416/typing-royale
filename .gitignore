@@ -100,4 +100,7 @@ app-example
 .playwright-mcp
 
 # serena
-.serena"Type Blaze (standalone).html"
+.serena
+
+# 参考用 (Type Blaze)
+Type Blaze (standalone).html
