@@ -5,9 +5,12 @@ import React, { useEffect, useRef, useState } from "react"
 import { FinishPlaySessionResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { Topbar } from "@/components/topbar"
-import { playFinish, playKeyHit, playKeyMiss, playTierUp, playUrgentTick, resumeAudio } from "@/libs/sound-fx"
+import { playFinish, playUrgentTick } from "@/libs/sound-fx"
 
 import type { GhostKeystrokeLogs, GhostSummary, GhostUserDisplay } from "./types"
+import { useCountdown } from "./use-countdown"
+import { useGhostPlayback } from "./use-ghost-playback"
+import { useTypingEngine } from "./use-typing-engine"
 
 /**
  * 中央から広がる ring pulse の delay 設定 (3 本を時間差で発射)
@@ -15,13 +18,6 @@ import type { GhostKeystrokeLogs, GhostSummary, GhostUserDisplay } from "./types
 const RING_DELAYS = [0, 1.2, 2.4]
 
 type Problem = StartSoloPlaySessionResponse["problems"][number]
-
-type KeystrokeEntry = {
-  elapsedMs: number
-  inputChar: string
-  isCorrect: boolean
-  problemIndex: number
-}
 
 type Props = {
   /**
@@ -44,70 +40,34 @@ type Props = {
 
 const SESSION_DURATION_MS = 120_000
 
+type FlashKind = "hit" | "miss" | "tier-up" | "urgent"
+
 /**
- * 120 秒プレイループ本体
+ * 120 秒プレイループ本体（プレゼンテーション層）
  *
- * - rAF で 120 秒カウントダウン
- * - document の keydown を購読して入力判定 + keystroke log 蓄積
- * - 関数完走で次の問題へ自動切替
- * - 120 秒経過 / 全完走で /finish を 1 回だけ叩く
- * - 神々モード時は同じ rAF tick で ghost の elapsedMs に応じてログを消費し、
- *   神の累計文字数 / 現在問題 / 正確率をリアルタイム更新する
+ * ロジックは 3 つのカスタムフックに分離:
+ * - `useCountdown`: rAF で 120 秒カウントダウン + 30s/10s urgent 演出 + 時間切れで finish 起動
+ * - `useTypingEngine`: keydown を購読して cursor / typedChars / combo / accuracy / log を蓄積
+ * - `useGhostPlayback`: 神々モード時に ghost の keystroke log を elapsedMs 同期で消費
+ *
+ * このコンポーネント自身は `finish` (POST /finish を 1 度だけ叩く) + フラッシュ演出の
+ * 集約 + HUD / エディタ / 神サイドバーの描画のみを担当する
  */
 export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinished, problems, sessionId }: Props) {
-  const [problemIndex, setProblemIndex] = useState(0)
-  const [cursorPos, setCursorPos] = useState(0)
-  const [typedChars, setTypedChars] = useState(0)
-  const [totalKeystrokes, setTotalKeystrokes] = useState(0)
-  const [correctKeystrokes, setCorrectKeystrokes] = useState(0)
-  const [remainingMs, setRemainingMs] = useState(SESSION_DURATION_MS)
-  const [imeOn, setImeOn] = useState(false)
-
-  /**
-   * コンボ: 連続正解数。Miss でリセット
-   */
-  const [combo, setCombo] = useState(0)
-  const [maxCombo, setMaxCombo] = useState(0)
   /**
    * tier アップ / Miss / 残り 10 秒以下で短時間の演出 class を付与
    */
-  const [flashKind, setFlashKind] = useState<"hit" | "miss" | "tier-up" | "urgent" | null>(null)
-
-  /**
-   * 神々モードの ghost 状態
-   */
-  const [ghostTypedChars, setGhostTypedChars] = useState(0)
-  const [ghostAccuracy, setGhostAccuracy] = useState(0)
-  const [ghostProblemIndex, setGhostProblemIndex] = useState(0)
-
-  /**
-   * rAF / keydown ハンドラから読み書きする mutable ref
-   */
-  const startAtRef = useRef<number>(0)
-  const problemIndexRef = useRef(0)
-  const cursorPosRef = useRef(0)
-  const typedCharsRef = useRef(0)
-  const totalRef = useRef(0)
-  const correctRef = useRef(0)
-  const logRef = useRef<KeystrokeEntry[]>([])
-  const finishedRef = useRef(false)
-  /**
-   * keydown 内から最新値を読みたい combo / tier
-   */
-  const comboRef = useRef(0)
-  const maxComboRef = useRef(0)
-  const tierRef = useRef(1)
-  /**
-   * 残り 30 秒 / 10 秒の境界で 1 度だけ urgent 演出を出すための gate
-   */
-  const fired30Ref = useRef(false)
-  const fired10Ref = useRef(false)
+  const [flashKind, setFlashKind] = useState<FlashKind | null>(null)
   /**
    * flash class を消す setTimeout のキャンセル用
    */
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /**
+   * `finish` を 1 度だけ走らせる gate。各 hook から参照する
+   */
+  const finishedRef = useRef(false)
 
-  const triggerFlash = (kind: "hit" | "miss" | "tier-up" | "urgent", ms: number) => {
+  const triggerFlash = (kind: FlashKind, ms: number) => {
     if (flashTimerRef.current !== null) clearTimeout(flashTimerRef.current)
     setFlashKind(kind)
     flashTimerRef.current = setTimeout(() => {
@@ -117,22 +77,6 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
   }
 
   /**
-   * 神々モード：ghost log を elapsedMs 順に消費していくカーソル
-   */
-  const ghostLogRef = useRef<GhostKeystrokeLogs>(ghostKeystrokeLogs ?? [])
-  const ghostCursorRef = useRef(0)
-  const ghostTypedCharsRef = useRef(0)
-  const ghostCorrectRef = useRef(0)
-  const ghostTotalRef = useRef(0)
-  const ghostProblemIndexRef = useRef(0)
-  /**
-   * 各問題の神の完走状況。problemIndex がインクリメントしたタイミングでひとつ前を完走扱いに
-   */
-  const ghostPerProblemRef = useRef<{ completed: boolean; orderIndex: number; typedChars: number }[]>(
-    problems.map((_, i) => ({ completed: false, orderIndex: i, typedChars: 0 })),
-  )
-
-  /**
    * /finish を 1 回だけ叩いて結果フェーズへ遷移
    */
   const finish = async () => {
@@ -140,19 +84,21 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
     finishedRef.current = true
     playFinish()
 
-    const accuracy = totalRef.current === 0 ? 0 : correctRef.current / totalRef.current
+    const accuracy = typingRefs.totalRef.current === 0
+      ? 0
+      : typingRefs.correctRef.current / typingRefs.totalRef.current
     let result: FinishPlaySessionResponse | null = null
     try {
       const res = await fetch(`/api/play-sessions/${sessionId}/finish`, {
         body: JSON.stringify({
           accuracy,
-          keystroke_logs: logRef.current.map((entry) => ({
+          keystroke_logs: typingRefs.logRef.current.map((entry) => ({
             elapsed_ms: entry.elapsedMs,
             input_char: entry.inputChar,
             is_correct: entry.isCorrect,
             problem_index: entry.problemIndex,
           })),
-          typed_chars: typedCharsRef.current,
+          typed_chars: typingRefs.typedCharsRef.current,
         }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
@@ -167,15 +113,49 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
     }
     const ghostSummary: GhostSummary | null = mode === "challenge_gods"
       ? {
-        accuracy: ghostTotalRef.current === 0 ? 0 : ghostCorrectRef.current / ghostTotalRef.current,
-        perProblem: ghostPerProblemRef.current,
-        problemIndex: ghostProblemIndexRef.current,
-        totalKeystrokes: ghostTotalRef.current,
-        typedChars: ghostTypedCharsRef.current,
+        accuracy: ghostRefs.ghostTotalRef.current === 0
+          ? 0
+          : ghostRefs.ghostCorrectRef.current / ghostRefs.ghostTotalRef.current,
+        perProblem: ghostRefs.ghostPerProblemRef.current,
+        problemIndex: ghostRefs.ghostProblemIndexRef.current,
+        totalKeystrokes: ghostRefs.ghostTotalRef.current,
+        typedChars: ghostRefs.ghostTypedCharsRef.current,
       }
       : null
     onFinished(result, ghostSummary)
   }
+
+  const { remainingMs, startAtRef } = useCountdown({
+    durationMs: SESSION_DURATION_MS,
+    onTierMilestone: (kind) => {
+      if (kind === "urgent-30") {
+        triggerFlash("urgent", 600)
+      } else {
+        playUrgentTick()
+        triggerFlash("urgent", 800)
+      }
+    },
+    onTimeUp: () => {
+      void finish()
+    },
+  })
+
+  const { refs: typingRefs, state: typingState } = useTypingEngine({
+    finishedRef,
+    problems,
+    startAtRef,
+    triggerFlash,
+  })
+  const { combo, correctKeystrokes, cursorPos, imeOn, problemIndex, totalKeystrokes, typedChars } = typingState
+
+  const { refs: ghostRefs, state: ghostState } = useGhostPlayback({
+    finishedRef,
+    ghostKeystrokeLogs,
+    mode,
+    problems,
+    startAtRef,
+  })
+  const { ghostAccuracy, ghostProblemIndex, ghostTypedChars } = ghostState
 
   /**
    * body に play-screen クラスを付けることでスクロール抑止＆エディタを画面全高に伸ばす
@@ -184,188 +164,6 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
     document.body.classList.add("play-screen")
     return () => document.body.classList.remove("play-screen")
   }, [])
-
-  /**
-   * 120 秒タイマー（rAF）。神々モードでは同じ tick で ghost log も進める
-   */
-  useEffect(() => {
-    startAtRef.current = performance.now()
-    let raf = 0
-    const tick = () => {
-      const elapsed = performance.now() - startAtRef.current
-      const remaining = Math.max(0, SESSION_DURATION_MS - elapsed)
-      setRemainingMs(remaining)
-
-      /**
-       * 残り 30 秒 / 10 秒の境界でアラート演出 + SE
-       */
-      if (!fired30Ref.current && remaining <= 30_000 && remaining > 10_000) {
-        fired30Ref.current = true
-        triggerFlash("urgent", 600)
-      }
-      if (!fired10Ref.current && remaining <= 10_000 && remaining > 0) {
-        fired10Ref.current = true
-        playUrgentTick()
-        triggerFlash("urgent", 800)
-      }
-
-      if (mode === "challenge_gods") {
-        const log = ghostLogRef.current
-        let consumed = false
-        while (ghostCursorRef.current < log.length && log[ghostCursorRef.current].elapsed_ms <= elapsed) {
-          const entry = log[ghostCursorRef.current]
-          ghostTotalRef.current += 1
-          if (entry.is_correct) {
-            ghostCorrectRef.current += 1
-            ghostTypedCharsRef.current += 1
-            const slot = ghostPerProblemRef.current[entry.problem_index]
-            if (slot) {
-              slot.typedChars += 1
-            }
-          }
-          if (entry.problem_index > ghostProblemIndexRef.current) {
-            const prev = ghostPerProblemRef.current[ghostProblemIndexRef.current]
-            if (prev) {
-              prev.completed = true
-            }
-            ghostProblemIndexRef.current = entry.problem_index
-          }
-          ghostCursorRef.current += 1
-          consumed = true
-        }
-        if (consumed) {
-          setGhostTypedChars(ghostTypedCharsRef.current)
-          setGhostProblemIndex(ghostProblemIndexRef.current)
-          setGhostAccuracy(ghostTotalRef.current === 0 ? 0 : ghostCorrectRef.current / ghostTotalRef.current)
-        }
-      }
-
-      if (remaining <= 0) {
-        void finish()
-        return
-      }
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-    /** eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [])
-
-  /**
-   * keydown / paste / IME 検知ハンドラ
-   */
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (finishedRef.current || imeOn) return
-      /**
-       * 特殊キーの除外（Shift/Ctrl/Alt/Meta 単独）
-       */
-      if (e.key.length > 1 && e.key !== "Enter" && e.key !== "Backspace") return
-      /**
-       * Backspace は無視（仕様：誤入力時は次の正解文字が打たれるまで進まない）
-       */
-      if (e.key === "Backspace") {
-        e.preventDefault()
-        return
-      }
-
-      const currentProblem = problems[problemIndexRef.current]
-      if (!currentProblem) return
-
-      const expectedChar = currentProblem.code_block[cursorPosRef.current]
-      /**
-       * Enter は改行扱い
-       */
-      const inputChar = e.key === "Enter" ? "\n" : e.key
-      const isCorrect = inputChar === expectedChar
-
-      e.preventDefault()
-
-      const elapsed = performance.now() - startAtRef.current
-      logRef.current.push({
-        elapsedMs: elapsed,
-        inputChar: e.key,
-        isCorrect,
-        problemIndex: problemIndexRef.current,
-      })
-
-      /**
-       * 初回 keydown で AudioContext を resume（ブラウザ autoplay policy 対策）
-       */
-      resumeAudio()
-
-      totalRef.current += 1
-      setTotalKeystrokes(totalRef.current)
-      if (isCorrect) {
-        correctRef.current += 1
-        setCorrectKeystrokes(correctRef.current)
-        typedCharsRef.current += 1
-        setTypedChars(typedCharsRef.current)
-        cursorPosRef.current += 1
-        setCursorPos(cursorPosRef.current)
-
-        /**
-         * combo 増加 + max 更新 + 正解 SE
-         */
-        comboRef.current += 1
-        setCombo(comboRef.current)
-        if (comboRef.current > maxComboRef.current) {
-          maxComboRef.current = comboRef.current
-          setMaxCombo(maxComboRef.current)
-        }
-        playKeyHit()
-
-        /**
-         * tier change 検知 (typedChars 100/200/300/400/500 の境界)
-         */
-        const newTier = typedCharsRef.current >= 500 ? 6
-          : typedCharsRef.current >= 400 ? 5
-            : typedCharsRef.current >= 300 ? 4
-              : typedCharsRef.current >= 200 ? 3
-                : typedCharsRef.current >= 100 ? 2
-                  : 1
-        if (newTier > tierRef.current) {
-          tierRef.current = newTier
-          playTierUp()
-          triggerFlash("tier-up", 700)
-        }
-
-        /**
-         * 関数完走判定
-         */
-        if (cursorPosRef.current >= currentProblem.code_block.length) {
-          problemIndexRef.current += 1
-          cursorPosRef.current = 0
-          setProblemIndex(problemIndexRef.current)
-          setCursorPos(0)
-        }
-      } else {
-        /**
-         * Miss: combo リセット + Miss SE + 短い shake 演出
-         */
-        if (comboRef.current > 0) {
-          comboRef.current = 0
-          setCombo(0)
-        }
-        playKeyMiss()
-        triggerFlash("miss", 250)
-      }
-    }
-    const onPaste = (e: ClipboardEvent) => e.preventDefault()
-    const onCompositionStart = () => setImeOn(true)
-    const onCompositionEnd = () => setImeOn(false)
-
-    document.addEventListener("keydown", onKeyDown)
-    document.addEventListener("paste", onPaste)
-    document.addEventListener("compositionstart", onCompositionStart)
-    document.addEventListener("compositionend", onCompositionEnd)
-    return () => {
-      document.removeEventListener("keydown", onKeyDown)
-      document.removeEventListener("paste", onPaste)
-      document.removeEventListener("compositionstart", onCompositionStart)
-      document.removeEventListener("compositionend", onCompositionEnd)
-    }
-  }, [problems, imeOn])
 
   const currentProblem = problems[problemIndex] ?? null
   const allDone = problemIndex >= problems.length
