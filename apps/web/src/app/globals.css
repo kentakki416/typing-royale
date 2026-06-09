@@ -2014,64 +2014,85 @@ code.inline {
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  background-color: var(--bg-base);
+  /** Type Blaze 風の深紫黒ベース */
+  background-color: #0a0218;
   transition: background-color 0.8s ease;
-}
-/**
- * 左右対称の二層オーラ。中央軸 50% を共通基準にし、上下方向だけ ±15% ずらして対称配置。
- * mix-blend-mode: screen で色が乗算でなく加算され、暗背景に華やかに浮かぶ
- */
-.play-backdrop::before,
-.play-backdrop::after {
-  content: '';
-  position: absolute;
-  inset: -20%;
-  background: radial-gradient(circle at 50% 50%, var(--tier-color, transparent) 0%, transparent 55%);
-  animation: backdrop-pulse 6s ease-in-out infinite;
-  mix-blend-mode: screen;
-}
-.play-backdrop::after {
-  background: radial-gradient(circle at 50% 50%, var(--tier-color-2, transparent) 0%, transparent 65%);
-  animation-duration: 9s;
-  animation-direction: reverse;
-  filter: blur(18px);
-}
-.play-backdrop.tier-1 { --tier-color: rgba(94, 168, 255, 0.7);  --tier-color-2: rgba(58, 142, 255, 0.55); }
-.play-backdrop.tier-2 { --tier-color: rgba(110, 255, 178, 0.7); --tier-color-2: rgba(58, 200, 138, 0.55); }
-.play-backdrop.tier-3 { --tier-color: rgba(206, 150, 255, 0.72);--tier-color-2: rgba(160, 90, 240, 0.58); }
-.play-backdrop.tier-4 { --tier-color: rgba(255, 110, 130, 0.72);--tier-color-2: rgba(232, 50, 80, 0.6); }
-.play-backdrop.tier-5 { --tier-color: rgba(255, 230, 130, 0.78);--tier-color-2: rgba(255, 196, 50, 0.62); }
-.play-backdrop.tier-6::before {
-  background: conic-gradient(
-    from var(--rb-angle, 0deg),
-    #ff3a4e, #ff8a3a, #ffd54a, #58ff8f, #3a8eff, #bd93f9, #ff3aff, #ff3a4e
-  );
-  animation: backdrop-rainbow 8s linear infinite;
-  opacity: 0.55;
-  filter: blur(24px);
-  mix-blend-mode: normal;
-}
-.play-backdrop.tier-6::after {
-  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.18) 0%, transparent 60%);
-  animation: backdrop-pulse 4s ease-in-out infinite;
-  mix-blend-mode: overlay;
 }
 
 /**
- * 白い玉のパーティクル。React 側で 12 個生成、CSS 変数 (--left / --delay / --duration / --size)
- * で各粒子の位置と動きをばらつかせる。下から上へ「弾けるように昇る」モーション
+ * 第 1 層: tier 別の中央放射 conic-gradient (Type Blaze の rainbowSpin 風)
+ * 中央 50% 50% で完全に左右対称。slow 8 秒で回転して光が常に流れる
  */
-.play-particle {
+.play-backdrop::before {
+  content: '';
   position: absolute;
-  bottom: -8%;
-  left: var(--left, 50%);
-  width: var(--size, 8px);
-  height: var(--size, 8px);
+  inset: -30%;
+  background: conic-gradient(
+    from var(--rb-angle, 0deg) at 50% 50%,
+    var(--tier-color-1, transparent) 0deg,
+    var(--tier-color-2, transparent) 90deg,
+    var(--tier-color-3, transparent) 180deg,
+    var(--tier-color-2, transparent) 270deg,
+    var(--tier-color-1, transparent) 360deg
+  );
+  filter: blur(60px);
+  animation: rainbow-spin 14s linear infinite, beat-pulse 5s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+/**
+ * 第 2 層: グリッドが下から上に流れるレトロゲーム風レイヤー (Type Blaze の gridScroll)
+ * tier の色に染まる発光グリッド。perspective も微妙に効いてゲーム感を強める
+ */
+.play-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(0deg,  rgba(255,255,255,0.07) 1px, transparent 1px) 0 0 / 80px 80px,
+    linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px) 0 0 / 80px 80px;
+  mask-image: radial-gradient(ellipse at 50% 50%, #000 30%, transparent 80%);
+  animation: grid-scroll 8s linear infinite;
+  opacity: 0.6;
+}
+
+/**
+ * 中央から外に広がる ring pulse (Type Blaze の ringPulse)
+ * .play-backdrop の追加要素として 3 つ重ねて時間差で出す
+ */
+.play-ring {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 80vmin; height: 80vmin;
+  margin-left: -40vmin; margin-top: -40vmin;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #ffffff 0%, rgba(255, 255, 255, 0.85) 40%, rgba(255, 255, 255, 0) 70%);
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6), 0 0 24px rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--tier-color-1, #4ea8ff);
   opacity: 0;
-  animation: particle-rise var(--duration, 6s) ease-in var(--delay, 0s) infinite;
+  animation: ring-pulse 3.6s ease-out var(--ring-delay, 0s) infinite;
+  mix-blend-mode: screen;
+  box-shadow: 0 0 60px var(--tier-color-1, #4ea8ff);
+}
+
+/** tier ごとの 3 色 (Type Blaze の colorway 5 色から選定) */
+.play-backdrop.tier-1 { --tier-color-1: rgba( 78,168,255,0.85); --tier-color-2: rgba( 78,168,255,0.55); --tier-color-3: rgba( 20, 60,180,0.55); }
+.play-backdrop.tier-2 { --tier-color-1: rgba( 61,255,165,0.85); --tier-color-2: rgba( 61,255,165,0.55); --tier-color-3: rgba( 20,160, 90,0.6); }
+.play-backdrop.tier-3 { --tier-color-1: rgba(196,123,255,0.9);  --tier-color-2: rgba(196,123,255,0.55); --tier-color-3: rgba(100, 40,180,0.6); }
+.play-backdrop.tier-4 { --tier-color-1: rgba(255, 59, 59,0.9);  --tier-color-2: rgba(255, 59, 59,0.55); --tier-color-3: rgba(180, 20, 30,0.6); }
+.play-backdrop.tier-5 { --tier-color-1: rgba(255,200, 61,0.9);  --tier-color-2: rgba(255,200, 61,0.6);  --tier-color-3: rgba(200,120, 20,0.6); }
+
+/** tier 6 = 虹色。conic-gradient が 5 色を巡回しながら回る */
+.play-backdrop.tier-6::before {
+  background: conic-gradient(
+    from var(--rb-angle, 0deg) at 50% 50%,
+    #ff3b3b, #ffc83d, #3dffa5, #4ea8ff, #c47bff, #ff3b3b
+  );
+  filter: blur(80px);
+  opacity: 0.65;
+  animation: rainbow-spin 8s linear infinite, beat-pulse 3s ease-in-out infinite;
+}
+.play-backdrop.tier-6 .play-ring {
+  border-color: #ffffff;
+  box-shadow: 0 0 80px #ffffff;
 }
 
 @property --rb-angle {
@@ -2080,17 +2101,20 @@ code.inline {
   initial-value: 0deg;
 }
 
-@keyframes backdrop-pulse {
-  0%, 100% { transform: scale(0.95); opacity: 0.85; }
-  50%      { transform: scale(1.12); opacity: 1;    }
-}
-@keyframes backdrop-rainbow {
+@keyframes rainbow-spin {
   0%   { --rb-angle: 0deg;   }
   100% { --rb-angle: 360deg; }
 }
-@keyframes particle-rise {
-  0%   { transform: translateY(0) scale(0.4); opacity: 0; }
-  15%  { transform: translateY(-20vh) scale(1); opacity: 1; }
-  70%  { transform: translateY(-90vh) scale(1); opacity: 0.9; }
-  100% { transform: translateY(-110vh) scale(0.2); opacity: 0; }
+@keyframes beat-pulse {
+  0%, 100% { transform: scale(0.95); opacity: 0.85; }
+  50%      { transform: scale(1.08); opacity: 1;    }
+}
+@keyframes grid-scroll {
+  0%   { background-position: 0 0,      0 0;   }
+  100% { background-position: 0 -80px,  -80px 0; }
+}
+@keyframes ring-pulse {
+  0%   { transform: scale(0.15); opacity: 0;   }
+  15%  { opacity: 0.7; }
+  100% { transform: scale(1.5);  opacity: 0;   }
 }

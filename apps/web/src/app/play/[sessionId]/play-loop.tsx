@@ -9,23 +9,9 @@ import { Topbar } from "@/components/topbar"
 import type { GhostKeystrokeLogs, GhostSummary, GhostUserDisplay } from "./types"
 
 /**
- * 12 個のパーティクル設定。横位置 / 遅延 / 速度 / サイズを散らして
- * 「白い玉が下から弾けて昇っていく」演出を作る
+ * 中央から広がる ring pulse の delay 設定 (3 本を時間差で発射)
  */
-const PARTICLE_CONFIG = [
-  { delay: 0.0, duration: 6.5, left: 8, size: 10 },
-  { delay: 1.4, duration: 7.2, left: 18, size: 6 },
-  { delay: 0.7, duration: 5.8, left: 28, size: 14 },
-  { delay: 2.2, duration: 6.8, left: 38, size: 8 },
-  { delay: 0.3, duration: 7.5, left: 47, size: 12 },
-  { delay: 1.8, duration: 6.1, left: 54, size: 9 },
-  { delay: 0.9, duration: 7.0, left: 62, size: 7 },
-  { delay: 2.6, duration: 5.6, left: 72, size: 13 },
-  { delay: 1.1, duration: 6.4, left: 82, size: 8 },
-  { delay: 0.5, duration: 7.8, left: 92, size: 10 },
-  { delay: 3.0, duration: 6.6, left: 14, size: 6 },
-  { delay: 2.0, duration: 7.1, left: 78, size: 11 },
-]
+const RING_DELAYS = [0, 1.2, 2.4]
 
 type Problem = StartSoloPlaySessionResponse["problems"][number]
 
@@ -317,16 +303,11 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
   return (
     <>
       <div aria-hidden="true" className={`play-backdrop tier-${backdropTier}`}>
-        {PARTICLE_CONFIG.map((p, i) => (
+        {RING_DELAYS.map((d, i) => (
           <span
-            className="play-particle"
+            className="play-ring"
             key={i}
-            style={{
-              "--delay": `${p.delay}s`,
-              "--duration": `${p.duration}s`,
-              "--left": `${p.left}%`,
-              "--size": `${p.size}px`,
-            } as React.CSSProperties}
+            style={{ "--ring-delay": `${d}s` } as React.CSSProperties}
           />
         ))}
       </div>
