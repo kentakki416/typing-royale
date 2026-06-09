@@ -7,11 +7,16 @@
  * 追加で ignore したいパス等がある場合:
  *   const baseConfig = require("@repo/eslint-config")
  *   module.exports = [...baseConfig, { ignores: ["generated/**"] }]
+ *
+ * 全プロジェクト共通のルールは ./common-rules.js に集約してある。
+ * apps/* の eslint.config.* からも同じルールを spread することで一元管理する。
  */
 const { defineConfig } = require("eslint/config")
 const typescriptEslint = require("@typescript-eslint/eslint-plugin")
 const typescriptParser = require("@typescript-eslint/parser")
 const importPlugin = require("eslint-plugin-import")
+
+const { commonRules } = require("./common-rules")
 
 module.exports = defineConfig([
   {
@@ -36,94 +41,7 @@ module.exports = defineConfig([
         },
       },
     },
-    rules: {
-      /** インデント */
-      indent: ["error", 2],
-
-      /** Console */
-      "no-console": ["warn", { allow: ["warn", "error"] }],
-
-      /** 未使用変数 */
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        {
-          args: "after-used",
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-          ignoreRestSiblings: true,
-        },
-      ],
-
-      /** コードスタイル */
-      "object-curly-spacing": ["error", "always"],
-      quotes: ["error", "double"],
-      semi: ["error", "never"],
-      "no-multiple-empty-lines": ["error", { max: 1, maxBOF: 0, maxEOF: 0 }],
-      "padded-blocks": ["error", "never"],
-      "no-trailing-spaces": "error",
-      "no-multi-spaces": "error",
-
-      /** Import 順序 */
-      "import/order": [
-        "error",
-        {
-          groups: [
-            "builtin",
-            "external",
-            "internal",
-            "parent",
-            "sibling",
-            "index",
-          ],
-          "newlines-between": "always",
-          alphabetize: {
-            order: "asc",
-            caseInsensitive: true,
-          },
-          pathGroups: [
-            {
-              pattern: "@repo/**",
-              group: "internal",
-              position: "before",
-            },
-          ],
-          pathGroupsExcludedImportTypes: ["builtin"],
-        },
-      ],
-      "import/no-duplicates": ["error", { "prefer-inline": true }],
-
-      /** TypeScript: 型安全性 */
-      "@typescript-eslint/no-empty-function": "error",
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unnecessary-type-assertion": "error",
-      "@typescript-eslint/promise-function-async": "warn",
-
-      /** TypeScript: 命名規則 */
-      "@typescript-eslint/naming-convention": [
-        "error",
-        {
-          format: ["camelCase", "UPPER_CASE", "PascalCase"],
-          selector: "variable",
-        },
-        {
-          format: ["camelCase", "PascalCase"],
-          selector: "function",
-        },
-        {
-          format: ["PascalCase"],
-          selector: "typeLike",
-        },
-      ],
-
-      /** コード品質 */
-      eqeqeq: ["error", "always"],
-      "no-return-await": "error",
-      "no-unneeded-ternary": "error",
-      "no-var": "error",
-      "prefer-arrow-callback": "error",
-      "prefer-const": "error",
-      "prefer-template": "error",
-    },
+    rules: commonRules,
   },
   {
     ignores: ["node_modules/**", "dist/**"],
