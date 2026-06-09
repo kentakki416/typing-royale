@@ -130,21 +130,18 @@ jobs:
         run: pnpm --filter web exec playwright install-deps chromium
 
       - name: Start API server
-        run: pnpm --filter api exec tsx src/index.ts &
+        run: nohup pnpm --filter api exec tsx src/index.ts > /tmp/api.log 2>&1 &
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
           REDIS_URL: ${{ env.REDIS_URL }}
 
-      - name: Build & start Web server
-        run: |
-          pnpm --filter web exec next build
-          pnpm --filter web exec next start -p 3000 &
+      - name: Start Web server (dev mode)
+        run: nohup pnpm --filter web exec next dev -p 3000 > /tmp/web.log 2>&1 &
         env:
           NEXT_PUBLIC_API_URL: ${{ env.NEXT_PUBLIC_API_URL }}
 
       - name: Wait for API and Web
-        run: |
-          npx wait-on -t 60000 http://localhost:8080/api/health http://localhost:3000
+        run: npx wait-on -t 120000 http://localhost:8080/api/health http://localhost:3000
 
       - name: Run Playwright tests
         run: pnpm --filter web e2e
@@ -152,6 +149,14 @@ jobs:
           CI: 'true'
           E2E_BASE_URL: http://localhost:3000
           E2E_API_URL: http://localhost:8080
+
+      - name: Show server logs on failure
+        if: failure()
+        run: |
+          echo "===== API LOG ====="
+          tail -100 /tmp/api.log || true
+          echo "===== WEB LOG ====="
+          tail -100 /tmp/web.log || true
 
       - name: Upload Playwright report
         if: always()
