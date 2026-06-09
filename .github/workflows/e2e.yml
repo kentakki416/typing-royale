@@ -61,8 +61,8 @@ jobs:
       NODE_ENV: development
       PORT: '8080'
       FRONTEND_URL: http://localhost:3000
-      JWT_SECRET: e2e-test-jwt-secret-do-not-use-in-prod
-      JWT_REFRESH_SECRET: e2e-test-jwt-refresh-secret-do-not-use-in-prod
+      JWT_ACCESS_SECRET: e2e-test-jwt-access-secret-do-not-use-in-prod-padding
+      JWT_REFRESH_SECRET: e2e-test-jwt-refresh-secret-do-not-use-in-prod-padding
       GOOGLE_CLIENT_ID: dummy
       GOOGLE_CLIENT_SECRET: dummy
       GITHUB_CLIENT_ID: dummy
