@@ -7,7 +7,10 @@
     "build": "dotenvx run -f .env.local -- next build",
     "start": "dotenvx run -f .env.local -- next start -p 3000",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "@lottiefiles/dotlottie-react": "^0.19.4",
@@ -19,6 +22,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/node": "^20.19.25",
     "@types/react": "^19.2.5",
