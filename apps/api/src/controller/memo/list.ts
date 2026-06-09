@@ -2,6 +2,7 @@ import { Request, Response } from "express"
 
 import { ErrorResponse, getMemoListResponseSchema } from "@repo/api-schema"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { MemoRepository } from "../../repository/prisma"
 import * as service from "../../service"
 
@@ -24,7 +25,7 @@ export class MemoListController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    const response = getMemoListResponseSchema.parse({
+    const response = parseResponse(getMemoListResponseSchema, {
       memos: result.value.map((memo) => ({
         body: memo.body,
         created_at: memo.createdAt.toISOString(),

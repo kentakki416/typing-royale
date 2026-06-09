@@ -5,6 +5,7 @@ import { logger } from "@repo/logger"
 
 import { IGoogleOAuthClient } from "../../client/google-oauth"
 import { generateAccessToken, generateRefreshToken } from "../../lib/jwt"
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import {
   AuthAccountRepository,
   TransactionRunner,
@@ -28,7 +29,7 @@ export class AuthGoogleController {
   async execute(req: Request, res: Response) {
     logger.info("AuthGoogleController: Verifying Google authorization code")
 
-    const { code, redirect_uri: redirectUri } = authGoogleRequestSchema.parse(req.body)
+    const { code, redirect_uri: redirectUri } = parseRequest(authGoogleRequestSchema, req.body)
 
     const result = await service.auth.authenticateWithGoogle(
       { code, redirectUri },
@@ -52,7 +53,7 @@ export class AuthGoogleController {
 
     const { accessToken, isNewUser, refreshToken, user } = result.value
 
-    const response = authGoogleResponseSchema.parse({
+    const response = parseResponse(authGoogleResponseSchema, {
       access_token: accessToken,
       is_new_user: isNewUser,
       refresh_token: refreshToken,

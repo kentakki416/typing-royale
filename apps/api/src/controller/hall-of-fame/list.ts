@@ -7,6 +7,7 @@ import {
 } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import {
   HallOfFameEntryRepository,
   LanguageRepository,
@@ -27,7 +28,7 @@ export class HallOfFameListController {
   ) {}
 
   async execute(req: Request, res: Response) {
-    const query = getHallOfFameQueryStringSchema.parse(req.query)
+    const query = parseRequest(getHallOfFameQueryStringSchema, req.query)
 
     logger.info("HallOfFameListController: listing", { language: query.language })
 
@@ -48,7 +49,7 @@ export class HallOfFameListController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    const response = getHallOfFameResponseSchema.parse({
+    const response = parseResponse(getHallOfFameResponseSchema, {
       entries: result.value.entries.map((e) => ({
         accuracy: e.accuracy,
         best_play_session_id: e.bestPlaySessionId,

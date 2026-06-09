@@ -8,6 +8,7 @@ import {
 import { logger } from "@repo/logger"
 
 import { CardStorage } from "../../lib/card-storage"
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import {
   RewardRepository,
@@ -30,7 +31,7 @@ export class RewardsCardCreateController {
   ) {}
 
   async execute(req: AuthRequest, res: Response) {
-    const { payload, type } = createRewardCardRequestSchema.parse(req.body)
+    const { payload, type } = parseRequest(createRewardCardRequestSchema, req.body)
 
     logger.info("RewardsCardCreateController: creating", {
       type,
@@ -55,7 +56,7 @@ export class RewardsCardCreateController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    const response = createRewardCardResponseSchema.parse({
+    const response = parseResponse(createRewardCardResponseSchema, {
       asset_url: result.value.assetUrl,
       granted_at: result.value.grantedAt.toISOString(),
       payload: result.value.payload,

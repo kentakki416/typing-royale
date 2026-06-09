@@ -7,6 +7,7 @@ import {
 } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import {
   LanguageRepository,
   UserLanguageBestRepository,
@@ -25,7 +26,7 @@ export class RankingListController {
   ) {}
 
   async execute(req: Request, res: Response) {
-    const query = getRankingsQueryStringSchema.parse(req.query)
+    const query = parseRequest(getRankingsQueryStringSchema, req.query)
 
     logger.info("RankingListController: Listing rankings", {
       language: query.language,
@@ -48,7 +49,7 @@ export class RankingListController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    const response = getRankingsResponseSchema.parse({
+    const response = parseResponse(getRankingsResponseSchema, {
       entries: result.value.entries.map((e) => ({
         accuracy: e.accuracy,
         best_play_session_id: e.bestPlaySessionId,

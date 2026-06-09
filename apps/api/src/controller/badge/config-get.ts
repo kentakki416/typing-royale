@@ -3,6 +3,7 @@ import { Response } from "express"
 import { getBadgeConfigResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import { BadgeConfigRepository } from "../../repository/prisma"
 import * as service from "../../service"
@@ -23,7 +24,7 @@ export class BadgeConfigGetController {
       { badgeConfigRepository: this.badgeConfigRepository },
     )
 
-    const response = getBadgeConfigResponseSchema.parse({
+    const response = parseResponse(getBadgeConfigResponseSchema, {
       display_items: config.displayItems,
       updated_at: config.updatedAt.toISOString(),
     })

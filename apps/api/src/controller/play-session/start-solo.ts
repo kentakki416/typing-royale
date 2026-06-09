@@ -3,6 +3,7 @@ import { Response } from "express"
 import { ErrorResponse, startSoloPlaySessionRequestSchema, startSoloPlaySessionResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import {
   CrawledRepoRepository,
@@ -26,7 +27,7 @@ export class PlaySessionStartSoloController {
   ) {}
 
   async execute(req: AuthRequest, res: Response) {
-    const { language_id: languageId } = startSoloPlaySessionRequestSchema.parse(req.body)
+    const { language_id: languageId } = parseRequest(startSoloPlaySessionRequestSchema, req.body)
 
     logger.info("PlaySessionStartSoloController: Starting solo session", {
       languageId,
@@ -51,7 +52,7 @@ export class PlaySessionStartSoloController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    const response = startSoloPlaySessionResponseSchema.parse({
+    const response = parseResponse(startSoloPlaySessionResponseSchema, {
       problems: result.value.problems.map((p) => ({
         char_count: p.charCount,
         code_block: p.codeBlock,

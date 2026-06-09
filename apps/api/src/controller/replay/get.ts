@@ -3,6 +3,7 @@ import { Request, Response } from "express"
 import { ErrorResponse, getReplayPathParamSchema, getReplayResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { KeystrokeLogRepository, ReplayRepository } from "../../repository/prisma"
 import * as service from "../../service"
 
@@ -19,7 +20,7 @@ export class ReplayGetController {
   ) {}
 
   async execute(req: Request, res: Response) {
-    const { playSessionId } = getReplayPathParamSchema.parse(req.params)
+    const { playSessionId } = parseRequest(getReplayPathParamSchema, req.params)
 
     logger.info("ReplayGetController: Getting replay", { playSessionId })
 
@@ -40,7 +41,7 @@ export class ReplayGetController {
     }
 
     const { keystrokeLogs, source } = result.value
-    const response = getReplayResponseSchema.parse({
+    const response = parseResponse(getReplayResponseSchema, {
       keystroke_logs: keystrokeLogs.map((entry) => ({
         elapsed_ms: entry.elapsedMs,
         input_char: entry.inputChar,

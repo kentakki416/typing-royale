@@ -7,6 +7,7 @@ import {
 } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import {
   LanguageRepository,
@@ -28,7 +29,7 @@ export class RankingMeController {
   ) {}
 
   async execute(req: AuthRequest, res: Response) {
-    const query = getMyRankingQueryStringSchema.parse(req.query)
+    const query = parseRequest(getMyRankingQueryStringSchema, req.query)
 
     logger.info("RankingMeController: Fetching my ranking", {
       language: query.language,
@@ -52,7 +53,7 @@ export class RankingMeController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    const response = getMyRankingResponseSchema.parse({
+    const response = parseResponse(getMyRankingResponseSchema, {
       best_accuracy: result.value.bestAccuracy,
       best_play_session_id: result.value.bestPlaySessionId,
       best_played_at: result.value.bestPlayedAt?.toISOString() ?? null,

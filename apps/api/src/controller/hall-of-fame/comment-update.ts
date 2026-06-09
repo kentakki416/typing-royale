@@ -8,6 +8,7 @@ import {
 } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import {
   HallOfFameEntryRepository,
@@ -27,8 +28,8 @@ export class HallOfFameCommentUpdateController {
   ) {}
 
   async execute(req: AuthRequest, res: Response) {
-    const { entryId } = updateHallOfFameCommentPathParamSchema.parse(req.params)
-    const { comment } = updateHallOfFameCommentRequestSchema.parse(req.body)
+    const { entryId } = parseRequest(updateHallOfFameCommentPathParamSchema, req.params)
+    const { comment } = parseRequest(updateHallOfFameCommentRequestSchema, req.body)
 
     logger.info("HallOfFameCommentUpdateController: updating", {
       entryId,
@@ -51,7 +52,7 @@ export class HallOfFameCommentUpdateController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    const response = hallOfFameCommentResponseSchema.parse({
+    const response = parseResponse(hallOfFameCommentResponseSchema, {
       comment: result.value.comment,
       comment_submitted_at: result.value.commentSubmittedAt.toISOString(),
       entry_id: result.value.entryId,

@@ -2,6 +2,7 @@ import { Request, Response } from "express"
 
 import { ErrorResponse, updateMemoPathParamSchema, updateMemoRequestSchema, updateMemoResponseSchema } from "@repo/api-schema"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { MemoRepository } from "../../repository/prisma"
 import * as service from "../../service"
 
@@ -12,8 +13,8 @@ export class MemoUpdateController {
   constructor(private memoRepository: MemoRepository) {}
 
   async execute(req: Request, res: Response) {
-    const { id } = updateMemoPathParamSchema.parse(req.params)
-    const data = updateMemoRequestSchema.parse(req.body)
+    const { id } = parseRequest(updateMemoPathParamSchema, req.params)
+    const data = parseRequest(updateMemoRequestSchema, req.body)
 
     const result = await service.memo.updateMemo(id, data, { memoRepository: this.memoRepository })
 
@@ -25,7 +26,7 @@ export class MemoUpdateController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    const response = updateMemoResponseSchema.parse({
+    const response = parseResponse(updateMemoResponseSchema, {
       body: result.value.body,
       created_at: result.value.createdAt.toISOString(),
       id: result.value.id,

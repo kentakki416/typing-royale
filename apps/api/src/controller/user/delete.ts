@@ -3,6 +3,7 @@ import { Response } from "express"
 import { deleteUserResponseSchema, ErrorResponse } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import { UserRepository } from "../../repository/prisma"
 import { RefreshTokenRepository } from "../../repository/redis"
@@ -37,6 +38,6 @@ export class UserDeleteController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    return res.status(200).json(deleteUserResponseSchema.parse({ message: "OK" }))
+    return res.status(200).json(parseResponse(deleteUserResponseSchema, { message: "OK" }))
   }
 }

@@ -7,6 +7,7 @@ import {
 } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import {
   HallOfFameEntryRepository,
@@ -28,7 +29,7 @@ export class HallOfFameCommentCreateController {
   ) {}
 
   async execute(req: AuthRequest, res: Response) {
-    const { comment, language } = submitHallOfFameCommentRequestSchema.parse(req.body)
+    const { comment, language } = parseRequest(submitHallOfFameCommentRequestSchema, req.body)
 
     logger.info("HallOfFameCommentCreateController: submitting", {
       language,
@@ -52,7 +53,7 @@ export class HallOfFameCommentCreateController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    const response = hallOfFameCommentResponseSchema.parse({
+    const response = parseResponse(hallOfFameCommentResponseSchema, {
       comment: result.value.comment,
       comment_submitted_at: result.value.commentSubmittedAt.toISOString(),
       entry_id: result.value.entryId,

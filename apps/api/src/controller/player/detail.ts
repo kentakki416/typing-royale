@@ -7,6 +7,7 @@ import {
 } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import {
   UserLanguageBestRepository,
   UserLifetimeStatsRepository,
@@ -28,7 +29,7 @@ export class PlayerDetailController {
   ) {}
 
   async execute(req: Request, res: Response) {
-    const { userId } = getPlayerPathParamSchema.parse(req.params)
+    const { userId } = parseRequest(getPlayerPathParamSchema, req.params)
 
     logger.info("PlayerDetailController: Fetching player", { userId })
 
@@ -49,7 +50,7 @@ export class PlayerDetailController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    const response = getPlayerResponseSchema.parse({
+    const response = parseResponse(getPlayerResponseSchema, {
       language_bests: result.value.languageBests.map((b) => ({
         accuracy: b.accuracy,
         best_play_session_id: b.bestPlaySessionId,

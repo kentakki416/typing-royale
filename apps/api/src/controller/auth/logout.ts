@@ -4,6 +4,7 @@ import { authLogoutRequestSchema, authLogoutResponseSchema, ErrorResponse } from
 import { logger } from "@repo/logger"
 
 import { verifyRefreshToken } from "../../lib/jwt"
+import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { RefreshTokenRepository } from "../../repository/redis"
 import * as service from "../../service"
 
@@ -17,7 +18,7 @@ export class AuthLogoutController {
   async execute(req: Request, res: Response) {
     logger.info("AuthLogoutController: Logging out")
 
-    const { refresh_token: refreshToken } = authLogoutRequestSchema.parse(req.body)
+    const { refresh_token: refreshToken } = parseRequest(authLogoutRequestSchema, req.body)
 
     const result = await service.auth.logout(
       { refreshToken },
@@ -36,6 +37,6 @@ export class AuthLogoutController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    return res.status(200).json(authLogoutResponseSchema.parse({ message: "OK" }))
+    return res.status(200).json(parseResponse(authLogoutResponseSchema, { message: "OK" }))
   }
 }
