@@ -7,6 +7,7 @@ import {
 } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { toUserDto } from "../../lib/dto"
 import { generateAccessToken, generateRefreshToken } from "../../lib/jwt"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { UserRepository } from "../../repository/prisma"
@@ -61,14 +62,7 @@ export class AuthDevLoginController {
     const response = parseResponse(authDevLoginResponseSchema, {
       access_token: accessToken,
       refresh_token: refreshToken,
-      user: {
-        avatar_url: user.avatarUrl,
-        can_public_ranking: user.canPublicRanking,
-        created_at: user.createdAt.toISOString(),
-        display_name: user.displayName,
-        email: user.email,
-        id: user.id,
-      },
+      user: toUserDto(user),
     })
 
     return res.status(200).json(response)

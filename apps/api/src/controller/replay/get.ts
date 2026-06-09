@@ -3,6 +3,7 @@ import { Request, Response } from "express"
 import { ErrorResponse, getReplayPathParamSchema, getReplayResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { toKeystrokeLogDto, toProblemDto } from "../../lib/dto"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { KeystrokeLogRepository, ReplayRepository } from "../../repository/prisma"
 import * as service from "../../service"
@@ -42,12 +43,7 @@ export class ReplayGetController {
 
     const { keystrokeLogs, source } = result.value
     const response = parseResponse(getReplayResponseSchema, {
-      keystroke_logs: keystrokeLogs.map((entry) => ({
-        elapsed_ms: entry.elapsedMs,
-        input_char: entry.inputChar,
-        is_correct: entry.isCorrect,
-        problem_index: entry.problemIndex,
-      })),
+      keystroke_logs: keystrokeLogs.map(toKeystrokeLogDto),
       language: source.language.slug,
       play_session_id: source.id,
       player: {
@@ -56,14 +52,14 @@ export class ReplayGetController {
         display_name: source.user.displayName ?? `user${source.user.id}`,
         user_id: source.user.id,
       },
-      problems: source.problems.map((p) => ({
-        char_count: p.problem.charCount,
-        code_block: p.problem.codeBlock,
-        function_name: p.problem.functionName,
+      problems: source.problems.map((p) => toProblemDto({
+        charCount: p.problem.charCount,
+        codeBlock: p.problem.codeBlock,
+        functionName: p.problem.functionName,
         id: p.problem.id,
-        line_count: p.problem.lineCount,
-        order_index: p.orderIndex,
-        source_url: p.problem.sourceUrl,
+        lineCount: p.problem.lineCount,
+        orderIndex: p.orderIndex,
+        sourceUrl: p.problem.sourceUrl,
       })),
       repo_info: {
         description: source.crawledRepo.description,

@@ -7,6 +7,7 @@ import {
 } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { toGradeDto } from "../../lib/dto"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import {
   UserLanguageBestRepository,
@@ -62,11 +63,7 @@ export class PlayerDetailController {
       })),
       lifetime_stats: {
         best_score: result.value.lifetimeStats.bestScore,
-        current_grade: {
-          level: result.value.lifetimeStats.currentGrade.level,
-          name: result.value.lifetimeStats.currentGrade.name,
-          slug: result.value.lifetimeStats.currentGrade.slug,
-        },
+        current_grade: toGradeDto(result.value.lifetimeStats.currentGrade),
         current_grade_reached_at: result.value.lifetimeStats.currentGradeReachedAt?.toISOString() ?? null,
         streak_days: result.value.lifetimeStats.streakDays,
         total_sessions: result.value.lifetimeStats.totalSessions,

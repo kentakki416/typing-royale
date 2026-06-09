@@ -3,6 +3,7 @@ import { Response } from "express"
 import { ErrorResponse, startChallengeGodsRequestSchema, startChallengeGodsResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { toKeystrokeLogDto, toProblemDto } from "../../lib/dto"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import {
@@ -60,12 +61,7 @@ export class PlaySessionStartChallengeGodsController {
     }
 
     const response = parseResponse(startChallengeGodsResponseSchema, {
-      ghost_keystroke_logs: result.value.ghostKeystrokeLogs.map((entry) => ({
-        elapsed_ms: entry.elapsedMs,
-        input_char: entry.inputChar,
-        is_correct: entry.isCorrect,
-        problem_index: entry.problemIndex,
-      })),
+      ghost_keystroke_logs: result.value.ghostKeystrokeLogs.map(toKeystrokeLogDto),
       ghost_session_id: result.value.ghostSessionId,
       ghost_user_display: {
         avatar_url: result.value.ghostUserDisplay.avatarUrl,
@@ -73,15 +69,7 @@ export class PlaySessionStartChallengeGodsController {
         display_name: result.value.ghostUserDisplay.displayName,
         grade: result.value.ghostUserDisplay.grade,
       },
-      problems: result.value.problems.map((p) => ({
-        char_count: p.charCount,
-        code_block: p.codeBlock,
-        function_name: p.functionName,
-        id: p.id,
-        line_count: p.lineCount,
-        order_index: p.orderIndex,
-        source_url: p.sourceUrl,
-      })),
+      problems: result.value.problems.map(toProblemDto),
       repo_info: result.value.repoInfo,
       session_id: result.value.sessionId,
     })

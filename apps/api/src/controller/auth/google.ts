@@ -4,6 +4,7 @@ import { authGoogleRequestSchema, authGoogleResponseSchema, ErrorResponse } from
 import { logger } from "@repo/logger"
 
 import { IGoogleOAuthClient } from "../../client/google-oauth"
+import { toUserDto } from "../../lib/dto"
 import { generateAccessToken, generateRefreshToken } from "../../lib/jwt"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import {
@@ -57,14 +58,7 @@ export class AuthGoogleController {
       access_token: accessToken,
       is_new_user: isNewUser,
       refresh_token: refreshToken,
-      user: {
-        avatar_url: user.avatarUrl,
-        can_public_ranking: user.canPublicRanking,
-        created_at: user.createdAt.toISOString(),
-        display_name: user.displayName,
-        email: user.email,
-        id: user.id,
-      },
+      user: toUserDto(user),
     })
 
     return res.status(200).json(response)

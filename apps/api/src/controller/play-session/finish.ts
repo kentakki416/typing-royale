@@ -4,6 +4,7 @@ import { ErrorResponse, finishPlaySessionPathParamSchema, finishPlaySessionReque
 import { logger } from "@repo/logger"
 
 import { CardStorage } from "../../lib/card-storage"
+import { toGradeDto } from "../../lib/dto"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import {
@@ -95,16 +96,8 @@ export class PlaySessionFinishController {
       grade_up: result.value.gradeUp === null
         ? null
         : {
-          from: {
-            level: result.value.gradeUp.from.level,
-            name: result.value.gradeUp.from.name,
-            slug: result.value.gradeUp.from.slug,
-          },
-          to: {
-            level: result.value.gradeUp.to.level,
-            name: result.value.gradeUp.to.name,
-            slug: result.value.gradeUp.to.slug,
-          },
+          from: toGradeDto(result.value.gradeUp.from),
+          to: toGradeDto(result.value.gradeUp.to),
         },
       mistype_stats: result.value.mistypeStats,
       new_rank: result.value.newRank,

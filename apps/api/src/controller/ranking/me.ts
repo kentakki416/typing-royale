@@ -7,6 +7,7 @@ import {
 } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { toGradeDto } from "../../lib/dto"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import {
@@ -58,19 +59,13 @@ export class RankingMeController {
       best_play_session_id: result.value.bestPlaySessionId,
       best_played_at: result.value.bestPlayedAt?.toISOString() ?? null,
       best_score: result.value.bestScore,
-      grade: {
-        level: result.value.grade.level,
-        name: result.value.grade.name,
-        slug: result.value.grade.slug,
-      },
+      grade: toGradeDto(result.value.grade),
       language: result.value.language,
       next_grade: result.value.nextGrade === null
         ? null
         : {
-          level: result.value.nextGrade.level,
-          name: result.value.nextGrade.name,
+          ...toGradeDto(result.value.nextGrade),
           score_needed: result.value.nextGrade.scoreNeeded,
-          slug: result.value.nextGrade.slug,
         },
       rank: result.value.rank,
       total_ranked_players: result.value.totalRankedPlayers,

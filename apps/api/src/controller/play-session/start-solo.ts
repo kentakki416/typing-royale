@@ -3,6 +3,7 @@ import { Response } from "express"
 import { ErrorResponse, startSoloPlaySessionRequestSchema, startSoloPlaySessionResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { toProblemDto } from "../../lib/dto"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import {
@@ -53,15 +54,7 @@ export class PlaySessionStartSoloController {
     }
 
     const response = parseResponse(startSoloPlaySessionResponseSchema, {
-      problems: result.value.problems.map((p) => ({
-        char_count: p.charCount,
-        code_block: p.codeBlock,
-        function_name: p.functionName,
-        id: p.id,
-        line_count: p.lineCount,
-        order_index: p.orderIndex,
-        source_url: p.sourceUrl,
-      })),
+      problems: result.value.problems.map(toProblemDto),
       repo_info: result.value.repoInfo,
       session_id: result.value.sessionId,
     })

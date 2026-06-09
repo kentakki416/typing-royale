@@ -3,6 +3,7 @@ import { Response } from "express"
 import { updateUserRequestSchema, updateUserResponseSchema, ErrorResponse } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { toUserDto } from "../../lib/dto"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { AuthRequest } from "../../middleware/auth"
 import { UserRepository } from "../../repository/prisma"
@@ -40,15 +41,7 @@ export class UserUpdateController {
       return res.status(result.error.statusCode).json(errorResponse)
     }
 
-    const response = parseResponse(updateUserResponseSchema, {
-      avatar_url: result.value.avatarUrl,
-      can_public_ranking: result.value.canPublicRanking,
-      created_at: result.value.createdAt.toISOString(),
-      display_name: result.value.displayName,
-      email: result.value.email,
-      favorite_repo_url: result.value.favoriteRepoUrl,
-      id: result.value.id,
-    })
+    const response = parseResponse(updateUserResponseSchema, toUserDto(result.value))
 
     return res.status(200).json(response)
   }
