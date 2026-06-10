@@ -47,5 +47,5 @@
     "**/*.mts" // すべての.mtsファイル
   ],
   // コンパイル対象から除外するディレクトリ
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "test/e2e", "e2e-results", "playwright-report"]
 }

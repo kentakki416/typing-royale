@@ -27,12 +27,12 @@ process.env.JWT_REFRESH_EXPIRATION = process.env.JWT_REFRESH_EXPIRATION || "7d"
  * z.string().url() を満たすためにここでも明示的に補完しておく。
  */
 process.env.DATABASE_URL =
-  process.env.DATABASE_URL || "postgresql://postgres:password@localhost:5432/project-template_dev"
+  process.env.DATABASE_URL || "postgresql://postgres:password@localhost:5432/typing_royale_dev"
 
 /**
  * Controller integration テストの接続先（テスト用 DB / Redis DB 1）。
  * 旧構成では test/controller/setup.ts の先頭で設定していたが、上記理由により
  * ここに移し、controller / service のどちらの実行でも同じ初期化が走るようにする。
  */
-process.env.DB_NAME = process.env.DB_NAME || "project-template_test"
+process.env.DB_NAME = process.env.DB_NAME || "typing_royale_test"
 process.env.REDIS_DB = process.env.REDIS_DB || "1"

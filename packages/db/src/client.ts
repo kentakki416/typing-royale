@@ -3,11 +3,11 @@ import { readReplicas } from "@prisma/extension-read-replicas"
 
 import { PrismaClient } from "../generated/client"
 
-const DEFAULT_URL = "postgresql://postgres:password@localhost:5432/project-template_dev"
+const DEFAULT_URL = "postgresql://postgres:password@localhost:5432/typing_royale_dev"
 
 /**
  * DATABASE_URL を取得しつつ、DB_NAME が指定されていれば DB 名部分を上書きする
- * テスト実行時の DB 切り替え（DB_NAME=project-template_test）に対応
+ * テスト実行時の DB 切り替え（DB_NAME=typing_royale_test）に対応
  */
 const buildConnectionString = (): string => {
   const baseUrl = process.env.DATABASE_URL ?? DEFAULT_URL

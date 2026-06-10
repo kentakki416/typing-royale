@@ -104,3 +104,8 @@ app-example
 
 # 参考用 (Type Blaze)
 Type Blaze (standalone).html
+
+# Playwright
+apps/web/e2e-results/
+apps/web/playwright-report/
+apps/web/test-results/
