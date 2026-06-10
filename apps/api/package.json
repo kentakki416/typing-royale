@@ -15,9 +15,9 @@
     "lint": "eslint 'src/**/*.ts' 'test/**/*.ts'",
     "lint:fix": "eslint 'src/**/*.ts' 'test/**/*.ts' --fix",
     "start": "dotenvx run -f .env.local -- node dist/index.js",
-    "test": "DB_NAME=project-template_test dotenvx run -f .env.local -- pnpm --filter @repo/db db:migrate:deploy && vitest run",
+    "test": "DB_NAME=typing_royale_test dotenvx run -f .env.local -- pnpm --filter @repo/db db:migrate:deploy && vitest run",
     "test:ci": "pnpm --filter @repo/db db:generate && pnpm --filter @repo/db db:migrate:deploy && vitest run",
-    "test:coverage": "DB_NAME=project-template_test dotenvx run -f .env.local -- pnpm --filter @repo/db db:migrate:deploy && vitest run --coverage",
+    "test:coverage": "DB_NAME=typing_royale_test dotenvx run -f .env.local -- pnpm --filter @repo/db db:migrate:deploy && vitest run --coverage",
     "test:watch": "vitest"
   },
   "keywords": [],
