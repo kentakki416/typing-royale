@@ -3,12 +3,12 @@ import { Request, Response } from "express"
 import {
   authDevLoginRequestSchema,
   authDevLoginResponseSchema,
-  ErrorResponse,
 } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
 import { generateAccessToken, generateRefreshToken } from "../../lib/jwt"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { sendError } from "../../lib/send-error"
 import { UserRepository } from "../../repository/prisma"
 import { RefreshTokenRepository } from "../../repository/redis"
 import * as service from "../../service"
@@ -49,11 +49,7 @@ export class AuthDevLoginController {
     )
 
     if (!result.ok) {
-      const errorResponse: ErrorResponse = {
-        error: result.error.message,
-        status_code: result.error.statusCode,
-      }
-      return res.status(result.error.statusCode).json(errorResponse)
+      return sendError(req, res, result.error)
     }
 
     const { accessToken, refreshToken, user } = result.value

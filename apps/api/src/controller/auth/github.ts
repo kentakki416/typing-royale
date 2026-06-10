@@ -1,11 +1,12 @@
 import { Request, Response } from "express"
 
-import { authGithubRequestSchema, authGithubResponseSchema, ErrorResponse } from "@repo/api-schema"
+import { authGithubRequestSchema, authGithubResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
 import { IGithubOAuthClient } from "../../client/github-oauth"
 import { generateAccessToken, generateRefreshToken } from "../../lib/jwt"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { sendError } from "../../lib/send-error"
 import {
   AuthAccountRepository,
   TransactionRunner,
@@ -47,11 +48,7 @@ export class AuthGithubController {
     )
 
     if (!result.ok) {
-      const errorResponse: ErrorResponse = {
-        error: result.error.message,
-        status_code: result.error.statusCode,
-      }
-      return res.status(result.error.statusCode).json(errorResponse)
+      return sendError(req, res, result.error)
     }
 
     const { accessToken, isNewUser, refreshToken, user } = result.value

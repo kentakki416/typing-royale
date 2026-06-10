@@ -4,7 +4,7 @@ import { UserDeleteController } from "../../../src/controller/user/delete"
 import { PrismaUserRepository } from "../../../src/repository/prisma/user-repository"
 import { IoRedisRefreshTokenRepository } from "../../../src/repository/redis"
 import { userRouter } from "../../../src/routes/user-router"
-import { attachErrorHandler, createTestApp, createTestUser } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp, createTestUser } from "../helper"
 import {
   cleanupTestData,
   cleanupTestRedis,
@@ -22,7 +22,7 @@ app.use(
   "/api/user",
   userRouter({ delete: new UserDeleteController(userRepository, refreshTokenRepository) }),
 )
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()

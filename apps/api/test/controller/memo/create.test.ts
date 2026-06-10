@@ -3,7 +3,7 @@ import request from "supertest"
 import { MemoCreateController } from "../../../src/controller/memo/create"
 import { PrismaMemoRepository } from "../../../src/repository/prisma/memo-repository"
 import { memoRouter } from "../../../src/routes/memo-router"
-import { attachErrorHandler, createTestApp } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp } from "../helper"
 import { cleanupTestData, disconnectTestDb, disconnectTestRedis, testPrisma } from "../setup"
 
 const memoRepository = new PrismaMemoRepository(testPrisma)
@@ -11,7 +11,7 @@ const memoRepository = new PrismaMemoRepository(testPrisma)
 const app = createTestApp()
 
 app.use("/api/memo", memoRouter({ create: new MemoCreateController(memoRepository) }))
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()

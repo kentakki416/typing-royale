@@ -3,7 +3,7 @@ import request from "supertest"
 import { ReplayFeaturedController } from "../../../src/controller/replay/featured"
 import { PrismaReplayRepository } from "../../../src/repository/prisma"
 import { replayRouter } from "../../../src/routes/replay-router"
-import { attachErrorHandler, createTestApp, createTestUser } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp, createTestUser } from "../helper"
 import {
   cleanupTestData,
   disconnectTestDb,
@@ -19,7 +19,7 @@ app.use(
     featured: new ReplayFeaturedController(replayRepository),
   }),
 )
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()

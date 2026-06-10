@@ -4,7 +4,7 @@ import { HealthReadinessController } from "../../../src/controller/health/readin
 import { PrismaDatabaseHealthRepository } from "../../../src/repository/prisma/healthcheck-repository"
 import { IoRedisHealthRepository } from "../../../src/repository/redis/healthcheck-repository"
 import { healthRouter } from "../../../src/routes/health-router"
-import { attachErrorHandler, createTestApp } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp } from "../helper"
 import { disconnectTestDb, disconnectTestRedis, testPrisma, testRedis } from "../setup"
 
 const databaseHealthRepository = new PrismaDatabaseHealthRepository(testPrisma)
@@ -18,7 +18,7 @@ const readinessController = new HealthReadinessController(
 )
 
 app.use("/api/health", healthRouter({ readiness: readinessController }))
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 afterAll(async () => {
   await disconnectTestRedis()

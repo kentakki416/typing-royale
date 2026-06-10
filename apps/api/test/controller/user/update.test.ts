@@ -3,14 +3,14 @@ import request from "supertest"
 import { UserUpdateController } from "../../../src/controller/user/update"
 import { PrismaUserRepository } from "../../../src/repository/prisma/user-repository"
 import { userRouter } from "../../../src/routes/user-router"
-import { attachErrorHandler, createTestApp, createTestUser } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp, createTestUser } from "../helper"
 import { cleanupTestData, disconnectTestDb, disconnectTestRedis, testPrisma } from "../setup"
 
 const userRepository = new PrismaUserRepository(testPrisma)
 
 const app = createTestApp()
 app.use("/api/user", userRouter({ update: new UserUpdateController(userRepository) }))
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()

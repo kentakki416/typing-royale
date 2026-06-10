@@ -9,7 +9,7 @@ import {
   PrismaUserRepository,
 } from "../../../src/repository/prisma"
 import { badgeRouter } from "../../../src/routes/badge-router"
-import { attachErrorHandler, createTestApp } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp } from "../helper"
 import {
   cleanupTestData,
   disconnectTestDb,
@@ -35,7 +35,7 @@ app.use(
     ),
   }),
 )
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()

@@ -4,7 +4,7 @@ import { BadgeConfigGetController } from "../../../src/controller/badge/config-g
 import { BadgeConfigUpdateController } from "../../../src/controller/badge/config-update"
 import { PrismaBadgeConfigRepository } from "../../../src/repository/prisma"
 import { userRouter } from "../../../src/routes/user-router"
-import { attachErrorHandler, createTestApp, createTestUser } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp, createTestUser } from "../helper"
 import {
   cleanupTestData,
   disconnectTestDb,
@@ -21,7 +21,7 @@ app.use(
     badgeConfigUpdate: new BadgeConfigUpdateController(badgeConfigRepository),
   }),
 )
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()

@@ -69,14 +69,24 @@ apps/api/
 
 ## エラーハンドリング（Result 型）
 
-Service 層は **業務エラー（4xx 系で返すべきエラー）は `Result<T>` で返却し、想定外の例外（DB 障害等）は throw** する。Controller は Result を透過で返し、想定外エラーはグローバルエラーハンドラが 500 で処理する。
+Service 層は **業務エラー（4xx 系で返すべきエラー）は `Result<T>` で返却し、想定外の例外（DB 障害等）は throw** する。Controller は Result を `sendError` ヘルパ経由で返し、想定外エラーは想定外例外ハンドラが 500 で処理する。
+
+### 経路と責務
+
+| 経路 | 例 | ログ | ステータス |
+|---|---|---|---|
+| Service の `Result.err` | NotFound / Conflict / Unauthorized 等 | `sendError` が `logger.warn` | `result.error.statusCode`（4xx）|
+| ルート内の throw（想定外） | DB 障害 / Prisma 例外 | `unhandledExceptionHandler` が `logger.error` + スタック | 500 |
+| リクエストスキーマ違反 | `RequestSchemaMismatchError` | `unhandledExceptionHandler` が `logger.warn` | 400 |
+| レスポンススキーマ違反 | `ResponseSchemaMismatchError` | `unhandledExceptionHandler` が `logger.error` | 500 |
+| アクセスログ | 全リクエスト | `requestLogger` が `info` / `warn` | - |
 
 ### 設計方針
 
 - **業務エラーを例外にしない**: Service が `throw` するのは「想定外」のみ。業務上想定されるエラー（バリデーション、重複、NotFound 等）は戻り値で表現する
 - **呼び出し側で型安全に扱える**: `Result<T>` を返すことで、呼び出し側（Controller や他 Service）は ok/err を型で判別して分岐できる
-- **Controller は透過返却**: `statusCode` と `message` をそのまま HTTP レスポンスに変換する。再解釈が必要な場合のみ Controller で変換
-- **予期しない例外はグローバルエラーハンドラに委譲**: Controller で try-catch は書かない（リダイレクトなど UX 上 JSON を返せない特殊ケースを除く）
+- **Controller は `sendError` ヘルパ経由で返却**: `statusCode` と `message` をそのまま HTTP レスポンスに変換する。再解釈が必要な場合のみ Controller で変換
+- **予期しない例外は想定外例外ハンドラに委譲**: Controller で try-catch は書かない（リダイレクトなど UX 上 JSON を返せない特殊ケース・副次処理の意図的握りつぶし・エラーを値に変換する場合は例外）
 
 ### Result 型の定義（`src/types/result.ts`）
 
@@ -125,33 +135,50 @@ export const createMemo = async (
 
 ### Controller 実装ルール
 
-- **try-catch は書かない**（google-callback のようなリダイレクト分岐が必要な特殊ケースを除く）。Service が `throw` した想定外エラーはグローバルエラーハンドラが 500 で返却する
-- **Service の `Result` は if-else で透過返却**（3 行 inline。ヘルパー関数は使わない）
+- **try-catch は書かない**（google-callback のようなリダイレクト分岐が必要な特殊ケースを除く）。Service が `throw` した想定外エラーは想定外例外ハンドラが 500 で返却する
+- **Service の `Result` は `sendError` ヘルパ経由で返却する（必須）**:
 
 ```typescript
-async execute(req: Request, res: Response) {
-  const { id } = deleteMemoPathParamSchema.parse(req.params)
+import { sendError } from "../../lib/send-error"
 
-  const result = await service.memo.deleteMemo(id, this.memoRepository)
+async execute(req: Request, res: Response) {
+  const { id } = parseRequest(deleteMemoPathParamSchema, req.params)
+
+  const result = await service.memo.deleteMemo(id, { memoRepository: this.memoRepository })
 
   if (!result.ok) {
-    const errorResponse: ErrorResponse = {
-      error: result.error.message,
-      status_code: result.error.statusCode,
-    }
-    return res.status(result.error.statusCode).json(errorResponse)
+    return sendError(req, res, result.error)
   }
 
-  return res.status(200).json(deleteMemoResponseSchema.parse({ message: "Memo deleted successfully" }))
+  const response = parseResponse(deleteMemoResponseSchema, { message: "OK" })
+  return res.status(200).json(response)
 }
 ```
 
-### グローバルエラーハンドラ（`src/middleware/error-handler.ts`）
+### sendError ヘルパ（`src/lib/send-error.ts`）
 
-すべてのルート登録後に `app.use(errorHandler)` で登録される。
+Controller で `Result.err` を HTTP レスポンスとして返却する共通関数。inline で `res.status().json()` を直接書くと業務エラーログが漏れるため、`if (!result.ok)` ブロックは必ずこのヘルパ経由で返却する。
 
-- **ZodError** → 400 "Invalid request"（リクエスト検証失敗）
-- **その他の throw** → 500 "Internal Server Error"（DB 障害などの想定外エラー）
+- 内部で `logger.warn("API business error", { method, path, statusCode, type })` を出す
+- `ErrorResponse` スキーマで JSON を組み立てて返す
+- throw しないため、想定外例外ハンドラは通らない（業務エラーと想定外例外を経路レベルで分離）
+
+### 想定外例外ハンドラ（`src/middleware/unhandled-exception-handler.ts`）
+
+すべてのルート登録後に `app.use(unhandledExceptionHandler)` で登録される。**業務 4xx エラー（`Result.err`）は `sendError` 経由で返却されるため、このハンドラは通らない**。
+
+- **`RequestSchemaMismatchError`** → 400 "Invalid request"（クライアント入力不正、`logger.warn`）
+- **`ResponseSchemaMismatchError`** → 500 "Internal Server Error"（サーバ起因の契約違反、`logger.error`）
+- **その他の throw** → 500 "Internal Server Error"（DB 障害等の想定外エラー、`logger.error` + スタック）
+
+### 例外的に try/catch を許容するケース
+
+「Controller / Service で try-catch は書かない」は **想定外エラーを catch するな**（throw 伝播を壊すな）という意味であり、以下 2 ケースは局所 try/catch を許容する:
+
+| ケース | 例 | 扱い |
+|---|---|---|
+| **副次処理の意図的握りつぶし** | `finishSession` の達成カード PNG 生成失敗（カード生成失敗で /finish 全体を失敗扱いにしたくない） | `try { ... } catch (err) { logger.warn(...) }` の後そのまま処理を続行。**catch 内で再 throw しない** |
+| **エラーを値に変換する必要** | `health-service` のサービスチェック（個別失敗を `status: "error"` に集約して両方の status を必ず返す） | `try { ... } catch (err) { return { status: "error", ... } }` |
 
 
 ## テスト戦略
@@ -324,14 +351,14 @@ expect(res.status).toBe(404)
 expect(res.body).toEqual({ error: expect.any(String), status_code: 404 })
 ```
 
-#### グローバルエラーハンドラの適用
+#### 想定外例外ハンドラの適用
 
-`attachErrorHandler(app)` をルート登録後に必ず呼び出し、本番同様に ZodError を 400、想定外 throw を 500 に変換する状態でテストする。
+`attachUnhandledExceptionHandler(app)` をルート登録後に必ず呼び出し、本番同様に ZodError を 400、想定外 throw を 500 に変換する状態でテストする。
 
 ```typescript
 const app = createTestApp()
 app.use("/api/memo", memoRouter({ detail: new MemoDetailController(memoRepository) }))
-attachErrorHandler(app)  // ルート登録後に呼び出すこと
+attachUnhandledExceptionHandler(app)  // ルート登録後に呼び出すこと
 ```
 
 #### テスト用DB

@@ -1,8 +1,9 @@
 import { Request, Response } from "express"
 
-import { ErrorResponse, getMemoListResponseSchema } from "@repo/api-schema"
+import { getMemoListResponseSchema } from "@repo/api-schema"
 
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { sendError } from "../../lib/send-error"
 import { MemoRepository } from "../../repository/prisma"
 import * as service from "../../service"
 
@@ -14,15 +15,11 @@ import * as service from "../../service"
 export class MemoListController {
   constructor(private memoRepository: MemoRepository) {}
 
-  async execute(_req: Request, res: Response) {
+  async execute(req: Request, res: Response) {
     const result = await service.memo.getAllMemos({ memoRepository: this.memoRepository })
 
     if (!result.ok) {
-      const errorResponse: ErrorResponse = {
-        error: result.error.message,
-        status_code: result.error.statusCode,
-      }
-      return res.status(result.error.statusCode).json(errorResponse)
+      return sendError(req, res, result.error)
     }
 
     const response = parseResponse(getMemoListResponseSchema, {

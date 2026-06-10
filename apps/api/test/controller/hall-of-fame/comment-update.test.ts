@@ -6,7 +6,7 @@ import {
   PrismaLanguageRepository,
 } from "../../../src/repository/prisma"
 import { hallOfFameRouter } from "../../../src/routes/hall-of-fame-router"
-import { attachErrorHandler, createTestApp, createTestUser } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp, createTestUser } from "../helper"
 import {
   cleanupTestData,
   disconnectTestDb,
@@ -26,7 +26,7 @@ app.use(
     ),
   }),
 )
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()

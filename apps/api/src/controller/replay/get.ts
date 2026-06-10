@@ -1,9 +1,10 @@
 import { Request, Response } from "express"
 
-import { ErrorResponse, getReplayPathParamSchema, getReplayResponseSchema } from "@repo/api-schema"
+import { getReplayPathParamSchema, getReplayResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { sendError } from "../../lib/send-error"
 import { KeystrokeLogRepository, ReplayRepository } from "../../repository/prisma"
 import * as service from "../../service"
 
@@ -33,11 +34,7 @@ export class ReplayGetController {
     )
 
     if (!result.ok) {
-      const errorResponse: ErrorResponse = {
-        error: result.error.message,
-        status_code: result.error.statusCode,
-      }
-      return res.status(result.error.statusCode).json(errorResponse)
+      return sendError(req, res, result.error)
     }
 
     const { keystrokeLogs, source } = result.value

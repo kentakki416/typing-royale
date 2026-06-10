@@ -4,7 +4,7 @@ import { AuthLogoutController } from "../../../src/controller/auth/logout"
 import { generateAccessToken, generateRefreshToken } from "../../../src/lib/jwt"
 import { IoRedisRefreshTokenRepository } from "../../../src/repository/redis"
 import { authRouter } from "../../../src/routes/auth-router"
-import { attachErrorHandler, createTestApp } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp } from "../helper"
 import {
   cleanupTestRedis,
   disconnectTestRedis,
@@ -18,7 +18,7 @@ const refreshTokenRepository = new IoRedisRefreshTokenRepository(testRedis)
 const app = createTestApp()
 const authLogoutController = new AuthLogoutController(refreshTokenRepository)
 app.use("/api/auth", authRouter({ logout: authLogoutController }))
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestRedis()

@@ -4,7 +4,7 @@ import { UserGetController } from "../../../src/controller/user/get"
 import { generateAccessToken } from "../../../src/lib/jwt"
 import { PrismaUserRepository } from "../../../src/repository/prisma/user-repository"
 import { userRouter } from "../../../src/routes/user-router"
-import { attachErrorHandler, createTestApp } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp } from "../helper"
 import { cleanupTestData, disconnectTestDb, disconnectTestRedis, testPrisma } from "../setup"
 
 const userRepository = new PrismaUserRepository(testPrisma)
@@ -14,7 +14,7 @@ const app = createTestApp()
 const userGetController = new UserGetController(userRepository)
 
 app.use("/api/user", userRouter({ get: userGetController }))
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()
