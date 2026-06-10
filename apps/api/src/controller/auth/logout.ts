@@ -1,10 +1,11 @@
 import { Request, Response } from "express"
 
-import { authLogoutRequestSchema, authLogoutResponseSchema, ErrorResponse } from "@repo/api-schema"
+import { authLogoutRequestSchema, authLogoutResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
 import { verifyRefreshToken } from "../../lib/jwt"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { sendError } from "../../lib/send-error"
 import { RefreshTokenRepository } from "../../repository/redis"
 import * as service from "../../service"
 
@@ -30,11 +31,7 @@ export class AuthLogoutController {
     )
 
     if (!result.ok) {
-      const errorResponse: ErrorResponse = {
-        error: result.error.message,
-        status_code: result.error.statusCode,
-      }
-      return res.status(result.error.statusCode).json(errorResponse)
+      return sendError(req, res, result.error)
     }
 
     return res.status(200).json(parseResponse(authLogoutResponseSchema, { message: "OK" }))

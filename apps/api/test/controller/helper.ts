@@ -2,7 +2,7 @@ import express from "express"
 
 import { generateAccessToken } from "../../src/lib/jwt"
 import { authMiddleware } from "../../src/middleware/auth"
-import { errorHandler } from "../../src/middleware/error-handler"
+import { unhandledExceptionHandler } from "../../src/middleware/unhandled-exception-handler"
 import { User } from "../../src/types/domain"
 
 import { testPrisma } from "./setup"
@@ -11,8 +11,8 @@ import { testPrisma } from "./setup"
  * テスト用Expressアプリを構築する
  * 本番と同じミドルウェア構成を再現する
  *
- * エラーハンドラをルート登録後に適用したい場合は、
- * `createTestApp()` → ルート登録 → `attachErrorHandler(app)` の順に呼び出す
+ * 想定外例外ハンドラをルート登録後に適用したい場合は、
+ * `createTestApp()` → ルート登録 → `attachUnhandledExceptionHandler(app)` の順に呼び出す
  */
 export const createTestApp = (): express.Express => {
   const app = express()
@@ -22,11 +22,11 @@ export const createTestApp = (): express.Express => {
 }
 
 /**
- * ルート登録後にグローバルエラーハンドラを登録する
+ * ルート登録後に想定外例外ハンドラを登録する
  * （Express の仕様上、エラーハンドラはルートの後に登録する必要がある）
  */
-export const attachErrorHandler = (app: express.Express): void => {
-  app.use(errorHandler)
+export const attachUnhandledExceptionHandler = (app: express.Express): void => {
+  app.use(unhandledExceptionHandler)
 }
 
 /**

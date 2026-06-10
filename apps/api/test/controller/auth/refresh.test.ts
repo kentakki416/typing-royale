@@ -4,7 +4,7 @@ import { AuthRefreshController } from "../../../src/controller/auth/refresh"
 import { generateRefreshToken, verifyRefreshToken } from "../../../src/lib/jwt"
 import { IoRedisRefreshTokenRepository } from "../../../src/repository/redis"
 import { authRouter } from "../../../src/routes/auth-router"
-import { attachErrorHandler, createTestApp } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp } from "../helper"
 import {
   cleanupTestRedis,
   disconnectTestRedis,
@@ -18,7 +18,7 @@ const refreshTokenRepository = new IoRedisRefreshTokenRepository(testRedis)
 const app = createTestApp()
 const authRefreshController = new AuthRefreshController(refreshTokenRepository)
 app.use("/api/auth", authRouter({ refresh: authRefreshController }))
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestRedis()

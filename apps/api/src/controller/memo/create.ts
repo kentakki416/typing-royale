@@ -1,8 +1,9 @@
 import { Request, Response } from "express"
 
-import { createMemoRequestSchema, createMemoResponseSchema, ErrorResponse } from "@repo/api-schema"
+import { createMemoRequestSchema, createMemoResponseSchema } from "@repo/api-schema"
 
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { sendError } from "../../lib/send-error"
 import { MemoRepository } from "../../repository/prisma"
 import * as service from "../../service"
 
@@ -18,11 +19,7 @@ export class MemoCreateController {
     const result = await service.memo.createMemo(data, { memoRepository: this.memoRepository })
 
     if (!result.ok) {
-      const errorResponse: ErrorResponse = {
-        error: result.error.message,
-        status_code: result.error.statusCode,
-      }
-      return res.status(result.error.statusCode).json(errorResponse)
+      return sendError(req, res, result.error)
     }
 
     const response = parseResponse(createMemoResponseSchema, {

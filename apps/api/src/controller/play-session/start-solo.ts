@@ -1,9 +1,10 @@
 import { Response } from "express"
 
-import { ErrorResponse, startSoloPlaySessionRequestSchema, startSoloPlaySessionResponseSchema } from "@repo/api-schema"
+import { startSoloPlaySessionRequestSchema, startSoloPlaySessionResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
 import {
   CrawledRepoRepository,
@@ -45,11 +46,7 @@ export class PlaySessionStartSoloController {
     )
 
     if (!result.ok) {
-      const errorResponse: ErrorResponse = {
-        error: result.error.message,
-        status_code: result.error.statusCode,
-      }
-      return res.status(result.error.statusCode).json(errorResponse)
+      return sendError(req, res, result.error)
     }
 
     const response = parseResponse(startSoloPlaySessionResponseSchema, {

@@ -7,7 +7,7 @@ import {
   PrismaUserLifetimeStatsRepository,
 } from "../../../src/repository/prisma"
 import { rankingRouter } from "../../../src/routes/ranking-router"
-import { attachErrorHandler, createTestApp, createTestUser } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp, createTestUser } from "../helper"
 import {
   cleanupTestData,
   disconnectTestDb,
@@ -29,7 +29,7 @@ app.use(
     ),
   }),
 )
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()

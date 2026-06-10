@@ -41,8 +41,8 @@ import { UserUpdateController } from "./controller/user/update"
 import { env } from "./env"
 import { LocalCardStorage } from "./lib/card-storage"
 import { authMiddleware } from "./middleware/auth"
-import { errorHandler } from "./middleware/error-handler"
 import { requestLogger } from "./middleware/request-logger"
+import { unhandledExceptionHandler } from "./middleware/unhandled-exception-handler"
 import {
   PrismaAuthAccountRepository,
   PrismaBadgeConfigRepository,
@@ -400,9 +400,11 @@ app.use(
 )
 
 /**
- * グローバルエラーハンドラ（ルーティング定義の最後に登録する必要がある）
+ * 想定外例外を捕捉する Express の最終エラーハンドラ
+ * 業務 4xx エラーは Controller の sendError 経由で返却されるため、ここを通らない
+ * ルーティング定義の最後に登録する必要がある
  */
-app.use(errorHandler)
+app.use(unhandledExceptionHandler)
 
 /**
  * サーバー起動

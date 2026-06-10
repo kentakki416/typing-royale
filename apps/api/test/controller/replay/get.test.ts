@@ -5,7 +5,7 @@ import request from "supertest"
 import { ReplayGetController } from "../../../src/controller/replay/get"
 import { PrismaKeystrokeLogRepository, PrismaReplayRepository } from "../../../src/repository/prisma"
 import { replayRouter } from "../../../src/routes/replay-router"
-import { attachErrorHandler, createTestApp, createTestUser } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp, createTestUser } from "../helper"
 import {
   cleanupTestData,
   disconnectTestDb,
@@ -22,7 +22,7 @@ app.use(
     get: new ReplayGetController(keystrokeLogRepository, replayRepository),
   }),
 )
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()

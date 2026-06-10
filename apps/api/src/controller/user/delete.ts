@@ -1,9 +1,10 @@
 import { Response } from "express"
 
-import { deleteUserResponseSchema, ErrorResponse } from "@repo/api-schema"
+import { deleteUserResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
 import { UserRepository } from "../../repository/prisma"
 import { RefreshTokenRepository } from "../../repository/redis"
@@ -31,11 +32,7 @@ export class UserDeleteController {
     })
 
     if (!result.ok) {
-      const errorResponse: ErrorResponse = {
-        error: result.error.message,
-        status_code: result.error.statusCode,
-      }
-      return res.status(result.error.statusCode).json(errorResponse)
+      return sendError(req, res, result.error)
     }
 
     return res.status(200).json(parseResponse(deleteUserResponseSchema, { message: "OK" }))

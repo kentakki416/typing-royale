@@ -16,7 +16,7 @@ import {
 import { IoRedisPlaySessionStateRepository } from "../../../src/repository/redis"
 import { playSessionRouter } from "../../../src/routes/play-session-router"
 import { PlaySessionState } from "../../../src/types/domain"
-import { attachErrorHandler, createTestApp, createTestUser } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp, createTestUser } from "../helper"
 import {
   cleanupTestData,
   cleanupTestRedis,
@@ -60,7 +60,7 @@ app.use(
     ),
   }),
 )
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()

@@ -3,7 +3,7 @@ import request from "supertest"
 import { RewardsListMeController } from "../../../src/controller/rewards/me"
 import { PrismaRewardRepository } from "../../../src/repository/prisma"
 import { rewardsRouter } from "../../../src/routes/rewards-router"
-import { attachErrorHandler, createTestApp, createTestUser } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp, createTestUser } from "../helper"
 import {
   cleanupTestData,
   disconnectTestDb,
@@ -19,7 +19,7 @@ app.use(
     me: new RewardsListMeController(rewardRepository),
   }),
 )
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()

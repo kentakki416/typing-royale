@@ -4,7 +4,7 @@ import { MemoDetailController } from "../../../src/controller/memo/detail"
 import { MemoUpdateController } from "../../../src/controller/memo/update"
 import { PrismaMemoRepository } from "../../../src/repository/prisma/memo-repository"
 import { memoRouter } from "../../../src/routes/memo-router"
-import { attachErrorHandler, createTestApp } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp } from "../helper"
 import { cleanupTestData, disconnectTestDb, disconnectTestRedis, testPrisma } from "../setup"
 
 const memoRepository = new PrismaMemoRepository(testPrisma)
@@ -15,7 +15,7 @@ app.use("/api/memo", memoRouter({
   detail: new MemoDetailController(memoRepository),
   update: new MemoUpdateController(memoRepository),
 }))
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()

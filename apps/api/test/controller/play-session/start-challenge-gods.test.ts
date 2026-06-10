@@ -10,7 +10,7 @@ import {
 } from "../../../src/repository/prisma"
 import { IoRedisPlaySessionStateRepository } from "../../../src/repository/redis"
 import { playSessionRouter } from "../../../src/routes/play-session-router"
-import { attachErrorHandler, createTestApp, createTestUser } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp, createTestUser } from "../helper"
 import {
   cleanupTestData,
   cleanupTestRedis,
@@ -41,7 +41,7 @@ app.use(
     ),
   }),
 )
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()

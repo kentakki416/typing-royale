@@ -6,7 +6,7 @@ import {
   PrismaUserLanguageBestRepository,
 } from "../../../src/repository/prisma"
 import { rankingRouter } from "../../../src/routes/ranking-router"
-import { attachErrorHandler, createTestApp } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp } from "../helper"
 import {
   cleanupTestData,
   disconnectTestDb,
@@ -23,7 +23,7 @@ app.use(
     list: new RankingListController(languageRepository, userLanguageBestRepository),
   }),
 )
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 beforeEach(async () => {
   await cleanupTestData()

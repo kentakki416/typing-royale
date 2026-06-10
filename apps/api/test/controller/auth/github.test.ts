@@ -8,7 +8,7 @@ import { PrismaTransactionRunner } from "../../../src/repository/prisma/transact
 import { PrismaUserRepository } from "../../../src/repository/prisma/user-repository"
 import { IoRedisRefreshTokenRepository } from "../../../src/repository/redis"
 import { authRouter } from "../../../src/routes/auth-router"
-import { attachErrorHandler, createTestApp } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp } from "../helper"
 import {
   cleanupTestData,
   cleanupTestRedis,
@@ -39,7 +39,7 @@ const authGithubController = new AuthGithubController(
 )
 
 app.use("/api/auth", authRouter({ github: authGithubController }))
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 const REDIRECT_URI = "http://localhost:3000/api/auth/callback/github"
 

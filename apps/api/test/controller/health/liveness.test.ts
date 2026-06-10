@@ -2,7 +2,7 @@ import request from "supertest"
 
 import { HealthLivenessController } from "../../../src/controller/health/liveness"
 import { healthRouter } from "../../../src/routes/health-router"
-import { attachErrorHandler, createTestApp } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp } from "../helper"
 import { disconnectTestDb, disconnectTestRedis } from "../setup"
 
 const app = createTestApp()
@@ -10,7 +10,7 @@ const app = createTestApp()
 const livenessController = new HealthLivenessController()
 
 app.use("/api/health", healthRouter({ liveness: livenessController }))
-attachErrorHandler(app)
+attachUnhandledExceptionHandler(app)
 
 afterAll(async () => {
   await disconnectTestDb()
