@@ -29,8 +29,10 @@ export const unhandledExceptionHandler = (err: unknown, req: Request, res: Respo
    * リクエスト検証失敗は 400 Bad Request
    */
   if (err instanceof RequestSchemaMismatchError) {
-    logger.warn(`Request validation error at ${req.method} ${req.path}`, {
+    logger.warn("Request validation error", {
       issues: err.zodError.issues,
+      method: req.method,
+      path: req.path,
     })
     const errorResponse: ErrorResponse = {
       error: "Invalid request",
@@ -43,7 +45,10 @@ export const unhandledExceptionHandler = (err: unknown, req: Request, res: Respo
    * レスポンス検証失敗は 500 Internal Server Error（サーバ側で契約違反）
    */
   if (err instanceof ResponseSchemaMismatchError) {
-    logger.error(`Response schema mismatch at ${req.method} ${req.path}`, err.zodError)
+    logger.error("Response schema mismatch", err.zodError, {
+      method: req.method,
+      path: req.path,
+    })
     const errorResponse: ErrorResponse = {
       error: "Internal Server Error",
       status_code: 500,
@@ -55,8 +60,12 @@ export const unhandledExceptionHandler = (err: unknown, req: Request, res: Respo
    * 想定外の例外は 500 Internal Server Error
    */
   logger.error(
-    `Unhandled exception at ${req.method} ${req.path}`,
-    err instanceof Error ? err : new Error(String(err))
+    "Unhandled exception",
+    err instanceof Error ? err : new Error(String(err)),
+    {
+      method: req.method,
+      path: req.path,
+    }
   )
 
   const errorResponse: ErrorResponse = {

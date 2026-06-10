@@ -40,7 +40,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
       duration: 0,
       ip: req.ip,
       method: req.method,
-      path: req.originalUrl,
+      path: req.path,
       userAgent: req.get("user-agent") || "unknown",
     })
 
@@ -53,7 +53,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
       logger.info("API Request Completed", {
         duration,
         method: req.method,
-        path: req.originalUrl,
+        path: req.path,
         statusCode: res.statusCode,
       })
     })
@@ -68,7 +68,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
         logger.warn("API Request Closed Unexpectedly", {
           duration,
           method: req.method,
-          path: req.originalUrl,
+          path: req.path,
         })
       }
     })

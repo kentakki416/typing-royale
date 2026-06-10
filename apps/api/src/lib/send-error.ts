@@ -18,7 +18,7 @@ import { logger } from "@repo/logger"
 export const sendError = (req: Request, res: Response, error: ApiError) => {
   logger.warn("API business error", {
     method: req.method,
-    path: req.originalUrl,
+    path: req.path,
     statusCode: error.statusCode,
     type: error.type,
   })
