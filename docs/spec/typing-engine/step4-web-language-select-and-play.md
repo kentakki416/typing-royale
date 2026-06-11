@@ -738,6 +738,6 @@ console error は 0 件であること。
 
 ## 次の step での利用
 
-- **step5（Web リザルト画面 + ゲスト IndexedDB）**: `PlayLoop` の `/finish` 呼び出しレスポンスを `<ResultScreen />` に渡す形に拡張。`{ score, accuracy, mistype_stats }` をリザルト UI で表示。ゲストモード対応（`persisted=false` ならクライアントの IndexedDB に保存）
+- **step5（Web リザルト画面 + ゲスト IndexedDB）**: `PlayLoop` の `/finish` 呼び出しレスポンスを `<ResultScreen />` に渡す形に拡張。`{ score, accuracy, mistype_stats }` をリザルト UI で表示。**IndexedDB バッファ方式は廃止** (feat/guest-play で確定) → `persisted=false` のときは「GitHub で記録を残す」CTA を表示するだけ（次回プレイから記録される運用）
 - **step6（API `/challenge-gods`）**: 言語選択画面の「神々に挑戦」ボタンを有効化し、Server Action 内で `/challenge-gods` を叩く分岐を追加。`PlayLoop` 側にゴースト併走 UI（横並び累計文字数）を後で足す
 - **score-ranking 機能**: リザルト画面の順位フェッチ（`GET /api/rankings/me`）は別 feature の step

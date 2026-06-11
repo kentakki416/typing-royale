@@ -878,5 +878,5 @@ cd apps/api && pnpm test
 ## 次の step での利用
 
 - **step4（Web 言語選択 + プレイ画面）**: `/solo` を叩いて 20 問とスプラッシュ用 `repo_info` を受け取り、プレイ画面でタイマー / 入力判定 / keystroke log 蓄積を実装。120 秒終了時に `/finish` を叩く
-- **step5（Web リザルト画面 + ゲスト IndexedDB）**: `/finish` のレスポンスから `score` / `mistype_stats` を表示。ゲストの場合は IndexedDB に一時バッファ
+- **step5（Web リザルト画面 + ゲスト IndexedDB）**: `/finish` のレスポンスから `score` / `mistype_stats` を表示。**ゲスト IndexedDB バッファ方式は廃止** （feat/guest-play で確定）→ サーバー側で `state.userId === null` 分岐により DB スキップする方式に変更。詳細は [`README.md` 「セッション保存ポリシー」](README.md#セッション保存ポリシー)
 - **score-ranking 機能（別 feature の step）**: `bestScore` 更新を見て `currentGrade` / `currentGradeReachedAt` を再計算する処理を `finishSession` 内に追加する想定（本 step では実装しない）

@@ -82,7 +82,7 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 - [x] `apps/api/src/lib/jwt.ts` 既存利用（access 15分 / refresh 7日）
 - [x] `apps/api/src/repository/redis/refresh-token-repository.ts` 既存利用
 - [x] `POST /api/auth/refresh`、`POST /api/auth/logout`、`GET/PATCH/DELETE /api/me` の動作確認（既存共用）
-- [ ] `POST /api/play-sessions/claim` 新規（ゲストプレイのバッファをアカウント紐付け、Phase 3 と並行可）← ゲストプレイは IndexedDB バッファ自体が Phase 3 で deferred
+- [x] ~~`POST /api/play-sessions/claim` 新規（ゲストプレイのバッファをアカウント紐付け）~~ ← MVP 方針変更: ゲストスコアは DB に保存せず引き継ぎもしないため不要 (Phase 7.5 feat/guest-play で確定)
 - [x] 単体テスト（auth-service / github-oauth）
 
 ### apps/web（Next.js）
@@ -222,15 +222,22 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### ゲストプレイ対応
 
-- [ ] IndexedDB に一時バッファ保存（リザルト画面表示中のみ）← **Phase 2 (API ゲスト対応) 完了まで延期**
-- [ ] 「ログインして記録を残す」ボタン → OAuth → `/api/play-sessions/claim` ← 同上
-- [ ] ログイン拒否 / 画面離脱時の IndexedDB 即時削除 ← 同上
+**実装方針確定** (Phase 7.5 feat/guest-play): IndexedDB バッファ + claim API は **作らない**。`/api/play-sessions/*` を public 化して `PlaySessionState.userId` を `number | null` で扱い、`/finish` で guest セッションは DB 書き込みをスキップする方式に変更。
+
+- [x] Web `proxy.ts` の PUBLIC_PATHS に `/` (完全一致) と `/play` を追加
+- [x] API `PUBLIC_PATHS` に `/api/play-sessions` を追加 + `authMiddleware` を opportunistic に (token あれば userId 確定 / 無ければ guest 素通り)
+- [x] `PlaySessionState.userId` を `number | null` に
+- [x] `finishSession` の guest 分岐 (`state.userId === null` → DB / ランキング / rewards をスキップして `persisted=false` を返す)
+- [x] 結果画面の guest CTA ("GitHub で記録を残す")
+- [ ] ~~IndexedDB に一時バッファ保存~~ ← 不要 (上記方針で API 直接呼び出しに統一)
+- [ ] ~~「ログインして記録を残す」→ OAuth → `/api/play-sessions/claim`~~ ← 不要 (引き継ぎなし)
+- [ ] ~~ログイン拒否 / 画面離脱時の IndexedDB 即時削除~~ ← 不要 (IndexedDB を使わない)
 
 ### 動作確認（ローカル）
 
 - [x] ローカルで言語選択 → スプラッシュ → 120 秒プレイ → リザルトの一連の流れ
 - [x] サーバー側で `play_sessions` / `keystroke_logs` / `mistypeStats` が正しく保存される
-- [ ] ゲストでプレイ → ログイン → アカウントに紐付くフローの確認 ← IndexedDB バッファ自体が MVP 後 deferred
+- [x] ~~ゲストでプレイ → ログイン → アカウントに紐付くフローの確認~~ ← MVP 方針で引き継ぎ機能を持たない (Phase 7.5 feat/guest-play 確定)。代わりにゲスト→ログイン後は「次回プレイから記録される」運用
 - [ ] 寿司打と並走テストでタイピング体感を比較
 
 ---
@@ -442,6 +449,12 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 - [x] Hall of Fame のコメント入力 → 即時公開フロー確認
 
 ---
+
+## Phase 7.5: バグの修正
+- [x] ログインなしでもタイピングできるように実装する ← feat/guest-play で対応。`/api/play-sessions/*` を public 化し、`PlaySessionState.userId` を nullable に。詳細は [`docs/spec/typing-engine/README.md#セッション保存ポリシー`](spec/typing-engine/README.md#セッション保存ポリシー)
+- [ ] ランキングの実装
+- [ ] エラーハンドリングの補強
+- [ ] エラーログがわからないのでErrorをログに出す
 
 ## Phase 8: 広告配信
 

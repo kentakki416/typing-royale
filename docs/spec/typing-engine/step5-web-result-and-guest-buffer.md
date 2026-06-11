@@ -1,5 +1,16 @@
 # step5: Web リザルト画面 + ゲスト IndexedDB バッファ
 
+> ⚠️ **方針変更のお知らせ（2026-06-11、Phase 7.5 feat/guest-play）**
+>
+> 本 step に書かれていた **ゲスト IndexedDB バッファ + `POST /api/play-sessions/claim`** 方式は **採用しなかった**。実装方針が以下に変更されている：
+>
+> - `/api/play-sessions/*` を public 化し、`PlaySessionState.userId` を `number | null` で扱う
+> - `/finish` 時に `state.userId === null` なら **DB 書き込みをすべてスキップ**（`persisted=false` を返す）
+> - ゲストプレイのスコアは **DB / IndexedDB のいずれにも保存しない**。結果画面で表示するだけ
+> - 「GitHub で記録を残す」CTA は **次回プレイから記録する導線**（直前のプレイは引き継がない）
+>
+> 最新の仕様は [`README.md` 「セッション保存ポリシー」](README.md#セッション保存ポリシー) を参照。本ファイルは **歴史的経緯のドキュメント** として残してあり、リザルト画面のレイアウト・順位フェッチ・グレード進捗バー等のセクションは現行実装でもそのまま参考になる。
+
 step4 で `/finish` を叩いたあとに表示される **リザルト画面** を実装する。スコア・正確率・出題数 / 完走数・ニガテ文字（mistype）・repo コメント・順位を表示し、シェアボタンと再プレイ導線を提供する。**ゲストモードのバッファリング**もここで完結させる：ゲストの場合は DB に書き込まれない（`/finish` レスポンスの `persisted=false`）ため、IndexedDB に一時保存し、「ログインして記録を残す」を押されたら `/api/play-sessions/claim` でアカウントに紐付ける。
 
 step4 と同じ `/play/[sessionId]` ページ上で **画面切替（phase=result）** として実装する。Router 遷移なし。

@@ -247,9 +247,9 @@ MVP では最小限の対策に絞る。より厳密な対策は [`./deferred-co
 
 | メソッド | パス | 説明 |
 | --- | --- | --- |
-| POST | `/api/play-sessions/solo` | **通常モード**のセッション開始。Body：`{ languageId }`。サーバーが該当言語の `eligible=true` repo から **1 つを純粋ランダム抽選** し、その repo の関数から 20 問を抽出してレスポンスに同梱。Redis にステート（sessionId / userId / 出題シーケンス / `mode=solo` / 選定 repo の identifier）を TTL 5 分で保持。レスポンス：`{ sessionId, problems: [...20], repoInfo }`（`repoInfo` の型は [`../problem-pool/README.md`](../problem-pool/README.md) 参照） |
-| POST | `/api/play-sessions/challenge-gods` | **「神々に挑戦」モード**のセッション開始。Body：`{ languageId }`。該当言語のオールタイムトップ 10 からランダム 1 人を選定し、その人の出題シーケンス先頭 20 問を抽出。神が打った repo の `repoInfo` も継承して同梱。Redis に `mode=challenge_gods` / `ghostSessionId` / repo identifier を保持。レスポンス：`{ sessionId, problems: [...20], ghostSessionId, ghostUserDisplay, repoInfo }`。トップ 10 不在時は HTTP 409 を返し、クライアントはボタン無効化＋ソロ誘導 |
-| POST | `/api/play-sessions/:id/finish` | 120 秒終了時のプレイ結果集計。クライアントから `{ typedChars, accuracy, keystrokeLog }` を受け取り、**サーバーで `score = typedChars × accuracy` を計算**。**人間の物理限界（120 秒で 1500 文字）を超えるスコアは HTTP 400 で拒否**し DB に書かない。**正当な認証済みセッションなら DB へ書き込み**（`play_sessions` / `play_session_problems` / `keystroke_logs` / `user_lifetime_stats`）。**ゲストの場合は DB に書かず、集計結果のみレスポンスで返す**（クライアントが IndexedDB に保存）。サーバー側で誤打鍵を文字単位で集計し `mistypeStats` を生成。`bestScore` 更新時はグレード再判定（[`../score-ranking/README.md` 「グレード判定の実装」](../score-ranking/README.md#グレード判定の実装)）。順位はレスポンスに含めない。レスポンス：`{ score, typedChars, accuracy, problemsPlayed, problemsCompleted, mistypeStats, rewardsTriggered[], persisted: boolean, gradeUp?: { from, to } }` |
+| POST | `/api/play-sessions/solo` | **通常モード**のセッション開始。**認証はオプション**（token なしでもゲストとして開始可能）。Body：`{ languageId }`。サーバーが該当言語の `eligible=true` repo から **1 つを純粋ランダム抽選** し、その repo の関数から 20 問を抽出してレスポンスに同梱。Redis にステート（sessionId / userId（ゲストは null） / 出題シーケンス / `mode=solo` / 選定 repo の identifier）を TTL 5 分で保持。レスポンス：`{ sessionId, problems: [...20], repoInfo }`（`repoInfo` の型は [`../problem-pool/README.md`](../problem-pool/README.md) 参照） |
+| POST | `/api/play-sessions/challenge-gods` | **「神々に挑戦」モード**のセッション開始。**認証はオプション**（ゲストでも挑戦可能。候補からの自己除外が無効化されるだけ）。Body：`{ languageId }`。該当言語のオールタイムトップ 10 からランダム 1 人を選定し、その人の出題シーケンス先頭 20 問を抽出。神が打った repo の `repoInfo` も継承して同梱。Redis に `mode=challenge_gods` / `ghostSessionId` / userId（ゲストは null） / repo identifier を保持。レスポンス：`{ sessionId, problems: [...20], ghostSessionId, ghostUserDisplay, repoInfo }`。トップ 10 不在時は HTTP 409 を返し、クライアントはボタン無効化＋ソロ誘導 |
+| POST | `/api/play-sessions/:id/finish` | 120 秒終了時のプレイ結果集計。クライアントから `{ typedChars, accuracy, keystrokeLog }` を受け取り、**サーバーで `score = typedChars × accuracy` を計算**。**人間の物理限界（120 秒で 1500 文字）を超えるスコアは HTTP 400 で拒否**し DB に書かない。**Redis state の `userId` が確定している（ログインユーザー）なら DB へ書き込み**（`play_sessions` / `play_session_problems` / `keystroke_logs` / `user_lifetime_stats` / `user_language_best`）。**ゲスト (`userId === null`) は DB に書かず、集計結果のみレスポンスで返す**（クライアントは結果画面で表示してから破棄。永続化は行わない）。サーバー側で誤打鍵を文字単位で集計し `mistypeStats` を生成。`bestScore` 更新時はグレード再判定（[`../score-ranking/README.md` 「グレード判定の実装」](../score-ranking/README.md#グレード判定の実装)）。レスポンス：`{ score, typedChars, accuracy, problemsPlayed, problemsCompleted, mistypeStats, persisted, bestScoreUpdated, newRank, topTenBoundaryScore, gradeUp }`。ゲストは `persisted=false`、`newRank` / `topTenBoundaryScore` / `gradeUp` がすべて `null`、`bestScoreUpdated=false` |
 | GET | `/api/rankings/me` | リザルト画面用。`playSessionId` を指定すると、直近バッチで集計済みの順位を返す。レスポンスに `snapshotUpdatedAt` を含めて「いつ時点の順位か」を明示する。ゲストの呼び出しはランキング非対象なので `null` を返す |
 
 `/finish` / `/api/rankings/me` 等の **モードに依存しない API は `sessionId` で内部参照** する。サーバーは Redis から `mode` を取得して挙動を切り替える。
@@ -308,32 +308,26 @@ sequenceDiagram
 
     W->>W: タイマー終了
     W->>API: POST /api/play-sessions/:id/finish { typedChars, accuracy, keystrokeLog }
-    API->>Redis: ステート取得（出題シーケンス）
+    API->>Redis: ステート取得（出題シーケンス + userId）
     API->>API: score = typedChars × accuracy をサーバーで計算<br/>上限超え（120秒で1500文字超）なら HTTP 400 で拒否
-    alt 認証済み
-        API->>DB: play_sessions / play_session_problems / keystroke_logs / user_lifetime_stats を保存
-    else ゲスト
-        Note over API,DB: DB には書き込まない / persisted=false
+    alt state.userId が確定（ログインユーザー）
+        API->>DB: play_sessions / play_session_problems / keystroke_logs / user_lifetime_stats / user_language_best を保存
+    else state.userId === null（ゲスト）
+        Note over API,DB: DB には一切書き込まない / persisted=false<br/>引き継ぎも行わない
     end
     API->>Redis: ステート削除
-    API-->>W: { score, typedChars, accuracy, mistypeStats, rewardsTriggered[], persisted }
-    alt 認証済み
-        W->>API: GET /api/rankings/me?playSessionId=...
-        API->>DB: ranking_snapshots から最新スナップショットの順位 + snapshotUpdatedAt 取得
-        API-->>W: { rank, periodRanks, snapshotUpdatedAt }
+    API-->>W: { score, typedChars, accuracy, mistypeStats, persisted, bestScoreUpdated, newRank, topTenBoundaryScore, gradeUp }
+    alt ログインユーザー
+        W->>API: GET /api/rankings/me?language=...
+        API->>DB: ユーザーの最新ベスト + グレード情報を取得
+        API-->>W: { rank, grade, next_grade, ... }
     else ゲスト
-        W->>W: IndexedDB に一時バッファとして保存（リザルト表示中のみ）
+        W->>W: 結果画面に「GitHub で記録を残す」CTA を表示（永続化はしない）
     end
-    W-->>U: リザルト画面（認証済みなら順位・集計時刻、ゲストなら「ログインして記録を残す」ボタン）
+    W-->>U: リザルト画面（ログインユーザーなら順位・グレード、ゲストならスコアと CTA のみ）
 
     opt ゲスト：ログインを選択
-        U->>W: ログインボタン押下 → OAuth フロー
-        W->>API: POST /api/play-sessions/claim（IndexedDB のバッファ）
-        API->>DB: 紐付けて保存
-        W->>W: IndexedDB のバッファを削除
-    end
-
-    opt ゲスト：ログインを拒否（画面離脱 / 閉じる）
-        W->>W: IndexedDB のバッファを即時削除
+        U->>W: 「GitHub で記録を残す」押下 → /sign-in へ
+        Note over W,DB: 直前のゲストスコアは引き継がない<br/>次回プレイから記録される運用
     end
 ```
