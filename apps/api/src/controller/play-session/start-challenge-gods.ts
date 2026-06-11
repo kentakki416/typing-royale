@@ -19,7 +19,10 @@ import * as service from "../../service"
 /**
  * POST /api/play-sessions/challenge-gods
  *
- * 神々モードのプレイセッションを開始する。認証必須。
+ * 神々モードのプレイセッションを開始する。
+ *
+ * 認証はオプション: ゲストでも挑戦可能 (req.userId が undefined の場合は候補から
+ * 自分を除外する処理が無効化されるだけで、ロジック上は問題ない)。
  * トップ 10 不在 / 全候補のキーストロークログ取得不能の場合は 409 Conflict を返す
  */
 export class PlaySessionStartChallengeGodsController {
@@ -41,7 +44,7 @@ export class PlaySessionStartChallengeGodsController {
     })
 
     const result = await service.playSession.createChallengeGodsSession(
-      { languageId, userId: req.userId! },
+      { languageId, userId: req.userId ?? null },
       {
         keystrokeLogRepository: this.keystrokeLogRepository,
         languageRepository: this.languageRepository,

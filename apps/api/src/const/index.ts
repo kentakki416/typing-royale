@@ -20,6 +20,13 @@ export const PUBLIC_PATHS: readonly string[] = [
   "/api/hall-of-fame",
   "/api/health",
   "/api/memo",
+  /**
+   * ゲストプレイ対応: 未ログインでも /api/play-sessions/* を呼べるようにする。
+   * authMiddleware は token が提示されればログインユーザーとして userId を埋め、
+   * 提示されなければ guest として素通りさせる。
+   * guest セッションは Service 層で DB 書き込みをスキップする (state.userId === null 分岐)。
+   */
+  "/api/play-sessions",
   "/api/players",
   "/api/rankings",
   "/api/replays",

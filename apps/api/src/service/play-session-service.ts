@@ -50,7 +50,10 @@ type SoloSessionRepo = {
 
 export type CreateSoloSessionInput = {
     languageId: number
-    userId: number
+    /**
+     * null はゲスト（未ログイン）。/finish 時に DB 書き込みをスキップする
+     */
+    userId: number | null
 }
 
 export type CreateSoloSessionOutput = {
@@ -192,6 +195,10 @@ type PersistFinishedSessionInput = {
     score: number
     state: PlaySessionState
     typedChars: number
+    /**
+     * 永続化はログインユーザー専用なので number に narrow した形で受け取る
+     */
+    userId: number
 }
 
 type PersistFinishedSessionResult = {
@@ -226,7 +233,7 @@ const persistFinishedSessionAtomic = async (
         problemsPlayed: data.problemsPlayed,
         score: data.score,
         typedChars: data.typedChars,
-        userId: data.state.userId,
+        userId: data.userId,
       },
       tx,
     )
@@ -250,7 +257,7 @@ const persistFinishedSessionAtomic = async (
         mistypeStats: data.mistypeStats,
         score: data.score,
         typedChars: data.typedChars,
-        userId: data.state.userId,
+        userId: data.userId,
       },
       tx,
     )
@@ -263,7 +270,7 @@ const persistFinishedSessionAtomic = async (
         playedAt: data.playedAt,
         score: data.score,
         typedChars: data.typedChars,
-        userId: data.state.userId,
+        userId: data.userId,
       },
       tx,
     )
@@ -279,7 +286,8 @@ const persistFinishedSessionAtomic = async (
  * 2. Redis から PlaySessionState を取得（無ければ 404）
  * 3. state.problemIds から問題本体を取得し、件数 mismatch なら 404
  * 4. サーバーで score / mistypeStats / problemProgress を再集計
- * 5. 4 テーブルを 1 transaction で書き込み (persistFinishedSessionAtomic)
+ * 5a. ログインユーザー: 5 テーブルを 1 transaction で書き込み + ランキング/rewards
+ * 5b. ゲスト (state.userId === null): DB 書き込みをスキップ、集計値のみ返す
  * 6. Redis state を削除
  */
 export const finishSession = async (
@@ -330,8 +338,35 @@ export const finishSession = async (
   const problemsPlayed = new Set(input.keystrokeLogs.map((e) => e.problemIndex)).size
 
   /**
-   * 5. DB 書き込み (5 テーブル / 1 transaction)
+   * 5b. ゲスト分岐: DB 書き込み・ランキング・rewards を全部スキップ
+   * Redis state だけ削除し、サーバー再集計の値を返す
    */
+  if (state.userId === null) {
+    await repo.playSessionStateRepository.delete(input.sessionId)
+    logger.info("PlaySessionService: Guest session finished (no persistence)", {
+      score,
+      sessionId: input.sessionId,
+    })
+    return ok({
+      accuracy: input.accuracy,
+      bestScoreUpdated: false,
+      gradeUp: null,
+      mistypeStats,
+      newRank: null,
+      persisted: false,
+      problemsCompleted,
+      problemsPlayed,
+      score,
+      topTenBoundaryScore: null,
+      typedChars: input.typedChars,
+    })
+  }
+
+  /**
+   * 5a. DB 書き込み (5 テーブル / 1 transaction)
+   * 以降は state.userId が number であることが保証されるよう、ローカル変数に確定させる
+   */
+  const userId = state.userId
   const playedAt = new Date()
   const { bestScoreUpdated, gradeUp } = await persistFinishedSessionAtomic(
     {
@@ -345,6 +380,7 @@ export const finishSession = async (
       score,
       state,
       typedChars: input.typedChars,
+      userId,
     },
     repo,
   )
@@ -360,7 +396,7 @@ export const finishSession = async (
    * - 10 位スコア（10 件未満なら null）
    */
   const updatedBest = await repo.userLanguageBestRepository.findMine(
-    state.userId,
+    userId,
     state.languageId,
   )
   const newRank = updatedBest === null
@@ -379,7 +415,7 @@ export const finishSession = async (
         {
           payload: { grade_slug: gradeUp.to.slug },
           type: "grade_up",
-          userId: state.userId,
+          userId,
         },
         {
           cardStorage: repo.cardStorage,
@@ -392,7 +428,7 @@ export const finishSession = async (
       logger.warn("PlaySessionService: achievement card generation failed", {
         error: err instanceof Error ? err.message : String(err),
         gradeSlug: gradeUp.to.slug,
-        userId: state.userId,
+        userId,
       })
     }
   }
@@ -402,7 +438,7 @@ export const finishSession = async (
     newRank,
     score,
     sessionId: input.sessionId,
-    userId: state.userId,
+    userId,
   })
 
   return ok({
@@ -436,7 +472,11 @@ type ChallengeGodsRepo = {
 
 export type CreateChallengeGodsInput = {
     languageId: number
-    userId: number
+    /**
+     * null はゲスト（未ログイン）。ゲストはトップ 10 から誰を引いても自分との重複が
+     * 発生しないため候補除外せず、神セッション選定だけ行う
+     */
+    userId: number | null
 }
 
 export type CreateChallengeGodsOutput = {

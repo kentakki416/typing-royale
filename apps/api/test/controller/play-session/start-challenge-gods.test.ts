@@ -57,11 +57,26 @@ afterAll(async () => {
 
 describe("POST /api/play-sessions/challenge-gods", () => {
   describe("異常系", () => {
-    it("認証なしの場合、401 を返す", async () => {
+    it("認証なしでも guest として扱う: トップ 10 不在なら 409 (認証エラーではなく業務エラー)", async () => {
       const language = await testPrisma.language.create({ data: { name: "TypeScript", slug: "typescript" } })
 
       const res = await request(app)
         .post("/api/play-sessions/challenge-gods")
+        .send({ language_id: language.id })
+
+      /**
+       * 認証なしでもミドルウェアは素通り → Service に到達 → 候補不在で 409
+       * 旧仕様の「認証なしは 401」を guest プレイ解禁で 409 に変更
+       */
+      expect(res.status).toBe(409)
+    })
+
+    it("不正な access token を提示した場合、401 を返す", async () => {
+      const language = await testPrisma.language.create({ data: { name: "TypeScript", slug: "typescript" } })
+
+      const res = await request(app)
+        .post("/api/play-sessions/challenge-gods")
+        .set("Authorization", "Bearer invalid.token.here")
         .send({ language_id: language.id })
 
       expect(res.status).toBe(401)

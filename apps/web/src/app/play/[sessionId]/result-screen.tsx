@@ -54,8 +54,15 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
   /** リザルト到達時に 1 度だけ祝福 overlay を再生 */
   const [showCelebration, setShowCelebration] = useState(true)
 
+  /**
+   * ゲスト（未ログイン）プレイの判定: /finish の persisted=false がサーバーから返る
+   */
+  const isGuest = result !== null && !result.persisted
+
   useEffect(() => {
     if (result === null) return
+    /** ゲストは /api/rankings/me が 401 になるためフェッチをスキップ */
+    if (isGuest) return
     /** TS 固定でフェッチ（言語選択を引き継ぐ仕組みは後続 step で対応） */
     const loadMyRanking = async () => {
       try {
@@ -71,7 +78,7 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
       }
     }
     void loadMyRanking()
-  }, [result])
+  }, [isGuest, result])
 
   if (result === null) {
     return (
@@ -92,7 +99,11 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
 
-  const isTopTenEntry = result.top_ten_boundary_score !== null
+  /**
+   * TOP 10 入り判定はランキングへの掲載が前提なので、ゲストには出さない
+   */
+  const isTopTenEntry = !isGuest
+    && result.top_ten_boundary_score !== null
     && result.score > result.top_ten_boundary_score
 
   return (
@@ -196,33 +207,50 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
           </div>
         )}
 
-        <div className="card mb-16">
-          <div className="card-header">
-            <div className="card-title">🏆 全期間ランキング</div>
-            <Link className="text-sm" href="/ranking">ランキング全体 →</Link>
-          </div>
-          {result.new_rank !== null ? (
-            <>
-              <div className="text-center mb-16">
-                <div
-                  className="text-mono"
-                  style={{ color: "var(--accent)", fontSize: "36px", fontWeight: 700 }}
-                >
-                  #{result.new_rank}
-                </div>
-                <div className="text-sm text-muted">
-                  TypeScript
-                  {me !== null && ` · ${me.total_ranked_players.toLocaleString()} 人中`}
-                </div>
-              </div>
-              <div className="text-sm text-muted text-center">現在の順位を即時表示</div>
-            </>
-          ) : (
-            <div className="text-sm text-muted text-center">
-              {meFetchFailed ? "順位を取得できませんでした" : "順位を計算中..."}
+        {isGuest ? (
+          <div className="card mb-16" style={{ borderColor: "rgba(125, 211, 252, 0.4)" }}>
+            <div className="card-header">
+              <div className="card-title">💾 このスコアは保存されていません</div>
             </div>
-          )}
-        </div>
+            <p className="text-sm text-muted mb-16">
+              ゲストプレイのため、ランキング・グレード・達成カードには反映されていません。
+              GitHub 連携すると次回以降のプレイから記録が残せます。
+            </p>
+            <div className="flex gap-12" style={{ justifyContent: "center" }}>
+              <Link className="btn btn-primary btn-large" href="/sign-in">
+                GitHub で記録を残す
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="card mb-16">
+            <div className="card-header">
+              <div className="card-title">🏆 全期間ランキング</div>
+              <Link className="text-sm" href="/ranking">ランキング全体 →</Link>
+            </div>
+            {result.new_rank !== null ? (
+              <>
+                <div className="text-center mb-16">
+                  <div
+                    className="text-mono"
+                    style={{ color: "var(--accent)", fontSize: "36px", fontWeight: 700 }}
+                  >
+                    #{result.new_rank}
+                  </div>
+                  <div className="text-sm text-muted">
+                    TypeScript
+                    {me !== null && ` · ${me.total_ranked_players.toLocaleString()} 人中`}
+                  </div>
+                </div>
+                <div className="text-sm text-muted text-center">現在の順位を即時表示</div>
+              </>
+            ) : (
+              <div className="text-sm text-muted text-center">
+                {meFetchFailed ? "順位を取得できませんでした" : "順位を計算中..."}
+              </div>
+            )}
+          </div>
+        )}
 
         {me !== null && me.best_score !== null && (
           <div className="card mb-16" style={{ borderColor: "rgba(189, 147, 249, 0.3)" }}>

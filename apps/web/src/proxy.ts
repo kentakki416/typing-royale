@@ -28,7 +28,23 @@ const PUBLIC_PATHS = [
    * rewards: Hall of Fame は公開ページ
    */
   "/hall-of-fame",
+  /**
+   * ゲストプレイ: 言語選択 (/play) とプレイ画面 (/play/[sessionId]) は未ログインでもアクセス可能。
+   * API 側もゲスト対応済みで、/finish は DB 書き込みをスキップしてスコアだけ返す。
+   */
+  "/play",
   ...DEV_ONLY_PUBLIC_PATHS,
+]
+
+/**
+ * 完全一致でしか public にできないパス。
+ * PUBLIC_PATHS は startsWith 判定なので "/" を入れると全パスが通ってしまうため分離する。
+ */
+const PUBLIC_EXACT_PATHS = [
+  /**
+   * ゲストプレイ: トップページ
+   */
+  "/",
 ]
 
 /**
@@ -42,7 +58,7 @@ const PUBLIC_PATHS = [
 export const proxy = (req: NextRequest) => {
   const { pathname } = req.nextUrl
 
-  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
+  if (PUBLIC_EXACT_PATHS.includes(pathname) || PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
     return NextResponse.next()
   }
 

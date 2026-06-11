@@ -140,6 +140,32 @@ describe("POST /api/play-sessions/solo", () => {
     })
   })
 
+  describe("正常系 (ゲスト)", () => {
+    it("認証なしの場合、200 と 20 問のシーケンスを返し Redis state に userId=null が保存される", async () => {
+      const { language, repo } = await seedRepoWithProblems(30)
+
+      const res = await request(app)
+        .post("/api/play-sessions/solo")
+        .send({ language_id: language.id })
+
+      expect(res.status).toBe(200)
+      expect(res.body.session_id).toMatch(/^[0-9a-f-]{36}$/)
+      expect(res.body.problems).toHaveLength(20)
+
+      /**
+       * ゲストプレイ: Redis に userId=null で書き込まれていること
+       */
+      const state = await playSessionStateRepository.findById(res.body.session_id)
+      expect(state).toMatchObject({
+        crawledRepoId: repo.id,
+        ghostSessionId: null,
+        languageId: language.id,
+        mode: "solo",
+        userId: null,
+      })
+    })
+  })
+
   describe("異常系", () => {
     it("メイン repo が 18 問しかない場合（pool 仕様上は通常発生しない異常系）、404 を返す", async () => {
       const { language } = await seedRepoWithProblems(18)
@@ -153,11 +179,12 @@ describe("POST /api/play-sessions/solo", () => {
       expect(res.status).toBe(404)
     })
 
-    it("認証なしの場合、401 を返す", async () => {
+    it("不正な access token を提示した場合、401 を返す", async () => {
       const { language } = await seedRepoWithProblems(30)
 
       const res = await request(app)
         .post("/api/play-sessions/solo")
+        .set("Authorization", "Bearer invalid.token.here")
         .send({ language_id: language.id })
 
       expect(res.status).toBe(401)

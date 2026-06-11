@@ -9,6 +9,8 @@ export type PlaySessionMode = "solo" | "challenge_gods"
  *
  * `/solo` で作成し、`/finish` で読み出して DB に書き込んだ後に削除する
  * TTL 切れで自然消滅したセッションはクリーンアップ不要
+ *
+ * userId === null はゲスト（未ログイン）プレイ。/finish 時に DB 書き込みをスキップする。
  */
 export type PlaySessionState = {
     crawledRepoId: number
@@ -20,7 +22,7 @@ export type PlaySessionState = {
      * インデックス = orderIndex（0..19）
      */
     problemIds: number[]
-    userId: number
+    userId: number | null
 }
 
 /**

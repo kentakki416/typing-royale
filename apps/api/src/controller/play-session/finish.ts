@@ -29,6 +29,9 @@ import * as service from "../../service"
  * keystroke_logs / user_lifetime_stats / user_language_best）に atomic 書き込み +
  * Redis state 削除を行う。レスポンスには new_rank / top_ten_boundary_score /
  * grade_up / best_score_updated を含める（score-ranking step3）
+ *
+ * ゲスト (Redis state の userId が null) は DB 書き込み・ランキング・rewards を
+ * スキップし、サーバー再集計の値だけを返す。レスポンスの persisted=false で識別可能。
  */
 export class PlaySessionFinishController {
   constructor(

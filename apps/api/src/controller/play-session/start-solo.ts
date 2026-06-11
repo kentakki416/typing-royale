@@ -17,7 +17,11 @@ import * as service from "../../service"
 /**
  * POST /api/play-sessions/solo
  *
- * 通常モードのプレイセッションを開始する。認証必須（req.userId は authMiddleware が確定済みの前提）
+ * 通常モードのプレイセッションを開始する。
+ *
+ * 認証はオプション: token が提示されればログインユーザー (req.userId が確定)、
+ * 提示されなければゲスト (req.userId は undefined) として扱う。
+ * ゲストセッションは /finish 時に DB 書き込みをスキップする (Service 側で分岐)。
  */
 export class PlaySessionStartSoloController {
   constructor(
@@ -36,7 +40,7 @@ export class PlaySessionStartSoloController {
     })
 
     const result = await service.playSession.createSoloSession(
-      { languageId, userId: req.userId! },
+      { languageId, userId: req.userId ?? null },
       {
         crawledRepoRepository: this.crawledRepoRepository,
         languageRepository: this.languageRepository,
