@@ -28,7 +28,7 @@ import * as service from "../../service"
  * サーバーで再集計して 5 テーブル（play_sessions / play_session_problems /
  * keystroke_logs / user_lifetime_stats / user_language_best）に atomic 書き込み +
  * Redis state 削除を行う。レスポンスには new_rank / top_ten_boundary_score /
- * grade_up / best_score_updated を含める（score-ranking step3）
+ * grade_up / best_score_updated を含める
  */
 export class PlaySessionFinishController {
   constructor(

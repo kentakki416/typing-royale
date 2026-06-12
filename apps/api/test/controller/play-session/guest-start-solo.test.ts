@@ -1,14 +1,13 @@
 import request from "supertest"
 
-import { PlaySessionStartSoloController } from "../../../src/controller/play-session/start-solo"
+import { PlaySessionGuestStartSoloController } from "../../../src/controller/play-session/guest-start-solo"
 import {
   PrismaCrawledRepoRepository,
   PrismaLanguageRepository,
   PrismaProblemRepository,
 } from "../../../src/repository/prisma"
-import { IoRedisPlaySessionStateRepository } from "../../../src/repository/redis"
 import { playSessionRouter } from "../../../src/routes/play-session-router"
-import { attachUnhandledExceptionHandler, createTestApp, createTestUser } from "../helper"
+import { attachUnhandledExceptionHandler, createTestApp } from "../helper"
 import {
   cleanupTestData,
   cleanupTestRedis,
@@ -21,16 +20,14 @@ import {
 const languageRepository = new PrismaLanguageRepository(testPrisma)
 const crawledRepoRepository = new PrismaCrawledRepoRepository(testPrisma)
 const problemRepository = new PrismaProblemRepository(testPrisma)
-const playSessionStateRepository = new IoRedisPlaySessionStateRepository(testRedis)
 
 const app = createTestApp()
 app.use(
   "/api/play-sessions",
   playSessionRouter({
-    startSolo: new PlaySessionStartSoloController(
+    guestStartSolo: new PlaySessionGuestStartSoloController(
       crawledRepoRepository,
       languageRepository,
-      playSessionStateRepository,
       problemRepository,
     ),
   }),
@@ -51,11 +48,8 @@ afterAll(async () => {
 
 /**
  * languages / crawled_repos / problems を seed
- * options.disabled で eligible 対象から外せる
  */
-const seedRepoWithProblems = async (problemCount: number, options?: {
-  disabled?: boolean
-}) => {
+const seedRepoWithProblems = async (problemCount: number) => {
   const language = await testPrisma.language.create({
     data: { name: "TypeScript", slug: "typescript" },
   })
@@ -66,7 +60,6 @@ const seedRepoWithProblems = async (problemCount: number, options?: {
       crawledAt: new Date(),
       defaultBranch: "main",
       description: "Test repo",
-      disabled: options?.disabled ?? false,
       fullName: "owner/repo",
       githubId: BigInt(123456),
       languageId: language.id,
@@ -75,7 +68,7 @@ const seedRepoWithProblems = async (problemCount: number, options?: {
       owner: "owner",
       stars: 1500,
       storedCount: problemCount,
-      topics: ["typescript", "framework"],
+      topics: ["typescript"],
     },
   })
   await testPrisma.problem.createMany({
@@ -96,16 +89,14 @@ const seedRepoWithProblems = async (problemCount: number, options?: {
   return { language, repo }
 }
 
-describe("POST /api/play-sessions/solo", () => {
+describe("POST /api/play-sessions/guest/solo", () => {
   describe("正常系", () => {
-    it("eligible repo に 20 問以上ある場合、200 と 20 問のシーケンスを返し Redis にステートが保存される", async () => {
-      const { language, repo } = await seedRepoWithProblems(30)
-      const { token, user } = await createTestUser()
+    it("認証なしで 20 問のシーケンス + repo_info を返す。session_id は含まれず Redis にも書かれない", async () => {
+      await seedRepoWithProblems(30)
 
       const res = await request(app)
-        .post("/api/play-sessions/solo")
-        .set("Authorization", `Bearer ${token}`)
-        .send({ language_id: language.id })
+        .post("/api/play-sessions/guest/solo")
+        .send({ language_id: (await testPrisma.language.findFirstOrThrow()).id })
 
       expect(res.status).toBe(200)
       expect(res.body).toEqual({
@@ -116,60 +107,26 @@ describe("POST /api/play-sessions/solo", () => {
           name: "repo",
           owner: "owner",
           stars: 1500,
-          topics: ["typescript", "framework"],
+          topics: ["typescript"],
         },
-        session_id: expect.stringMatching(/^[0-9a-f-]{36}$/),
       })
       expect(res.body.problems).toHaveLength(20)
       expect(res.body.problems.map((p: { order_index: number }) => p.order_index)).toEqual(
         Array.from({ length: 20 }, (_, i) => i),
       )
+      /** ステートレスなので session_id 等のセッション識別子は返さない */
+      expect(res.body.session_id).toBeUndefined()
 
-      /**
-       * Redis に書き込まれていることを確認
-       */
-      const state = await playSessionStateRepository.findById(res.body.session_id)
-      expect(state).toMatchObject({
-        crawledRepoId: repo.id,
-        ghostSessionId: null,
-        languageId: language.id,
-        mode: "solo",
-        userId: user.id,
-      })
-      expect(state!.problemIds).toHaveLength(20)
+      /** Redis のキーが play_session: 配下に作られていないことを確認 */
+      const keys = await testRedis.keys("play_session:*")
+      expect(keys).toEqual([])
     })
   })
 
   describe("異常系", () => {
-    it("メイン repo が 18 問しかない場合（pool 仕様上は通常発生しない異常系）、404 を返す", async () => {
-      const { language } = await seedRepoWithProblems(18)
-      const { token } = await createTestUser()
-
-      const res = await request(app)
-        .post("/api/play-sessions/solo")
-        .set("Authorization", `Bearer ${token}`)
-        .send({ language_id: language.id })
-
-      expect(res.status).toBe(404)
-    })
-
-    it("認証なしの場合、401 を返す（ゲストは /guest/solo に分離されているため）", async () => {
-      const { language } = await seedRepoWithProblems(30)
-
-      const res = await request(app)
-        .post("/api/play-sessions/solo")
-        .send({ language_id: language.id })
-
-      expect(res.status).toBe(401)
-      expect(res.body.error).toBeDefined()
-    })
-
     it("language_id が無い場合、400 を返す", async () => {
-      const { token } = await createTestUser()
-
       const res = await request(app)
-        .post("/api/play-sessions/solo")
-        .set("Authorization", `Bearer ${token}`)
+        .post("/api/play-sessions/guest/solo")
         .send({})
 
       expect(res.status).toBe(400)
@@ -177,24 +134,21 @@ describe("POST /api/play-sessions/solo", () => {
     })
 
     it("存在しない language_id の場合、400 を返す", async () => {
-      const { token } = await createTestUser()
-
       const res = await request(app)
-        .post("/api/play-sessions/solo")
-        .set("Authorization", `Bearer ${token}`)
+        .post("/api/play-sessions/guest/solo")
         .send({ language_id: 99999 })
 
       expect(res.status).toBe(400)
     })
 
-    it("eligible repo が無い（全 disabled）場合、404 を返す", async () => {
-      const { language } = await seedRepoWithProblems(30, { disabled: true })
-      const { token } = await createTestUser()
+    it("eligible repo が無い場合、404 を返す", async () => {
+      await testPrisma.language.create({
+        data: { name: "TypeScript", slug: "typescript" },
+      })
 
       const res = await request(app)
-        .post("/api/play-sessions/solo")
-        .set("Authorization", `Bearer ${token}`)
-        .send({ language_id: language.id })
+        .post("/api/play-sessions/guest/solo")
+        .send({ language_id: (await testPrisma.language.findFirstOrThrow()).id })
 
       expect(res.status).toBe(404)
     })

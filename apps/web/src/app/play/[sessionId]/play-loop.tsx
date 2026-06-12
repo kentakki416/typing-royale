@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react"
 
-import { FinishPlaySessionResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
+import { FinishGuestPlaySessionResponse, FinishPlaySessionResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { Topbar } from "@/components/topbar"
 import { playFinish, playUrgentTick } from "@/libs/sound-fx"
@@ -28,12 +28,21 @@ type Props = {
    * 神々モードのみ：神の表示情報
    */
   ghostUserDisplay: GhostUserDisplay | null
+  /**
+   * 未ログインプレイ。/finish の endpoint と body 形を切替えるのに使う
+   */
+  isGuest: boolean
   mode: "challenge_gods" | "solo"
   /**
    * /finish のレスポンスを ResultScreen に渡すため、結果データ付きで通知
    * （API 失敗時は null が渡る）。神々モードでは GhostSummary も同時に渡す
    */
   onFinished: (result: FinishPlaySessionResponse | null, ghostSummary: GhostSummary | null) => void
+  /**
+   * このセッションで実際に出題された problem.id を出題順で並べたもの。
+   * ゲスト用 /finish のリクエストボディに転送する
+   */
+  problemIds: number[]
   problems: Problem[]
   sessionId: string
 }
@@ -53,7 +62,7 @@ type FlashKind = "hit" | "miss" | "tier-up" | "urgent"
  * このコンポーネント自身は `finish` (POST /finish を 1 度だけ叩く) + フラッシュ演出の
  * 集約 + HUD / エディタ / 神サイドバーの描画のみを担当する
  */
-export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinished, problems, sessionId }: Props) {
+export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, onFinished, problemIds, problems, sessionId }: Props) {
   /**
    * tier アップ / Miss / 残り 10 秒以下で短時間の演出 class を付与
    */
@@ -87,24 +96,55 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, mode, onFinishe
     const accuracy = typingRefs.totalRef.current === 0
       ? 0
       : typingRefs.correctRef.current / typingRefs.totalRef.current
+    const keystrokeLogs = typingRefs.logRef.current.map((entry) => ({
+      elapsed_ms: entry.elapsedMs,
+      input_char: entry.inputChar,
+      is_correct: entry.isCorrect,
+      problem_index: entry.problemIndex,
+    }))
+    const typedChars = typingRefs.typedCharsRef.current
     let result: FinishPlaySessionResponse | null = null
     try {
-      const res = await fetch(`/api/play-sessions/${sessionId}/finish`, {
-        body: JSON.stringify({
-          accuracy,
-          keystroke_logs: typingRefs.logRef.current.map((entry) => ({
-            elapsed_ms: entry.elapsedMs,
-            input_char: entry.inputChar,
-            is_correct: entry.isCorrect,
-            problem_index: entry.problemIndex,
-          })),
-          typed_chars: typingRefs.typedCharsRef.current,
-        }),
+      /**
+       * isGuest で endpoint と body 形を切替える。
+       * - logged-in: /api/play-sessions/{sessionId}/finish (Redis state 経由で problem_ids 確定)
+       * - guest:     /api/play-sessions/guest/finish (body に problem_ids を直接含める)
+       */
+      const url = isGuest
+        ? "/api/play-sessions/guest/finish"
+        : `/api/play-sessions/${sessionId}/finish`
+      const body = isGuest
+        ? { accuracy, keystroke_logs: keystrokeLogs, problem_ids: problemIds, typed_chars: typedChars }
+        : { accuracy, keystroke_logs: keystrokeLogs, typed_chars: typedChars }
+      const res = await fetch(url, {
+        body: JSON.stringify(body),
         headers: { "Content-Type": "application/json" },
         method: "POST",
       })
       if (res.ok) {
-        result = await res.json() as FinishPlaySessionResponse
+        if (isGuest) {
+          /**
+           * ゲスト用レスポンスはランキング系フィールドを持たないため、
+           * ResultScreen が期待する FinishPlaySessionResponse 形に正規化する
+           * （persisted=false 等で「ゲスト判定 + 非表示」が成立する）
+           */
+          const guestRes = await res.json() as FinishGuestPlaySessionResponse
+          result = {
+            accuracy: guestRes.accuracy,
+            best_score_updated: false,
+            grade_up: null,
+            mistype_stats: guestRes.mistype_stats,
+            new_rank: null,
+            persisted: false,
+            problems_completed: guestRes.problems_completed,
+            problems_played: guestRes.problems_played,
+            score: guestRes.score,
+            top_ten_boundary_score: null,
+            typed_chars: guestRes.typed_chars,
+          }
+        } else {
+          result = await res.json() as FinishPlaySessionResponse
+        }
       }
     } catch {
       /**

@@ -11,6 +11,11 @@ const DEV_ONLY_PUBLIC_PATHS = process.env.NODE_ENV !== "production"
   : []
 
 const PUBLIC_PATHS = [
+  /**
+   * ゲストプレイ: トップページ。`matchesPathPrefix` の仕様上、`"/"` を入れると
+   * `pathname === "/"` の完全一致のみ通り、`"/foo"` 等は通らない
+   */
+  "/",
   "/sign-in",
   "/api/auth/callback/github",
   "/api/auth/callback/google",
@@ -28,6 +33,15 @@ const PUBLIC_PATHS = [
    * rewards: Hall of Fame は公開ページ
    */
   "/hall-of-fame",
+  /**
+   * ゲストプレイ: 言語選択 (/play) とプレイ画面 (/play/[sessionId]) は未ログインでもアクセス可能。
+   * API 側は /api/play-sessions/guest/* （ステートレス）に分離。Server Action がログイン状態を見て叩き分ける
+   */
+  "/play",
+  /**
+   * ゲスト用 /finish の proxy Route Handler。/api 配下なので明示的に public 化
+   */
+  "/api/play-sessions/guest",
   ...DEV_ONLY_PUBLIC_PATHS,
 ]
 
@@ -42,6 +56,9 @@ const PUBLIC_PATHS = [
  * - "/replay"               → true (完全一致)
  * - "/replay/abc-123"       → true (segment 境界の prefix)
  * - "/replay-list"          → false (segment 境界ではない)
+ *
+ * `p = "/"` のときは `pathname === "/"` のみ true で、ルート完全一致として機能する
+ * （`"/foo"` は `startsWith("//")` が false なので除外される）。
  */
 const matchesPathPrefix = (pathname: string, p: string): boolean =>
   pathname === p || pathname.startsWith(`${p}/`)

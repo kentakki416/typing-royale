@@ -133,20 +133,41 @@ accuracy   : 正解打鍵数 / 総打鍵数（0.0 〜 1.0）
 | 認証状態 | 完走時 | 途中離脱時 |
 | --- | --- | --- |
 | **GitHub 認証済み** | DB に保存（ランキング集計対象） | 何も保存しない |
-| **ゲスト** | DB には保存しない。リザルト画面表示中だけ IndexedDB に **一時バッファ** として保持 | 何も保存しない |
+| **ゲスト** | **DB には一切保存しない**。リザルト画面でサーバー集計したスコアを表示するのみ | 何も保存しない |
 
-ゲストのリザルト画面では「ログインして記録を残す」ボタンを表示する。
+#### API 経路の分離（認証必須 vs ゲスト）
 
-| ユーザーの選択 | データの扱い |
-| --- | --- |
-| **ログインする** → OAuth 成功 | IndexedDB のデータをサーバーに送ってアカウントへ紐付け、IndexedDB からは削除 |
-| **ログインを拒否**（ボタンを押さずに画面遷移 / 閉じる / 「やめる」を押す） | **即時に IndexedDB から削除** |
+認証状態によって叩く endpoint そのものを分離している。Service / Controller / schema が **1 つの責務だけを持つ** ように保つため。
 
-つまりゲストのプレイデータが永続化されるのは「ログインして記録を残す」を選んだ場合のみ。それ以外は完走直後に消える。これにより：
+| 用途 | 認証必須経路 | ゲスト用ステートレス経路 |
+| --- | --- | --- |
+| 通常モード開始 | `POST /api/play-sessions/solo` | `POST /api/play-sessions/guest/solo` |
+| 神々モード開始 | `POST /api/play-sessions/challenge-gods` | `POST /api/play-sessions/guest/challenge-gods` |
+| 結果集計 | `POST /api/play-sessions/:id/finish` | `POST /api/play-sessions/guest/finish` |
+
+- 認証必須経路は従来通り Redis に `PlaySessionState` を保存し `/finish` 時に DB へ atomic 書き込み
+- ゲスト用経路は **Redis を使わない / DB に書き込まない**。`/guest/solo` `/guest/challenge-gods` は問題抽選結果と `repo_info` をそのまま返すだけ（`session_id` も発行しない）。`/guest/finish` は body に `problem_ids` を直接含めて受け取り、サーバーで codeBlock を引いて mistypeStats と score を再集計するだけ
+- 物理限界チェック（`typedChars × accuracy` の上限 1500 文字）はゲストでも適用される。シェア時の不正スコア防止のため
+
+#### Web 側の振り分け
+
+`apps/web` の Server Action (`startPlaySession`) が **ログイン状態を見て叩き分ける**。クライアントは沈黙のまま適切な endpoint を選ぶ。ゲスト用 `/finish` は body に `problem_ids` を載せる必要があるため、PlayLoop は `/guest/solo` のレスポンスを sessionStorage に保持する。
+
+#### リザルト画面の表示分岐
+
+ゲスト用 `/finish` のレスポンスは `persisted` / `best_score_updated` / `new_rank` / `top_ten_boundary_score` / `grade_up` を持たない。Web 側の PlayLoop が認証必須版のレスポンス形に正規化（これらを `false` / `null` 充填）して ResultScreen に渡し、ResultScreen は `persisted === false` をゲスト判定に使う。
+
+ゲストのリザルト画面では以下のように案内する：
+
+- 「💾 このスコアは保存されていません」カードを表示
+- 「GitHub で記録を残す」ボタン → `/sign-in` へ誘導
+- 「全期間ランキング」「エンジニアグレード」「TOP 10 入り」「達成カード昇格」などログインユーザー向けの表示はすべて非表示
+
+MVP では **ログイン後にゲスト時の直前スコアを引き継ぐ機能は実装しない**。ログイン後の次回プレイから記録が残る、というシンプルな運用にする。これにより：
 
 - 「離脱の山」も DB を汚さない
-- ログイン拒否されたデータがブラウザに残り続けない（プライバシー観点でも望ましい）
-- 後日 IndexedDB のデータをマージする複雑なロジックが不要
+- 引き継ぎ用の IndexedDB / claim API といった複雑度を持たずに済む（OAuth state 経由のセッション ID 受け渡し等が不要）
+- ゲストプレイデータがブラウザに残り続けない（プライバシー観点でも望ましい）
 
 ### リザルト画面に表示する順位
 
@@ -246,9 +267,12 @@ MVP では最小限の対策に絞る。より厳密な対策は [`./deferred-co
 
 | メソッド | パス | 説明 |
 | --- | --- | --- |
-| POST | `/api/play-sessions/solo` | **通常モード**のセッション開始。Body：`{ languageId }`。サーバーが該当言語の `eligible=true` repo から **1 つを純粋ランダム抽選** し、その repo の関数から 20 問を抽出してレスポンスに同梱。Redis にステート（sessionId / userId / 出題シーケンス / `mode=solo` / 選定 repo の identifier）を TTL 5 分で保持。レスポンス：`{ sessionId, problems: [...20], repoInfo }`（`repoInfo` の型は [`../problem-pool/README.md`](../problem-pool/README.md) 参照） |
-| POST | `/api/play-sessions/challenge-gods` | **「神々に挑戦」モード**のセッション開始。Body：`{ languageId }`。該当言語のオールタイムトップ 10 からランダム 1 人を選定し、その人の出題シーケンス先頭 20 問を抽出。神が打った repo の `repoInfo` も継承して同梱。Redis に `mode=challenge_gods` / `ghostSessionId` / repo identifier を保持。レスポンス：`{ sessionId, problems: [...20], ghostSessionId, ghostUserDisplay, repoInfo }`。トップ 10 不在時は HTTP 409 を返し、クライアントはボタン無効化＋ソロ誘導 |
-| POST | `/api/play-sessions/:id/finish` | 120 秒終了時のプレイ結果集計。クライアントから `{ typedChars, accuracy, keystrokeLog }` を受け取り、**サーバーで `score = typedChars × accuracy` を計算**。**人間の物理限界（120 秒で 1500 文字）を超えるスコアは HTTP 400 で拒否**し DB に書かない。**正当な認証済みセッションなら DB へ書き込み**（`play_sessions` / `play_session_problems` / `keystroke_logs` / `user_lifetime_stats`）。**ゲストの場合は DB に書かず、集計結果のみレスポンスで返す**（クライアントが IndexedDB に保存）。サーバー側で誤打鍵を文字単位で集計し `mistypeStats` を生成。`bestScore` 更新時はグレード再判定（[`../score-ranking/README.md` 「グレード判定の実装」](../score-ranking/README.md#グレード判定の実装)）。順位はレスポンスに含めない。レスポンス：`{ score, typedChars, accuracy, problemsPlayed, problemsCompleted, mistypeStats, rewardsTriggered[], persisted: boolean, gradeUp?: { from, to } }` |
+| POST | `/api/play-sessions/solo` | **通常モード**のセッション開始（認証必須）。Body：`{ languageId }`。サーバーが該当言語の `eligible=true` repo から **1 つを純粋ランダム抽選** し、その repo の関数から 20 問を抽出してレスポンスに同梱。Redis にステート（sessionId / userId / 出題シーケンス / `mode=solo` / 選定 repo の identifier）を TTL 5 分で保持。レスポンス：`{ sessionId, problems: [...20], repoInfo }`（`repoInfo` の型は [`../problem-pool/README.md`](../problem-pool/README.md) 参照） |
+| POST | `/api/play-sessions/challenge-gods` | **「神々に挑戦」モード**のセッション開始（認証必須）。Body：`{ languageId }`。該当言語のオールタイムトップ 10 からランダム 1 人（自分を除く）を選定し、その人の出題シーケンス先頭 20 問を抽出。神が打った repo の `repoInfo` も継承して同梱。Redis に `mode=challenge_gods` / `ghostSessionId` / userId / repo identifier を保持。レスポンス：`{ sessionId, problems: [...20], ghostSessionId, ghostUserDisplay, repoInfo }`。トップ 10 不在時は HTTP 409 を返し、クライアントはボタン無効化＋ソロ誘導 |
+| POST | `/api/play-sessions/:id/finish` | 120 秒終了時のプレイ結果集計（認証必須）。クライアントから `{ typedChars, accuracy, keystrokeLog }` を受け取り、**サーバーで `score = typedChars × accuracy` を計算**。**人間の物理限界（120 秒で 1500 文字）を超えるスコアは HTTP 400 で拒否**し DB に書かない。DB へ atomic 書き込み（`play_sessions` / `play_session_problems` / `keystroke_logs` / `user_lifetime_stats` / `user_language_best`）。サーバー側で誤打鍵を文字単位で集計し `mistypeStats` を生成。`bestScore` 更新時はグレード再判定（[`../score-ranking/README.md` 「グレード判定の実装」](../score-ranking/README.md#グレード判定の実装)）。レスポンス：`{ score, typedChars, accuracy, problemsPlayed, problemsCompleted, mistypeStats, persisted: true, bestScoreUpdated, newRank, topTenBoundaryScore, gradeUp }` |
+| POST | `/api/play-sessions/guest/solo` | **ゲスト用**通常モードのセッション開始（認証不要・ステートレス）。Body：`{ languageId }`。問題抽選結果と `repoInfo` をそのまま返すだけで Redis 保存なし、sessionId も発行しない。レスポンス：`{ problems: [...20], repoInfo }` |
+| POST | `/api/play-sessions/guest/challenge-gods` | **ゲスト用**神々モードのセッション開始（認証不要・ステートレス）。Body：`{ languageId }`。トップ 10 からランダム 1 人を選定（自分の存在概念がないので除外なし）。Redis 保存なし。レスポンス：`{ problems: [...20], ghostSessionId, ghostUserDisplay, repoInfo }`。トップ 10 不在は 409 |
+| POST | `/api/play-sessions/guest/finish` | **ゲスト用**結果集計（認証不要・ステートレス）。Body：`{ typedChars, accuracy, keystrokeLog, problemIds }`。Redis 不使用なので `problemIds` をクライアントから受け取り DB から codeBlock を引いて mistypeStats を集計する。物理限界チェックは適用、DB 書き込みは一切なし。レスポンス：`{ score, typedChars, accuracy, problemsPlayed, problemsCompleted, mistypeStats }`（ランキング系フィールドは持たない） |
 | GET | `/api/rankings/me` | リザルト画面用。`playSessionId` を指定すると、直近バッチで集計済みの順位を返す。レスポンスに `snapshotUpdatedAt` を含めて「いつ時点の順位か」を明示する。ゲストの呼び出しはランキング非対象なので `null` を返す |
 
 `/finish` / `/api/rankings/me` 等の **モードに依存しない API は `sessionId` で内部参照** する。サーバーは Redis から `mode` を取得して挙動を切り替える。
@@ -280,11 +304,20 @@ sequenceDiagram
     Note over U,DB: 通常プレイのフロー（神々に挑戦モードは [`../ghost-battle/README.md`](../ghost-battle/README.md) を参照）
 
     U->>W: 言語選択 → 「通常プレイ」
-    W->>API: POST /api/play-sessions/solo { languageId }
-    API->>DB: 該当言語の eligible=true repo から 1 つランダム抽選
-    API->>DB: その repo の problems から 20 問抽出（不足時は他 repo 補填）
-    API->>Redis: sessionId / 出題シーケンス / userId / mode=solo / repoIdentifier を TTL 5 分で保存
-    API-->>W: { sessionId, problems: [...20], repoInfo }
+    alt ログインユーザー
+        W->>API: POST /api/play-sessions/solo { languageId }
+        API->>DB: 該当言語の eligible=true repo から 1 つランダム抽選
+        API->>DB: その repo の problems から 20 問抽出
+        API->>Redis: sessionId / 出題シーケンス / userId / mode=solo / repoIdentifier を TTL 5 分で保存
+        API-->>W: { sessionId, problems: [...20], repoInfo }
+    else ゲスト (未ログイン)
+        W->>API: POST /api/play-sessions/guest/solo { languageId }
+        API->>DB: 該当言語の eligible=true repo から 1 つランダム抽選
+        API->>DB: その repo の problems から 20 問抽出
+        Note over API,Redis: Redis 保存なし / sessionId も発行しない
+        API-->>W: { problems: [...20], repoInfo }
+        W->>W: クライアント側で UUID を発行（ルーティング用）
+    end
     W-->>U: 「今回のチャレンジ：{repo name}」スプラッシュ 2 秒表示
     W->>W: 120 秒カウントダウン開始
 
@@ -306,33 +339,28 @@ sequenceDiagram
     end
 
     W->>W: タイマー終了
-    W->>API: POST /api/play-sessions/:id/finish { typedChars, accuracy, keystrokeLog }
-    API->>Redis: ステート取得（出題シーケンス）
-    API->>API: score = typedChars × accuracy をサーバーで計算<br/>上限超え（120秒で1500文字超）なら HTTP 400 で拒否
-    alt 認証済み
-        API->>DB: play_sessions / play_session_problems / keystroke_logs / user_lifetime_stats を保存
-    else ゲスト
-        Note over API,DB: DB には書き込まない / persisted=false
+    alt ログインユーザー
+        W->>API: POST /api/play-sessions/:id/finish { typedChars, accuracy, keystrokeLog }
+        API->>Redis: ステート取得（出題シーケンス + userId）
+        API->>API: score = typedChars × accuracy をサーバーで計算<br/>上限超え（120秒で1500文字超）なら HTTP 400 で拒否
+        API->>DB: play_sessions / play_session_problems / keystroke_logs / user_lifetime_stats / user_language_best を保存
+        API->>Redis: ステート削除
+        API-->>W: { score, ..., persisted: true, bestScoreUpdated, newRank, topTenBoundaryScore, gradeUp }
+        W->>API: GET /api/rankings/me?language=...
+        API->>DB: ユーザーの最新ベスト + グレード情報を取得
+        API-->>W: { rank, grade, next_grade, ... }
+    else ゲスト (未ログイン)
+        W->>API: POST /api/play-sessions/guest/finish { typedChars, accuracy, keystrokeLog, problemIds }
+        API->>API: score を計算 + 物理限界チェック
+        API->>DB: problemIds から codeBlock を取得（mistypeStats 集計用、書き込みなし）
+        Note over API,DB: DB には一切書き込まない
+        API-->>W: { score, typedChars, accuracy, mistypeStats, problemsPlayed, problemsCompleted }
+        W->>W: Web 側で persisted=false 等の null/false 値を補って結果画面に渡す
     end
-    API->>Redis: ステート削除
-    API-->>W: { score, typedChars, accuracy, mistypeStats, rewardsTriggered[], persisted }
-    alt 認証済み
-        W->>API: GET /api/rankings/me?playSessionId=...
-        API->>DB: ranking_snapshots から最新スナップショットの順位 + snapshotUpdatedAt 取得
-        API-->>W: { rank, periodRanks, snapshotUpdatedAt }
-    else ゲスト
-        W->>W: IndexedDB に一時バッファとして保存（リザルト表示中のみ）
-    end
-    W-->>U: リザルト画面（認証済みなら順位・集計時刻、ゲストなら「ログインして記録を残す」ボタン）
+    W-->>U: リザルト画面（ログインユーザーなら順位・グレード、ゲストならスコアと CTA のみ）
 
     opt ゲスト：ログインを選択
-        U->>W: ログインボタン押下 → OAuth フロー
-        W->>API: POST /api/play-sessions/claim（IndexedDB のバッファ）
-        API->>DB: 紐付けて保存
-        W->>W: IndexedDB のバッファを削除
-    end
-
-    opt ゲスト：ログインを拒否（画面離脱 / 閉じる）
-        W->>W: IndexedDB のバッファを即時削除
+        U->>W: 「GitHub で記録を残す」押下 → /sign-in へ
+        Note over W,DB: 直前のゲストスコアは引き継がない<br/>次回プレイから記録される運用
     end
 ```

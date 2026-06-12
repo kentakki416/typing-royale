@@ -9,6 +9,9 @@ export type PlaySessionMode = "solo" | "challenge_gods"
  *
  * `/solo` で作成し、`/finish` で読み出して DB に書き込んだ後に削除する
  * TTL 切れで自然消滅したセッションはクリーンアップ不要
+ *
+ * 認証必須エンドポイント (`/api/play-sessions/solo` 等) でのみ使う。
+ * ゲストプレイは Redis を使わず `/api/play-sessions/guest/*` のステートレス経路で処理する。
  */
 export type PlaySessionState = {
     crawledRepoId: number

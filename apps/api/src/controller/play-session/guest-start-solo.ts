@@ -1,46 +1,41 @@
-import { Response } from "express"
+import { Request, Response } from "express"
 
-import { startSoloPlaySessionRequestSchema, startSoloPlaySessionResponseSchema } from "@repo/api-schema"
+import { startGuestSoloPlaySessionRequestSchema, startGuestSoloPlaySessionResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { sendError } from "../../lib/send-error"
-import { AuthRequest } from "../../middleware/auth"
 import {
   CrawledRepoRepository,
   LanguageRepository,
   ProblemRepository,
 } from "../../repository/prisma"
-import { PlaySessionStateRepository } from "../../repository/redis"
 import * as service from "../../service"
 
 /**
- * POST /api/play-sessions/solo
+ * POST /api/play-sessions/guest/solo
  *
- * 通常モードのプレイセッションを開始する
+ * ゲスト用の通常モードセッション開始（ステートレス）。
+ * 認証不要・Redis 不使用。サーバーは問題抽選結果をそのまま返すだけ。
+ * `/finish` 時に必要な problem_ids はクライアントが保持する想定。
  */
-export class PlaySessionStartSoloController {
+export class PlaySessionGuestStartSoloController {
   constructor(
         private crawledRepoRepository: CrawledRepoRepository,
         private languageRepository: LanguageRepository,
-        private playSessionStateRepository: PlaySessionStateRepository,
         private problemRepository: ProblemRepository,
   ) {}
 
-  async execute(req: AuthRequest, res: Response) {
-    const { language_id: languageId } = parseRequest(startSoloPlaySessionRequestSchema, req.body)
+  async execute(req: Request, res: Response) {
+    const { language_id: languageId } = parseRequest(startGuestSoloPlaySessionRequestSchema, req.body)
 
-    logger.info("PlaySessionStartSoloController: Starting solo session", {
-      languageId,
-      userId: req.userId,
-    })
+    logger.info("PlaySessionGuestStartSoloController: Starting guest solo session", { languageId })
 
-    const result = await service.playSession.createSoloSession(
-      { languageId, userId: req.userId! },
+    const result = await service.playSession.createGuestSoloSession(
+      { languageId },
       {
         crawledRepoRepository: this.crawledRepoRepository,
         languageRepository: this.languageRepository,
-        playSessionStateRepository: this.playSessionStateRepository,
         problemRepository: this.problemRepository,
       },
     )
@@ -49,7 +44,7 @@ export class PlaySessionStartSoloController {
       return sendError(req, res, result.error)
     }
 
-    const response = parseResponse(startSoloPlaySessionResponseSchema, {
+    const response = parseResponse(startGuestSoloPlaySessionResponseSchema, {
       problems: result.value.problems.map((p) => ({
         char_count: p.charCount,
         code_block: p.codeBlock,
@@ -60,7 +55,6 @@ export class PlaySessionStartSoloController {
         source_url: p.sourceUrl,
       })),
       repo_info: result.value.repoInfo,
-      session_id: result.value.sessionId,
     })
     return res.status(200).json(response)
   }
