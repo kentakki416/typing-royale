@@ -82,7 +82,7 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 - [x] `apps/api/src/lib/jwt.ts` 既存利用（access 15分 / refresh 7日）
 - [x] `apps/api/src/repository/redis/refresh-token-repository.ts` 既存利用
 - [x] `POST /api/auth/refresh`、`POST /api/auth/logout`、`GET/PATCH/DELETE /api/me` の動作確認（既存共用）
-- [x] ~~`POST /api/play-sessions/claim` 新規（ゲストプレイのバッファをアカウント紐付け）~~ ← MVP 方針変更: ゲストスコアは DB に保存せず引き継ぎもしないため不要 (Phase 7.5 feat/guest-play で確定)
+- [ ] `POST /api/play-sessions/claim` 新規（ゲストプレイ完走後にログインしたユーザーへ Redis claim ticket 経由でスコアを引き継ぎ）← 別 feature 化、設計は [`docs/spec/guest-claim/README.md`](spec/guest-claim/README.md)
 - [x] 単体テスト（auth-service / github-oauth）
 
 ### apps/web（Next.js）
@@ -232,8 +232,30 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 - [x] PlayLoop が `isGuest` と `problemIds` を受け取り、`/finish` 呼び出し時に endpoint と body を切替
 - [x] 結果画面の guest CTA ("GitHub で記録を残す")
 - [ ] ~~IndexedDB に一時バッファ保存~~ ← 不要 (API 直接呼び出しに統一)
-- [ ] ~~「ログインして記録を残す」→ OAuth → `/api/play-sessions/claim`~~ ← 不要 (引き継ぎなし)
 - [ ] ~~ログイン拒否 / 画面離脱時の IndexedDB 即時削除~~ ← 不要 (IndexedDB を使わない)
+
+### ゲスト → ログイン引き継ぎ (claim) — 別 feature 化
+
+完走から 15 分以内のログインで直前のスコアを認証アカウントに紐付ける。**Redis claim ticket 方式**。設計詳細は [`docs/spec/guest-claim/README.md`](spec/guest-claim/README.md)。
+
+#### step1: API（claim ticket の発行と消費）
+
+- [ ] Schema 追加：`finishGuestPlaySessionResponseSchema` に `claim_ticket` を追加 + `claim` 用 request/response
+- [ ] Domain 型 `GuestClaimTicketData` 追加
+- [ ] `GuestClaimTicketRepository` (Redis) 新規（key: `claim:{uuid}`, TTL 900s）
+- [ ] `finishGuestSession` を改修：Redis にデータ保存 + ticket をレスポンスに含める
+- [ ] `claimGuestSession` Service 新規（`persistFinishedSessionAtomic` を再利用）
+- [ ] `PlaySessionClaimController` 新規 + router 登録 + DI 配線
+- [ ] Service unit テスト + Controller integration テスト
+
+#### step2: Web（sessionStorage 経由の claim フロー）
+
+- [ ] PlayLoop で完走時に `claim_ticket` を sessionStorage に保存
+- [ ] `claimGuestSessionAction` Server Action 新規
+- [ ] `GuestClaimWatcher` Client Component 新規（layout に常設）
+- [ ] `/play/claimed` ページ新規（claim 成功時の結果再描画）
+- [ ] E2E テスト：ゲスト → ログイン → claim → リザルト再描画
+- [ ] 動作確認：シナリオ 1 (成功) / 2 (期限切れ) / 4 (2 連戦後勝ち)
 
 ### 動作確認（ローカル）
 

@@ -11,6 +11,7 @@
 | typing-engine | ✅ | タイピングコアエンジン。120 秒制限・関数の連続出題・入力判定・スコア計算 | [./typing-engine/README.md](./typing-engine/README.md) |
 | problem-pool | ✅ | 問題プール。週次 cron で GitHub Star 上位の寛容ライセンス OSS をクロールし AST で関数本体を抽出 | [./problem-pool/README.md](./problem-pool/README.md) |
 | github-auth | ✅ | GitHub OAuth。読み取り最小スコープでのログイン・アカウント管理 | [./github-auth/README.md](./github-auth/README.md) |
+| guest-claim | 設計中 | ゲストプレイ完走後 15 分以内のログインで直前スコアを認証アカウントに紐付け（Redis claim ticket 方式） | [./guest-claim/README.md](./guest-claim/README.md) |
 | score-ranking | ✅ | スコア記録・ランキング集計（言語×全期間トップ 1000）。**エンジニアグレード**（Intern → Fellow の 8 段階）で個人成長を可視化 | [./score-ranking/README.md](./score-ranking/README.md) |
 | ghost-battle | ✅ | ゴースト併走（「神々に挑戦」モード）。言語選択画面のボタンからランダムなトップ 10 と同じ問題シーケンスで対戦 | [./ghost-battle/README.md](./ghost-battle/README.md) |
 | replay-viewer |　✅ | リプレイ閲覧。トップ 10 入賞プレイのキーストローク再描画 | [./replay-viewer/README.md](./replay-viewer/README.md) |
