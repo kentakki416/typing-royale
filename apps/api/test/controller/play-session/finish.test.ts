@@ -401,6 +401,13 @@ describe("POST /api/play-sessions/:id/finish", () => {
       expect(bestAfter.bestPlaySessionId).toBe(firstBest.bestPlaySessionId)
     })
 
+    /**
+     * グローバル testTimeout=3000ms に対して、本テストは
+     * - 110 件の keystroke log を含む /finish 呼び出し
+     * - 5 テーブル atomic transaction
+     * - 達成カード PNG 生成（@resvg/resvg-js による SVG → PNG 変換、CI ランナーで特に重い）
+     * を含むため CI でフレイクしやすい。本テスト単体で 10 秒に延長する。
+     */
     it("グレード閾値を跨ぐスコアで grade_up が返り、user_lifetime_stats.currentGrade が更新される", async () => {
       // Arrange: 既存ベスト 50 / Intern を seed
       const { problems, sessionId, token, user } = await seedFinishContext()
@@ -493,7 +500,7 @@ describe("POST /api/play-sessions/:id/finish", () => {
       expect(stats.bestScore).toBe(110)
       expect(stats.currentGrade).toBe("junior")
       expect(stats.currentGradeReachedAt).not.toBeNull()
-    })
+    }, 10000)
   })
 
   describe("異常系", () => {
