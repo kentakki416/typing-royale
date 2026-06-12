@@ -8,10 +8,6 @@ const API_BASE_URL = process.env.API_URL || "http://localhost:8080"
  * 元の status と （取得できれば）レスポンスボディを保持するため、
  * 呼び出し側（Route Handler 等）が `instanceof ApiClientError` で判別して
  * 元の status / error メッセージをそのままクライアントに返せる。
- *
- * generic Error にしていた頃は status が捨てられて Route Handler が一律 500 に
- * 丸めてしまい、フロントから 4xx (schema 違反 / not-found 等) と 5xx (server error)
- * を区別できなくなっていた。
  */
 export class ApiClientError extends Error {
   constructor(
@@ -64,6 +60,7 @@ const fetchWithAuth = async (input: string, init: RequestInit, retry = true): Pr
  * （ボディは JSON でなければ undefined）
  */
 const throwApiError = async (res: Response): Promise<never> => {
+  // () => undefinedでエラーを握りつぶす
   const body = await res.json().catch(() => undefined)
   throw new ApiClientError(res.status, body)
 }
