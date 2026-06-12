@@ -32,6 +32,21 @@ const PUBLIC_PATHS = [
 ]
 
 /**
+ * 完全一致 or path セグメント境界での prefix 一致をチェックする。
+ *
+ * 単純な `pathname.startsWith(p)` は `/replay` が `/replay-foo` も通してしまうため、
+ * 登録されたページと意図しないパスが衝突するリスクがある。`/` 区切り
+ * (= path segment 境界) で一致するもののみ通す。
+ *
+ * 例 (p = "/replay"):
+ * - "/replay"               → true (完全一致)
+ * - "/replay/abc-123"       → true (segment 境界の prefix)
+ * - "/replay-list"          → false (segment 境界ではない)
+ */
+const matchesPathPrefix = (pathname: string, p: string): boolean =>
+  pathname === p || pathname.startsWith(`${p}/`)
+
+/**
  * Edge ランタイムで動くため JWT 検証は行わず、Cookie の有無だけで判断する
  * （実検証は API 側で行う）
  *
@@ -42,7 +57,7 @@ const PUBLIC_PATHS = [
 export const proxy = (req: NextRequest) => {
   const { pathname } = req.nextUrl
 
-  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
+  if (PUBLIC_PATHS.some(p => matchesPathPrefix(pathname, p))) {
     return NextResponse.next()
   }
 
