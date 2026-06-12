@@ -9,11 +9,26 @@ export interface AuthRequest extends Request {
   userId?: number
 }
 
+/**
+ * 完全一致 or path セグメント境界での prefix 一致をチェックする。
+ *
+ * 単純な `path.startsWith(p)` は `/api/auth/github` が `/api/auth/github-foo` も
+ * 通してしまうため、登録されたエンドポイントと意図しないパスが衝突するリスクがある。
+ * `/` 区切り (= path segment 境界) で一致するもののみ通す。
+ *
+ * 例 (p = "/api/auth/github"):
+ * - "/api/auth/github"          → true (完全一致)
+ * - "/api/auth/github/callback" → true (segment 境界の prefix)
+ * - "/api/auth/github-foo"      → false (segment 境界ではない)
+ */
+const matchesPathPrefix = (path: string, p: string): boolean =>
+  path === p || path.startsWith(`${p}/`)
+
 const isProtected = (path: string): boolean =>
-  PROTECTED_PATHS.some((p) => path === p || path.startsWith(`${p}/`))
+  PROTECTED_PATHS.some((p) => matchesPathPrefix(path, p))
 
 const isPublic = (path: string): boolean =>
-  PUBLIC_PATHS.some((p) => path.startsWith(p))
+  PUBLIC_PATHS.some((p) => matchesPathPrefix(path, p))
 
 export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
   /**
