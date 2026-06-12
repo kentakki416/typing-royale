@@ -1,17 +1,19 @@
 import { test, expect } from "./fixtures"
 
 /**
- * ホーム画面 (`/`) はゲストアクセス時に sign-in にリダイレクトされる。
- * 認証済みでは「Type real OSS code」ヒーローが表示される
+ * ホーム画面 (`/`) は feat/guest-play (Phase 7.5) でゲストにも公開された。
+ * ゲスト・認証済みのどちらでも「Type real OSS code」ヒーローが表示される。
  */
 
 test.describe("ホーム画面", () => {
-  test("ゲストアクセスは /sign-in にリダイレクトされる", async ({ page }) => {
+  test("ゲストアクセスでもヒーローが表示される (リダイレクトなし)", async ({ page }) => {
     await page.goto("/")
-    await expect(page).toHaveURL(/\/sign-in/)
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByRole("heading", { name: /Type real/i })).toBeVisible()
+    await expect(page.getByRole("link", { name: /▶ プレイ開始/ })).toBeVisible()
   })
 
-  test("認証済みではヒーローが表示される", async ({ authedContext }) => {
+  test("認証済みでもヒーローが表示される", async ({ authedContext }) => {
     const page = await authedContext.newPage()
     await page.goto("/")
     await expect(page).toHaveURL(/\/$/)
