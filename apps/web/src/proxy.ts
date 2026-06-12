@@ -11,6 +11,11 @@ const DEV_ONLY_PUBLIC_PATHS = process.env.NODE_ENV !== "production"
   : []
 
 const PUBLIC_PATHS = [
+  /**
+   * ゲストプレイ: トップページ。`matchesPathPrefix` の仕様上、`"/"` を入れると
+   * `pathname === "/"` の完全一致のみ通り、`"/foo"` 等は通らない
+   */
+  "/",
   "/sign-in",
   "/api/auth/callback/github",
   "/api/auth/callback/google",
@@ -41,15 +46,22 @@ const PUBLIC_PATHS = [
 ]
 
 /**
- * 完全一致でしか public にできないパス。
- * PUBLIC_PATHS は startsWith 判定なので "/" を入れると全パスが通ってしまうため分離する。
+ * 完全一致 or path セグメント境界での prefix 一致をチェックする。
+ *
+ * 単純な `pathname.startsWith(p)` は `/replay` が `/replay-foo` も通してしまうため、
+ * 登録されたページと意図しないパスが衝突するリスクがある。`/` 区切り
+ * (= path segment 境界) で一致するもののみ通す。
+ *
+ * 例 (p = "/replay"):
+ * - "/replay"               → true (完全一致)
+ * - "/replay/abc-123"       → true (segment 境界の prefix)
+ * - "/replay-list"          → false (segment 境界ではない)
+ *
+ * `p = "/"` のときは `pathname === "/"` のみ true で、ルート完全一致として機能する
+ * （`"/foo"` は `startsWith("//")` が false なので除外される）。
  */
-const PUBLIC_EXACT_PATHS = [
-  /**
-   * ゲストプレイ: トップページ
-   */
-  "/",
-]
+const matchesPathPrefix = (pathname: string, p: string): boolean =>
+  pathname === p || pathname.startsWith(`${p}/`)
 
 /**
  * Edge ランタイムで動くため JWT 検証は行わず、Cookie の有無だけで判断する
@@ -62,7 +74,7 @@ const PUBLIC_EXACT_PATHS = [
 export const proxy = (req: NextRequest) => {
   const { pathname } = req.nextUrl
 
-  if (PUBLIC_EXACT_PATHS.includes(pathname) || PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
+  if (PUBLIC_PATHS.some(p => matchesPathPrefix(pathname, p))) {
     return NextResponse.next()
   }
 
