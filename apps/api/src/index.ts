@@ -26,6 +26,9 @@ import { MemoDetailController } from "./controller/memo/detail"
 import { MemoListController } from "./controller/memo/list"
 import { MemoUpdateController } from "./controller/memo/update"
 import { PlaySessionFinishController } from "./controller/play-session/finish"
+import { PlaySessionGuestFinishController } from "./controller/play-session/guest-finish"
+import { PlaySessionGuestStartChallengeGodsController } from "./controller/play-session/guest-start-challenge-gods"
+import { PlaySessionGuestStartSoloController } from "./controller/play-session/guest-start-solo"
 import { PlaySessionStartChallengeGodsController } from "./controller/play-session/start-challenge-gods"
 import { PlaySessionStartSoloController } from "./controller/play-session/start-solo"
 import { PlayerDetailController } from "./controller/player/detail"
@@ -205,6 +208,21 @@ const playSessionStartChallengeGodsController = new PlaySessionStartChallengeGod
   problemRepository,
   rankingSnapshotRepository,
 )
+const playSessionGuestStartSoloController = new PlaySessionGuestStartSoloController(
+  crawledRepoRepository,
+  languageRepository,
+  problemRepository,
+)
+const playSessionGuestStartChallengeGodsController = new PlaySessionGuestStartChallengeGodsController(
+  keystrokeLogRepository,
+  languageRepository,
+  playSessionRepository,
+  problemRepository,
+  rankingSnapshotRepository,
+)
+const playSessionGuestFinishController = new PlaySessionGuestFinishController(
+  problemRepository,
+)
 
 /**
  * Ranking Controller のインスタンス化
@@ -374,6 +392,9 @@ app.use(
   "/api/play-sessions",
   playSessionRouter({
     finish: playSessionFinishController,
+    guestFinish: playSessionGuestFinishController,
+    guestStartChallengeGods: playSessionGuestStartChallengeGodsController,
+    guestStartSolo: playSessionGuestStartSoloController,
     startChallengeGods: playSessionStartChallengeGodsController,
     startSolo: playSessionStartSoloController,
   })

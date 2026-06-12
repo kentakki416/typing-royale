@@ -28,10 +28,9 @@ import * as service from "../../service"
  * サーバーで再集計して 5 テーブル（play_sessions / play_session_problems /
  * keystroke_logs / user_lifetime_stats / user_language_best）に atomic 書き込み +
  * Redis state 削除を行う。レスポンスには new_rank / top_ten_boundary_score /
- * grade_up / best_score_updated を含める（score-ranking step3）
+ * grade_up / best_score_updated を含める（score-ranking step3）。
  *
- * ゲスト (Redis state の userId が null) は DB 書き込み・ランキング・rewards を
- * スキップし、サーバー再集計の値だけを返す。レスポンスの persisted=false で識別可能。
+ * 認証必須。ゲスト用は `/api/play-sessions/guest/finish` に分離されている。
  */
 export class PlaySessionFinishController {
   constructor(

@@ -1,11 +1,10 @@
-import { Response } from "express"
+import { Request, Response } from "express"
 
-import { startChallengeGodsRequestSchema, startChallengeGodsResponseSchema } from "@repo/api-schema"
+import { startGuestChallengeGodsRequestSchema, startGuestChallengeGodsResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { sendError } from "../../lib/send-error"
-import { AuthRequest } from "../../middleware/auth"
 import {
   KeystrokeLogRepository,
   LanguageRepository,
@@ -13,41 +12,35 @@ import {
   ProblemRepository,
   RankingSnapshotRepository,
 } from "../../repository/prisma"
-import { PlaySessionStateRepository } from "../../repository/redis"
 import * as service from "../../service"
 
 /**
- * POST /api/play-sessions/challenge-gods
+ * POST /api/play-sessions/guest/challenge-gods
  *
- * 神々モードのプレイセッションを開始する。認証必須。
- * トップ 10 不在 / 全候補のキーストロークログ取得不能の場合は 409 Conflict を返す。
- * ゲスト用は `/api/play-sessions/guest/challenge-gods` に分離されている。
+ * ゲスト用の神々モードセッション開始（ステートレス）。
+ * 認証不要・Redis 不使用。トップ 10 不在 / 全候補のキーストロークログ取得不能の
+ * 場合は 409 Conflict を返す。`/finish` 時に必要な problem_ids はクライアントが保持。
  */
-export class PlaySessionStartChallengeGodsController {
+export class PlaySessionGuestStartChallengeGodsController {
   constructor(
         private keystrokeLogRepository: KeystrokeLogRepository,
         private languageRepository: LanguageRepository,
         private playSessionRepository: PlaySessionRepository,
-        private playSessionStateRepository: PlaySessionStateRepository,
         private problemRepository: ProblemRepository,
         private rankingSnapshotRepository: RankingSnapshotRepository,
   ) {}
 
-  async execute(req: AuthRequest, res: Response) {
-    const { language_id: languageId } = parseRequest(startChallengeGodsRequestSchema, req.body)
+  async execute(req: Request, res: Response) {
+    const { language_id: languageId } = parseRequest(startGuestChallengeGodsRequestSchema, req.body)
 
-    logger.info("PlaySessionStartChallengeGodsController: Starting challenge-gods session", {
-      languageId,
-      userId: req.userId,
-    })
+    logger.info("PlaySessionGuestStartChallengeGodsController: Starting guest challenge-gods session", { languageId })
 
-    const result = await service.playSession.createChallengeGodsSession(
-      { languageId, userId: req.userId! },
+    const result = await service.playSession.createGuestChallengeGodsSession(
+      { languageId },
       {
         keystrokeLogRepository: this.keystrokeLogRepository,
         languageRepository: this.languageRepository,
         playSessionRepository: this.playSessionRepository,
-        playSessionStateRepository: this.playSessionStateRepository,
         problemRepository: this.problemRepository,
         rankingSnapshotRepository: this.rankingSnapshotRepository,
       },
@@ -57,7 +50,7 @@ export class PlaySessionStartChallengeGodsController {
       return sendError(req, res, result.error)
     }
 
-    const response = parseResponse(startChallengeGodsResponseSchema, {
+    const response = parseResponse(startGuestChallengeGodsResponseSchema, {
       ghost_keystroke_logs: result.value.ghostKeystrokeLogs.map((entry) => ({
         elapsed_ms: entry.elapsedMs,
         input_char: entry.inputChar,
@@ -81,7 +74,6 @@ export class PlaySessionStartChallengeGodsController {
         source_url: p.sourceUrl,
       })),
       repo_info: result.value.repoInfo,
-      session_id: result.value.sessionId,
     })
     return res.status(200).json(response)
   }

@@ -170,3 +170,96 @@ export const startChallengeGodsResponseSchema = z.object({
 
 export type StartChallengeGodsRequest = z.infer<typeof startChallengeGodsRequestSchema>
 export type StartChallengeGodsResponse = z.infer<typeof startChallengeGodsResponseSchema>
+
+// ========================================================
+// POST /api/play-sessions/guest/solo - ゲスト用 通常モードのセッション開始 (ステートレス)
+// ========================================================
+
+/**
+ * ゲスト用通常モードのセッション開始リクエスト
+ * 認証不要・Redis 不使用。問題抽選結果をそのまま返すだけ
+ */
+export const startGuestSoloPlaySessionRequestSchema = z.object({
+  language_id: z.number().int().positive(),
+})
+
+/**
+ * ゲスト用通常モードのセッション開始レスポンス
+ * session_id は持たない（サーバー側に state を持たないため）
+ */
+export const startGuestSoloPlaySessionResponseSchema = z.object({
+  problems: z.array(playSessionProblemSchema).length(20),
+  repo_info: repoInfoSchema,
+})
+
+export type StartGuestSoloPlaySessionRequest = z.infer<typeof startGuestSoloPlaySessionRequestSchema>
+export type StartGuestSoloPlaySessionResponse = z.infer<typeof startGuestSoloPlaySessionResponseSchema>
+
+// ========================================================
+// POST /api/play-sessions/guest/challenge-gods - ゲスト用 神々モードのセッション開始 (ステートレス)
+// ========================================================
+
+/**
+ * ゲスト用神々モードのセッション開始リクエスト
+ */
+export const startGuestChallengeGodsRequestSchema = z.object({
+  language_id: z.number().int().positive(),
+})
+
+/**
+ * ゲスト用神々モードのセッション開始レスポンス
+ * session_id は持たない。ghost_keystroke_logs を含む点は logged-in 版と同じ
+ */
+export const startGuestChallengeGodsResponseSchema = z.object({
+  ghost_keystroke_logs: z.array(
+    z.object({
+      elapsed_ms: z.number().nonnegative(),
+      input_char: z.string().min(1).max(20),
+      is_correct: z.boolean(),
+      problem_index: z.number().int().nonnegative().max(19),
+    }),
+  ),
+  ghost_session_id: z.number().int().positive(),
+  ghost_user_display: ghostUserDisplaySchema,
+  problems: z.array(playSessionProblemSchema).length(20),
+  repo_info: repoInfoSchema,
+})
+
+export type StartGuestChallengeGodsRequest = z.infer<typeof startGuestChallengeGodsRequestSchema>
+export type StartGuestChallengeGodsResponse = z.infer<typeof startGuestChallengeGodsResponseSchema>
+
+// ========================================================
+// POST /api/play-sessions/guest/finish - ゲスト用 プレイ結果集計 (ステートレス)
+// ========================================================
+
+/**
+ * ゲスト用 /finish のリクエスト
+ * Redis state が無いため problem_ids をクライアントから受け取る
+ */
+export const finishGuestPlaySessionRequestSchema = z.object({
+  accuracy: z.number().min(0).max(1),
+  keystroke_logs: z.array(keystrokeEntrySchema).max(2000),
+  /**
+   * このセッションで実際に出題された problem.id を出題順 (orderIndex 順) で並べたもの
+   * /guest/solo or /guest/challenge-gods のレスポンスをそのまま転送する想定
+   * 正規フローでは常に 20 件だが、ゲストはランキングに影響しないため上限のみ強制する
+   */
+  problem_ids: z.array(z.number().int().positive()).min(1).max(20),
+  typed_chars: z.number().int().nonnegative().max(1500),
+})
+
+/**
+ * ゲスト用 /finish のレスポンス
+ * 永続化やランキング集計に紐づくフィールドは持たない
+ */
+export const finishGuestPlaySessionResponseSchema = z.object({
+  accuracy: z.number(),
+  mistype_stats: mistypeStatsSchema,
+  problems_completed: z.number().int().nonnegative(),
+  problems_played: z.number().int().nonnegative(),
+  score: z.number().int().nonnegative(),
+  typed_chars: z.number().int().nonnegative(),
+})
+
+export type FinishGuestPlaySessionRequest = z.infer<typeof finishGuestPlaySessionRequestSchema>
+export type FinishGuestPlaySessionResponse = z.infer<typeof finishGuestPlaySessionResponseSchema>

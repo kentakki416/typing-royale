@@ -222,14 +222,16 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 
 ### ゲストプレイ対応
 
-**実装方針確定** (Phase 7.5 feat/guest-play): IndexedDB バッファ + claim API は **作らない**。`/api/play-sessions/*` を public 化して `PlaySessionState.userId` を `number | null` で扱い、`/finish` で guest セッションは DB 書き込みをスキップする方式に変更。
+**実装方針確定** (Phase 7.5 feat/guest-play): IndexedDB バッファ + claim API は **作らない**。代わりに **ゲスト専用のステートレス endpoint** (`/api/play-sessions/guest/*`) を新設して、認証必須経路と完全に責務を分離する。
 
-- [x] Web `proxy.ts` の PUBLIC_PATHS に `/` (完全一致) と `/play` を追加
-- [x] API `PUBLIC_PATHS` に `/api/play-sessions` を追加 + `authMiddleware` を opportunistic に (token あれば userId 確定 / 無ければ guest 素通り)
-- [x] `PlaySessionState.userId` を `number | null` に
-- [x] `finishSession` の guest 分岐 (`state.userId === null` → DB / ランキング / rewards をスキップして `persisted=false` を返す)
+- [x] Web `proxy.ts` の PUBLIC_PATHS に `/` (完全一致), `/play`, `/api/play-sessions/guest` を追加
+- [x] API `PUBLIC_PATHS` に `/api/play-sessions/guest` のみ追加（`/api/play-sessions/solo` `/:id/finish` 等は **認証必須を維持**）
+- [x] 新規 endpoint: `POST /api/play-sessions/guest/solo` / `/guest/challenge-gods` / `/guest/finish` (ステートレス、Redis 不使用、DB 書き込みなし)
+- [x] Service に `createGuestSoloSession` / `createGuestChallengeGodsSession` / `finishGuestSession` を追加
+- [x] Web の `startPlaySession` Server Action がログイン状態を見て endpoint を叩き分け
+- [x] PlayLoop が `isGuest` と `problemIds` を受け取り、`/finish` 呼び出し時に endpoint と body を切替
 - [x] 結果画面の guest CTA ("GitHub で記録を残す")
-- [ ] ~~IndexedDB に一時バッファ保存~~ ← 不要 (上記方針で API 直接呼び出しに統一)
+- [ ] ~~IndexedDB に一時バッファ保存~~ ← 不要 (API 直接呼び出しに統一)
 - [ ] ~~「ログインして記録を残す」→ OAuth → `/api/play-sessions/claim`~~ ← 不要 (引き継ぎなし)
 - [ ] ~~ログイン拒否 / 画面離脱時の IndexedDB 即時削除~~ ← 不要 (IndexedDB を使わない)
 
@@ -451,7 +453,7 @@ MVP リリースまでのタスクをフェーズ別・機能単位で整理。`
 ---
 
 ## Phase 7.5: バグの修正
-- [x] ログインなしでもタイピングできるように実装する ← feat/guest-play で対応。`/api/play-sessions/*` を public 化し、`PlaySessionState.userId` を nullable に。詳細は [`docs/spec/typing-engine/README.md#セッション保存ポリシー`](spec/typing-engine/README.md#セッション保存ポリシー)
+- [x] ログインなしでもタイピングできるように実装する ← feat/guest-play で対応。ゲスト専用のステートレス endpoint (`/api/play-sessions/guest/*`) を分離し、認証必須経路は元のまま維持。詳細は [`docs/spec/typing-engine/README.md#セッション保存ポリシー`](spec/typing-engine/README.md#セッション保存ポリシー)
 - [ ] ランキングの実装
 - [ ] エラーハンドリングの補強
 - [ ] エラーログがわからないのでErrorをログに出す

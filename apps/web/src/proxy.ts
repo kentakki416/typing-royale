@@ -30,9 +30,13 @@ const PUBLIC_PATHS = [
   "/hall-of-fame",
   /**
    * ゲストプレイ: 言語選択 (/play) とプレイ画面 (/play/[sessionId]) は未ログインでもアクセス可能。
-   * API 側もゲスト対応済みで、/finish は DB 書き込みをスキップしてスコアだけ返す。
+   * API 側は /api/play-sessions/guest/* （ステートレス）に分離。Server Action がログイン状態を見て叩き分ける
    */
   "/play",
+  /**
+   * ゲスト用 /finish の proxy Route Handler。/api 配下なので明示的に public 化
+   */
+  "/api/play-sessions/guest",
   ...DEV_ONLY_PUBLIC_PATHS,
 ]
 

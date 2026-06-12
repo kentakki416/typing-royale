@@ -1,13 +1,23 @@
 "use server"
 
-import { StartChallengeGodsResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
+import { randomUUID } from "node:crypto"
+
+import {
+  StartChallengeGodsResponse,
+  StartGuestChallengeGodsResponse,
+  StartGuestSoloPlaySessionResponse,
+  StartSoloPlaySessionResponse,
+} from "@repo/api-schema"
 
 import { apiClient } from "@/libs/api-client"
+import { getAccessToken } from "@/libs/auth"
 
 /**
  * セッション開始の共通レスポンス（mode 問わず）
  *
- * sessionStorage に詰める統一フォーマット。ghost 系は challenge_gods のみ持つ
+ * sessionStorage に詰める統一フォーマット。ghost 系は challenge_gods のみ持つ。
+ * `isGuest` は /finish 呼び出し時に endpoint を切り替えるためにクライアントが参照する。
+ * `problemIds` はゲスト用 /finish のリクエストボディに転送する。
  */
 type StartSessionResult =
   | { error: string }
@@ -15,7 +25,9 @@ type StartSessionResult =
       ghostKeystrokeLogs: StartChallengeGodsResponse["ghost_keystroke_logs"] | null
       ghostSessionId: number | null
       ghostUserDisplay: StartChallengeGodsResponse["ghost_user_display"] | null
+      isGuest: boolean
       mode: "challenge_gods" | "solo"
+      problemIds: number[]
       problems: StartSoloPlaySessionResponse["problems"]
       repoInfo: StartSoloPlaySessionResponse["repo_info"]
       sessionId: string
@@ -24,16 +36,42 @@ type StartSessionResult =
 /**
  * セッション開始（通常モード / 神々モード共通の Server Action）
  *
- * mode に応じて /api/play-sessions/solo または /api/play-sessions/challenge-gods を叩く。
- * 神々モードはトップ 10 不在 / ゴーストデータ取得不能時に HTTP 409 を返し、
- * その場合は通常モードへ誘導するエラーメッセージを表示する。
+ * ログイン状態と mode で 4 通りの endpoint を叩き分ける:
+ * - ログイン × solo:           POST /api/play-sessions/solo
+ * - ログイン × challenge_gods: POST /api/play-sessions/challenge-gods
+ * - ゲスト × solo:             POST /api/play-sessions/guest/solo
+ * - ゲスト × challenge_gods:   POST /api/play-sessions/guest/challenge-gods
+ *
+ * ゲスト用 endpoint は session_id を返さないため、クライアント側ルーティング用に
+ * UUID を発行する（sessionStorage のキーと /play/[sessionId] のパスに使うだけで
+ * サーバーには送らない）。
  */
 export const startPlaySession = async (
   languageId: number,
   mode: "challenge_gods" | "solo",
 ): Promise<StartSessionResult> => {
+  const isGuest = (await getAccessToken()) === null
+
   if (mode === "challenge_gods") {
     try {
+      if (isGuest) {
+        const res = await apiClient.post<StartGuestChallengeGodsResponse>(
+          "/api/play-sessions/guest/challenge-gods",
+          { language_id: languageId },
+        )
+        return {
+          ghostKeystrokeLogs: res.ghost_keystroke_logs,
+          ghostSessionId: res.ghost_session_id,
+          ghostUserDisplay: res.ghost_user_display,
+          isGuest: true,
+          mode: "challenge_gods",
+          problemIds: res.problems.map((p) => p.id),
+          problems: res.problems,
+          repoInfo: res.repo_info,
+          sessionId: randomUUID(),
+        }
+      }
+
       const res = await apiClient.post<StartChallengeGodsResponse>(
         "/api/play-sessions/challenge-gods",
         { language_id: languageId },
@@ -42,7 +80,9 @@ export const startPlaySession = async (
         ghostKeystrokeLogs: res.ghost_keystroke_logs,
         ghostSessionId: res.ghost_session_id,
         ghostUserDisplay: res.ghost_user_display,
+        isGuest: false,
         mode: "challenge_gods",
+        problemIds: res.problems.map((p) => p.id),
         problems: res.problems,
         repoInfo: res.repo_info,
         sessionId: res.session_id,
@@ -56,6 +96,24 @@ export const startPlaySession = async (
   }
 
   try {
+    if (isGuest) {
+      const res = await apiClient.post<StartGuestSoloPlaySessionResponse>(
+        "/api/play-sessions/guest/solo",
+        { language_id: languageId },
+      )
+      return {
+        ghostKeystrokeLogs: null,
+        ghostSessionId: null,
+        ghostUserDisplay: null,
+        isGuest: true,
+        mode: "solo",
+        problemIds: res.problems.map((p) => p.id),
+        problems: res.problems,
+        repoInfo: res.repo_info,
+        sessionId: randomUUID(),
+      }
+    }
+
     const res = await apiClient.post<StartSoloPlaySessionResponse>(
       "/api/play-sessions/solo",
       { language_id: languageId },
@@ -64,7 +122,9 @@ export const startPlaySession = async (
       ghostKeystrokeLogs: null,
       ghostSessionId: null,
       ghostUserDisplay: null,
+      isGuest: false,
       mode: "solo",
+      problemIds: res.problems.map((p) => p.id),
       problems: res.problems,
       repoInfo: res.repo_info,
       sessionId: res.session_id,

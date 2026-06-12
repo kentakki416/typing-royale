@@ -21,12 +21,12 @@ export const PUBLIC_PATHS: readonly string[] = [
   "/api/health",
   "/api/memo",
   /**
-   * ゲストプレイ対応: 未ログインでも /api/play-sessions/* を呼べるようにする。
-   * authMiddleware は token が提示されればログインユーザーとして userId を埋め、
-   * 提示されなければ guest として素通りさせる。
-   * guest セッションは Service 層で DB 書き込みをスキップする (state.userId === null 分岐)。
+   * ゲストプレイ用のステートレス endpoint。Redis / DB を一切使わずに
+   * 問題抽選とスコア集計を行うため、認証なしで公開する。
+   * 認証必須の `/api/play-sessions/solo` `/api/play-sessions/:id/finish` 等は
+   * このプレフィックスにマッチしないので strict 認証を維持する。
    */
-  "/api/play-sessions",
+  "/api/play-sessions/guest",
   "/api/players",
   "/api/rankings",
   "/api/replays",

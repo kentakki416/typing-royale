@@ -232,47 +232,6 @@ describe("finishSession", () => {
       }
     })
 
-    it("state.userId=null (ゲスト) のとき、DB 書き込み Repository は呼ばれず persisted=false を返す", async () => {
-      // Arrange
-      mockFindById.mockResolvedValue(buildState({ userId: null }))
-      mockFindManyByIds.mockResolvedValue([
-        { codeBlock: "abc", id: 100 },
-        { codeBlock: "def", id: 101 },
-      ])
-
-      // Act
-      const result = await finishSession(
-        { accuracy: 1, keystrokeLogs: validLog, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 3 },
-        buildRepoCollection(),
-      )
-
-      // Assert: persisted=false / 集計値は通常通り計算済み
-      expect(result.ok).toBe(true)
-      if (result.ok) {
-        expect(result.value).toMatchObject({
-          accuracy: 1,
-          bestScoreUpdated: false,
-          gradeUp: null,
-          newRank: null,
-          persisted: false,
-          score: 3,
-          topTenBoundaryScore: null,
-          typedChars: 3,
-        })
-      }
-      /** DB 書き込み系の Repository は一切呼ばれない */
-      expect(mockTxRun).not.toHaveBeenCalled()
-      expect(mockCreatePlaySession).not.toHaveBeenCalled()
-      expect(mockCreateProblems).not.toHaveBeenCalled()
-      expect(mockCreateKeystrokeLogs).not.toHaveBeenCalled()
-      expect(mockUpsertOnFinish).not.toHaveBeenCalled()
-      expect(mockUpsertIfBest).not.toHaveBeenCalled()
-      expect(mockFindMineBest).not.toHaveBeenCalled()
-      expect(mockFindTenthScore).not.toHaveBeenCalled()
-      /** Redis state は削除される */
-      expect(mockDeleteState).toHaveBeenCalledWith("550e8400-e29b-41d4-a716-446655440000")
-    })
-
     it("isCorrect=false のキーストロークから正解期待文字単位で mistypeStats が集計される", async () => {
       // Arrange
       mockFindById.mockResolvedValue(buildState({ problemIds: [100] }))

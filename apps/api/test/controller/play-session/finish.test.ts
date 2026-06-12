@@ -496,108 +496,13 @@ describe("POST /api/play-sessions/:id/finish", () => {
     })
   })
 
-  describe("正常系 (ゲスト)", () => {
-    it("ゲストセッション (state.userId=null) は 200 を返し、DB には何も書き込まれず Redis state は削除される", async () => {
-      // Arrange: ゲスト用 state を直接 Redis に投入
-      const language = await testPrisma.language.create({
-        data: { name: "TypeScript", slug: "typescript" },
-      })
-      const crawledRepo = await testPrisma.crawledRepo.create({
-        data: {
-          candidatesCount: 30,
-          commitSha: "abc123",
-          crawledAt: new Date(),
-          defaultBranch: "main",
-          description: "Test repo",
-          fullName: "owner/repo",
-          githubId: BigInt(123456),
-          languageId: language.id,
-          license: "MIT",
-          name: "repo",
-          owner: "owner",
-          stars: 1500,
-          storedCount: 30,
-          topics: ["typescript"],
-        },
-      })
-      const problem = await testPrisma.problem.create({
-        data: {
-          astHash: "guesthash",
-          charCount: 3,
-          codeBlock: "abc",
-          crawledRepoId: crawledRepo.id,
-          functionName: "f0",
-          languageId: language.id,
-          lineCount: 1,
-          sourceFilePath: "src/f0.ts",
-          sourceLineEnd: 1,
-          sourceLineStart: 1,
-          sourceUrl: "https://github.com/owner/repo/blob/main/src/f0.ts#L1",
-        },
-      })
-      const sessionId = "550e8400-e29b-41d4-a716-446655440010"
-      const guestState: PlaySessionState = {
-        crawledRepoId: crawledRepo.id,
-        ghostSessionId: null,
-        languageId: language.id,
-        mode: "solo",
-        problemIds: [problem.id],
-        userId: null,
-      }
-      await playSessionStateRepository.save(sessionId, guestState, 300)
-
-      // Act: 認証ヘッダ無しで /finish を叩く
-      const res = await request(app)
-        .post(`/api/play-sessions/${sessionId}/finish`)
-        .send({
-          accuracy: 1,
-          keystroke_logs: [
-            { elapsed_ms: 100, input_char: "a", is_correct: true, problem_index: 0 },
-            { elapsed_ms: 200, input_char: "b", is_correct: true, problem_index: 0 },
-            { elapsed_ms: 300, input_char: "c", is_correct: true, problem_index: 0 },
-          ],
-          typed_chars: 3,
-        })
-
-      // Assert: スコアは返るが persisted=false
-      expect(res.status).toBe(200)
-      expect(res.body).toEqual({
-        accuracy: 1,
-        best_score_updated: false,
-        grade_up: null,
-        mistype_stats: {},
-        new_rank: null,
-        persisted: false,
-        problems_completed: 1,
-        problems_played: 1,
-        score: 3,
-        top_ten_boundary_score: null,
-        typed_chars: 3,
-      })
-
-      /** DB には play_sessions / user_lifetime_stats / user_language_best が一切作られていない */
-      expect(await testPrisma.playSession.count()).toBe(0)
-      expect(await testPrisma.userLifetimeStats.count()).toBe(0)
-      expect(await testPrisma.userLanguageBest.count()).toBe(0)
-
-      /** Redis state は削除されている */
-      expect(await playSessionStateRepository.findById(sessionId)).toBeNull()
-    })
-  })
-
   describe("異常系", () => {
-    it("認証なし + Redis state も無い (存在しない sessionId) は 404 を返す", async () => {
+    it("認証なしの場合、401 を返す（ゲストは /guest/finish に分離されているため）", async () => {
       const res = await request(app)
         .post("/api/play-sessions/550e8400-e29b-41d4-a716-446655440000/finish")
-        .send({
-          accuracy: 1,
-          keystroke_logs: [
-            { elapsed_ms: 100, input_char: "a", is_correct: true, problem_index: 0 },
-          ],
-          typed_chars: 1,
-        })
+        .send({ accuracy: 1, keystroke_logs: [], typed_chars: 0 })
 
-      expect(res.status).toBe(404)
+      expect(res.status).toBe(401)
     })
 
     it("typed_chars=2000 は 400 を返す", async () => {

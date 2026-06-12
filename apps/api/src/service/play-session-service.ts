@@ -50,10 +50,7 @@ type SoloSessionRepo = {
 
 export type CreateSoloSessionInput = {
     languageId: number
-    /**
-     * null はゲスト（未ログイン）。/finish 時に DB 書き込みをスキップする
-     */
-    userId: number | null
+    userId: number
 }
 
 export type CreateSoloSessionOutput = {
@@ -195,10 +192,6 @@ type PersistFinishedSessionInput = {
     score: number
     state: PlaySessionState
     typedChars: number
-    /**
-     * 永続化はログインユーザー専用なので number に narrow した形で受け取る
-     */
-    userId: number
 }
 
 type PersistFinishedSessionResult = {
@@ -233,7 +226,7 @@ const persistFinishedSessionAtomic = async (
         problemsPlayed: data.problemsPlayed,
         score: data.score,
         typedChars: data.typedChars,
-        userId: data.userId,
+        userId: data.state.userId,
       },
       tx,
     )
@@ -257,7 +250,7 @@ const persistFinishedSessionAtomic = async (
         mistypeStats: data.mistypeStats,
         score: data.score,
         typedChars: data.typedChars,
-        userId: data.userId,
+        userId: data.state.userId,
       },
       tx,
     )
@@ -270,7 +263,7 @@ const persistFinishedSessionAtomic = async (
         playedAt: data.playedAt,
         score: data.score,
         typedChars: data.typedChars,
-        userId: data.userId,
+        userId: data.state.userId,
       },
       tx,
     )
@@ -286,9 +279,10 @@ const persistFinishedSessionAtomic = async (
  * 2. Redis から PlaySessionState を取得（無ければ 404）
  * 3. state.problemIds から問題本体を取得し、件数 mismatch なら 404
  * 4. サーバーで score / mistypeStats / problemProgress を再集計
- * 5a. ログインユーザー: 5 テーブルを 1 transaction で書き込み + ランキング/rewards
- * 5b. ゲスト (state.userId === null): DB 書き込みをスキップ、集計値のみ返す
+ * 5. 5 テーブルを 1 transaction で書き込み (persistFinishedSessionAtomic)
  * 6. Redis state を削除
+ *
+ * ゲスト (未ログイン) は本関数を通らず、`finishGuestSession` 経由でステートレスに処理する。
  */
 export const finishSession = async (
   input: FinishSessionInput,
@@ -338,35 +332,8 @@ export const finishSession = async (
   const problemsPlayed = new Set(input.keystrokeLogs.map((e) => e.problemIndex)).size
 
   /**
-   * 5b. ゲスト分岐: DB 書き込み・ランキング・rewards を全部スキップ
-   * Redis state だけ削除し、サーバー再集計の値を返す
+   * 5. DB 書き込み (5 テーブル / 1 transaction)
    */
-  if (state.userId === null) {
-    await repo.playSessionStateRepository.delete(input.sessionId)
-    logger.info("PlaySessionService: Guest session finished (no persistence)", {
-      score,
-      sessionId: input.sessionId,
-    })
-    return ok({
-      accuracy: input.accuracy,
-      bestScoreUpdated: false,
-      gradeUp: null,
-      mistypeStats,
-      newRank: null,
-      persisted: false,
-      problemsCompleted,
-      problemsPlayed,
-      score,
-      topTenBoundaryScore: null,
-      typedChars: input.typedChars,
-    })
-  }
-
-  /**
-   * 5a. DB 書き込み (5 テーブル / 1 transaction)
-   * 以降は state.userId が number であることが保証されるよう、ローカル変数に確定させる
-   */
-  const userId = state.userId
   const playedAt = new Date()
   const { bestScoreUpdated, gradeUp } = await persistFinishedSessionAtomic(
     {
@@ -380,7 +347,6 @@ export const finishSession = async (
       score,
       state,
       typedChars: input.typedChars,
-      userId,
     },
     repo,
   )
@@ -396,7 +362,7 @@ export const finishSession = async (
    * - 10 位スコア（10 件未満なら null）
    */
   const updatedBest = await repo.userLanguageBestRepository.findMine(
-    userId,
+    state.userId,
     state.languageId,
   )
   const newRank = updatedBest === null
@@ -415,7 +381,7 @@ export const finishSession = async (
         {
           payload: { grade_slug: gradeUp.to.slug },
           type: "grade_up",
-          userId,
+          userId: state.userId,
         },
         {
           cardStorage: repo.cardStorage,
@@ -428,7 +394,7 @@ export const finishSession = async (
       logger.warn("PlaySessionService: achievement card generation failed", {
         error: err instanceof Error ? err.message : String(err),
         gradeSlug: gradeUp.to.slug,
-        userId,
+        userId: state.userId,
       })
     }
   }
@@ -438,7 +404,7 @@ export const finishSession = async (
     newRank,
     score,
     sessionId: input.sessionId,
-    userId,
+    userId: state.userId,
   })
 
   return ok({
@@ -472,11 +438,7 @@ type ChallengeGodsRepo = {
 
 export type CreateChallengeGodsInput = {
     languageId: number
-    /**
-     * null はゲスト（未ログイン）。ゲストはトップ 10 から誰を引いても自分との重複が
-     * 発生しないため候補除外せず、神セッション選定だけ行う
-     */
-    userId: number | null
+    userId: number
 }
 
 export type CreateChallengeGodsOutput = {
@@ -591,12 +553,20 @@ export const createChallengeGodsSession = async (
   })
 }
 
+type PickUsableGhostRepo = {
+    keystrokeLogRepository: KeystrokeLogRepository
+    playSessionRepository: PlaySessionRepository
+}
+
 /**
  * 候補リストから「神セッション + keystroke log の両方が取れる神」を 1 人引き当てる
+ *
+ * logged-in / guest 両方の challenge-gods 経路から呼ばれるため、依存先 Repository
+ * は最小限の `PickUsableGhostRepo` だけを要求する
  */
 const pickUsableGhost = async (
   candidates: RankingTopEntry[],
-  repo: ChallengeGodsRepo,
+  repo: PickUsableGhostRepo,
 ): Promise<{
     entry: RankingTopEntry
     keystrokeLogs: KeystrokeLogs
@@ -613,4 +583,235 @@ const pickUsableGhost = async (
     return { entry: picked, keystrokeLogs, session }
   }
   return null
+}
+
+// ========================================================
+// ゲスト用（ステートレス）
+// ========================================================
+
+type GuestSoloSessionRepo = {
+    crawledRepoRepository: CrawledRepoRepository
+    languageRepository: LanguageRepository
+    problemRepository: ProblemRepository
+}
+
+export type CreateGuestSoloSessionInput = {
+    languageId: number
+}
+
+export type CreateGuestSoloSessionOutput = {
+    problems: PlaySessionProblem[]
+    repoInfo: RepoInfo
+}
+
+/**
+ * ゲスト用通常モードのセッション開始（ステートレス）
+ *
+ * 認証必須版 `createSoloSession` との違い:
+ * - Redis に PlaySessionState を保存しない (sessionId も発行しない)
+ * - userId 引数なし
+ *
+ * 1. 言語存在チェック → なければ 400
+ * 2. eligible repo を 1 件抽選 → 無ければ 404
+ * 3. その repo から 20 問抽選 → 20 問揃わなければ 404
+ */
+export const createGuestSoloSession = async (
+  input: CreateGuestSoloSessionInput,
+  repo: GuestSoloSessionRepo,
+): Promise<Result<CreateGuestSoloSessionOutput>> => {
+  logger.debug("PlaySessionService: Creating guest solo session", { ...input })
+
+  if (!(await repo.languageRepository.existsById(input.languageId))) {
+    return err(badRequestError("Invalid language_id"))
+  }
+
+  const mainRepo = await repo.crawledRepoRepository.pickRandomEligibleByLanguageId(input.languageId)
+  if (mainRepo === null) {
+    return err(notFoundError("No eligible repository for the given language"))
+  }
+
+  const problems = await repo.problemRepository.pickRandomByCrawledRepoId(
+    mainRepo.id,
+    PROBLEMS_PER_SESSION,
+  )
+  if (problems.length < PROBLEMS_PER_SESSION) {
+    logger.warn("PlaySessionService: Repo has insufficient problems (guest)", {
+      available: problems.length,
+      crawledRepoId: mainRepo.id,
+    })
+    return err(notFoundError("Insufficient problems in the selected repository"))
+  }
+
+  const orderedProblems: PlaySessionProblem[] = problems.map((p, i) => ({
+    ...p,
+    orderIndex: i,
+  }))
+
+  return ok({
+    problems: orderedProblems,
+    repoInfo: mainRepo.repoInfo,
+  })
+}
+
+type GuestChallengeGodsRepo = {
+    keystrokeLogRepository: KeystrokeLogRepository
+    languageRepository: LanguageRepository
+    playSessionRepository: PlaySessionRepository
+    problemRepository: ProblemRepository
+    rankingSnapshotRepository: RankingSnapshotRepository
+}
+
+export type CreateGuestChallengeGodsInput = {
+    languageId: number
+}
+
+export type CreateGuestChallengeGodsOutput = {
+    ghostKeystrokeLogs: KeystrokeLogs
+    ghostSessionId: number
+    ghostUserDisplay: {
+        avatarUrl: string | null
+        bestScore: number
+        displayName: string
+        grade: string
+    }
+    problems: PlaySessionProblem[]
+    repoInfo: RepoInfo
+}
+
+/**
+ * ゲスト用神々モードのセッション開始（ステートレス）
+ *
+ * 認証必須版 `createChallengeGodsSession` との違い:
+ * - Redis に PlaySessionState を保存しない (sessionId も発行しない)
+ * - 候補から自分を除外する処理がない（ゲストは自分のセッションを持たないので不要）
+ */
+export const createGuestChallengeGodsSession = async (
+  input: CreateGuestChallengeGodsInput,
+  repo: GuestChallengeGodsRepo,
+): Promise<Result<CreateGuestChallengeGodsOutput>> => {
+  logger.debug("PlaySessionService: Creating guest challenge-gods session", { ...input })
+
+  if (!(await repo.languageRepository.existsById(input.languageId))) {
+    return err(badRequestError("Invalid language_id"))
+  }
+
+  const candidates = await repo.rankingSnapshotRepository.getTopByLanguage(input.languageId, 10)
+  if (candidates.length === 0) {
+    return err(conflictError("No ghost candidates available"))
+  }
+
+  const ghost = await pickUsableGhost(candidates, repo)
+  if (ghost === null) {
+    return err(conflictError("No usable ghost sessions"))
+  }
+
+  const fullProblems = await repo.problemRepository.findManyByIds(ghost.session.problemIds)
+  const byId = new Map(fullProblems.map((p) => [p.id, p]))
+  const orderedProblems: PlaySessionProblem[] = ghost.session.problemIds.map((pid, i) => {
+    const p = byId.get(pid)
+    if (!p) {
+      throw new Error(`Problem ${pid} missing for ghost session ${ghost.session.id}`)
+    }
+    return {
+      charCount: p.charCount,
+      codeBlock: p.codeBlock,
+      functionName: p.functionName,
+      id: pid,
+      lineCount: p.lineCount,
+      orderIndex: i,
+      sourceUrl: p.sourceUrl,
+    }
+  })
+
+  logger.info("PlaySessionService: guest challenge-gods session created", {
+    ghostSessionId: ghost.session.id,
+  })
+
+  return ok({
+    ghostKeystrokeLogs: ghost.keystrokeLogs,
+    ghostSessionId: ghost.session.id,
+    ghostUserDisplay: {
+      avatarUrl: ghost.entry.userDisplay.avatarUrl,
+      bestScore: ghost.entry.bestScore,
+      displayName: ghost.entry.userDisplay.displayName,
+      grade: ghost.entry.userDisplay.currentGrade,
+    },
+    problems: orderedProblems,
+    repoInfo: ghost.session.crawledRepo,
+  })
+}
+
+type GuestFinishSessionRepo = {
+    problemRepository: ProblemRepository
+}
+
+export type FinishGuestSessionInput = {
+    accuracy: number
+    keystrokeLogs: KeystrokeLogs
+    problemIds: number[]
+    typedChars: number
+}
+
+export type FinishGuestSessionOutput = {
+    accuracy: number
+    mistypeStats: MistypeStats
+    problemsCompleted: number
+    problemsPlayed: number
+    score: number
+    typedChars: number
+}
+
+/**
+ * ゲスト用 /finish（ステートレス）
+ *
+ * 認証必須版 `finishSession` との違い:
+ * - Redis state を見ない（クライアントから `problemIds` を直接受け取る）
+ * - DB 書き込み・ランキング更新・rewards 生成は一切行わない
+ * - 物理限界チェックとサーバー側スコア再集計は同じく実施（不正シェアスコアの防止）
+ *
+ * 1. 物理限界チェック（typedChars / accuracy / log size）
+ * 2. problemIds から codeBlock を取得（mistype 集計と完走判定に必要）
+ *    件数 mismatch なら 404
+ * 3. サーバーで score / mistypeStats / problemProgress を再集計して返す
+ */
+export const finishGuestSession = async (
+  input: FinishGuestSessionInput,
+  repo: GuestFinishSessionRepo,
+): Promise<Result<FinishGuestSessionOutput>> => {
+  logger.debug("PlaySessionService: Finishing guest session")
+
+  if (!isWithinPhysicalLimits(input.typedChars, input.accuracy)) {
+    return err(badRequestError("Out of physical limits"))
+  }
+  const logSize = Buffer.byteLength(JSON.stringify(input.keystrokeLogs), "utf8")
+  if (logSize > MAX_KEYSTROKE_LOG_BYTES) {
+    return err(badRequestError("Keystroke log too large"))
+  }
+
+  const problems = await repo.problemRepository.findManyByIds(input.problemIds)
+  if (problems.length !== input.problemIds.length) {
+    logger.warn("PlaySessionService: Problem set mismatch (guest)", {
+      expected: input.problemIds.length,
+      found: problems.length,
+    })
+    return err(notFoundError("Problem set mismatch"))
+  }
+  const codeBlockByOrder = buildCodeBlockByOrder(input.problemIds, problems)
+
+  const score = computeScore(input.typedChars, input.accuracy)
+  const mistypeStats = aggregateMistypeStats(input.keystrokeLogs, codeBlockByOrder)
+  const progress = aggregateProblemProgress(input.keystrokeLogs, codeBlockByOrder)
+  const problemsCompleted = [...progress.values()].filter((v) => v.completed).length
+  const problemsPlayed = new Set(input.keystrokeLogs.map((e) => e.problemIndex)).size
+
+  logger.info("PlaySessionService: Guest session finished (stateless)", { score })
+
+  return ok({
+    accuracy: input.accuracy,
+    mistypeStats,
+    problemsCompleted,
+    problemsPlayed,
+    score,
+    typedChars: input.typedChars,
+  })
 }

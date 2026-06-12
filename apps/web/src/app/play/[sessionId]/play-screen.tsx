@@ -13,7 +13,16 @@ type CachedStart = {
   ghostKeystrokeLogs?: StartChallengeGodsResponse["ghost_keystroke_logs"] | null
   ghostSessionId?: number | null
   ghostUserDisplay?: StartChallengeGodsResponse["ghost_user_display"] | null
+  /**
+   * Server Action でログイン状態を判定済み。/finish 呼び出し時に endpoint を切替
+   */
+  isGuest: boolean
   mode?: "challenge_gods" | "solo"
+  /**
+   * このセッションで実際に出題された problem.id を出題順で並べたもの。
+   * ゲスト用 /finish のリクエストボディに転送する
+   */
+  problemIds: number[]
   problems: StartSoloPlaySessionResponse["problems"]
   repoInfo: StartSoloPlaySessionResponse["repo_info"]
 }
@@ -67,7 +76,9 @@ export function PlayScreen({ sessionId }: { sessionId: string }) {
       <PlayLoop
         ghostKeystrokeLogs={start.ghostKeystrokeLogs ?? null}
         ghostUserDisplay={start.ghostUserDisplay ?? null}
+        isGuest={start.isGuest}
         mode={start.mode ?? "solo"}
+        problemIds={start.problemIds}
         problems={start.problems}
         sessionId={sessionId}
         onFinished={(r, summary) => {
