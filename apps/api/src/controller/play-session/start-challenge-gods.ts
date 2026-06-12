@@ -20,8 +20,7 @@ import * as service from "../../service"
  * POST /api/play-sessions/challenge-gods
  *
  * 神々モードのプレイセッションを開始する。認証必須。
- * トップ 10 不在 / 全候補のキーストロークログ取得不能の場合は 409 Conflict を返す。
- * ゲスト用は `/api/play-sessions/guest/challenge-gods` に分離されている。
+ * トップ 10 不在 / 全候補のキーストロークログ取得不能の場合は 409 Conflict を返す
  */
 export class PlaySessionStartChallengeGodsController {
   constructor(

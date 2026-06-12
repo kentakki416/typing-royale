@@ -17,8 +17,7 @@ import * as service from "../../service"
 /**
  * POST /api/play-sessions/solo
  *
- * 通常モードのプレイセッションを開始する。認証必須（req.userId は authMiddleware が確定済みの前提）。
- * ゲスト用は `/api/play-sessions/guest/solo` に分離されている。
+ * 通常モードのプレイセッションを開始する
  */
 export class PlaySessionStartSoloController {
   constructor(
