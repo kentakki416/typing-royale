@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 
 import type { GetMyRankingResponse } from "@repo/api-schema"
 
-import { apiClient } from "@/libs/api-client"
+import { ApiClientError, apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
 
 const SUPPORTED_LANGUAGES = ["typescript", "javascript"] as const
@@ -34,7 +34,17 @@ export async function GET(req: Request) {
       `/api/rankings/me?language=${language}`,
     )
     return NextResponse.json(res)
-  } catch {
-    return NextResponse.json({ error: "Failed to fetch" }, { status: 500 })
+  } catch (err) {
+    /**
+     * ApiClientError なら Express の status / body をそのまま転送し、
+     * 4xx と 5xx の区別をクライアントに渡す。想定外エラーのみ 500 で包む
+     */
+    if (err instanceof ApiClientError) {
+      return NextResponse.json(
+        err.body ?? { error: "Failed to fetch" },
+        { status: err.status },
+      )
+    }
+    return NextResponse.json({ error: "Unexpected error" }, { status: 500 })
   }
 }
