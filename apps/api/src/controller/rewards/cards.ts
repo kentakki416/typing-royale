@@ -8,6 +8,7 @@ import { logger } from "@repo/logger"
 
 import { CardStorage } from "../../lib/card-storage"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { requireAuth } from "../../lib/require-auth"
 import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
 import {
@@ -31,15 +32,18 @@ export class RewardsCardCreateController {
   ) {}
 
   async execute(req: AuthRequest, res: Response) {
+    const userId = requireAuth(req, res)
+    if (userId === null) return
+
     const { payload, type } = parseRequest(createRewardCardRequestSchema, req.body)
 
     logger.info("RewardsCardCreateController: creating", {
       type,
-      userId: req.userId,
+      userId,
     })
 
     const result = await service.rewards.createCard(
-      { payload, type, userId: req.userId! },
+      { payload, type, userId },
       {
         cardStorage: this.cardStorage,
         rewardRepository: this.rewardRepository,

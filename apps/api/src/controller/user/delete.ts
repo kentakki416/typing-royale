@@ -4,6 +4,7 @@ import { deleteUserResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { requireAuth } from "../../lib/require-auth"
 import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
 import { UserRepository } from "../../repository/prisma"
@@ -24,9 +25,12 @@ export class UserDeleteController {
   ) {}
 
   async execute(req: AuthRequest, res: Response) {
-    logger.info("UserDeleteController: Deleting authenticated user account", { userId: req.userId })
+    const userId = requireAuth(req, res)
+    if (userId === null) return
 
-    const result = await service.user.deleteAccount(req.userId!, {
+    logger.info("UserDeleteController: Deleting authenticated user account", { userId })
+
+    const result = await service.user.deleteAccount(userId, {
       refreshTokenRepository: this.refreshTokenRepository,
       userRepository: this.userRepository,
     })

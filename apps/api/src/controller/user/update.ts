@@ -4,6 +4,7 @@ import { updateUserRequestSchema, updateUserResponseSchema } from "@repo/api-sch
 import { logger } from "@repo/logger"
 
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { requireAuth } from "../../lib/require-auth"
 import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
 import { UserRepository } from "../../repository/prisma"
@@ -19,12 +20,15 @@ export class UserUpdateController {
   constructor(private userRepository: UserRepository) {}
 
   async execute(req: AuthRequest, res: Response) {
-    logger.info("UserUpdateController: Updating authenticated user", { userId: req.userId })
+    const userId = requireAuth(req, res)
+    if (userId === null) return
+
+    logger.info("UserUpdateController: Updating authenticated user", { userId })
 
     const body = parseRequest(updateUserRequestSchema, req.body)
 
     const result = await service.user.updateUser(
-      req.userId!,
+      userId,
       {
         canPublicRanking: body.can_public_ranking,
         displayName: body.display_name,

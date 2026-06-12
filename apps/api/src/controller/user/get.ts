@@ -4,6 +4,7 @@ import { getUserResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { requireAuth } from "../../lib/require-auth"
 import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
 import { UserRepository } from "../../repository/prisma"
@@ -18,11 +19,14 @@ export class UserGetController {
   constructor(private userRepository: UserRepository) {}
 
   async execute(req: AuthRequest, res: Response) {
+    const userId = requireAuth(req, res)
+    if (userId === null) return
+
     logger.info("UserGetController: Fetching authenticated user", {
-      requestedUserId: req.userId,
+      requestedUserId: userId,
     })
 
-    const result = await service.user.getUserById(req.userId!, { userRepository: this.userRepository })
+    const result = await service.user.getUserById(userId, { userRepository: this.userRepository })
 
     if (!result.ok) {
       return sendError(req, res, result.error)

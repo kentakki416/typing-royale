@@ -4,6 +4,7 @@ import { startSoloPlaySessionRequestSchema, startSoloPlaySessionResponseSchema }
 import { logger } from "@repo/logger"
 
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { requireAuth } from "../../lib/require-auth"
 import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
 import {
@@ -28,15 +29,18 @@ export class PlaySessionStartSoloController {
   ) {}
 
   async execute(req: AuthRequest, res: Response) {
+    const userId = requireAuth(req, res)
+    if (userId === null) return
+
     const { language_id: languageId } = parseRequest(startSoloPlaySessionRequestSchema, req.body)
 
     logger.info("PlaySessionStartSoloController: Starting solo session", {
       languageId,
-      userId: req.userId,
+      userId,
     })
 
     const result = await service.playSession.createSoloSession(
-      { languageId, userId: req.userId! },
+      { languageId, userId },
       {
         crawledRepoRepository: this.crawledRepoRepository,
         languageRepository: this.languageRepository,

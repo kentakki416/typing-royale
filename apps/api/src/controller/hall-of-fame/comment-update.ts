@@ -8,6 +8,7 @@ import {
 import { logger } from "@repo/logger"
 
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { requireAuth } from "../../lib/require-auth"
 import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
 import {
@@ -28,16 +29,19 @@ export class HallOfFameCommentUpdateController {
   ) {}
 
   async execute(req: AuthRequest, res: Response) {
+    const userId = requireAuth(req, res)
+    if (userId === null) return
+
     const { entryId } = parseRequest(updateHallOfFameCommentPathParamSchema, req.params)
     const { comment } = parseRequest(updateHallOfFameCommentRequestSchema, req.body)
 
     logger.info("HallOfFameCommentUpdateController: updating", {
       entryId,
-      userId: req.userId,
+      userId,
     })
 
     const result = await service.hallOfFame.updateComment(
-      { comment, entryId, userId: req.userId! },
+      { comment, entryId, userId },
       {
         hallOfFameEntryRepository: this.hallOfFameEntryRepository,
         languageRepository: this.languageRepository,

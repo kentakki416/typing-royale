@@ -4,6 +4,7 @@ import { getMyRewardsResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { requireAuth } from "../../lib/require-auth"
 import { AuthRequest } from "../../middleware/auth"
 import { RewardRepository } from "../../repository/prisma"
 import * as service from "../../service"
@@ -17,10 +18,13 @@ export class RewardsListMeController {
   constructor(private rewardRepository: RewardRepository) {}
 
   async execute(req: AuthRequest, res: Response) {
-    logger.info("RewardsListMeController: listing", { userId: req.userId })
+    const userId = requireAuth(req, res)
+    if (userId === null) return
+
+    logger.info("RewardsListMeController: listing", { userId })
 
     const rewards = await service.rewards.listMine(
-      { userId: req.userId! },
+      { userId },
       { rewardRepository: this.rewardRepository },
     )
 

@@ -7,6 +7,7 @@ import {
 import { logger } from "@repo/logger"
 
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
+import { requireAuth } from "../../lib/require-auth"
 import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
 import {
@@ -29,15 +30,18 @@ export class RankingMeController {
   ) {}
 
   async execute(req: AuthRequest, res: Response) {
+    const userId = requireAuth(req, res)
+    if (userId === null) return
+
     const query = parseRequest(getMyRankingQueryStringSchema, req.query)
 
     logger.info("RankingMeController: Fetching my ranking", {
       language: query.language,
-      userId: req.userId,
+      userId,
     })
 
     const result = await service.ranking.findMine(
-      { languageSlug: query.language, userId: req.userId! },
+      { languageSlug: query.language, userId },
       {
         languageRepository: this.languageRepository,
         userLanguageBestRepository: this.userLanguageBestRepository,
