@@ -18,6 +18,7 @@
 | adsense | ✅ | 広告配信。Google AdSense のディスプレイ広告 | [./adsense/README.md](./adsense/README.md) |
 | dev-login | ✅ | 開発用ログイン（既存） | [./dev-login/README.md](./dev-login/README.md) |
 | shared-packages | ✅ | api/cron 横断で共通利用する `@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/redis` の設計（テンプレート整備）。`@repo/config` は撤去済み（各 app の `src/env.ts` にインライン化） | [./shared-packages/README.md](./shared-packages/README.md) |
+| terraform-prd | 設計中 | 本番環境 AWS インフラの Terraform 構築設計。**MVP 初期はコスト最優先**（Single-AZ・1 node・1 task）で月 ~$104 を目標、HTTPS / 削除保護 / 最小監視のみ追加。Multi-AZ・冗長化は後追い | [./terraform-prd/README.md](./terraform-prd/README.md) |
 
 ## ステータスの定義
 
