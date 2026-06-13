@@ -86,7 +86,8 @@ secret 更新後は次回以降の account 変更を `terraform-aws-account-appl
 
 #### 4. リソースのデプロイ
 リソースをデプロイします。詳細は以下のインフラ図を参照してください。
-- [AWS インフラ構成図](./aws-infrastructure.drawio)
+- [AWS インフラ構成図 (dev)](./aws/aws-dev-infrastructure.drawio)
+- [AWS インフラ構成図 (prd, cost-optimized)](./aws/aws-prd-infrastructure.drawio) — 設計詳細は [`docs/spec/terraform-prd/README.md`](../../docs/spec/terraform-prd/README.md)
 
 ```bash
 cd aws/env/dev

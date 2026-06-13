@@ -16,6 +16,13 @@
 - 既存実装: `infra/terraform/aws/env/dev/main.tf` — dev 環境のリファレンス
 - `infra/terraform/aws/modules/` — 再利用される module 群（vpc / alb / ecs-cluster / ecs-workload / rds / elasticache / acm / route53 / secrets）
 
+## インフラ構成図
+
+draw.io 形式の構成図を `infra/terraform/aws/` 配下に配置している：
+
+- [`infra/terraform/aws/aws-prd-infrastructure.drawio`](../../../infra/terraform/aws/aws-prd-infrastructure.drawio) — **本 spec の prd 構成図（コスト最適化版）**
+- [`infra/terraform/aws/aws-dev-infrastructure.drawio`](../../../infra/terraform/aws/aws-dev-infrastructure.drawio) — dev 構成図（リファレンス）
+
 ## 目次
 
 - [現状分析](#現状分析)
