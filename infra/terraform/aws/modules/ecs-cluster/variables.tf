@@ -1,5 +1,5 @@
 variable "name" {
-  description = "ECS cluster 名 (例: project-template-dev-cluster)"
+  description = "ECS cluster 名 (例: typing-royale-dev-cluster)"
   type        = string
 }
 

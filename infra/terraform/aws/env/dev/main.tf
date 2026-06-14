@@ -251,7 +251,7 @@ module "app_secrets" {
 # =============================================================================
 # - isolated subnet に配置、SG は ECS のみから 5432 許可 (step1 で定義済み)
 # - master password は AWS が自動生成し Secrets Manager に保存 (Terraform tfstate に残らない)
-# - DATABASE_URL は apply 後に手動で /project-template-dev/app secret に追加する
+# - DATABASE_URL は apply 後に手動で /typing-royale-dev/app secret に追加する
 #   (modules/secrets の ignore_changes により Terraform からは触れないため)
 
 module "rds" {
@@ -262,7 +262,7 @@ module "rds" {
   instance_class    = "db.t4g.micro"
   allocated_storage = 20
   storage_type      = "gp3"
-  db_name           = "project_template"
+  db_name           = "typing_royale"
   master_username   = "projecttemplate"
 
   subnet_ids         = [for k in local.isolated_subnet_keys : module.vpc.subnets[k].id]
@@ -488,7 +488,7 @@ module "ecs_worker" {
 # =============================================================================
 # - GHA から `aws ecs run-task --task-definition <family>` で起動する想定
 # - 本番 API イメージに devDependencies が混入するのを避けるため、専用 ECR
-#   (project-template-migration) + 専用 Dockerfile (apps/api/Dockerfile.migration) を使う
+#   (typing-royale-migration) + 専用 Dockerfile (apps/api/Dockerfile.migration) を使う
 # - Dockerfile の CMD = `prisma migrate deploy --schema=prisma/schema.prisma` を
 #   そのまま使うので command override は不要
 
