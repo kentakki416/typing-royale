@@ -1,0 +1,244 @@
+# =============================================================================
+# Production Environment - Main Configuration
+# =============================================================================
+# 各リソースは dev と同じ modules/ を共用し、prd 向けに以下を厳格化している:
+#   - VPC CIDR: 10.1.0.0/16 (dev=10.0.0.0/16 と非重複、将来 VPC peering 可能)
+#   - Secrets recovery_window_in_days: 30 (誤削除に耐える)
+#   - ECS / RDS / ElastiCache / ALB は後続 step PR で追加
+#
+# TODO (本 PR 範囲外、後続 step / 別 PR で対応):
+#   - NAT Gateway を AZ 冗長化 (現状は modules/vpc が単一 NAT のみサポート)
+#   - VPC Flow Logs を CloudWatch Logs に出力 (本 PR では未対応、.trivyignore で抑止)
+#   - prd Required reviewers ゲート設定 (GitHub Settings → Environments → prd)
+
+locals {
+  # 基本設定
+  name_prefix = "${var.project_name}-${var.environment}"
+
+  /**
+   * サブネット CIDR の計算
+   * - public:   10.1.1.0/24, 10.1.2.0/24  (ALB / NAT Gateway 配置)
+   * - private:  10.1.11.0/24, 10.1.12.0/24 (ECS task 配置、NAT 経由で outbound)
+   * - isolated: 10.1.21.0/24, 10.1.22.0/24 (RDS / ElastiCache 配置)
+   */
+  public_subnet_cidrs   = [for i in range(2) : cidrsubnet(var.vpc_cidr, 8, i + 1)]
+  private_subnet_cidrs  = [for i in range(2) : cidrsubnet(var.vpc_cidr, 8, i + 11)]
+  isolated_subnet_cidrs = [for i in range(2) : cidrsubnet(var.vpc_cidr, 8, i + 21)]
+
+  /**
+   * subnet キーは「<role><az-suffix>」の規約。dev と同じ規約に合わせる。
+   * 例: public1-a / public1-c / private1-a / private1-c / isolated1-a / isolated1-c
+   */
+  public_subnet_keys   = [for az in var.availability_zones : "public${substr(az, length(az) - 2, 1)}-${substr(az, length(az) - 1, 1)}"]
+  private_subnet_keys  = [for az in var.availability_zones : "private${substr(az, length(az) - 2, 1)}-${substr(az, length(az) - 1, 1)}"]
+  isolated_subnet_keys = [for az in var.availability_zones : "isolated${substr(az, length(az) - 2, 1)}-${substr(az, length(az) - 1, 1)}"]
+
+  common_tags = merge(
+    {
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+    },
+    var.additional_tags
+  )
+}
+
+# =============================================================================
+# ネットワーク設定 (VPC, サブネット, セキュリティグループ)
+# =============================================================================
+
+module "vpc" {
+  source = "../../modules/vpc"
+
+  # === 基本設定 ===
+  name                    = local.name_prefix
+  cidr_block              = var.vpc_cidr
+  enable_dns_support      = true
+  enable_dns_hostnames    = true
+  create_internet_gateway = true
+  create_nat_gateway      = true
+  nat_gateway_subnet_key  = local.public_subnet_keys[0]
+
+  # === サブネット設定 ===
+  subnets = merge(
+    /** public subnet: ALB + NAT Gateway 配置 */
+    {
+      for i, az in var.availability_zones :
+      local.public_subnet_keys[i] => {
+        cidr_block        = local.public_subnet_cidrs[i]
+        availability_zone = az
+        subnet_type       = "public"
+      }
+    },
+    /** private subnet: ECS task 配置 */
+    {
+      for i, az in var.availability_zones :
+      local.private_subnet_keys[i] => {
+        cidr_block        = local.private_subnet_cidrs[i]
+        availability_zone = az
+        subnet_type       = "private"
+      }
+    },
+    /** isolated subnet: RDS / ElastiCache 配置 (module 制約で subnet_type=private) */
+    {
+      for i, az in var.availability_zones :
+      local.isolated_subnet_keys[i] => {
+        cidr_block        = local.isolated_subnet_cidrs[i]
+        availability_zone = az
+        subnet_type       = "private"
+      }
+    },
+  )
+
+  # === セキュリティグループ定義 ===
+  security_groups = {
+    alb = {
+      name        = "${local.name_prefix}-alb"
+      description = "Security group for ALB"
+    }
+    ecs = {
+      name        = "${local.name_prefix}-ecs"
+      description = "Security group for ECS tasks"
+    }
+    rds = {
+      name        = "${local.name_prefix}-rds"
+      description = "Security group for RDS Postgres"
+    }
+    redis = {
+      name        = "${local.name_prefix}-redis"
+      description = "Security group for ElastiCache Redis"
+    }
+  }
+
+  # === セキュリティグループルール ===
+  security_group_rules = [
+    # ALB Ingress - HTTPS は ACM 発行後に Step 3 PR で 443 へ追加するが、ACM 検証中の
+    # ヘルスチェック / Cert 取得失敗時の動作確認のため HTTP も一旦許可しておく。
+    {
+      security_group_name = "alb"
+      type                = "ingress"
+      from_port           = 80
+      to_port             = 80
+      protocol            = "tcp"
+      cidr_blocks         = ["0.0.0.0/0"]
+      description         = "HTTP from internet (HTTPS 化後は ACM-only にする)"
+    },
+    {
+      security_group_name = "alb"
+      type                = "ingress"
+      from_port           = 443
+      to_port             = 443
+      protocol            = "tcp"
+      cidr_blocks         = ["0.0.0.0/0"]
+      description         = "HTTPS from internet"
+    },
+    # ALB Ingress - Blue/Greenテスト用リスナー（ポート9000）
+    {
+      security_group_name = "alb"
+      type                = "ingress"
+      from_port           = 9000
+      to_port             = 9000
+      protocol            = "tcp"
+      cidr_blocks         = var.test_listener_allowed_cidrs
+      description         = "Test listener for Blue/Green deployment"
+    },
+    # ALB Egress
+    {
+      security_group_name = "alb"
+      type                = "egress"
+      from_port           = 0
+      to_port             = 0
+      protocol            = "-1"
+      cidr_blocks         = ["0.0.0.0/0"]
+      description         = "All outbound traffic"
+    },
+    # ECS Ingress - ALBからのみアプリポートを受け付ける
+    {
+      security_group_name        = "ecs"
+      type                       = "ingress"
+      from_port                  = var.app_port
+      to_port                    = var.app_port
+      protocol                   = "tcp"
+      source_security_group_name = "alb"
+      description                = "From ALB only"
+    },
+    # ECS Egress - NAT 経由で外部 (ECR / Secrets Manager 等) へ
+    {
+      security_group_name = "ecs"
+      type                = "egress"
+      from_port           = 0
+      to_port             = 0
+      protocol            = "-1"
+      cidr_blocks         = ["0.0.0.0/0"]
+      description         = "All outbound traffic via NAT"
+    },
+    # RDS Ingress - ECS から 5432 のみ許可
+    {
+      security_group_name        = "rds"
+      type                       = "ingress"
+      from_port                  = 5432
+      to_port                    = 5432
+      protocol                   = "tcp"
+      source_security_group_name = "ecs"
+      description                = "Postgres from ECS"
+    },
+    # Redis Ingress - ECS から 6379 のみ許可
+    {
+      security_group_name        = "redis"
+      type                       = "ingress"
+      from_port                  = 6379
+      to_port                    = 6379
+      protocol                   = "tcp"
+      source_security_group_name = "ecs"
+      description                = "Redis from ECS"
+    },
+  ]
+}
+
+# =============================================================================
+# アプリケーション機密 (Secrets Manager)
+# =============================================================================
+# - JWT 署名鍵は Terraform 内で random_password 生成し初回投入のみ行う
+# - DATABASE_URL / REDIS_HOST / GOOGLE_* / LIVEKIT_* / FRONTEND_URL は
+#   後続 step で RDS / Redis を作った後、scripts/seed-secrets.sh 等で投入する
+# - recovery_window_in_days = 30: prd は誤削除耐性を最大化
+
+resource "random_password" "jwt_access_secret" {
+  length  = 64
+  special = false
+
+  lifecycle {
+    ignore_changes = [length, special, override_special, min_lower, min_upper, min_numeric, min_special]
+  }
+}
+
+resource "random_password" "jwt_refresh_secret" {
+  length  = 64
+  special = false
+
+  lifecycle {
+    ignore_changes = [length, special, override_special, min_lower, min_upper, min_numeric, min_special]
+  }
+}
+
+module "app_secrets" {
+  source = "../../modules/secrets"
+
+  name                    = "/${local.name_prefix}/app"
+  recovery_window_in_days = 30
+
+  initial_values = {
+    JWT_ACCESS_SECRET      = random_password.jwt_access_secret.result
+    JWT_REFRESH_SECRET     = random_password.jwt_refresh_secret.result
+    JWT_ACCESS_EXPIRATION  = "15m"
+    JWT_REFRESH_EXPIRATION = "30d"
+
+    REDIS_PORT = "6379"
+    REDIS_DB   = "0"
+
+    NODE_ENV = "production"
+    PORT     = "8080"
+  }
+
+  tags = local.common_tags
+}

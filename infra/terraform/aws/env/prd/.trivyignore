@@ -1,0 +1,19 @@
+# prd 環境で許容するルール
+# dev (.trivyignore) より厳格化。残った ignore は仕様上の制約 or 後続 PR で解消予定。
+#
+# - HTTPS 未対応 (AVD-AWS-0054): Step 3 PR (ALB + ACM) で解消するため、Step 1〜2 PR の間だけ ignore
+# - VPC Flow Logs 無効 (AVD-AWS-0178): MVP ではコスト優先で OFF。流量が増えたら別 PR で有効化
+#
+# ALB が公開されている (AVD-AWS-0053): 公開 API のため意図的
+AVD-AWS-0053
+
+# HTTPS を使っていない (AVD-AWS-0054): Step 3 PR (ACM + Route53) で解消予定
+# TODO: Step 3 マージ後にこの行を削除する
+AVD-AWS-0054
+
+# Egress 0.0.0.0/0 (AVD-AWS-0104): ECR / CloudWatch / Secrets Manager 等への通信に必要
+AVD-AWS-0104
+
+# VPC Flow Logs 無効 (AVD-AWS-0178): 後続 PR で CloudWatch Logs 出力を追加予定
+# TODO: 監視整備フェーズで有効化し、本行を削除する
+AVD-AWS-0178

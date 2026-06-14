@@ -1,9 +1,11 @@
 # Trivy設定ファイル（prd環境）
-# 本番環境では全チェックを有効にする
+# 本番環境では原則すべてのチェックを有効にする。.trivyignore は最小限。
 severity:
   - CRITICAL
   - HIGH
   - MEDIUM
+
+ignorefile: aws/env/prd/.trivyignore
 
 timeout: 10m
 cache-dir: ~/.trivy/cache
