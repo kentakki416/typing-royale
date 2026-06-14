@@ -2,13 +2,8 @@ name: Terraform AWS Env CI
 # infra/terraform/aws/env/* 配下の HCL に対して fmt / validate / tflint / trivy / plan を実施。
 # account 層は別ワークフロー (terraform-aws-account-ci.yml) で扱う。
 #
-# TODO: 現在はdev環境のみ対象。環境が増えたらmatrix strategyで全環境(dev/prd)に対して実行すること
-# 例:
-#   strategy:
-#     matrix:
-#       environment: [dev, prd]
-#   env:
-#     WORKING_DIR: infra/terraform/aws/env/${{ matrix.environment }}
+# fmt / tflint は infra/terraform/aws 全体を recursive に走査するため、環境追加時の更新は不要。
+# validate / trivy / plan は環境ごとに matrix で並列実行する。
 
 on:
   pull_request:
@@ -40,7 +35,6 @@ env:
   TERRAFORM_VERSION: '1.12'
   TFLINT_VERSION: 'v0.55.1'
   TRIVY_VERSION: '0.59.1'
-  WORKING_DIR: infra/terraform/aws/env/dev
 
 jobs:
   fmt:
@@ -61,9 +55,13 @@ jobs:
         working-directory: infra/terraform/aws
 
   validate:
-    name: Terraform Validate
+    name: Terraform Validate (${{ matrix.environment }})
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, prd]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,19 +74,19 @@ jobs:
       # validate には init が必要だが、バックエンドへの接続は不要
       - name: Terraform Init
         run: terraform init -input=false -backend=false -lockfile=readonly
-        working-directory: ${{ env.WORKING_DIR }}
+        working-directory: infra/terraform/aws/env/${{ matrix.environment }}
 
       - name: Terraform Validate
         run: terraform validate
-        working-directory: ${{ env.WORKING_DIR }}
+        working-directory: infra/terraform/aws/env/${{ matrix.environment }}
 
   tflint:
     name: TFLint
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    # TODO: prd環境が増えたら、matrix strategy に従い、${{ matrix.environment }} に変更すること
     # deep_check=true（.tflint.hcl）による AWS API 問い合わせに OIDC credentials が必要なため
-    # environment 経由で env-scope の AWS_ROLE_ARN を引く
+    # environment 経由で AWS_ROLE_ARN を取得する。dev role には全リソースへの read 権限があり、
+    # prd 含む全環境の deep_check に流用できるためここでは dev を使う。
     environment: dev
     steps:
       - name: Checkout
@@ -121,34 +119,39 @@ jobs:
         working-directory: infra/terraform
 
   trivy:
-    name: Trivy Security Scan
+    name: Trivy Security Scan (${{ matrix.environment }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, prd]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # scan-ref / trivy-config / trivyignores のパスは dev 環境のみ対象のためハードコード
-      # TODO: prd環境が増えたら、matrix strategy に従い、aws/env/${{ matrix.environment }} に変更すること
       - name: Run Trivy
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: config
-          scan-ref: infra/terraform/aws/env/dev
-          trivy-config: infra/terraform/aws/env/dev/.trivy.yml
-          trivyignores: infra/terraform/aws/env/dev/.trivyignore
+          scan-ref: infra/terraform/aws/env/${{ matrix.environment }}
+          trivy-config: infra/terraform/aws/env/${{ matrix.environment }}/.trivy.yml
+          trivyignores: infra/terraform/aws/env/${{ matrix.environment }}/.trivyignore
 
 
   plan:
-    name: Terraform Plan
+    name: Terraform Plan (${{ matrix.environment }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [fmt, validate, tflint, trivy]
     # PR: 自動 plan + PR コメント投稿。workflow_dispatch: 手動 plan-only（apply 前の事前確認用）。
     # main / develop への push では plan を走らせない（コメント先が無く、apply は terraform-aws-env-apply.yml で別管理）
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
-    # TODO: prd環境が増えたら、matrix strategy に従い、${{ matrix.environment }} に変更すること
-    environment: dev # GitHub Environments で AWS_ROLE_ARN を環境ごとに分離
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, prd]
+    environment: ${{ matrix.environment }} # GitHub Environments で AWS_ROLE_ARN を環境ごとに分離
     permissions:
       id-token: write       # OIDC
       contents: read
@@ -170,7 +173,7 @@ jobs:
 
       - name: Terraform Init
         run: terraform init -input=false -lockfile=readonly -lock-timeout=60s
-        working-directory: ${{ env.WORKING_DIR }}
+        working-directory: infra/terraform/aws/env/${{ matrix.environment }}
 
       # -detailed-exitcode: 0=変更なし / 1=エラー / 2=変更あり
       # continue-on-error で後続のコメント投稿まで必ず到達させ、最後のステップで失敗を再現する。
@@ -184,7 +187,7 @@ jobs:
           set -o pipefail
           terraform plan -no-color -input=false -lock-timeout=60s -detailed-exitcode 2>&1 | tee tfplan.txt
           echo "exitcode=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
-        working-directory: ${{ env.WORKING_DIR }}
+        working-directory: infra/terraform/aws/env/${{ matrix.environment }}
 
       # 「Plan: X to add, Y to change, Z to destroy.」の行だけ抽出してサマリ化
       - name: Extract plan summary
@@ -197,7 +200,7 @@ jobs:
             echo "$summary"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
-        working-directory: ${{ env.WORKING_DIR }}
+        working-directory: infra/terraform/aws/env/${{ matrix.environment }}
 
       # PR に plan 結果をコメント投稿（既存コメントがあれば更新）。
       # workflow_dispatch では PR コンテキストが無いため skip。結果は Actions ログで確認する。
@@ -207,17 +210,17 @@ jobs:
         env:
           EXITCODE: ${{ steps.plan.outputs.exitcode }}
           SUMMARY: ${{ steps.summary.outputs.summary }}
-          PLAN_PATH: ${{ env.WORKING_DIR }}/tfplan.txt
-          ENVIRONMENT_NAME: dev
+          PLAN_PATH: infra/terraform/aws/env/${{ matrix.environment }}/tfplan.txt
+          ENVIRONMENT_NAME: ${{ matrix.environment }}
         with:
           script: |
             const fs = require('fs')
 
-            const marker = '<!-- terraform-plan-comment -->'
+            const envName = process.env.ENVIRONMENT_NAME
+            const marker = `<!-- terraform-plan-comment-${envName} -->`
             const exitcode = process.env.EXITCODE
             const summary = process.env.SUMMARY || '(summary unavailable)'
             const planPath = process.env.PLAN_PATH
-            const envName = process.env.ENVIRONMENT_NAME
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
 
             // 失敗時も plan 出力 (tee で tfplan.txt に保存済み) を読んでコメントに含める。
@@ -304,5 +307,5 @@ jobs:
       - name: Fail on plan error
         if: steps.plan.outputs.exitcode == '1'
         run: |
-          echo "Terraform plan failed. See PR comment for details."
+          echo "Terraform plan failed for ${{ matrix.environment }}. See PR comment for details."
           exit 1
