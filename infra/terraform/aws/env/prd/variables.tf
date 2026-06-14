@@ -62,6 +62,38 @@ variable "test_listener_allowed_cidrs" {
 # =============================================================================
 
 # =============================================================================
+# DNS / TLS 設定 (Route53 + ACM)
+# =============================================================================
+# 本 step (Step 3) では以下の手動セットアップが完了している前提で動作する:
+# 1. Route53 hosted zone が `var.domain_name` で AWS アカウントに作成済み
+# 2. ドメインの NS レコードがレジストラに登録済み (DNS 検証が通るために必須)
+#
+# hosted zone が未作成の状態で apply すると `data "aws_route53_zone"` の lookup
+# でエラーになり plan 失敗する。事前に Route53 Console から hosted zone を
+# 作成しておくこと (Terraform で hosted zone を管理しないのは、Vercel など
+# 他システムから書き込まれる NS / TXT / MX レコードと競合させないため)。
+
+variable "domain_name" {
+  description = "サービスのルートドメイン (例: typing-royale.example.com)。Route53 hosted zone がこの名前で作成済みであること。空文字列にすると DNS / ACM / HTTPS をすべて無効化し HTTP ALB のみ作成する"
+  type        = string
+  # TODO: hosted zone を作成したら本番ドメインに変更すること (例: "typing-royale.com")
+  # 空文字列のままだと ACM / Route53 リソースは作成されず、ALB は HTTP のみで起動する
+  default = ""
+}
+
+variable "subdomain" {
+  description = "サブドメイン (例: prd)。ACM ワイルドカード証明書は *.<subdomain>.<domain_name> のスコープで発行"
+  type        = string
+  default     = "prd"
+}
+
+variable "api_subdomain" {
+  description = "API ホスト用のサブドメインパーツ (例: api)。最終 FQDN は <api_subdomain>.<subdomain>.<domain_name> (例: api.prd.example.com)"
+  type        = string
+  default     = "api"
+}
+
+# =============================================================================
 # タグ設定
 # =============================================================================
 
