@@ -32,54 +32,34 @@ infra/
 - 必要なツール: `brew install terraform tflint trivy`（Terraform 1.12 以降推奨）
 - GitHub リポジトリを fork し、最終的な repo 名（例: `kentakki416/typing-royale`）に rename 済み
 
-### 1. プロジェクト名のリネーム（テンプレート流用時のみ）
+### 1. プロジェクト名のリネーム
 
-このリポジトリをテンプレートとしてフォークした場合、AWS リソース名のプレフィックスとして使われる `project-template` を実プロジェクト名に置換しておく。**OIDC trust policy で GitHub repo 名を一致判定するため、`github_repository` の更新は CI 復旧の必須条件**。
-
-```bash
-# 例: typing-royale に統一
-cd <project-root>
-find infra/terraform -type f -name "*.tf" -not -path "*/.terraform/*" -exec sed -i '' \
-  -e 's|kentakki416/project-template|kentakki416/typing-royale|g' \
-  -e 's|project-template|typing-royale|g' \
-  -e 's|project_template|typing_royale|g' {} +
-find .github/workflows -type f -name "*.yml" -exec sed -i '' \
-  -e 's|project-template|typing-royale|g' \
-  -e 's|project_template|typing_royale|g' {} +
-```
-
-**追加で手動更新が必要** な箇所:
-
-| ファイル | 変更内容 |
-|---|---|
-| `infra/terraform/aws/bootstrap/variables.tf` | `s3_bucket_name` の末尾日付（**AWS グローバルで一意である必要**。`<project>-terraform-state-<YYYYMMDD>` 形式推奨） |
-| `infra/terraform/aws/account/variables.tf` | `github_repository` の値が実 repo（例: `kentakki416/typing-royale`）と一致しているか確認 |
-| RDS `db_name` | Postgres 制約でハイフン不可なので `typing_royale` のように snake_case に統一（`env/dev/main.tf` / `env/prd/main.tf` の `module "rds"` 内） |
+- [ ] `project-template` を実プロジェクト名に置換しておく。**OIDC trust policy で GitHub repo 名を一致判定するため、`github_repository` の更新は CI 復旧の必須条件**。
 
 ### 2. Bootstrap（S3 tfstate + DynamoDB ロックテーブル）
 
-remote backend に使う S3 バケットと DynamoDB ロックテーブルを 1 回だけ作る。**state そのものを生む層なので local state で apply する**。
+- [ ] remote backend に使う S3 バケットと DynamoDB ロックテーブルを 1 回だけ作る。
 
 ```bash
+# ローカルでterraform applyを実行する
 cd infra/terraform/aws/bootstrap
 terraform init
 terraform plan
 terraform apply
 ```
 
-apply 後、出力された S3 バケット名・テーブル名を **`account/backend.tf` / `env/dev/backend.tf` / `env/prd/backend.tf` の `bucket` / `dynamodb_table`** に反映する（Step 1 のリネームで実行済みのはず）。
-
 ### 3. Account（OIDC / GitHub Actions IAM role / ECR）
 
-AWS アカウント単位で共有するリソース（OIDC プロバイダ・GitHub Actions IAM role・ECR リポジトリ）を作る。**GitHub Actions が assume する role 自身を作る層なので、初回および role の rename / replace 変更はローカル apply 必須**（CI 経由で apply すると trust policy 更新中に自分自身を AssumeRole できなくなる）。
+- [ ] AWS アカウント単位で共有するリソース（OIDC プロバイダ・GitHub Actions IAM role・ECR リポジトリ）を作る。
 
 ```bash
+# ローカルでterraform applyを実行する。(tfstateはs３に保存)
 cd ../account
 terraform init   # bootstrap で作った S3 backend に接続
 terraform plan
 terraform apply
 
-# 出力された role ARN を取得（次の Step 4 で使う）
+# 出力された role ARN を取得
 terraform output -raw github_actions_dev_role_arn
 terraform output -raw github_actions_prd_role_arn
 terraform output -raw ecr_api_repository_url
