@@ -24,8 +24,10 @@ on:
         type: choice
         options:
           - dev
-          # TODO: prd 環境が追加されたら以下のコメントを外す。prd Environment には Required reviewers を設定すること
-          # - prd
+          # TODO: GitHub Settings → Environments → prd に Required reviewers を設定してから本番運用すること。
+          #       prd の GitHub Environment を作成し、AWS_ROLE_ARN secret として account の
+          #       github_actions_prd_role_arn output 値を登録する必要がある。
+          - prd
 
 permissions:
   id-token: write
