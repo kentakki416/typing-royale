@@ -4,7 +4,9 @@
 # 各リソースは dev と同じ modules/ を共用し、prd 向けに以下を厳格化している:
 #   - VPC CIDR: 10.1.0.0/16 (dev=10.0.0.0/16 と非重複、将来 VPC peering 可能)
 #   - Secrets recovery_window_in_days: 30 (誤削除に耐える)
-#   - RDS / ElastiCache / ALB / ECS は後続 step PR で追加
+#   - RDS: Multi-AZ / deletion_protection / final snapshot / backup 30 日
+#   - ElastiCache: 2 ノード / Multi-AZ / Auto Failover / TLS
+#   - ALB / ECS は後続 step PR で追加
 #
 # TODO (本 PR 範囲外、後続 step / 別 PR で対応):
 #   - NAT Gateway を AZ 冗長化 (現状は modules/vpc が単一 NAT のみサポート)
@@ -239,6 +241,96 @@ module "app_secrets" {
     NODE_ENV = "production"
     PORT     = "8080"
   }
+
+  tags = local.common_tags
+}
+
+# =============================================================================
+# RDS Postgres 16
+# =============================================================================
+# - isolated subnet (2 AZ) に配置、SG は ECS のみから 5432 許可
+# - master password は AWS が自動生成し Secrets Manager に保存 (tfstate に残らない)
+# - prd は Multi-AZ / deletion_protection / final snapshot を有効化
+# - DATABASE_URL は apply 後に手動で /typing-royale-prd/app secret に追加する
+#   (modules/secrets の ignore_changes により Terraform からは触れないため)
+
+module "rds" {
+  source = "../../modules/rds"
+
+  name              = "${local.name_prefix}-db"
+  engine_version    = "16.6"
+  instance_class    = "db.t4g.micro"
+  allocated_storage = 20
+  storage_type      = "gp3"
+  db_name           = "typing_royale"
+  master_username   = "typingroyale"
+
+  subnet_ids         = [for k in local.isolated_subnet_keys : module.vpc.subnets[k].id]
+  security_group_ids = [module.vpc.security_groups["rds"].id]
+
+  # prd: Multi-AZ 配置で AZ 障害耐性を確保
+  multi_az = true
+
+  # prd: 30 日間 PITR (Point-in-Time Recovery)
+  backup_retention_period = 30
+
+  # メンテ / バックアップ時間帯は JST 早朝 (UTC -9h) に寄せる
+  # backup: JST 02:00-03:00 / maintenance: JST 日曜 03:00-04:00
+  backup_window      = "17:00-18:00"
+  maintenance_window = "sun:18:00-sun:19:00"
+
+  # prd: メンテ時間帯まで変更を遅延 (apply_immediately=false)
+  # これにより本番稼働中の予期せぬ再起動を防ぐ
+  apply_immediately = false
+
+  # prd: 誤削除防止 + destroy 時に final snapshot を取得
+  deletion_protection = true
+  skip_final_snapshot = false
+
+  # Performance Insights 31 日保持 (無料枠)
+  performance_insights_enabled          = true
+  performance_insights_retention_period = 31
+
+  tags = local.common_tags
+}
+
+# =============================================================================
+# ElastiCache Redis 7
+# =============================================================================
+# - isolated subnet (2 AZ) に配置、SG は ECS のみから 6379 許可
+# - prd は 2 ノード (primary + replica) / Multi-AZ / Auto Failover / TLS 有効化
+# - REDIS_HOST は apply 後に scripts/seed-secrets.sh で Secrets Manager に投入する
+#   TLS 有効のため接続文字列は rediss://<primary_endpoint>:6379 にすること
+
+module "elasticache" {
+  source = "../../modules/elasticache"
+
+  name           = "${local.name_prefix}-redis"
+  engine_version = "7.1"
+  node_type      = "cache.t4g.micro"
+
+  subnet_ids         = [for k in local.isolated_subnet_keys : module.vpc.subnets[k].id]
+  security_group_ids = [module.vpc.security_groups["redis"].id]
+
+  # prd: 2 ノード構成で Multi-AZ + Auto Failover を有効化
+  num_cache_clusters         = 2
+  automatic_failover_enabled = true
+  multi_az_enabled           = true
+
+  # prd: snapshot 7 日保持
+  snapshot_retention_limit = 7
+
+  # prd: TLS in-transit を有効化 (クライアントは rediss:// で接続)
+  transit_encryption_enabled = true
+
+  # メンテ時間帯 (UTC)。AWS 仕様で snapshot_window と maintenance_window は overlap 不可
+  # snapshot: 毎日 18:00-19:00 UTC (JST 03:00-04:00)
+  # maintenance: 月曜 19:00-20:00 UTC (JST 月曜 04:00-05:00)
+  snapshot_window    = "18:00-19:00"
+  maintenance_window = "mon:19:00-mon:20:00"
+
+  # prd: 即時適用しない (本番稼働中の予期せぬ再起動防止)
+  apply_immediately = false
 
   tags = local.common_tags
 }
