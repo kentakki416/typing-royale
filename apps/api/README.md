@@ -98,16 +98,23 @@ npx dotenvx run -f apps/api/.env.local -- ./scripts/seed-secrets.sh prd
 
 > **prd の `REDIS_HOST` は必ず `rediss://...`（TLS）にすること**。Terraform で `transit_encryption_enabled=true` にしているため、`redis://` だと接続失敗する。
 
-#### 2. ECR に初回 Docker イメージを push
+#### 2. ECR に初回 Docker イメージを push + デプロイ（一気通貫）
 
-dev: `.github/workflows/deploy-aws-dev.yml` の workflow_dispatch で API / worker / migration の 3 イメージを ECR に push する。prd 用は dev workflow を複製して環境変数だけ書き換える。
+環境ごとに専用のデプロイワークフローを用意している。どちらも image build → migration task → ECS service deploy を 1 つの workflow_dispatch で実行する。
 
-#### 3. Prisma migration を ECS 上で実行
+| 環境 | Workflow | 起動方法 |
+|---|---|---|
+| `dev` | `.github/workflows/deploy-aws-dev.yml` | Actions → "Deploy to AWS dev" → Run workflow |
+| `prd` | `.github/workflows/deploy-aws-prd.yml` | Actions → "Deploy to AWS prd" → Run workflow |
 
-ECS Task Definition `typing-royale-<env>-migration` を one-shot で起動して `prisma migrate deploy` を流す。これは `migration` 専用 ECR (`typing-royale-migration`) のイメージから起動され、`apps/api/Dockerfile.migration` の `CMD` で `prisma migrate deploy --schema=prisma/schema.prisma` が走る。
+#### 3. Prisma migration の流れ
+
+両方の deploy workflow に migration job が含まれる。手動で起動するのはトラブルシューティングのみ。
+
+ECS Task Definition `typing-royale-<env>-migration` を `aws ecs run-task` で one-shot 起動し、`apps/api/Dockerfile.migration` の `CMD = prisma migrate deploy --schema=prisma/schema.prisma` を実行する。専用 ECR (`typing-royale-migration`) を使うことで Prisma CLI / devDeps が本番 API イメージに混入しない。
 
 ```bash
-# dev の場合
+# トラブルシューティング用の手動起動例（dev）
 aws ecs run-task \
   --cluster typing-royale-dev-cluster \
   --task-definition typing-royale-dev-migration \
@@ -117,8 +124,6 @@ aws ecs run-task \
 # 完了したら CloudWatch Logs `/ecs/typing-royale-dev-migration` を確認
 ```
 
-> `deploy-aws-dev.yml` は image build → migration task 起動 → API/worker service deploy を一気通貫で実行する。手動 RunTask は trouble shooting のとき限定。
-
 #### 4. API service のデプロイ
 
 dev と prd でデプロイ戦略が違うので注意。
@@ -126,7 +131,7 @@ dev と prd でデプロイ戦略が違うので注意。
 | 環境 | 戦略 | 概要 |
 |---|---|---|
 | `dev` | **ローリングデプロイ** | `deploy-aws-dev.yml` が `aws-actions/amazon-ecs-deploy-task-definition` を `wait-for-service-stability=true` で実行し、完走まで待つ。承認ゲート・bake time なし |
-| `prd` | **Blue/Green デプロイ** | ECS Native Blue/Green。target group A (Blue, current) → B (Green, new) に新 image を起動し、test listener (ALB port 9000) で事前確認 → bake time 10 分 → `prd` Environment の Required reviewers が承認すると production traffic shift |
+| `prd` | **Blue/Green デプロイ + 承認ゲート** | `deploy-aws-prd.yml` が ECS Native Blue/Green を起動 → target group B (Green, new) に新 image を立ち上げ → **`prd-api-approval` Environment の Required reviewers が GitHub UI で承認** → SSM `/typing-royale-prd-api/deploy/approval=approved` → ECS が production traffic shift → 10 分 bake → 完了。承認が reject / 失敗 / cancel になると SSM=rejected で自動 rollback |
 
 apply 直後の初回は `desired_count` が 1（dev）/ 2（prd）に設定されているので、image push + Service 更新で task が起動する。インフラ側の設定差分は [`infra/README.md` のデプロイ戦略](../../infra/README.md#デプロイ戦略devprd-の違い) を参照。
 
