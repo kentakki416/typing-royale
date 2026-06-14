@@ -3,19 +3,11 @@ name: Deploy to AWS dev
 # =============================================================================
 # Job 構成
 # =============================================================================
-# build → migrate → ┬→ deploy-api → approve-api (★ GitHub UI でレビュー承認) → 完了
-#                   │                  ↘ reject-api (失敗 / キャンセル時の rollback)
-#                   └→ deploy-worker (rolling 完走)
+# build → migrate → ┬→ deploy-api    (rolling deployment, 完走待ち)
+#                   └→ deploy-worker (rolling deployment, 完走待ち)
 #
-# - deploy-api: Blue/Green を投入するだけで即抜ける (wait-for-service-stability=false)
-#
-# - approve-api: GitHub Environment `dev-api-approval` の Required reviewers で
-#   レビュアー承認を求める。承認されると SSM=approved を書いて ECS の bake/swap を進める
-#
-# - reject-api: approve-api が reject されたり失敗 / キャンセルされた時に
-#   SSM=rejected を書いて ECS Blue/Green を自動 rollback させる
-#
-# - deploy-worker: rolling deploy、approve-api には依存せず並列で完走する
+# - dev は素のローリングデプロイで運用する (Blue/Green は prd 専用)
+# - Blue/Green 切替検証や事前承認が必要な機能は prd で行う方針
 # =============================================================================
 
 on:
@@ -23,8 +15,7 @@ on:
 
 # 並列 deploy を禁止する。
 # - cancel-in-progress: false → 既存 run はキャンセルせず、後発 run はキュー待ち
-# - approve-api の承認待ちで止まっている間も「進行中」とカウントされるので、
-#   承認順 = deploy 順が強制され、SSM パラメータの race condition が発生しない
+# - rolling 完走を待つ間も「進行中」とカウントされるので deploy 順が保持される
 concurrency:
   group: deploy-aws-dev
   cancel-in-progress: false
@@ -243,9 +234,9 @@ jobs:
           fi
 
   # =========================================================================
-  # API service (Blue/Green)
+  # API service (rolling)
   # =========================================================================
-  # API は Blue/Green デプロイで、SSM 承認待ちがあるため wait-for-service-stability=false
+  # dev は rolling deploy。Blue/Green / 承認ゲートは prd 専用 (deploy-aws-prd.yml 側で実装)。
 
   deploy-api:
     name: Deploy API service
@@ -274,67 +265,13 @@ jobs:
           container-name: ${{ env.ECS_API_SERVICE }}
           image: ${{ needs.build.outputs.registry }}/${{ env.ECR_API_REPO }}:${{ needs.build.outputs.image_tag }}
 
-      - name: Deploy API service (submit only, no wait)
+      - name: Deploy API service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.render-api.outputs.task-definition }}
           service: ${{ env.ECS_API_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
-          # ★ false: green に新 task を起動する API call まで実行し、承認・bake は待たない
-          # 完了確認 / 承認は後続の approve-api job (GitHub Environment) で行う
-          wait-for-service-stability: false
-
-  # =========================================================================
-  # API service の承認 (GitHub Environment Required reviewers)
-  # =========================================================================
-  # deploy-api 完了後、Actions UI に "Review pending deployments" ボタンが出る。
-  # 承認者がボタンを押すと本 job が実行され、SSM パラメータを approved に更新する
-  # → ECS の deployment_hook Lambda が SUCCEEDED 返却 → production traffic shift。
-  #
-
-  approve-api:
-    name: Approve API deployment
-    needs: deploy-api
-    runs-on: ubuntu-latest
-    environment: dev-api-approval # 承認をGithub UIで行うために環境を用意
-    steps:
-      - name: Configure AWS credentials with OIDC
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Set SSM approval to "approved"
-        run: |
-          aws ssm put-parameter \
-            --name "/typing-royale-dev-api/deploy/approval" \
-            --value "approved" \
-            --overwrite
-          echo "Approval set → ECS が production traffic shift + 5 分 bake time に進む"
-
-  # GitHub Environment で reject された場合 (workflow が失敗扱いになる) や
-  # workflow がキャンセルされた場合に、SSM を rejected に書き換えて ECS の
-  # Blue/Green を自動 rollback させる。
-  reject-api:
-    name: Reject API deployment (cleanup on failure/cancel)
-    needs: [deploy-api, approve-api]
-    if: ${{ failure() || cancelled() }}
-    runs-on: ubuntu-latest
-    environment: dev
-    steps:
-      - name: Configure AWS credentials with OIDC
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Set SSM approval to "rejected"
-        run: |
-          aws ssm put-parameter \
-            --name "/typing-royale-dev-api/deploy/approval" \
-            --value "rejected" \
-            --overwrite
-          echo "Rejection set → ECS が Blue/Green を rollback"
+          wait-for-service-stability: true
 
   # =========================================================================
   # worker service (rolling)

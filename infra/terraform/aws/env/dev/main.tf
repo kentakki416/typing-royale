@@ -121,16 +121,6 @@ module "vpc" {
       cidr_blocks         = ["0.0.0.0/0"]
       description         = "HTTP from internet"
     },
-    # ALB Ingress - Blue/Greenテスト用リスナー（ポート9000）
-    {
-      security_group_name = "alb"
-      type                = "ingress"
-      from_port           = 9000
-      to_port             = 9000
-      protocol            = "tcp"
-      cidr_blocks         = var.test_listener_allowed_cidrs
-      description         = "Test listener for Blue/Green deployment"
-    },
     # ALB Egress
     {
       security_group_name = "alb"
@@ -369,7 +359,9 @@ module "alb" {
   idle_timeout = 3600
 
   # === Blue/Greenデプロイ設定 ===
-  enable_blue_green = true
+  # dev は素のローリングデプロイで運用する (検証コストを抑えるため)。
+  # Blue/Green が必要な検証は prd で行う方針。
+  enable_blue_green = false
 
   # === タグ設定 ===
   tags = merge(
@@ -444,13 +436,11 @@ module "ecs_api" {
   secrets_arn = local.ecs_common.secrets_arn
   secret_keys = local.ecs_common.secret_keys
 
-  # ALB + Blue/Green
-  target_group_arn             = module.alb.target_group_a_arn
-  enable_blue_green            = true
-  alternate_target_group_arn   = module.alb.target_group_b_arn
-  production_listener_rule_arn = module.alb.listener_rule_arn
-  test_listener_rule_arn       = module.alb.test_listener_rule_arn
-  bake_time_in_minutes         = 5
+  # ALB (rolling deployment)
+  # dev は素のローリングデプロイで運用するため Blue/Green 系のパラメータは渡さない。
+  # 切替検証は prd で行う方針 (env/prd/main.tf の ecs_api を参照)。
+  target_group_arn  = module.alb.target_group_a_arn
+  enable_blue_green = false
 
   log_retention_in_days = var.log_retention_days
   tags                  = local.common_tags
