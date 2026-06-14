@@ -92,3 +92,25 @@ output "redis_port" {
   description = "Redis port"
   value       = module.elasticache.port
 }
+
+# ALB
+output "alb_dns_name" {
+  description = "ALBのDNS名 (HTTPS 化前の動作確認用 / Route53 ALIAS 先)"
+  value       = module.alb.alb_dns_name
+}
+
+output "alb_zone_id" {
+  description = "ALBのZone ID"
+  value       = module.alb.alb_zone_id
+}
+
+# DNS / TLS (var.domain_name が空のときは null)
+output "acm_certificate_arn" {
+  description = "ACM 証明書 ARN (ALB HTTPS listener にアタッチ済み)"
+  value       = length(module.acm) > 0 ? module.acm[0].certificate_arn : null
+}
+
+output "api_fqdn" {
+  description = "Route53 で作成された API の FQDN (例: api.prd.typing-royale.com)"
+  value       = length(module.route53_api) > 0 ? module.route53_api[0].fqdn : null
+}
