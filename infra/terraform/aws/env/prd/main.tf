@@ -6,7 +6,8 @@
 #   - Secrets recovery_window_in_days: 30 (誤削除に耐える)
 #   - RDS: Multi-AZ / deletion_protection / final snapshot / backup 30 日
 #   - ElastiCache: 2 ノード / Multi-AZ / Auto Failover / TLS
-#   - ALB / ECS は後続 step PR で追加
+#   - ALB: HTTPS 化 (ACM ワイルドカード + Route53 A レコード)、deletion_protection=true
+#   - ECS は後続 step PR で追加
 #
 # TODO (本 PR 範囲外、後続 step / 別 PR で対応):
 #   - NAT Gateway を AZ 冗長化 (現状は modules/vpc が単一 NAT のみサポート)
@@ -333,4 +334,101 @@ module "elasticache" {
   apply_immediately = false
 
   tags = local.common_tags
+}
+
+# =============================================================================
+# DNS / TLS (Route53 hosted zone lookup + ACM certificate)
+# =============================================================================
+# var.domain_name が空のときは ACM / Route53 を作らず ALB は HTTP のみで起動する。
+# 値を入れると以下が一括作成される:
+#   1. data "aws_route53_zone" で既存の hosted zone を lookup (事前作成必須)
+#   2. ACM ワイルドカード証明書 (*.<subdomain>.<domain_name>) を DNS 検証で発行
+#   3. <api_subdomain>.<subdomain>.<domain_name> の A レコード (ALB ALIAS)
+#
+# TODO (本 PR マージ後の手動セットアップ):
+#   - Route53 Console で hosted zone を作成し NS レコードをレジストラに登録
+#   - var.domain_name を `terraform.tfvars` または `-var` で実ドメインに設定
+#   - その後 `terraform apply` で ACM / DNS / HTTPS ALB が一括作成される
+
+locals {
+  dns_enabled = var.domain_name != ""
+}
+
+data "aws_route53_zone" "main" {
+  count        = local.dns_enabled ? 1 : 0
+  name         = var.domain_name
+  private_zone = false
+}
+
+module "acm" {
+  count  = local.dns_enabled ? 1 : 0
+  source = "../../modules/acm"
+
+  domain_name = var.domain_name
+  subdomain   = var.subdomain
+  zone_id     = data.aws_route53_zone.main[0].zone_id
+
+  tags = local.common_tags
+}
+
+# =============================================================================
+# Application Load Balancer
+# =============================================================================
+# - dns_enabled = true: HTTPS リスナー (443) + ACM 証明書、HTTP リスナー (80) なし
+# - dns_enabled = false: HTTP リスナー (80) のみ (ACM 未準備の暫定構成)
+# - test_listener (9000) は dns_enabled 不問で常に作成 (Blue/Green 検証用)
+# - prd は deletion_protection=true で誤削除を防ぐ
+
+module "alb" {
+  source = "../../modules/alb"
+
+  # === 基本設定 ===
+  name            = "${local.name_prefix}-alb"
+  vpc_id          = module.vpc.vpc_id
+  security_groups = [module.vpc.security_groups["alb"].id]
+  subnets         = [for k in local.public_subnet_keys : module.vpc.subnets[k].id]
+
+  # === ターゲットグループ設定 ===
+  target_group_name_prefix = "${local.name_prefix}-api"
+  target_group_port        = var.app_port
+  listener_port            = "80"
+
+  # === HTTPS 化 ===
+  enable_https    = local.dns_enabled
+  certificate_arn = local.dns_enabled ? module.acm[0].certificate_arn : null
+
+  # === SSE 対応 ===
+  # /api/matching/events の SSE が 60 秒で切れないよう 3600 秒に延長
+  idle_timeout = 3600
+
+  # === Blue/Greenデプロイ設定 ===
+  enable_blue_green = true
+
+  # === prd: ALB 誤削除防止 ===
+  enable_deletion_protection = true
+
+  # === タグ設定 ===
+  tags = merge(
+    local.common_tags,
+    {
+      Name      = "${local.name_prefix}-alb"
+      Component = "LoadBalancer"
+    }
+  )
+}
+
+# =============================================================================
+# Route53 A レコード (API)
+# =============================================================================
+# <api_subdomain>.<subdomain>.<domain_name> → ALB の ALIAS
+# dns_enabled = false のときは作成しない (ALB に DNS をマッピングしない)
+
+module "route53_api" {
+  count  = local.dns_enabled ? 1 : 0
+  source = "../../modules/route53"
+
+  zone_id      = data.aws_route53_zone.main[0].zone_id
+  fqdn         = "${var.api_subdomain}.${var.subdomain}.${var.domain_name}"
+  alb_dns_name = module.alb.alb_dns_name
+  alb_zone_id  = module.alb.alb_zone_id
 }
