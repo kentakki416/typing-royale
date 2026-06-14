@@ -72,16 +72,29 @@ GitHub Settings → Environments で以下を作成し、各 Environment に **S
 | Environment | 用途 | Required reviewers | `AWS_ROLE_ARN` の値 |
 |---|---|---|---|
 | `dev` | env/dev の plan/apply・Docker push・ECS deploy（rolling） | 不要 | `github_actions_dev_role_arn` |
-| `prd` | env/prd の plan/apply・Docker push・**Blue/Green デプロイ承認ゲート** | **必要**（管理者） | `github_actions_prd_role_arn` |
+| `prd` | env/prd の plan/apply・Docker push・migration / worker デプロイ | 任意（運用ポリシー次第） | `github_actions_prd_role_arn` |
+| `prd-api-approval` | prd の API Blue/Green 切替承認ゲート（GitHub UI で承認ボタンを押すと SSM=approved → ECS が production traffic shift） | **必要**（本番管理者） | `github_actions_prd_role_arn` |
 
 登録後、Pull Request を作ると Terraform CI（`Terraform AWS Env CI`）の OIDC 認証が成功するようになる。
 
 ### デプロイ戦略（dev / prd の違い）
 
-| 環境 | ECS API のデプロイ | 用途 |
-|---|---|---|
-| `dev` | **ローリングデプロイ**（GHA `deploy-aws-dev.yml` から `wait-for-service-stability=true` で完走待ち） | 高速反復を優先。承認ゲート・bake time なし |
-| `prd` | **Blue/Green デプロイ**（ECS Native、test listener (9000) で事前検証 + bake time 10 分 + 承認ゲート） | 本番切替の安全性を優先。`prd` Environment の Required reviewers が承認した後に production traffic shift |
+| 環境 | ECS API のデプロイ | ワークフロー | 用途 |
+|---|---|---|---|
+| `dev` | **ローリングデプロイ**（`wait-for-service-stability=true` で完走待ち） | `deploy-aws-dev.yml` | 高速反復を優先。承認ゲート・bake time なし |
+| `prd` | **Blue/Green デプロイ**（test listener (9000) で事前検証 + bake time 10 分 + 承認ゲート） | `deploy-aws-prd.yml` | 本番切替の安全性を優先。`prd-api-approval` Environment の Required reviewers が承認した後に production traffic shift |
+
+prd の Blue/Green フロー (`deploy-aws-prd.yml`):
+
+```mermaid
+flowchart LR
+    Build[build<br/>API/worker/migration image] --> Migrate[migrate<br/>Prisma migrate deploy]
+    Migrate --> DeployAPI[deploy-api<br/>Green に新 task 起動]
+    Migrate --> DeployWorker[deploy-worker<br/>rolling 完走]
+    DeployAPI --> Approve[approve-api<br/>★ GitHub UI で承認]
+    Approve --> SSMApprove[SSM=approved<br/>→ ECS が traffic shift]
+    DeployAPI -.失敗/キャンセル.-> Reject[reject-api<br/>SSM=rejected → rollback]
+```
 
 詳細は ALB / ECS workload モジュール定義（`infra/terraform/aws/modules/alb/` と `modules/ecs-workload/`）を参照。dev で Blue/Green を試したくなった場合は `env/dev/main.tf` の `enable_blue_green` を `true` に戻し、ALB SG に port 9000 ingress と `test_listener_allowed_cidrs` 変数を再度追加する。
 
@@ -108,7 +121,7 @@ prd は事前にドメイン関連の手動セットアップが必要。
    subdomain     = "prd"
    api_subdomain = "api"
    ```
-3. apply 実行（prd Environment の Required reviewers で承認待ちになる）:
+3. **インフラ apply**（prd Environment の Required reviewers で承認待ちになる）:
    ```
    Actions → "Terraform AWS Env Apply" → Run workflow → environment: prd
    ```
@@ -117,11 +130,14 @@ prd は事前にドメイン関連の手動セットアップが必要。
      - `<password>` は `terraform output -raw rds_master_user_secret_arn` から取れる Secrets Manager の値
    - `REDIS_HOST` = **`rediss://<redis_address>:6379`**（TLS 有効化のため `rediss://` プレフィックス必須）
    - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `LIVEKIT_*` / `FRONTEND_URL` 等の外部サービス連携 secret
-5. 初回 Docker image を ECR に push（dev の `deploy-aws-dev.yml` を prd 用に複製して使う）
-6. ECS API service が ALB target group A に登録され healthy になるまで待つ
-7. `aws ecs run-task --cluster typing-royale-prd-cluster --task-definition typing-royale-prd-migration` で Prisma migrate deploy 実行
-   - API 側のマイグレーション全般は [`apps/api/README.md` のセットアップ手順](../apps/api/README.md#セットアップ) を参照
-8. worker の `desired_count` を 0 → 1 に上げて apply（初回 image push 後の安全策）
+5. **アプリ deploy**（`deploy-aws-prd.yml`、Blue/Green + 承認ゲート）:
+   ```
+   Actions → "Deploy to AWS prd" → Run workflow
+   ```
+   - build → migrate → deploy-api (Green に新 task 起動) → **approve-api**（Actions UI で承認）→ ECS が production traffic shift → bake 10 分後完了
+   - 並行して deploy-worker が rolling で完走
+6. ECS API service が ALB target group A に登録され healthy になることを確認
+7. worker の `desired_count` を 0 → 1 に上げて apply（初回 image push 後の安全策。`var.ecs_worker_desired_count` を導入してもよい）
 
 ### トラブルシューティング
 
