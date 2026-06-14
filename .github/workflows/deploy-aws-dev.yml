@@ -40,23 +40,23 @@ env:
   # 環境ごとに変える値 — prd 作成時は deploy-aws-prd.yml を新設して下記を書き換える
   # =============================================================================
   # AWS リソースタグ (Terraform default_tags の Project / Environment と一致させる)
-  PROJECT_NAME: project-template
+  PROJECT_NAME: typing-royale
   ENVIRONMENT: dev
 
   # ECR (environment 非依存だが project_name は含む)
-  ECR_API_REPO: project-template-api-server
-  ECR_WORKER_REPO: project-template-worker
-  ECR_MIGRATION_REPO: project-template-migration
+  ECR_API_REPO: typing-royale-api-server
+  ECR_WORKER_REPO: typing-royale-worker
+  ECR_MIGRATION_REPO: typing-royale-migration
 
   # ECS リソース (project_name-environment- プレフィックスを持つ)
-  ECS_CLUSTER: project-template-dev-cluster
-  ECS_API_SERVICE: project-template-dev-api
-  ECS_WORKER_SERVICE: project-template-dev-worker
-  ECS_MIGRATION_TASK_DEF: project-template-dev-migration
+  ECS_CLUSTER: typing-royale-dev-cluster
+  ECS_API_SERVICE: typing-royale-dev-api
+  ECS_WORKER_SERVICE: typing-royale-dev-worker
+  ECS_MIGRATION_TASK_DEF: typing-royale-dev-migration
 
   # VPC リソース解決用 (Terraform 側 modules/vpc の Name タグと一致)
-  ECS_SECURITY_GROUP_NAME: project-template-dev-ecs
-  PRIVATE_SUBNET_NAME_PREFIX: project-template-dev-private # `${prefix}*` で wildcard 検索する
+  ECS_SECURITY_GROUP_NAME: typing-royale-dev-ecs
+  PRIVATE_SUBNET_NAME_PREFIX: typing-royale-dev-private # `${prefix}*` で wildcard 検索する
 
 jobs:
   build:
@@ -133,7 +133,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       # 現行 migration task definition の image を build job の SHA タグに書き換えて新リビジョンを register する。
-      # migration は専用イメージ (project-template-migration) を参照 — Prisma CLI を本番 API に混入させないため。
+      # migration は専用イメージ (typing-royale-migration) を参照 — Prisma CLI を本番 API に混入させないため。
       - name: Register migration task definition with new image
         id: register
         env:
@@ -307,7 +307,7 @@ jobs:
       - name: Set SSM approval to "approved"
         run: |
           aws ssm put-parameter \
-            --name "/project-template-dev-api/deploy/approval" \
+            --name "/typing-royale-dev-api/deploy/approval" \
             --value "approved" \
             --overwrite
           echo "Approval set → ECS が production traffic shift + 5 分 bake time に進む"
@@ -331,7 +331,7 @@ jobs:
       - name: Set SSM approval to "rejected"
         run: |
           aws ssm put-parameter \
-            --name "/project-template-dev-api/deploy/approval" \
+            --name "/typing-royale-dev-api/deploy/approval" \
             --value "rejected" \
             --overwrite
           echo "Rejection set → ECS が Blue/Green を rollback"

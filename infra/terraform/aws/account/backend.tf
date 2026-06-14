@@ -6,10 +6,10 @@
 
 terraform {
   backend "s3" {
-    bucket         = "project-template-terraform-state-20250101"
+    bucket         = "typing-royale-terraform-state-20260614"
     key            = "account/terraform.tfstate"
     region         = "ap-northeast-1"
-    dynamodb_table = "project-template-terraform-state-lock"
+    dynamodb_table = "typing-royale-terraform-state-lock"
     encrypt        = true
   }
 }

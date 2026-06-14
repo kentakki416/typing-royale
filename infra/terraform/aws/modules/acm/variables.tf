@@ -1,5 +1,5 @@
 variable "domain_name" {
-  description = "ルートドメイン (例: project-template.com)。証明書の SAN ではなく fqdn 構築用"
+  description = "ルートドメイン (例: typing-royale.com)。証明書の SAN ではなく fqdn 構築用"
   type        = string
 }
 

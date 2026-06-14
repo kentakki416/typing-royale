@@ -12,10 +12,10 @@
 
 terraform {
   backend "s3" {
-    bucket         = "project-template-terraform-state-20250101" # TODO: backet名を適切な値に変更してください
+    bucket         = "typing-royale-terraform-state-20260614" # TODO: backet名を適切な値に変更してください
     key            = "dev/terraform.tfstate"
     region         = "ap-northeast-1"
-    dynamodb_table = "project-template-terraform-state-lock" # TODO: bootstrap/variables.tfと同じ値に変更してください
+    dynamodb_table = "typing-royale-terraform-state-lock" # TODO: bootstrap/variables.tfと同じ値に変更してください
     encrypt        = true
   }
 }

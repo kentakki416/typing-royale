@@ -6,6 +6,148 @@ Express.js + TypeScript による API サーバー
 
 レイヤードアーキテクチャに基づいた REST API サーバー。Prisma による型安全なデータアクセス、依存性注入による疎結合な設計を採用。
 
+## セットアップ
+
+API を初めて触る人 / 新しい環境で初回起動するときの手順。実装ルールやテスト戦略は本 README の後半 + `CLAUDE.md` を参照。
+
+### 目次
+
+- [ローカル開発（初回セットアップ）](#ローカル開発初回セットアップ)
+- [AWS デプロイ後のセットアップ](#aws-デプロイ後のセットアップ)
+- [マイグレーションを追加するとき](#マイグレーションを追加するとき)
+- [トラブルシューティング](#トラブルシューティング)
+
+### ローカル開発（初回セットアップ）
+
+#### 1. `.env.keys` を配置
+
+`.env.local` は [dotenvx](https://dotenvx.com/) で暗号化されている。復号鍵 `.env.keys` を管理者から受け取り、**プロジェクトルート**（`<project-root>/.env.keys`）に配置する。`apps/api/.env.keys` はルートへのシンボリックリンクが git に含まれているため、ルートに置くだけで API からも参照される。
+
+詳細は [ルート README の「環境変数の設定」](../../README.md#2-環境変数の設定) を参照。
+
+#### 2. Docker Compose で Postgres / Redis を起動
+
+プロジェクトルートで:
+
+```bash
+docker compose up -d
+docker compose ps                    # postgres / redis が healthy なら OK
+```
+
+これで以下が起動する:
+
+- Postgres 16（port 5432、初期 DB 名 `typing_royale_dev`、`postgres` / `password`）
+- Redis 7（port 6379、AOF 永続化）
+
+#### 3. 依存パッケージのインストールと共通スキーマのビルド
+
+```bash
+pnpm install                          # ルートで実行
+pnpm --filter @repo/schema build      # スキーマは依存より先にビルドが必要
+```
+
+#### 4. Prisma クライアント生成 + マイグレーション適用
+
+```bash
+cd apps/api
+pnpm db:generate                      # Prisma Client を生成
+pnpm db:migrate                       # 既存のマイグレーションを dev DB に適用 + 新規があればプロンプト
+```
+
+> 既存マイグレーションのみ適用したい場合（CI など、新規マイグレーションのプロンプトを出さない）は `pnpm db:migrate:deploy` を使う。
+
+#### 5. シードデータ投入（任意）
+
+```bash
+pnpm db:seed                          # dev 用テストユーザー (Alice / Bob) などを投入
+```
+
+#### 6. dev サーバー起動
+
+```bash
+pnpm dev                              # tsx watch で 8080 ポートで起動
+curl http://localhost:8080/api/health # → {"status":"ok"} が返れば OK
+```
+
+#### 7. テスト用 DB を作って vitest を流す（テストを書く人向け）
+
+`pnpm test` は内部で `DB_NAME=typing_royale_test` に切り替えて `db:migrate:deploy` を流すため、テスト用 DB を別途用意しなくても初回実行時に自動で作成される。
+
+```bash
+pnpm test                             # 全テスト
+pnpm test test/service                # ユニットテストのみ（DB 不要）
+pnpm test test/controller             # インテグレーションテスト（DB / Redis 必要）
+```
+
+### AWS デプロイ後のセットアップ
+
+AWS インフラ自体のデプロイ手順は [`infra/README.md`](../../infra/README.md) を参照。Terraform apply 完了後、API 側で以下のセットアップが必要になる。
+
+#### 1. Secrets Manager に環境変数を投入
+
+Terraform は Secrets Manager の **箱** (`/typing-royale-<env>/app`) と JWT 鍵だけを作る。`DATABASE_URL` / `REDIS_HOST` / `GOOGLE_*` などは `scripts/seed-secrets.sh` で手動投入する:
+
+```bash
+# scripts/README.md の手順に従って事前に環境変数を export してから
+npx dotenvx run -f apps/api/.env.local -- ./scripts/seed-secrets.sh dev
+# prd の場合
+npx dotenvx run -f apps/api/.env.local -- ./scripts/seed-secrets.sh prd
+```
+
+詳細は [`scripts/README.md`](../../scripts/README.md) を参照。
+
+> **prd の `REDIS_HOST` は必ず `rediss://...`（TLS）にすること**。Terraform で `transit_encryption_enabled=true` にしているため、`redis://` だと接続失敗する。
+
+#### 2. ECR に初回 Docker イメージを push
+
+dev: `.github/workflows/deploy-aws-dev.yml` の workflow_dispatch で API / worker / migration の 3 イメージを ECR に push する。prd 用は dev workflow を複製して環境変数だけ書き換える。
+
+#### 3. Prisma migration を ECS 上で実行
+
+ECS Task Definition `typing-royale-<env>-migration` を one-shot で起動して `prisma migrate deploy` を流す。これは `migration` 専用 ECR (`typing-royale-migration`) のイメージから起動され、`apps/api/Dockerfile.migration` の `CMD` で `prisma migrate deploy --schema=prisma/schema.prisma` が走る。
+
+```bash
+# dev の場合
+aws ecs run-task \
+  --cluster typing-royale-dev-cluster \
+  --task-definition typing-royale-dev-migration \
+  --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[<private-subnet-id>],securityGroups=[<ecs-sg-id>]}"
+
+# 完了したら CloudWatch Logs `/ecs/typing-royale-dev-migration` を確認
+```
+
+> `dev-api` Blue/Green デプロイの GHA (`deploy-aws-dev.yml`) は migration task を自動起動するワーフローを含んでいる。手動 RunTask は trouble shooting のとき限定。
+
+#### 4. API service の Blue/Green デプロイ
+
+migration が完了したら、ECS API service に新リビジョンの Task Definition を渡してローリングデプロイを開始する。`.github/workflows/deploy-aws-dev.yml` がこの一連を自動化している（target group A → B 切替、bake time 5 分、SSM パラメータでの承認待ち）。
+
+apply 直後の初回は `desired_count` が 1（dev）/ 2（prd）に設定されているので、image push + Service 更新で task が起動する。
+
+### マイグレーションを追加するとき
+
+```bash
+cd apps/api
+pnpm db:migrate                       # 対話的に migration 名を聞かれる → 例: add_user_table
+```
+
+これで `packages/db/prisma/migrations/<timestamp>_add_user_table/` が生成される。**git にコミットすること**（ECS migration task が apply するため）。
+
+prd への適用は AWS デプロイフローに含まれる（ECS RunTask で `prisma migrate deploy` が流れる）。
+
+### トラブルシューティング
+
+| 症状 | 原因 | 対処 |
+|---|---|---|
+| `dotenvx` で `.env.local` 復号失敗 | `.env.keys` がプロジェクトルートに無い、またはシンボリックリンクが壊れている | ルートに `.env.keys` を配置、`ls -l apps/api/.env.keys` でリンクを確認、必要なら `ln -sf ../../.env.keys apps/api/.env.keys` で再作成 |
+| `db:migrate` で `P1001: Can't reach database server` | Postgres コンテナが起動していない / 別ポートを使っている | `docker compose ps` で postgres が healthy か確認、port 5432 を別プロセスが占有していないか `lsof -i :5432` で確認 |
+| `db:migrate` で `P3009: migrate found failed migrations` | 過去のマイグレーションが途中で失敗して `_prisma_migrations` テーブルに `failed` のエントリが残っている | `pnpm db:push --force-reset` で dev DB を破棄して再構築（dev DB のデータは消える）。本番では絶対に使わない |
+| `pnpm test` で `relation "user" does not exist` | テスト用 DB (`typing_royale_test`) にマイグレーションが当たっていない | `DB_NAME=typing_royale_test pnpm db:migrate:deploy` を手動で流す、または `pnpm test` を一度走らせて自動セットアップさせる |
+| Redis 接続エラー | Redis コンテナが起動していない / `.env.local` の `REDIS_*` が間違っている | `docker compose ps` で redis 確認、`npx dotenvx get REDIS_HOST -f apps/api/.env.local` で値確認 |
+| ECS migration task が `ImagePullBackoff` 相当の起動失敗 | ECR に migration image が push されていない | `.github/workflows/deploy-aws-dev.yml` の `build-push-migration` job を先に走らせる |
+| dev サーバーが起動するが `/api/health` が `database: error` を返す | `DATABASE_URL` が空 or 間違っている、または Prisma Client 未生成 | `pnpm db:generate` を実行、`.env.local` の `DATABASE_URL` を確認 |
+
 ## ディレクトリ構成
 
 ```
@@ -405,19 +547,23 @@ pnpm lint:fix
 
 ## Prisma コマンド
 
+スキーマは `packages/db/prisma/schema.prisma` に集約されており、コマンドは `apps/api` 側のスクリプトから `pnpm --filter @repo/db ...` で呼び出す形になっている。すべて dotenvx 経由で `.env.local` の `DATABASE_URL` を解決する。
+
 ```bash
-# マイグレーションファイルの作成・実行
-cd src/prisma
-npx prisma migrate dev --name <migration名>
+# マイグレーションの作成・適用（dev 用、対話的に migration 名を聞かれる）
+pnpm db:migrate
+
+# 既存マイグレーションの適用のみ（CI / 本番用）
+pnpm db:migrate:deploy
 
 # クライアントの生成
-cd src/prisma
-npx prisma generate
+pnpm db:generate
 
 # シードの実行
-cd src/prisma
-npx prisma db seed
+pnpm db:seed
 
-# Studio の起動
-npx prisma studio --url postgresql://postgres:password@localhost:5432/ai_trainer_dev
+# 開発用 GUI (Prisma Studio) の起動
+pnpm db:studio
 ```
+
+セットアップフローでの使い方は [セットアップ](#セットアップ) を参照。
