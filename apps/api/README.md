@@ -117,13 +117,18 @@ aws ecs run-task \
 # 完了したら CloudWatch Logs `/ecs/typing-royale-dev-migration` を確認
 ```
 
-> `dev-api` Blue/Green デプロイの GHA (`deploy-aws-dev.yml`) は migration task を自動起動するワーフローを含んでいる。手動 RunTask は trouble shooting のとき限定。
+> `deploy-aws-dev.yml` は image build → migration task 起動 → API/worker service deploy を一気通貫で実行する。手動 RunTask は trouble shooting のとき限定。
 
-#### 4. API service の Blue/Green デプロイ
+#### 4. API service のデプロイ
 
-migration が完了したら、ECS API service に新リビジョンの Task Definition を渡してローリングデプロイを開始する。`.github/workflows/deploy-aws-dev.yml` がこの一連を自動化している（target group A → B 切替、bake time 5 分、SSM パラメータでの承認待ち）。
+dev と prd でデプロイ戦略が違うので注意。
 
-apply 直後の初回は `desired_count` が 1（dev）/ 2（prd）に設定されているので、image push + Service 更新で task が起動する。
+| 環境 | 戦略 | 概要 |
+|---|---|---|
+| `dev` | **ローリングデプロイ** | `deploy-aws-dev.yml` が `aws-actions/amazon-ecs-deploy-task-definition` を `wait-for-service-stability=true` で実行し、完走まで待つ。承認ゲート・bake time なし |
+| `prd` | **Blue/Green デプロイ** | ECS Native Blue/Green。target group A (Blue, current) → B (Green, new) に新 image を起動し、test listener (ALB port 9000) で事前確認 → bake time 10 分 → `prd` Environment の Required reviewers が承認すると production traffic shift |
+
+apply 直後の初回は `desired_count` が 1（dev）/ 2（prd）に設定されているので、image push + Service 更新で task が起動する。インフラ側の設定差分は [`infra/README.md` のデプロイ戦略](../../infra/README.md#デプロイ戦略devprd-の違い) を参照。
 
 ### マイグレーションを追加するとき
 

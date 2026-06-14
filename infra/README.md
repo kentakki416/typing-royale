@@ -71,11 +71,19 @@ GitHub Settings → Environments で以下を作成し、各 Environment に **S
 
 | Environment | 用途 | Required reviewers | `AWS_ROLE_ARN` の値 |
 |---|---|---|---|
-| `dev` | env/dev の plan/apply・Docker push・ECS deploy | 不要 | `github_actions_dev_role_arn` |
-| `dev-api-approval` | dev の API Blue/Green 切替承認ゲート | **必要**（自分） | `github_actions_dev_role_arn` |
-| `prd` | env/prd の plan/apply | **必要**（管理者） | `github_actions_prd_role_arn` |
+| `dev` | env/dev の plan/apply・Docker push・ECS deploy（rolling） | 不要 | `github_actions_dev_role_arn` |
+| `prd` | env/prd の plan/apply・Docker push・**Blue/Green デプロイ承認ゲート** | **必要**（管理者） | `github_actions_prd_role_arn` |
 
 登録後、Pull Request を作ると Terraform CI（`Terraform AWS Env CI`）の OIDC 認証が成功するようになる。
+
+### デプロイ戦略（dev / prd の違い）
+
+| 環境 | ECS API のデプロイ | 用途 |
+|---|---|---|
+| `dev` | **ローリングデプロイ**（GHA `deploy-aws-dev.yml` から `wait-for-service-stability=true` で完走待ち） | 高速反復を優先。承認ゲート・bake time なし |
+| `prd` | **Blue/Green デプロイ**（ECS Native、test listener (9000) で事前検証 + bake time 10 分 + 承認ゲート） | 本番切替の安全性を優先。`prd` Environment の Required reviewers が承認した後に production traffic shift |
+
+詳細は ALB / ECS workload モジュール定義（`infra/terraform/aws/modules/alb/` と `modules/ecs-workload/`）を参照。dev で Blue/Green を試したくなった場合は `env/dev/main.tf` の `enable_blue_green` を `true` に戻し、ALB SG に port 9000 ingress と `test_listener_allowed_cidrs` 変数を再度追加する。
 
 ### 5. env/dev のデプロイ
 
