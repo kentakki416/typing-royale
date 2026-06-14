@@ -7,7 +7,7 @@
 #   - RDS: Multi-AZ / deletion_protection / final snapshot / backup 30 日
 #   - ElastiCache: 2 ノード / Multi-AZ / Auto Failover / TLS
 #   - ALB: HTTPS 化 (ACM ワイルドカード + Route53 A レコード)、deletion_protection=true
-#   - ECS は後続 step PR で追加
+#   - ECS: Cluster + API (Blue/Green) + matching-worker + migration の 3 workload
 #
 # TODO (本 PR 範囲外、後続 step / 別 PR で対応):
 #   - NAT Gateway を AZ 冗長化 (現状は modules/vpc が単一 NAT のみサポート)
@@ -431,4 +431,150 @@ module "route53_api" {
   fqdn         = "${var.api_subdomain}.${var.subdomain}.${var.domain_name}"
   alb_dns_name = module.alb.alb_dns_name
   alb_zone_id  = module.alb.alb_zone_id
+}
+
+# =============================================================================
+# コンテナレジストリ (ECR) - account/ で作成済みリポジトリを lookup
+# =============================================================================
+
+data "aws_ecr_repository" "api" {
+  name = "${var.project_name}-api-server"
+}
+
+data "aws_ecr_repository" "worker" {
+  name = "${var.project_name}-worker"
+}
+
+data "aws_ecr_repository" "migration" {
+  name = "${var.project_name}-migration"
+}
+
+# =============================================================================
+# ECS Fargate Cluster
+# =============================================================================
+# 全 workload (API / worker / migration) が共有する cluster と task execution role を作る。
+
+module "ecs_cluster" {
+  source = "../../modules/ecs-cluster"
+
+  name = "${local.name_prefix}-cluster"
+
+  # Task execution role に Secrets Manager Get 権限を持たせる対象 ARN を渡す。
+  secret_arns_readable = [module.app_secrets.secret_arn]
+
+  tags = local.common_tags
+}
+
+# ECS workload の「デフォルト」共通設定。dev と同じ構造で workload 間の差分を最小化する。
+locals {
+  ecs_common = {
+    cluster_arn        = module.ecs_cluster.cluster_arn
+    execution_role_arn = module.ecs_cluster.task_execution_role_arn
+    subnets            = [for k in local.private_subnet_keys : module.vpc.subnets[k].id]
+    security_groups    = [module.vpc.security_groups["ecs"].id]
+    secrets_arn        = module.app_secrets.secret_arn
+
+    # Secrets Manager に登録している全環境変数を 1 箇所で集中管理。
+    # 全 workload で同じ secret 集合を共有 (最小権限より「forget しない」事故防止を優先)。
+    secret_keys = [
+      "DATABASE_URL",
+      "REDIS_HOST", "REDIS_PORT", "REDIS_DB",
+      "JWT_ACCESS_SECRET", "JWT_REFRESH_SECRET",
+      "JWT_ACCESS_EXPIRATION", "JWT_REFRESH_EXPIRATION",
+      "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET",
+      "LIVEKIT_HOST", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET",
+      "FRONTEND_URL", "NODE_ENV", "PORT",
+    ]
+  }
+}
+
+# =============================================================================
+# ECS Workload: API (Express on Fargate, ALB + Blue/Green デプロイ)
+# =============================================================================
+# prd: desired_count = 2 で AZ 冗長確保 + ローリングデプロイ余裕
+
+module "ecs_api" {
+  source = "../../modules/ecs-workload"
+
+  name           = "${local.name_prefix}-api"
+  image          = "${data.aws_ecr_repository.api.repository_url}:latest"
+  cpu            = tonumber(var.ecs_task_cpu)
+  memory         = tonumber(var.ecs_task_memory)
+  container_port = var.app_port
+  desired_count  = var.ecs_api_desired_count
+
+  cluster_arn        = local.ecs_common.cluster_arn
+  execution_role_arn = local.ecs_common.execution_role_arn
+  subnets            = local.ecs_common.subnets
+  security_groups    = local.ecs_common.security_groups
+
+  secrets_arn = local.ecs_common.secrets_arn
+  secret_keys = local.ecs_common.secret_keys
+
+  # ALB + Blue/Green
+  target_group_arn             = module.alb.target_group_a_arn
+  enable_blue_green            = true
+  alternate_target_group_arn   = module.alb.target_group_b_arn
+  production_listener_rule_arn = module.alb.listener_rule_arn
+  test_listener_rule_arn       = module.alb.test_listener_rule_arn
+  bake_time_in_minutes         = 10 # prd は dev (5 分) より長めに様子見
+
+  log_retention_in_days = var.log_retention_days
+  tags                  = local.common_tags
+}
+
+# =============================================================================
+# ECS Workload: matching-worker (BullMQ ジョブ消化、ALB なし、Blue/Green なし)
+# =============================================================================
+# 初回 image push 前は CannotPullContainerError 防止のため desired_count = 0。
+
+module "ecs_worker" {
+  source = "../../modules/ecs-workload"
+
+  name   = "${local.name_prefix}-worker"
+  image  = "${data.aws_ecr_repository.worker.repository_url}:latest"
+  cpu    = 256
+  memory = 512
+
+  cluster_arn        = local.ecs_common.cluster_arn
+  execution_role_arn = local.ecs_common.execution_role_arn
+  subnets            = local.ecs_common.subnets
+  security_groups    = local.ecs_common.security_groups
+
+  secrets_arn = local.ecs_common.secrets_arn
+  secret_keys = local.ecs_common.secret_keys
+
+  # 初回 image push 前は CannotPullContainerError 防止のため desired_count = 0。
+  # image push 後に worker を起動するときは variable 化するか、ここを 1 に上げて apply
+  desired_count         = 0
+  log_retention_in_days = var.log_retention_days
+  tags                  = local.common_tags
+}
+
+# =============================================================================
+# ECS Workload: Prisma migration (one-shot task definition、Service なし)
+# =============================================================================
+# - GHA から `aws ecs run-task --task-definition <family>` で起動する想定
+# - 専用 ECR (typing-royale-migration) + 専用 Dockerfile (apps/api/Dockerfile.migration) を使う
+# - Dockerfile の CMD = `prisma migrate deploy --schema=prisma/schema.prisma` をそのまま使う
+
+module "ecs_migration" {
+  source = "../../modules/ecs-workload"
+
+  name   = "${local.name_prefix}-migration"
+  image  = "${data.aws_ecr_repository.migration.repository_url}:latest"
+  cpu    = 256
+  memory = 512
+
+  cluster_arn        = local.ecs_common.cluster_arn
+  execution_role_arn = local.ecs_common.execution_role_arn
+  subnets            = local.ecs_common.subnets
+  security_groups    = local.ecs_common.security_groups
+
+  secrets_arn = local.ecs_common.secrets_arn
+  secret_keys = local.ecs_common.secret_keys
+
+  create_service        = false
+  log_retention_in_days = var.log_retention_days
+  tags                  = local.common_tags
 }

@@ -88,6 +88,34 @@ variable "api_subdomain" {
 }
 
 # =============================================================================
+# ECS設定
+# =============================================================================
+
+variable "ecs_task_cpu" {
+  description = "ECSタスクのCPUユニット（256 = 0.25 vCPU, 512 = 0.5 vCPU, 1024 = 1 vCPU）。prd は 512 (= 0.5 vCPU) からスタート"
+  type        = string
+  default     = "512"
+}
+
+variable "ecs_task_memory" {
+  description = "ECSタスクのメモリ（MB）。prd は 1024 (= 1 GB) からスタート"
+  type        = string
+  default     = "1024"
+}
+
+variable "ecs_api_desired_count" {
+  description = "API ECS service の desired_count。prd は最低 2 (AZ 冗長 + ローリングデプロイ余裕)"
+  type        = number
+  default     = 2
+}
+
+variable "log_retention_days" {
+  description = "CloudWatch Logsの保存期間（日数）。prd は本番監視を考慮して 30 日"
+  type        = number
+  default     = 30
+}
+
+# =============================================================================
 # タグ設定
 # =============================================================================
 
