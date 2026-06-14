@@ -1,0 +1,18 @@
+# prd 環境で許容するルール
+# dev (.trivyignore) より厳格化。残った ignore は仕様上の制約 or 後続 PR で解消予定。
+#
+# ALB が公開されている (AVD-AWS-0053): 公開 API のため意図的
+AVD-AWS-0053
+
+# HTTPS を使っていない (AVD-AWS-0054):
+# var.domain_name が空のあいだ ALB は HTTP のみで起動する (Route53 hosted zone セットアップ前の暫定構成)。
+# hosted zone を作成して var.domain_name を設定すると ACM ワイルドカード + HTTPS リスナーが自動構築される。
+# TODO: domain_name 設定 + apply 後にこの行を削除する
+AVD-AWS-0054
+
+# Egress 0.0.0.0/0 (AVD-AWS-0104): ECR / CloudWatch / Secrets Manager 等への通信に必要
+AVD-AWS-0104
+
+# VPC Flow Logs 無効 (AVD-AWS-0178): 後続 PR で CloudWatch Logs 出力を追加予定
+# TODO: 監視整備フェーズで有効化し、本行を削除する
+AVD-AWS-0178
