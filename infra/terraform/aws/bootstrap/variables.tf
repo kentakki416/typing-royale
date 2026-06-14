@@ -5,7 +5,7 @@
 variable "project_name" {
   description = "プロジェクト名（S3バケット名とDynamoDBテーブル名のプレフィックスに使用）"
   type        = string
-  default     = "project-template" # TODO: プロジェクト名に変更してください
+  default     = "typing-royale"
 }
 
 variable "aws_region" {
@@ -17,11 +17,11 @@ variable "aws_region" {
 variable "s3_bucket_name" {
   description = "Terraform State保存用のS3バケット名（AWS全体でグローバルに一意である必要があります。他のAWSアカウントで既に使用されている名前は使用できません）"
   type        = string
-  default     = "project-template-terraform-state-20250101" # TODO: プロジェクト名、日付、UUIDなどを含めて一意のバケット名に変更してください
+  default     = "typing-royale-terraform-state-20260614"
 }
 
 variable "dynamodb_table_name" {
   description = "Terraform State Lock用のDynamoDBテーブル名"
   type        = string
-  default     = "project-template-terraform-state-lock" # TODO: 一意のテーブル名に変更してください
+  default     = "typing-royale-terraform-state-lock"
 }

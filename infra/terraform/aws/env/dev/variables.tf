@@ -5,7 +5,7 @@
 variable "project_name" {
   description = "プロジェクト名"
   type        = string
-  default     = "project-template" # TODO: bootstrapと同じプロジェクト名に変更してください
+  default     = "typing-royale" # TODO: bootstrapと同じプロジェクト名に変更してください
 }
 
 variable "environment" {

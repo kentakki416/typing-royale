@@ -23,6 +23,7 @@ Turborepo + pnpm monorepo を使用したフルスタック構成。
 - [テンプレートの使い方](#テンプレートの使い方)
   - [1. プロジェクトのコピー](#1-プロジェクトのコピー)
   - [2. 環境変数の設定](#2-環境変数の設定)
+- [セットアップガイド](#セットアップガイド)
 - [Claude Code（MCP設定）](#claude-codemcp設定)
 - [開発ルール](#開発ルール)
   - [1. 命名規則](#1-命名規則)
@@ -253,6 +254,16 @@ ln -s ../../.env.keys apps/mobile/.env.keys
 以降は **必ずプロジェクトルートから** `npx dotenvx set KEY "value" -f apps/<app>/.env.local` を実行すること（各アプリで `cd` して直接叩くと、シンボリックリンクが実体ファイルで上書きされ、アプリごとに別の鍵ペアが生成されてしまう）。
 
 </details>
+
+## セットアップガイド
+
+用途別のセットアップ手順は対応するディレクトリの README にまとまっている:
+
+| 対象 | 手順 | 主な内容 |
+|---|---|---|
+| API (apps/api) | [apps/api/README.md#セットアップ](apps/api/README.md#セットアップ) | dotenvx 鍵配置 / Docker Compose / Prisma generate・migrate・seed / dev サーバー起動 / ECS migration / トラブルシューティング |
+| AWS インフラ (infra/terraform) | [infra/README.md#aws-インフラのセットアップ](infra/README.md#aws-インフラのセットアップ) | プロジェクト名リネーム / Bootstrap / Account / GitHub Environments / env/dev / env/prd / トラブルシューティング |
+| Secrets Manager 投入スクリプト | [scripts/README.md](scripts/README.md) | seed-secrets.sh の使い方と前提条件 |
 
 ## Claude Code（MCP設定）
 

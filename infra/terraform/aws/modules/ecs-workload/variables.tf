@@ -3,7 +3,7 @@
 # =============================================================================
 
 variable "name" {
-  description = "workload 識別子 (例: project-template-dev-api / project-template-dev-worker)。task definition family / service 名 / IAM role 名のベース"
+  description = "workload 識別子 (例: typing-royale-dev-api / typing-royale-dev-worker)。task definition family / service 名 / IAM role 名のベース"
   type        = string
 }
 
