@@ -55,3 +55,40 @@ output "app_secret_name" {
   description = "Application secret の名前"
   value       = module.app_secrets.secret_name
 }
+
+# RDS
+output "rds_endpoint" {
+  description = "RDS 接続エンドポイント (host:port)"
+  value       = module.rds.endpoint
+}
+
+output "rds_address" {
+  description = "RDS ホスト名"
+  value       = module.rds.address
+}
+
+output "rds_db_name" {
+  description = "初期データベース名"
+  value       = module.rds.db_name
+}
+
+output "rds_master_username" {
+  description = "マスターユーザー名"
+  value       = module.rds.master_username
+}
+
+output "rds_master_user_secret_arn" {
+  description = "AWS 自動生成パスワードが保存されている Secrets Manager の ARN"
+  value       = module.rds.master_user_secret_arn
+}
+
+# ElastiCache
+output "redis_address" {
+  description = "Redis primary endpoint のホスト名"
+  value       = module.elasticache.primary_endpoint_address
+}
+
+output "redis_port" {
+  description = "Redis port"
+  value       = module.elasticache.port
+}
