@@ -11,17 +11,17 @@ cron / EventBridge から定期実行されるタスク群（GitHub クローラ
 
 - TypeScript Compiler API（AST 解析の関数・データ構造）: [`docs/typescript-ast.md`](./docs/typescript-ast.md) — 新規ジョイン者向けのキャッチアップガイド
 
-## ステータス
+## 含まれるタスク
 
-**Phase 0**：ディレクトリと task エントリの雛形のみ。実処理は以下のフェーズで追加する。
+ディレクトリと task エントリの雛形のみ用意済み。実処理は順次追加していく。
 
-| コマンド | フェーズ | 用途 |
-| --- | --- | --- |
-| `pnpm crawler:run:typescript` | Phase 2 | TypeScript 用週次クローラ（GitHub API → AST → 問題化） |
-| `pnpm crawler:license-recheck` | Phase 2 | 月次ライセンス再検証（言語非依存） |
-| `pnpm batch:ranking` | Phase 4 | 毎時ランキング集計 |
+| コマンド | 用途 |
+| --- | --- |
+| `pnpm crawler:run:typescript` | TypeScript 用週次クローラ（GitHub API → AST → 問題化） |
+| `pnpm crawler:license-recheck` | 月次ライセンス再検証（言語非依存） |
+| `pnpm batch:ranking` | 毎時ランキング集計 |
 
-**crawler は言語ごとに独立した task** として実装する：AST 抽出層が言語固有（現在は TypeScript Compiler API、将来追加する JavaScript / Go は別 parser）で、1 言語の rate limit / 障害を他言語に波及させないため。新言語追加時は `task/crawler-run-<slug>.ts` を新規作成し、`LANGUAGE_SLUG` と `RUN_TYPE = "crawler_<slug>"` をハードコードする。Phase 2 ローンチ時点では TypeScript のみ。
+**crawler は言語ごとに独立した task** として実装する：AST 抽出層が言語固有（現在は TypeScript Compiler API、将来追加する JavaScript / Go は別 parser）で、1 言語の rate limit / 障害を他言語に波及させないため。新言語追加時は `task/crawler-run-<slug>.ts` を新規作成し、`LANGUAGE_SLUG` と `RUN_TYPE = "crawler_<slug>"` をハードコードする。現時点では TypeScript のみ。
 
 ## Commands
 
@@ -202,6 +202,6 @@ export class RankingAggregator {
 | `@repo/db` | Prisma client。`createPrismaClient()` を task で 1 回呼んで service の Repository に DI |
 | `@repo/logger` | `ILogger`。AsyncLocalStorage で trace_id を run 単位に伝搬 |
 | `@repo/errors` | `Result<T>` / `ApiError` |
-| `@repo/redis` | BullMQ / Pub/Sub が必要になったとき。Phase 0 では未使用 |
+| `@repo/redis` | BullMQ / Pub/Sub が必要になったとき。現時点では未使用 |
 
 詳細は [`docs/spec/shared-packages/README.md`](../../docs/spec/shared-packages/README.md) を参照。
