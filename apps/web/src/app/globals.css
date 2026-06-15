@@ -914,7 +914,11 @@ h3 { font-size: 16px; margin-bottom: 8px; }
 /* Stats — heavy raised */
 .stat-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /**
+   * stat の数に応じて自動レイアウト。4 個なら 4 列、3 個なら 3 列で中央揃え。
+   * minmax の最小値以下になるカラム数は自動で折返す
+   */
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 16px;
   margin: 24px 0;
 }
