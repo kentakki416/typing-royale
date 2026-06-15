@@ -54,7 +54,7 @@ export function CelebrationOverlay({ onFinished }: Props) {
          * 裏のリザルト（ドット背景含む）が透けて見える程度の半透明黒 + 中央 spot light。
          * alpha を上げすぎると背景デザインが潰れるので、中心は薄め・外側もドットが視認できる強度に抑える
          */
-        background: "radial-gradient(ellipse at center, rgba(26, 31, 42, 0.3) 0%, rgba(5, 8, 13, 0.55) 80%)",
+        background: "radial-gradient(ellipse at center, rgba(26, 31, 42, 0.1) 0%, rgba(5, 8, 13, 0.25) 80%)",
         cursor: "pointer",
         display: "flex",
         height: "100vh",
