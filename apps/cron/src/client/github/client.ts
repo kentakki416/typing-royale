@@ -1,4 +1,6 @@
-import { GithubApiError } from "./errors"
+import { logger } from "@repo/logger"
+
+import { GithubApiError, GithubFetchTimeoutError } from "./errors"
 import { parseRateLimit, waitForRateLimit } from "./rate-limit"
 import type {
   GithubRepoMeta,
@@ -10,6 +12,7 @@ import type {
 const API_BASE = "https://api.github.com"
 const RAW_BASE = "https://raw.githubusercontent.com"
 const DEFAULT_USER_AGENT = "typing-royale-crawler/1.0"
+const DEFAULT_FETCH_TIMEOUT_MS = 30000
 
 const SEARCH_LICENSE_FILTER =
   "license:mit license:apache-2.0 license:bsd-3-clause license:isc"
@@ -59,6 +62,11 @@ export type GithubClientConfig = {
    * 落ちるため実運用では必須。
    */
   pat: string
+  /**
+   * 1 リクエストあたりの timeout (ms)。省略時は 30 秒。
+   * 巨大 repo の Tree API レスポンス等で permanent stuck になるのを防ぐ
+   */
+  fetchTimeoutMs?: number
   /** Search Repositories API の `stars:>=` フィルタ値 */
   minStars: number
   /** Search Repositories API の `pushed:>` フィルタ値（YYYY-MM-DD）。省略時は実行日 - 2 年 */
@@ -95,6 +103,7 @@ export class GithubClient {
   private readonly minStars: number
   private readonly pushedAfter: string
   private readonly targetExtensions: RegExp | null
+  private readonly fetchTimeoutMs: number
 
   constructor(config: GithubClientConfig) {
     this.pat = config.pat
@@ -102,6 +111,7 @@ export class GithubClient {
     this.minStars = config.minStars
     this.pushedAfter = config.pushedAfter ?? this._defaultPushedAfter()
     this.targetExtensions = config.targetExtensions ?? null
+    this.fetchTimeoutMs = config.fetchTimeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS
   }
 
   /**
@@ -214,7 +224,11 @@ export class GithubClient {
   /**
    * 共通 fetch ヘルパ
    *
-   * - レスポンスヘッダから rate limit を読み取り、necessary なら待機
+   * - **タイムアウト**: AbortController + setTimeout で fetchTimeoutMs 経過後に abort。
+   *   abort された場合は GithubFetchTimeoutError を throw する（retryWithBackoff の
+   *   対象外。「待っても変わらない」のでリトライせず、呼び出し側で巨大 repo として
+   *   諦める判断を行う）
+   * - レスポンスヘッダから rate limit を読み取り、必要なら待機
    * - ネットワークエラー（fetch native の TypeError 等）は GithubApiError(599) に
    *   wrap して投げ直す。retryWithBackoff の「statusCode >= 500 ならリトライ」
    *   ルートに乗せるため
@@ -225,12 +239,27 @@ export class GithubClient {
     url: string,
     headers: Record<string, string>
   ): Promise<Response> => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), this.fetchTimeoutMs)
+    const startedAt = performance.now()
+
     let res: Response
     try {
-      res = await globalThis.fetch(url, { headers })
+      res = await globalThis.fetch(url, { headers, signal: controller.signal })
     } catch (err) {
+      if (controller.signal.aborted) {
+        throw new GithubFetchTimeoutError(url, this.fetchTimeoutMs)
+      }
       throw new GithubApiError(599, String(err))
+    } finally {
+      clearTimeout(timer)
     }
+
+    logger.debug("github fetch", {
+      durationMs: Math.round(performance.now() - startedAt),
+      status: res.status,
+      url,
+    })
 
     const rateLimit = parseRateLimit(res.headers)
     if (rateLimit) await waitForRateLimit(rateLimit)

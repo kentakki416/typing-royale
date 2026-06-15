@@ -28,6 +28,7 @@ const TASK_NAME = "crawler-license-recheck"
 runAsCrawlerJob({
   exec: async ({ prisma, signal }) => {
     const github = new GithubClient({
+      fetchTimeoutMs: env.GITHUB_FETCH_TIMEOUT_MS,
       minStars: env.CRAWLER_MIN_STARS,
       pat: env.GITHUB_PAT,
       pushedAfter: env.CRAWLER_PUSHED_AFTER,

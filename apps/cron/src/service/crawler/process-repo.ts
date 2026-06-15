@@ -6,7 +6,7 @@ import { checkAdoption } from "../../ast/adoption-check"
 import { extractFunctions } from "../../ast/extract-functions"
 import { astHashOf } from "../../ast/normalize-for-hash"
 import { removeComments } from "../../ast/remove-comments"
-import type { GithubClient, GithubRepoMeta } from "../../client/github"
+import { GithubFetchTimeoutError, type GithubClient, type GithubRepoMeta } from "../../client/github"
 import { retryWithBackoff } from "../../lib/retry"
 import { buildSourceUrl } from "../../lib/source-url"
 import type {
@@ -27,7 +27,7 @@ export type ProcessRepoTarget = {
 
 export type ProcessRepoResult =
   | { adopted: true; candidatesCount: number; problemsAdded: number; storedCount: number }
-  | { adopted: false; candidatesCount: number; reason: "license_not_allowed" | "too_few_problems" }
+  | { adopted: false; candidatesCount: number; reason: "fetch_timeout" | "license_not_allowed" | "too_few_problems" }
 
 export type ProcessRepoRepo = {
   crawledRepoRepository: CrawledRepoRepository
@@ -54,21 +54,72 @@ export const processRepo = async (
   client: ProcessRepoClient
 ): Promise<ProcessRepoResult> => {
   const fullName = `${target.owner}/${target.name}`
+  const startedAt = performance.now()
   logger.info("processRepo: start", { fullName })
 
   /** 1. 最新メタ + HEAD SHA を取得（5xx は retryWithBackoff で 3 回まで） */
-  const meta = await retryWithBackoff(async () => client.github.getRepoMeta(target.owner, target.name))
+  logger.info("processRepo: fetching repo meta", { fullName })
+  const metaStartedAt = performance.now()
+  let meta: GithubRepoMeta
+  try {
+    meta = await retryWithBackoff(async () => client.github.getRepoMeta(target.owner, target.name))
+  } catch (err) {
+    if (err instanceof GithubFetchTimeoutError) {
+      /**
+       * getRepoMeta が timeout した稀なケース: crawled_repos の必須カラム (github_id /
+       * commit_sha / license / stars 等) を持っていないので disabled レコードは作れない。
+       * 次回 run でリトライされる前提でログだけ残して throw 上げる
+       */
+      logger.warn("processRepo: getRepoMeta timed out, skipping repo", { fullName, timeoutMs: err.timeoutMs, url: err.url })
+    }
+    throw err
+  }
+  logger.info("processRepo: fetched repo meta", {
+    durationMs: Math.round(performance.now() - metaStartedAt),
+    fullName,
+    license: meta.license,
+    stars: meta.stars,
+  })
 
   /** 2. ライセンス確認 */
   if (meta.license === null || !ALLOWED_LICENSES.has(meta.license)) {
+    logger.info("processRepo: license not allowed", { fullName, license: meta.license })
     await persistDisabled(target, meta, "license_not_allowed", repo, 0)
     return { adopted: false, candidatesCount: 0, reason: "license_not_allowed" }
   }
 
   /** 3. フィルタリング済みの対象ソースファイル一覧 */
-  const files = await client.github.listSourceFiles(target.owner, target.name, meta.commitSha)
+  logger.info("processRepo: listing source files", { fullName })
+  const listStartedAt = performance.now()
+  let files
+  try {
+    files = await client.github.listSourceFiles(target.owner, target.name, meta.commitSha)
+  } catch (err) {
+    if (err instanceof GithubFetchTimeoutError) {
+      /**
+       * Tree API が timeout = 巨大 repo（vscode 級）と判定して諦め、disabled で記録。
+       * 次回の pickNextRepo は同 repo を選ばなくなる
+       */
+      logger.warn("processRepo: listSourceFiles timed out, marking repo as disabled", {
+        durationMs: Math.round(performance.now() - listStartedAt),
+        fullName,
+        timeoutMs: err.timeoutMs,
+        url: err.url,
+      })
+      await persistDisabled(target, meta, "fetch_timeout", repo, 0)
+      return { adopted: false, candidatesCount: 0, reason: "fetch_timeout" }
+    }
+    throw err
+  }
+  logger.info("processRepo: listed source files", {
+    durationMs: Math.round(performance.now() - listStartedAt),
+    fileCount: files.length,
+    fullName,
+  })
 
   /** 4. 各ファイルから採用候補を抽出（repo 内重複は Map で事前 dedupe） */
+  logger.info("processRepo: extracting candidates", { fileCount: files.length, fullName })
+  const extractStartedAt = performance.now()
   const candidateMap = new Map<string, CreateProblemInput>()
   for (const file of files) {
     try {
@@ -111,9 +162,16 @@ export const processRepo = async (
 
   const candidates = Array.from(candidateMap.values())
   const candidatesCount = candidates.length
+  logger.info("processRepo: extracted candidates", {
+    candidatesCount,
+    durationMs: Math.round(performance.now() - extractStartedAt),
+    fileCount: files.length,
+    fullName,
+  })
 
   /** 5. repo 単位の足切り */
   if (candidatesCount < MIN_ELIGIBLE) {
+    logger.info("processRepo: too few candidates, marking repo as disabled", { candidatesCount, fullName, threshold: MIN_ELIGIBLE })
     await persistDisabled(target, meta, "too_few_problems", repo, candidatesCount)
     return { adopted: false, candidatesCount, reason: "too_few_problems" }
   }
@@ -154,7 +212,12 @@ export const processRepo = async (
     })
   }
 
-  logger.info("processRepo: done", { candidatesCount, fullName, problemsAdded })
+  logger.info("processRepo: done", {
+    candidatesCount,
+    durationMs: Math.round(performance.now() - startedAt),
+    fullName,
+    problemsAdded,
+  })
   return { adopted: true, candidatesCount, problemsAdded, storedCount: sampled.length }
 }
 
