@@ -101,37 +101,56 @@ export function useTypingEngine({ finishedRef, problems, startAtRef, triggerFlas
 
   useEffect(() => {
     /**
-     * カーソル位置の whitespace (` ` / `\t` / `\n`) を、ユーザー入力なしで自動的に
-     * 次の非空白文字まで進める。インデントや空白記号をいちいち打鍵させない UX 改善。
-     *
-     * 進めた分は「正しく打てた」扱いで log と各カウンタにも積む（スコア互換性 +
-     * replay-player がそのまま再生できるように）。複数問題にまたがる場合は
-     * 関数末尾完走 → 次の問題の先頭という遷移も内側で処理する
+     * 1 文字スキップして log + カウンタに積むヘルパ。
+     * 関数末尾を超えたら次の問題の先頭に切替える
      */
-    const advanceThroughWhitespace = () => {
+    const consumeOneAsSkipped = (problem: Problem, ch: string) => {
+      const elapsed = performance.now() - startAtRef.current
+      logRef.current.push({
+        elapsedMs: elapsed,
+        inputChar: ch,
+        isCorrect: true,
+        problemIndex: problemIndexRef.current,
+      })
+      totalRef.current += 1
+      correctRef.current += 1
+      typedCharsRef.current += 1
+      cursorPosRef.current += 1
+      if (cursorPosRef.current >= problem.code_block.length) {
+        problemIndexRef.current += 1
+        cursorPosRef.current = 0
+      }
+    }
+
+    /**
+     * カーソル位置が改行 (`\n`) の場合のみ、改行 + 後続の行頭 whitespace
+     * (スペース / タブ) を自動でスキップする。行中の単独スペースは飛ばさない
+     */
+    const advanceAcrossNewlineAndIndent = () => {
+      const problem0 = problems[problemIndexRef.current]
+      if (!problem0) return
+      const head = problem0.code_block[cursorPosRef.current]
+      if (head !== "\n") return
       while (true) {
         const problem = problems[problemIndexRef.current]
         if (!problem) return
         const ch = problem.code_block[cursorPosRef.current]
         if (ch !== " " && ch !== "\t" && ch !== "\n") return
+        consumeOneAsSkipped(problem, ch)
+      }
+    }
 
-        const elapsed = performance.now() - startAtRef.current
-        logRef.current.push({
-          elapsedMs: elapsed,
-          inputChar: ch,
-          isCorrect: true,
-          problemIndex: problemIndexRef.current,
-        })
-        totalRef.current += 1
-        correctRef.current += 1
-        typedCharsRef.current += 1
-        cursorPosRef.current += 1
-
-        if (cursorPosRef.current >= problem.code_block.length) {
-          problemIndexRef.current += 1
-          cursorPosRef.current = 0
-          /** 次のループで新しい problem の先頭から再判定 */
-        }
+    /**
+     * Shift+Enter 用: カーソル位置から次の非空白文字まで強制的に飛ばす。
+     * 行中のスペースを手動で飛ばしたいときの手動 shortcut
+     */
+    const advanceThroughAllWhitespace = () => {
+      while (true) {
+        const problem = problems[problemIndexRef.current]
+        if (!problem) return
+        const ch = problem.code_block[cursorPosRef.current]
+        if (ch !== " " && ch !== "\t" && ch !== "\n") return
+        consumeOneAsSkipped(problem, ch)
       }
     }
 
@@ -150,12 +169,28 @@ export function useTypingEngine({ finishedRef, problems, startAtRef, triggerFlas
       }
 
       /**
-       * 入力を処理する前に、カーソル位置の whitespace を一気に飛ばす。
-       * これでユーザーは whitespace を打鍵せずに済み、最初の打鍵が実コード文字に当たる
+       * Shift+Enter: 手動で次の非空白文字まで強制スキップ。
+       * 行中のスペースを飛ばして「次の文字列」に移動する shortcut
+       */
+      if (e.key === "Enter" && e.shiftKey) {
+        e.preventDefault()
+        advanceThroughAllWhitespace()
+        setProblemIndex(problemIndexRef.current)
+        setCursorPos(cursorPosRef.current)
+        setTypedChars(typedCharsRef.current)
+        setCorrectKeystrokes(correctRef.current)
+        setTotalKeystrokes(totalRef.current)
+        return
+      }
+
+      /**
+       * 入力を処理する前に、カーソルが改行上ならまとめてスキップする。
+       * 改行直後のインデントもまとめて飛ばすので、次の打鍵は新しい行の最初の
+       * 非空白文字に当たる
        */
       const cursorBeforeSkip = cursorPosRef.current
       const problemBeforeSkip = problemIndexRef.current
-      advanceThroughWhitespace()
+      advanceAcrossNewlineAndIndent()
       const didSkip = cursorPosRef.current !== cursorBeforeSkip || problemIndexRef.current !== problemBeforeSkip
 
       const currentProblem = problems[problemIndexRef.current]
@@ -237,10 +272,9 @@ export function useTypingEngine({ finishedRef, problems, startAtRef, triggerFlas
         }
 
         /**
-         * 正解直後にもう一度 whitespace を飛ばす。これでカーソルが空白上に停まらず
-         * 常に「次に打つべき非空白文字」を指す
+         * 正解直後にカーソルが改行上に来ていれば、改行 + 後続インデントをまとめて飛ばす
          */
-        advanceThroughWhitespace()
+        advanceAcrossNewlineAndIndent()
         setProblemIndex(problemIndexRef.current)
         setCursorPos(cursorPosRef.current)
         setTypedChars(typedCharsRef.current)
