@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
-import { FinishPlaySessionResponse, GetMyRankingResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
+import { FinishPlaySessionResponse, GetMyRankingResponse, GetRankingsResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { CelebrationOverlay } from "@/components/celebration-overlay"
 import { GradeProgressBar } from "@/components/grade-progress-bar"
@@ -49,6 +49,8 @@ type Props = {
 export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, repoInfo, result }: Props) {
   const [me, setMe] = useState<GetMyRankingResponse | null>(null)
   const [meFetchFailed, setMeFetchFailed] = useState(false)
+  /** 「Y 人中」表示用。guest でもランキング登録済み人数を表示するため fetch */
+  const [totalRankedPlayers, setTotalRankedPlayers] = useState<number | null>(null)
   const [hofModalOpen, setHofModalOpen] = useState(false)
   const [hofPromptDismissed, setHofPromptDismissed] = useState(false)
   /** リザルト到達時に 1 度だけ祝福 overlay を再生 */
@@ -79,6 +81,22 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
     }
     void loadMyRanking()
   }, [isGuest, result])
+
+  /** ゲスト含め「Y 人中」を出すための総参加者数取得 */
+  useEffect(() => {
+    if (result === null) return
+    const loadTotal = async () => {
+      try {
+        const res = await fetch("/api/internal/rankings?language=typescript")
+        if (!res.ok) return
+        const data = await res.json() as GetRankingsResponse
+        setTotalRankedPlayers(data.total_ranked_players)
+      } catch {
+        /** 補助情報なのでフェッチ失敗時はサイレントに非表示 */
+      }
+    }
+    void loadTotal()
+  }, [result])
 
   if (result === null) {
     return (
@@ -112,6 +130,25 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
 
       <div className="container container-narrow">
         <div className="text-center mt-24">
+          {/**
+           * スコアの上に「X 位 / Y 人中」を最初に表示
+           * - authed: result.new_rank と totalRankedPlayers が揃えば「X 位 / Y 人中」
+           * - guest: 順位は付かないので「ランキング登録なし / Y 人中登録済み」
+           */}
+          <div
+            className="text-mono mb-8"
+            style={{ color: "var(--accent)", fontSize: "28px", fontWeight: 700 }}
+          >
+            {isGuest
+              ? totalRankedPlayers !== null
+                ? `ランキング登録なし ／ ${totalRankedPlayers.toLocaleString()} 人中`
+                : "ランキング登録なし"
+              : result.new_rank !== null && totalRankedPlayers !== null
+                ? `${result.new_rank} 位 ／ ${totalRankedPlayers.toLocaleString()} 人中`
+                : meFetchFailed
+                  ? "順位を取得できませんでした"
+                  : "順位を計算中..."}
+          </div>
           <div className="text-mono text-muted text-sm">SESSION COMPLETE · 120s</div>
           <h1 className="text-mono" style={{ fontSize: "48px", margin: "8px 0" }}>
             {result.score} <span className="text-muted" style={{ fontSize: "18px" }}>pts</span>
@@ -136,11 +173,9 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
         </div>
 
         {/**
-         * ランキング表示はヘッダー直下、stat より前に置く。
-         * - ログイン済: 自分の順位カード + TOP 10 リスト
-         * - ゲスト: 「保存されていません」案内 + TOP 10 リスト
+         * ゲストには「保存されていません」案内を残す（順位はスコア上に表示済み）
          */}
-        {isGuest ? (
+        {isGuest && (
           <div className="card mb-16 mt-16" style={{ borderColor: "rgba(125, 211, 252, 0.4)" }}>
             <div className="card-header">
               <div className="card-title">💾 このスコアは保存されていません</div>
@@ -154,34 +189,6 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
                 GitHub で記録を残す
               </Link>
             </div>
-          </div>
-        ) : (
-          <div className="card mb-16 mt-16">
-            <div className="card-header">
-              <div className="card-title">🏆 全期間ランキング</div>
-              <Link className="text-sm" href="/ranking">ランキング全体 →</Link>
-            </div>
-            {result.new_rank !== null ? (
-              <>
-                <div className="text-center mb-16">
-                  <div
-                    className="text-mono"
-                    style={{ color: "var(--accent)", fontSize: "36px", fontWeight: 700 }}
-                  >
-                    #{result.new_rank}
-                  </div>
-                  <div className="text-sm text-muted">
-                    TypeScript
-                    {me !== null && ` · ${me.total_ranked_players.toLocaleString()} 人中`}
-                  </div>
-                </div>
-                <div className="text-sm text-muted text-center">現在の順位を即時表示</div>
-              </>
-            ) : (
-              <div className="text-sm text-muted text-center">
-                {meFetchFailed ? "順位を取得できませんでした" : "順位を計算中..."}
-              </div>
-            )}
           </div>
         )}
 
