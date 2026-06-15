@@ -166,7 +166,7 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
               <div className="text-center">
                 <strong style={{ color: "var(--gold-light)" }}>🏆 TOP 10 入り見込み！</strong>
                 <p className="text-sm text-muted mt-8 mb-16">
-                  Hall of Fame に掲載されます。記念にコメントを残しませんか？
+                  殿堂入りに掲載されます。記念にコメントを残しませんか？
                 </p>
                 {hofPromptDismissed ? (
                   <p className="text-sm text-muted">

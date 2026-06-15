@@ -45,7 +45,7 @@ const LanguageCommentCard = ({ entry, language }: { entry: EntrySlot; language: 
           <div className="card-title">{label}</div>
         </div>
         <p className="text-sm text-muted">
-          まだ {label} で Hall of Fame コメントを送信していません。リザルト画面の TOP 10 入り通知から送信できます。
+          まだ {label} で殿堂入りコメントを送信していません。リザルト画面の TOP 10 入り通知から送信できます。
         </p>
       </div>
     )

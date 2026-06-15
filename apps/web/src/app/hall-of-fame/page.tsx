@@ -9,7 +9,7 @@ import { apiClient } from "@/libs/api-client"
 import { HofCards } from "./hof-cards"
 
 export const metadata: Metadata = {
-  title: "Hall of Fame - Typing Royale",
+  title: "殿堂入り - Typing Royale",
 }
 
 const SUPPORTED_LANGUAGES = ["typescript", "javascript"] as const
@@ -49,7 +49,7 @@ export default async function HallOfFamePage({
       <div className="container">
         <div className="text-center mb-24">
           <div style={{ fontSize: "56px" }}>🏛</div>
-          <h1>Hall of Fame — 神々の殿堂</h1>
+          <h1>殿堂入り — 神々の殿堂</h1>
           <p className="text-muted">言語別オールタイムトップ 10。上位 3 名は神々の称号付き。</p>
         </div>
 
@@ -70,7 +70,7 @@ export default async function HallOfFamePage({
         {data.entries.length === 0 ? (
           <div className="card text-center" style={{ padding: "48px 16px" }}>
             <div className="text-mono text-muted mb-16">
-              まだ Hall of Fame エントリがありません
+              まだ殿堂入りエントリがありません
             </div>
             <Link className="btn btn-primary btn-play" href="/play">
               ▶ 最初のプレイヤーになる

@@ -74,7 +74,7 @@ export function AccountForm({ initialUser }: Props) {
               type="url"
             />
             <p className="text-xs text-muted mt-8">
-              Hall of Fame モーダルで「お気に入りリポジトリ」として公開されます。空欄で削除。
+              殿堂入りモーダルで「お気に入りリポジトリ」として公開されます。空欄で削除。
             </p>
           </div>
 
@@ -116,7 +116,7 @@ export function AccountForm({ initialUser }: Props) {
           <div className="card-title" style={{ color: "var(--error)" }}>⚠ アカウント削除</div>
         </div>
         <p className="text-sm text-muted mb-16">
-          アカウント、スコア、リプレイ、Hall of Fame 掲載を含む全データを即時削除します。
+          アカウント、スコア、リプレイ、殿堂入り掲載を含む全データを即時削除します。
           この操作は取り消せません。
         </p>
 
