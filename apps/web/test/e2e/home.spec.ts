@@ -20,4 +20,12 @@ test.describe("ホーム画面", () => {
     await expect(page.getByRole("heading", { name: /Type real/i })).toBeVisible()
     await expect(page.getByRole("link", { name: /▶ プレイ開始/ })).toBeVisible()
   })
+
+  test("月間トップカードが TypeScript / JavaScript 並列で表示される", async ({ page }) => {
+    await page.goto("/")
+    /** card-title は div で組まれているので getByText でマッチ。API が空でもラベルは出る */
+    await expect(page.getByText("🏆 月間トップ")).toBeVisible()
+    await expect(page.getByText("TypeScript").first()).toBeVisible()
+    await expect(page.getByText("JavaScript").first()).toBeVisible()
+  })
 })

@@ -1,10 +1,14 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
-import type { GetFeaturedReplaysResponse } from "@repo/api-schema"
+import type { GetFeaturedReplaysResponse, GetMonthlyRankingsResponse } from "@repo/api-schema"
 
+import { MonthlyTopCard } from "@/components/monthly-top-card"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
+
+/** API 失敗時のフォールバック（year_month が空のとき MonthlyTopCard は「集計準備中」を出す） */
+const EMPTY_MONTHLY: GetMonthlyRankingsResponse = { entries: [], year_month: "" }
 
 export const metadata: Metadata = {
   title: "Typing Royale",
@@ -23,17 +27,25 @@ const truncate = (s: string, n: number): string => (s.length <= n ? s : `${s.sli
  * 主な要素:
  * - hero（タイトル + CTA 2 つ）
  * - god-frame card（神々に挑戦の紹介）
- * - 注目のリプレイ（Hall of Fame コメント駆動の featured 3 件）
- * - 全期間トップランキング preview（Phase 4 まで placeholder）
+ * - 注目のリプレイ（殿堂入りコメント駆動の featured 3 件）
+ * - 月間トップ（TypeScript / JavaScript の当月 TOP 5 を並列 fetch）
  * - 「なぜ Typing Royale か」3 col 説明
  * - sidebar に統計 placeholder + 対応言語バッジ
  *
  * 「言語選択 → プレイ開始」自体は /play に分離している（mock 構成と同じ）
  */
 export default async function HomePage() {
-  const featured = await apiClient
-    .get<GetFeaturedReplaysResponse>("/api/replays/featured?limit=3")
-    .catch(() => ({ items: [] }))
+  const [featured, tsMonthly, jsMonthly] = await Promise.all([
+    apiClient
+      .get<GetFeaturedReplaysResponse>("/api/replays/featured?limit=3")
+      .catch(() => ({ items: [] })),
+    apiClient
+      .get<GetMonthlyRankingsResponse>("/api/rankings/monthly?language=typescript&limit=5")
+      .catch(() => EMPTY_MONTHLY),
+    apiClient
+      .get<GetMonthlyRankingsResponse>("/api/rankings/monthly?language=javascript&limit=5")
+      .catch(() => EMPTY_MONTHLY),
+  ])
 
   return (
     <>
@@ -137,12 +149,17 @@ export default async function HomePage() {
 
             <div className="card mb-24">
               <div className="card-header">
-                <div className="card-title">🏆 全期間トップ</div>
-                <Link className="text-sm" href="/ranking">すべて見る →</Link>
+                <div className="card-title">🏆 月間トップ</div>
+                <Link className="text-sm" href="/ranking">全期間ランキング →</Link>
               </div>
-              <p className="text-sm text-muted text-center mb-16" style={{ padding: "24px 0" }}>
-                ランキング preview は Phase 4 (score-ranking) で本表示します。
-              </p>
+              <div className="row gap-16">
+                <div className="col">
+                  <MonthlyTopCard data={tsMonthly} language="TypeScript" />
+                </div>
+                <div className="col">
+                  <MonthlyTopCard data={jsMonthly} language="JavaScript" />
+                </div>
+              </div>
             </div>
 
             <div className="card mb-24">
