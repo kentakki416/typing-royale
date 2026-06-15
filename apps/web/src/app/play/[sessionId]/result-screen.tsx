@@ -194,10 +194,13 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
           <div className="card-header">
             <div className="card-title">📦 今回のリポジトリ</div>
           </div>
+          <p className="text-sm text-muted mb-8">
+            今回のセッションで出題された関数は、以下の OSS リポジトリから自動抽出されたものです。
+          </p>
           <div className="flex-between mb-8">
             <div>
               <strong>{repoInfo.owner}/{repoInfo.name}</strong>
-              <div className="text-sm text-muted">★ {repoInfo.stars.toLocaleString()}</div>
+              <div className="text-sm text-muted">★ {repoInfo.stars.toLocaleString()}（GitHub スター数）</div>
             </div>
             {repoInfo.homepage && (
               <a className="text-sm" href={repoInfo.homepage} rel="noreferrer noopener" target="_blank">
@@ -206,7 +209,29 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
             )}
           </div>
           {repoInfo.description && (
-            <p className="text-sm text-muted">{repoInfo.description}</p>
+            <p className="text-sm text-muted" style={{ marginTop: "8px" }}>
+              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>リポジトリ概要（GitHub より）:</span>
+              <br />
+              {repoInfo.description}
+            </p>
+          )}
+        </div>
+
+        <div className="card mb-16">
+          <div className="card-header">
+            <div className="card-title">✗ よく間違える文字</div>
+          </div>
+          {topMistypes.length > 0 ? (
+            <div className="flex gap-12" style={{ flexWrap: "wrap" }}>
+              {topMistypes.map(([char, count]) => (
+                <div className="flex-center gap-8" key={char}>
+                  <code className="inline" style={{ fontSize: "16px" }}>{char === " " ? "␣" : char}</code>
+                  <span className="text-muted text-sm">× {count}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted">今回はミスタイプの記録がありませんでした。</p>
           )}
         </div>
 
@@ -311,22 +336,6 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
               )}
             </div>
             <GradeProgressBar bestScore={me.best_score} nextGrade={me.next_grade} />
-          </div>
-        )}
-
-        {topMistypes.length > 0 && (
-          <div className="card mb-16">
-            <div className="card-header">
-              <div className="card-title">✗ よく間違える文字</div>
-            </div>
-            <div className="flex gap-12" style={{ flexWrap: "wrap" }}>
-              {topMistypes.map(([char, count]) => (
-                <div className="flex-center gap-8" key={char}>
-                  <code className="inline" style={{ fontSize: "16px" }}>{char === " " ? "␣" : char}</code>
-                  <span className="text-muted text-sm">× {count}</span>
-                </div>
-              ))}
-            </div>
           </div>
         )}
 
