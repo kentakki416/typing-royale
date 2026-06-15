@@ -38,7 +38,7 @@ type Props = {
  *
  * 表示要素:
  * - SESSION COMPLETE + スコア + 言語・モード・グレード badge + ベスト更新バッジ
- * - 4 stat (累計文字数 / 正確率 / 完走関数数 / 出題数)
+ * - 3 stat (累計文字数 / 正確率 / 出題数)
  * - 全期間ランキング: /finish の new_rank をリアルタイム表示
  * - エンジニアグレード: 全言語通算 bestScore + 次グレードまでの進捗バー
  * - グレードアップ祝賀バナー（grade_up !== null）
@@ -149,10 +149,6 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
           <div className="stat">
             <div className="stat-value success">{(result.accuracy * 100).toFixed(1)}%</div>
             <div className="stat-label">正確率</div>
-          </div>
-          <div className="stat">
-            <div className="stat-value">{result.problems_completed}</div>
-            <div className="stat-label">完走関数数</div>
           </div>
           <div className="stat">
             <div className="stat-value">{result.problems_played}</div>
