@@ -1,6 +1,6 @@
 # apps/cron
 
-cron / EventBridge から定期実行されるタスク群（GitHub クローラ・ライセンス再検証・ランキング集計）を 1 つの Node.js ワーカーにまとめたサービス。本番では ECS Scheduled Task として起動される。
+cron / EventBridge から定期実行されるタスク群（GitHub クローラ・ライセンス再検証など）を 1 つの Node.js ワーカーにまとめたサービス。本番では ECS Scheduled Task として起動される。
 
 詳細仕様は以下を参照:
 
@@ -11,17 +11,32 @@ cron / EventBridge から定期実行されるタスク群（GitHub クローラ
 
 - TypeScript Compiler API（AST 解析の関数・データ構造）: [`docs/typescript-ast.md`](./docs/typescript-ast.md) — 新規ジョイン者向けのキャッチアップガイド
 
+## 目次
+
+- [含まれるタスク](#含まれるタスク)
+- [Commands](#commands)
+- [ディレクトリ戦略](#ディレクトリ戦略)
+  - [設計の方針](#設計の方針)
+  - [全体像](#全体像)
+  - [層の役割](#層の役割)
+  - [データの流れ](#データの流れ)
+  - [設計のルール](#設計のルール)
+  - [新しい task を実装するときの例（ランキング集計の構成イメージ）](#新しい-task-を実装するときの例ランキング集計の構成イメージ)
+  - [新しい task を追加するときの手順](#新しい-task-を追加するときの手順)
+  - [各 task が使う共通基盤](#各-task-が使う共通基盤)
+
 ## 含まれるタスク
 
-ディレクトリと task エントリの雛形のみ用意済み。実処理は順次追加していく。
+実装済みの定期実行タスクは以下の 2 つ。
 
 | コマンド | 用途 |
 | --- | --- |
 | `pnpm crawler:run:typescript` | TypeScript 用週次クローラ（GitHub API → AST → 問題化） |
 | `pnpm crawler:license-recheck` | 月次ライセンス再検証（言語非依存） |
-| `pnpm batch:ranking` | 毎時ランキング集計 |
 
 **crawler は言語ごとに独立した task** として実装する：AST 抽出層が言語固有（現在は TypeScript Compiler API、将来追加する JavaScript / Go は別 parser）で、1 言語の rate limit / 障害を他言語に波及させないため。新言語追加時は `task/crawler-run-<slug>.ts` を新規作成し、`LANGUAGE_SLUG` と `RUN_TYPE = "crawler_<slug>"` をハードコードする。現時点では TypeScript のみ。
+
+> **ランキング集計（`batch:ranking`）は未実装**。`src/task/ranking-batch.ts` には起動エントリの雛形だけがあり、実処理は今後追加する。実装イメージは [新しい task を実装するときの例（ランキング集計の構成イメージ）](#新しい-task-を実装するときの例ランキング集計の構成イメージ) を参照。
 
 ## Commands
 
@@ -38,7 +53,7 @@ cron は「複数の独立した定期実行タスクが 1 つのワーカーに
 
 ### 設計の方針
 
-- **cron 1 本 = 1 ファイル**。起動エントリ（`task/<name>.ts`）はディレクトリを切らない。`package.json` の `scripts` と 1:1 対応させて、スケジュールされているジョブが一目で分かるようにする。
+- **cron 1 本 = 1 ファイル**。`package.json` の `scripts` と 1:1 対応させて、スケジュールされているジョブが一目で分かるようにする。
 - **業務ロジックは `service/<domain>/`** に置く。task 横断で再利用される単位（crawler の repo 処理、license 再検証、ranking 集計など）はここで集約する。task が増えてもディレクトリは横に広がらず、`service/` の中だけが増える。
 - **DB アクセスは `repository/prisma/`** に分離する。`service/` 内には Repository を **置かない**（apps/api と同じ構造）。Repository は interface + `Prisma{Entity}Repository` 実装のペアで、`@repo/db` の `PrismaClient` を constructor で受け取る。
 - **外部 API は `client/<service>/`** に分離する（`GithubClient` のような class）。env を直接 import せず、コンストラクタ DI で動かす。
@@ -52,7 +67,7 @@ apps/cron/
 │   ├── task/                        # cron 1 本 = 1 ファイル（package.json scripts と 1:1）
 │   │   ├── crawler-run-typescript.ts   # crawler:run:typescript  - 週次クローラ（TS）
 │   │   ├── crawler-license-recheck.ts  # crawler:license-recheck - 月次ライセンス再検証
-│   │   └── ranking-batch.ts            # batch:ranking           - 毎時ランキング集計
+│   │   └── ranking-batch.ts            # batch:ranking           - 未実装スタブ（将来：毎時ランキング集計）
 │   ├── runtime/                     # task 共通のランタイム（graceful shutdown など）
 │   │   └── graceful-shutdown.ts
 │   ├── service/                     # 業務ロジック（task 横断で再利用される単位、I/O は Repository / client 経由）
@@ -131,9 +146,9 @@ flowchart LR
 5. **lib は env も DB も知らない**
    引数だけで完結する純関数を置く。状態や I/O が必要な処理は `client/` か `service/` か `repository/` 側に持たせる。
 
-### ランキング集計を実装するときの例
+### 新しい task を実装するときの例（ランキング集計の構成イメージ）
 
-`batch:ranking`（毎時、ranking_snapshots を更新）は次のような構成になる。
+未実装の `batch:ranking`（毎時、ranking_snapshots を更新）を例に、本ディレクトリ戦略に沿った task の組み立て方を示す。新しい task を実装する際の参考にする。
 
 **`src/task/ranking-batch.ts`** — 起動の薄い 1 ファイル：
 
