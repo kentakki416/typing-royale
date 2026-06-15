@@ -3,7 +3,7 @@ import Link from "next/link"
 
 import type { GetFeaturedReplaysResponse, GetMonthlyRankingsResponse } from "@repo/api-schema"
 
-import { MonthlyTopCard } from "@/components/monthly-top-card"
+import { MonthlyTopSection } from "@/components/monthly-top-section"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
@@ -155,14 +155,7 @@ export default async function HomePage() {
                 <div className="card-title">🏆 月間トップ</div>
                 <Link className="text-sm" href="/ranking">全期間ランキング →</Link>
               </div>
-              <div className="row gap-16">
-                <div className="col">
-                  <MonthlyTopCard data={tsMonthly} language="TypeScript" />
-                </div>
-                <div className="col">
-                  <MonthlyTopCard data={jsMonthly} language="JavaScript" />
-                </div>
-              </div>
+              <MonthlyTopSection jsMonthly={jsMonthly} tsMonthly={tsMonthly} />
             </div>
 
             <div className="card mb-24">
