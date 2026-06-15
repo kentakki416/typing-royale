@@ -204,6 +204,7 @@ flowchart TB
 | ドキュメント | 内容 |
 |---|---|
 | [docs/setup/api.md](docs/setup/api.md) | API サーバーのローカル起動 (依存インストール / .env.keys / Postgres+Redis / Prisma / dev サーバー / テスト) |
+| [docs/setup/cron.md](docs/setup/cron.md) | cron タスクのローカル起動 (GITHUB_PAT 設定 / クローラ・ライセンス再検証・ランキング集計の実行) |
 | [docs/setup/infra.md](docs/setup/infra.md) | AWS インフラ初回セットアップ (bootstrap → account → GitHub Environments → env apply → seed-secrets → image push) |
 
 ### 設計や運用方針
