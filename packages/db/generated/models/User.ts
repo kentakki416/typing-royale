@@ -244,6 +244,7 @@ export type UserWhereInput = {
   playSessions?: Prisma.PlaySessionListRelationFilter
   lifetimeStats?: Prisma.XOR<Prisma.UserLifetimeStatsNullableScalarRelationFilter, Prisma.UserLifetimeStatsWhereInput> | null
   languageBests?: Prisma.UserLanguageBestListRelationFilter
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotListRelationFilter
   rewards?: Prisma.RewardListRelationFilter
   hallOfFameEntries?: Prisma.HallOfFameEntryListRelationFilter
   badgeConfig?: Prisma.XOR<Prisma.BadgeConfigNullableScalarRelationFilter, Prisma.BadgeConfigWhereInput> | null
@@ -262,6 +263,7 @@ export type UserOrderByWithRelationInput = {
   playSessions?: Prisma.PlaySessionOrderByRelationAggregateInput
   lifetimeStats?: Prisma.UserLifetimeStatsOrderByWithRelationInput
   languageBests?: Prisma.UserLanguageBestOrderByRelationAggregateInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotOrderByRelationAggregateInput
   rewards?: Prisma.RewardOrderByRelationAggregateInput
   hallOfFameEntries?: Prisma.HallOfFameEntryOrderByRelationAggregateInput
   badgeConfig?: Prisma.BadgeConfigOrderByWithRelationInput
@@ -283,6 +285,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   playSessions?: Prisma.PlaySessionListRelationFilter
   lifetimeStats?: Prisma.XOR<Prisma.UserLifetimeStatsNullableScalarRelationFilter, Prisma.UserLifetimeStatsWhereInput> | null
   languageBests?: Prisma.UserLanguageBestListRelationFilter
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotListRelationFilter
   rewards?: Prisma.RewardListRelationFilter
   hallOfFameEntries?: Prisma.HallOfFameEntryListRelationFilter
   badgeConfig?: Prisma.XOR<Prisma.BadgeConfigNullableScalarRelationFilter, Prisma.BadgeConfigWhereInput> | null
@@ -330,6 +333,7 @@ export type UserCreateInput = {
   playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
   languageBests?: Prisma.UserLanguageBestCreateNestedManyWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotCreateNestedManyWithoutUserInput
   rewards?: Prisma.RewardCreateNestedManyWithoutUserInput
   hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutUserInput
   badgeConfig?: Prisma.BadgeConfigCreateNestedOneWithoutUserInput
@@ -348,6 +352,7 @@ export type UserUncheckedCreateInput = {
   playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
   languageBests?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedCreateNestedManyWithoutUserInput
   rewards?: Prisma.RewardUncheckedCreateNestedManyWithoutUserInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutUserInput
   badgeConfig?: Prisma.BadgeConfigUncheckedCreateNestedOneWithoutUserInput
@@ -365,6 +370,7 @@ export type UserUpdateInput = {
   playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
   languageBests?: Prisma.UserLanguageBestUpdateManyWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUpdateManyWithoutUserNestedInput
   rewards?: Prisma.RewardUpdateManyWithoutUserNestedInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutUserNestedInput
   badgeConfig?: Prisma.BadgeConfigUpdateOneWithoutUserNestedInput
@@ -383,6 +389,7 @@ export type UserUncheckedUpdateInput = {
   playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
   languageBests?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedUpdateManyWithoutUserNestedInput
   rewards?: Prisma.RewardUncheckedUpdateManyWithoutUserNestedInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutUserNestedInput
   badgeConfig?: Prisma.BadgeConfigUncheckedUpdateOneWithoutUserNestedInput
@@ -530,6 +537,20 @@ export type UserUpdateOneRequiredWithoutLanguageBestsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutLanguageBestsInput, Prisma.UserUpdateWithoutLanguageBestsInput>, Prisma.UserUncheckedUpdateWithoutLanguageBestsInput>
 }
 
+export type UserCreateNestedOneWithoutMonthlyRankingSnapshotsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMonthlyRankingSnapshotsInput, Prisma.UserUncheckedCreateWithoutMonthlyRankingSnapshotsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMonthlyRankingSnapshotsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutMonthlyRankingSnapshotsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutMonthlyRankingSnapshotsInput, Prisma.UserUncheckedCreateWithoutMonthlyRankingSnapshotsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutMonthlyRankingSnapshotsInput
+  upsert?: Prisma.UserUpsertWithoutMonthlyRankingSnapshotsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutMonthlyRankingSnapshotsInput, Prisma.UserUpdateWithoutMonthlyRankingSnapshotsInput>, Prisma.UserUncheckedUpdateWithoutMonthlyRankingSnapshotsInput>
+}
+
 export type UserCreateNestedOneWithoutRewardsInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutRewardsInput, Prisma.UserUncheckedCreateWithoutRewardsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutRewardsInput
@@ -583,6 +604,7 @@ export type UserCreateWithoutAccountsInput = {
   playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
   languageBests?: Prisma.UserLanguageBestCreateNestedManyWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotCreateNestedManyWithoutUserInput
   rewards?: Prisma.RewardCreateNestedManyWithoutUserInput
   hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutUserInput
   badgeConfig?: Prisma.BadgeConfigCreateNestedOneWithoutUserInput
@@ -600,6 +622,7 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
   languageBests?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedCreateNestedManyWithoutUserInput
   rewards?: Prisma.RewardUncheckedCreateNestedManyWithoutUserInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutUserInput
   badgeConfig?: Prisma.BadgeConfigUncheckedCreateNestedOneWithoutUserInput
@@ -632,6 +655,7 @@ export type UserUpdateWithoutAccountsInput = {
   playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
   languageBests?: Prisma.UserLanguageBestUpdateManyWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUpdateManyWithoutUserNestedInput
   rewards?: Prisma.RewardUpdateManyWithoutUserNestedInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutUserNestedInput
   badgeConfig?: Prisma.BadgeConfigUpdateOneWithoutUserNestedInput
@@ -649,6 +673,7 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
   languageBests?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedUpdateManyWithoutUserNestedInput
   rewards?: Prisma.RewardUncheckedUpdateManyWithoutUserNestedInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutUserNestedInput
   badgeConfig?: Prisma.BadgeConfigUncheckedUpdateOneWithoutUserNestedInput
@@ -665,6 +690,7 @@ export type UserCreateWithoutPlaySessionsInput = {
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
   languageBests?: Prisma.UserLanguageBestCreateNestedManyWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotCreateNestedManyWithoutUserInput
   rewards?: Prisma.RewardCreateNestedManyWithoutUserInput
   hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutUserInput
   badgeConfig?: Prisma.BadgeConfigCreateNestedOneWithoutUserInput
@@ -682,6 +708,7 @@ export type UserUncheckedCreateWithoutPlaySessionsInput = {
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
   languageBests?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedCreateNestedManyWithoutUserInput
   rewards?: Prisma.RewardUncheckedCreateNestedManyWithoutUserInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutUserInput
   badgeConfig?: Prisma.BadgeConfigUncheckedCreateNestedOneWithoutUserInput
@@ -714,6 +741,7 @@ export type UserUpdateWithoutPlaySessionsInput = {
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
   languageBests?: Prisma.UserLanguageBestUpdateManyWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUpdateManyWithoutUserNestedInput
   rewards?: Prisma.RewardUpdateManyWithoutUserNestedInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutUserNestedInput
   badgeConfig?: Prisma.BadgeConfigUpdateOneWithoutUserNestedInput
@@ -731,6 +759,7 @@ export type UserUncheckedUpdateWithoutPlaySessionsInput = {
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
   languageBests?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedUpdateManyWithoutUserNestedInput
   rewards?: Prisma.RewardUncheckedUpdateManyWithoutUserNestedInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutUserNestedInput
   badgeConfig?: Prisma.BadgeConfigUncheckedUpdateOneWithoutUserNestedInput
@@ -747,6 +776,7 @@ export type UserCreateWithoutLifetimeStatsInput = {
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
   playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
   languageBests?: Prisma.UserLanguageBestCreateNestedManyWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotCreateNestedManyWithoutUserInput
   rewards?: Prisma.RewardCreateNestedManyWithoutUserInput
   hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutUserInput
   badgeConfig?: Prisma.BadgeConfigCreateNestedOneWithoutUserInput
@@ -764,6 +794,7 @@ export type UserUncheckedCreateWithoutLifetimeStatsInput = {
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
   playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
   languageBests?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedCreateNestedManyWithoutUserInput
   rewards?: Prisma.RewardUncheckedCreateNestedManyWithoutUserInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutUserInput
   badgeConfig?: Prisma.BadgeConfigUncheckedCreateNestedOneWithoutUserInput
@@ -796,6 +827,7 @@ export type UserUpdateWithoutLifetimeStatsInput = {
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
   playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
   languageBests?: Prisma.UserLanguageBestUpdateManyWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUpdateManyWithoutUserNestedInput
   rewards?: Prisma.RewardUpdateManyWithoutUserNestedInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutUserNestedInput
   badgeConfig?: Prisma.BadgeConfigUpdateOneWithoutUserNestedInput
@@ -813,6 +845,7 @@ export type UserUncheckedUpdateWithoutLifetimeStatsInput = {
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
   playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
   languageBests?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedUpdateManyWithoutUserNestedInput
   rewards?: Prisma.RewardUncheckedUpdateManyWithoutUserNestedInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutUserNestedInput
   badgeConfig?: Prisma.BadgeConfigUncheckedUpdateOneWithoutUserNestedInput
@@ -829,6 +862,7 @@ export type UserCreateWithoutLanguageBestsInput = {
   accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
   playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotCreateNestedManyWithoutUserInput
   rewards?: Prisma.RewardCreateNestedManyWithoutUserInput
   hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutUserInput
   badgeConfig?: Prisma.BadgeConfigCreateNestedOneWithoutUserInput
@@ -846,6 +880,7 @@ export type UserUncheckedCreateWithoutLanguageBestsInput = {
   accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
   playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedCreateNestedManyWithoutUserInput
   rewards?: Prisma.RewardUncheckedCreateNestedManyWithoutUserInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutUserInput
   badgeConfig?: Prisma.BadgeConfigUncheckedCreateNestedOneWithoutUserInput
@@ -878,6 +913,7 @@ export type UserUpdateWithoutLanguageBestsInput = {
   accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
   playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUpdateManyWithoutUserNestedInput
   rewards?: Prisma.RewardUpdateManyWithoutUserNestedInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutUserNestedInput
   badgeConfig?: Prisma.BadgeConfigUpdateOneWithoutUserNestedInput
@@ -895,6 +931,93 @@ export type UserUncheckedUpdateWithoutLanguageBestsInput = {
   accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
   playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedUpdateManyWithoutUserNestedInput
+  rewards?: Prisma.RewardUncheckedUpdateManyWithoutUserNestedInput
+  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutUserNestedInput
+  badgeConfig?: Prisma.BadgeConfigUncheckedUpdateOneWithoutUserNestedInput
+}
+
+export type UserCreateWithoutMonthlyRankingSnapshotsInput = {
+  email?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AuthAccountCreateNestedManyWithoutUserInput
+  playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
+  lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
+  languageBests?: Prisma.UserLanguageBestCreateNestedManyWithoutUserInput
+  rewards?: Prisma.RewardCreateNestedManyWithoutUserInput
+  hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutUserInput
+  badgeConfig?: Prisma.BadgeConfigCreateNestedOneWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutMonthlyRankingSnapshotsInput = {
+  id?: number
+  email?: string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  canPublicRanking?: boolean
+  favoriteRepoUrl?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AuthAccountUncheckedCreateNestedManyWithoutUserInput
+  playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
+  languageBests?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutUserInput
+  rewards?: Prisma.RewardUncheckedCreateNestedManyWithoutUserInput
+  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutUserInput
+  badgeConfig?: Prisma.BadgeConfigUncheckedCreateNestedOneWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutMonthlyRankingSnapshotsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutMonthlyRankingSnapshotsInput, Prisma.UserUncheckedCreateWithoutMonthlyRankingSnapshotsInput>
+}
+
+export type UserUpsertWithoutMonthlyRankingSnapshotsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutMonthlyRankingSnapshotsInput, Prisma.UserUncheckedUpdateWithoutMonthlyRankingSnapshotsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutMonthlyRankingSnapshotsInput, Prisma.UserUncheckedCreateWithoutMonthlyRankingSnapshotsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutMonthlyRankingSnapshotsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutMonthlyRankingSnapshotsInput, Prisma.UserUncheckedUpdateWithoutMonthlyRankingSnapshotsInput>
+}
+
+export type UserUpdateWithoutMonthlyRankingSnapshotsInput = {
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AuthAccountUpdateManyWithoutUserNestedInput
+  playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
+  languageBests?: Prisma.UserLanguageBestUpdateManyWithoutUserNestedInput
+  rewards?: Prisma.RewardUpdateManyWithoutUserNestedInput
+  hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutUserNestedInput
+  badgeConfig?: Prisma.BadgeConfigUpdateOneWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutMonthlyRankingSnapshotsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  canPublicRanking?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  favoriteRepoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AuthAccountUncheckedUpdateManyWithoutUserNestedInput
+  playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
+  lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
+  languageBests?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutUserNestedInput
   rewards?: Prisma.RewardUncheckedUpdateManyWithoutUserNestedInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutUserNestedInput
   badgeConfig?: Prisma.BadgeConfigUncheckedUpdateOneWithoutUserNestedInput
@@ -912,6 +1035,7 @@ export type UserCreateWithoutRewardsInput = {
   playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
   languageBests?: Prisma.UserLanguageBestCreateNestedManyWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotCreateNestedManyWithoutUserInput
   hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutUserInput
   badgeConfig?: Prisma.BadgeConfigCreateNestedOneWithoutUserInput
 }
@@ -929,6 +1053,7 @@ export type UserUncheckedCreateWithoutRewardsInput = {
   playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
   languageBests?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedCreateNestedManyWithoutUserInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutUserInput
   badgeConfig?: Prisma.BadgeConfigUncheckedCreateNestedOneWithoutUserInput
 }
@@ -961,6 +1086,7 @@ export type UserUpdateWithoutRewardsInput = {
   playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
   languageBests?: Prisma.UserLanguageBestUpdateManyWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUpdateManyWithoutUserNestedInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutUserNestedInput
   badgeConfig?: Prisma.BadgeConfigUpdateOneWithoutUserNestedInput
 }
@@ -978,6 +1104,7 @@ export type UserUncheckedUpdateWithoutRewardsInput = {
   playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
   languageBests?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedUpdateManyWithoutUserNestedInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutUserNestedInput
   badgeConfig?: Prisma.BadgeConfigUncheckedUpdateOneWithoutUserNestedInput
 }
@@ -994,6 +1121,7 @@ export type UserCreateWithoutHallOfFameEntriesInput = {
   playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
   languageBests?: Prisma.UserLanguageBestCreateNestedManyWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotCreateNestedManyWithoutUserInput
   rewards?: Prisma.RewardCreateNestedManyWithoutUserInput
   badgeConfig?: Prisma.BadgeConfigCreateNestedOneWithoutUserInput
 }
@@ -1011,6 +1139,7 @@ export type UserUncheckedCreateWithoutHallOfFameEntriesInput = {
   playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
   languageBests?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedCreateNestedManyWithoutUserInput
   rewards?: Prisma.RewardUncheckedCreateNestedManyWithoutUserInput
   badgeConfig?: Prisma.BadgeConfigUncheckedCreateNestedOneWithoutUserInput
 }
@@ -1043,6 +1172,7 @@ export type UserUpdateWithoutHallOfFameEntriesInput = {
   playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
   languageBests?: Prisma.UserLanguageBestUpdateManyWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUpdateManyWithoutUserNestedInput
   rewards?: Prisma.RewardUpdateManyWithoutUserNestedInput
   badgeConfig?: Prisma.BadgeConfigUpdateOneWithoutUserNestedInput
 }
@@ -1060,6 +1190,7 @@ export type UserUncheckedUpdateWithoutHallOfFameEntriesInput = {
   playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
   languageBests?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedUpdateManyWithoutUserNestedInput
   rewards?: Prisma.RewardUncheckedUpdateManyWithoutUserNestedInput
   badgeConfig?: Prisma.BadgeConfigUncheckedUpdateOneWithoutUserNestedInput
 }
@@ -1076,6 +1207,7 @@ export type UserCreateWithoutBadgeConfigInput = {
   playSessions?: Prisma.PlaySessionCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsCreateNestedOneWithoutUserInput
   languageBests?: Prisma.UserLanguageBestCreateNestedManyWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotCreateNestedManyWithoutUserInput
   rewards?: Prisma.RewardCreateNestedManyWithoutUserInput
   hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutUserInput
 }
@@ -1093,6 +1225,7 @@ export type UserUncheckedCreateWithoutBadgeConfigInput = {
   playSessions?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutUserInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedCreateNestedOneWithoutUserInput
   languageBests?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutUserInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedCreateNestedManyWithoutUserInput
   rewards?: Prisma.RewardUncheckedCreateNestedManyWithoutUserInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutUserInput
 }
@@ -1125,6 +1258,7 @@ export type UserUpdateWithoutBadgeConfigInput = {
   playSessions?: Prisma.PlaySessionUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUpdateOneWithoutUserNestedInput
   languageBests?: Prisma.UserLanguageBestUpdateManyWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUpdateManyWithoutUserNestedInput
   rewards?: Prisma.RewardUpdateManyWithoutUserNestedInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutUserNestedInput
 }
@@ -1142,6 +1276,7 @@ export type UserUncheckedUpdateWithoutBadgeConfigInput = {
   playSessions?: Prisma.PlaySessionUncheckedUpdateManyWithoutUserNestedInput
   lifetimeStats?: Prisma.UserLifetimeStatsUncheckedUpdateOneWithoutUserNestedInput
   languageBests?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutUserNestedInput
+  monthlyRankingSnapshots?: Prisma.MonthlyRankingSnapshotUncheckedUpdateManyWithoutUserNestedInput
   rewards?: Prisma.RewardUncheckedUpdateManyWithoutUserNestedInput
   hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -1155,6 +1290,7 @@ export type UserCountOutputType = {
   accounts: number
   playSessions: number
   languageBests: number
+  monthlyRankingSnapshots: number
   rewards: number
   hallOfFameEntries: number
 }
@@ -1163,6 +1299,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   accounts?: boolean | UserCountOutputTypeCountAccountsArgs
   playSessions?: boolean | UserCountOutputTypeCountPlaySessionsArgs
   languageBests?: boolean | UserCountOutputTypeCountLanguageBestsArgs
+  monthlyRankingSnapshots?: boolean | UserCountOutputTypeCountMonthlyRankingSnapshotsArgs
   rewards?: boolean | UserCountOutputTypeCountRewardsArgs
   hallOfFameEntries?: boolean | UserCountOutputTypeCountHallOfFameEntriesArgs
 }
@@ -1201,6 +1338,13 @@ export type UserCountOutputTypeCountLanguageBestsArgs<ExtArgs extends runtime.Ty
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountMonthlyRankingSnapshotsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.MonthlyRankingSnapshotWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountRewardsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.RewardWhereInput
 }
@@ -1226,6 +1370,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   playSessions?: boolean | Prisma.User$playSessionsArgs<ExtArgs>
   lifetimeStats?: boolean | Prisma.User$lifetimeStatsArgs<ExtArgs>
   languageBests?: boolean | Prisma.User$languageBestsArgs<ExtArgs>
+  monthlyRankingSnapshots?: boolean | Prisma.User$monthlyRankingSnapshotsArgs<ExtArgs>
   rewards?: boolean | Prisma.User$rewardsArgs<ExtArgs>
   hallOfFameEntries?: boolean | Prisma.User$hallOfFameEntriesArgs<ExtArgs>
   badgeConfig?: boolean | Prisma.User$badgeConfigArgs<ExtArgs>
@@ -1271,6 +1416,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   playSessions?: boolean | Prisma.User$playSessionsArgs<ExtArgs>
   lifetimeStats?: boolean | Prisma.User$lifetimeStatsArgs<ExtArgs>
   languageBests?: boolean | Prisma.User$languageBestsArgs<ExtArgs>
+  monthlyRankingSnapshots?: boolean | Prisma.User$monthlyRankingSnapshotsArgs<ExtArgs>
   rewards?: boolean | Prisma.User$rewardsArgs<ExtArgs>
   hallOfFameEntries?: boolean | Prisma.User$hallOfFameEntriesArgs<ExtArgs>
   badgeConfig?: boolean | Prisma.User$badgeConfigArgs<ExtArgs>
@@ -1286,6 +1432,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     playSessions: Prisma.$PlaySessionPayload<ExtArgs>[]
     lifetimeStats: Prisma.$UserLifetimeStatsPayload<ExtArgs> | null
     languageBests: Prisma.$UserLanguageBestPayload<ExtArgs>[]
+    monthlyRankingSnapshots: Prisma.$MonthlyRankingSnapshotPayload<ExtArgs>[]
     rewards: Prisma.$RewardPayload<ExtArgs>[]
     hallOfFameEntries: Prisma.$HallOfFameEntryPayload<ExtArgs>[]
     badgeConfig: Prisma.$BadgeConfigPayload<ExtArgs> | null
@@ -1709,6 +1856,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   playSessions<T extends Prisma.User$playSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$playSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PlaySessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   lifetimeStats<T extends Prisma.User$lifetimeStatsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$lifetimeStatsArgs<ExtArgs>>): Prisma.Prisma__UserLifetimeStatsClient<runtime.Types.Result.GetResult<Prisma.$UserLifetimeStatsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   languageBests<T extends Prisma.User$languageBestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$languageBestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserLanguageBestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  monthlyRankingSnapshots<T extends Prisma.User$monthlyRankingSnapshotsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$monthlyRankingSnapshotsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MonthlyRankingSnapshotPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   rewards<T extends Prisma.User$rewardsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$rewardsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RewardPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   hallOfFameEntries<T extends Prisma.User$hallOfFameEntriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$hallOfFameEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$HallOfFameEntryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   badgeConfig<T extends Prisma.User$badgeConfigArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$badgeConfigArgs<ExtArgs>>): Prisma.Prisma__BadgeConfigClient<runtime.Types.Result.GetResult<Prisma.$BadgeConfigPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
@@ -2230,6 +2378,30 @@ export type User$languageBestsArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.UserLanguageBestScalarFieldEnum | Prisma.UserLanguageBestScalarFieldEnum[]
+}
+
+/**
+ * User.monthlyRankingSnapshots
+ */
+export type User$monthlyRankingSnapshotsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the MonthlyRankingSnapshot
+   */
+  select?: Prisma.MonthlyRankingSnapshotSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the MonthlyRankingSnapshot
+   */
+  omit?: Prisma.MonthlyRankingSnapshotOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.MonthlyRankingSnapshotInclude<ExtArgs> | null
+  where?: Prisma.MonthlyRankingSnapshotWhereInput
+  orderBy?: Prisma.MonthlyRankingSnapshotOrderByWithRelationInput | Prisma.MonthlyRankingSnapshotOrderByWithRelationInput[]
+  cursor?: Prisma.MonthlyRankingSnapshotWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.MonthlyRankingSnapshotScalarFieldEnum | Prisma.MonthlyRankingSnapshotScalarFieldEnum[]
 }
 
 /**

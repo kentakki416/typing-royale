@@ -397,6 +397,7 @@ export const ModelName = {
   KeystrokeLog: 'KeystrokeLog',
   UserLifetimeStats: 'UserLifetimeStats',
   UserLanguageBest: 'UserLanguageBest',
+  MonthlyRankingSnapshot: 'MonthlyRankingSnapshot',
   Reward: 'Reward',
   HallOfFameEntry: 'HallOfFameEntry',
   BadgeConfig: 'BadgeConfig'
@@ -415,7 +416,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "authAccount" | "memo" | "user" | "language" | "crawledRepo" | "problem" | "crawlerRun" | "crawlerRunItem" | "playSession" | "playSessionProblem" | "keystrokeLog" | "userLifetimeStats" | "userLanguageBest" | "reward" | "hallOfFameEntry" | "badgeConfig"
+    modelProps: "authAccount" | "memo" | "user" | "language" | "crawledRepo" | "problem" | "crawlerRun" | "crawlerRunItem" | "playSession" | "playSessionProblem" | "keystrokeLog" | "userLifetimeStats" | "userLanguageBest" | "monthlyRankingSnapshot" | "reward" | "hallOfFameEntry" | "badgeConfig"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1381,6 +1382,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    MonthlyRankingSnapshot: {
+      payload: Prisma.$MonthlyRankingSnapshotPayload<ExtArgs>
+      fields: Prisma.MonthlyRankingSnapshotFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.MonthlyRankingSnapshotFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MonthlyRankingSnapshotPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.MonthlyRankingSnapshotFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MonthlyRankingSnapshotPayload>
+        }
+        findFirst: {
+          args: Prisma.MonthlyRankingSnapshotFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MonthlyRankingSnapshotPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.MonthlyRankingSnapshotFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MonthlyRankingSnapshotPayload>
+        }
+        findMany: {
+          args: Prisma.MonthlyRankingSnapshotFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MonthlyRankingSnapshotPayload>[]
+        }
+        create: {
+          args: Prisma.MonthlyRankingSnapshotCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MonthlyRankingSnapshotPayload>
+        }
+        createMany: {
+          args: Prisma.MonthlyRankingSnapshotCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.MonthlyRankingSnapshotCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MonthlyRankingSnapshotPayload>[]
+        }
+        delete: {
+          args: Prisma.MonthlyRankingSnapshotDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MonthlyRankingSnapshotPayload>
+        }
+        update: {
+          args: Prisma.MonthlyRankingSnapshotUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MonthlyRankingSnapshotPayload>
+        }
+        deleteMany: {
+          args: Prisma.MonthlyRankingSnapshotDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.MonthlyRankingSnapshotUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.MonthlyRankingSnapshotUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MonthlyRankingSnapshotPayload>[]
+        }
+        upsert: {
+          args: Prisma.MonthlyRankingSnapshotUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$MonthlyRankingSnapshotPayload>
+        }
+        aggregate: {
+          args: Prisma.MonthlyRankingSnapshotAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateMonthlyRankingSnapshot>
+        }
+        groupBy: {
+          args: Prisma.MonthlyRankingSnapshotGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MonthlyRankingSnapshotGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.MonthlyRankingSnapshotCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.MonthlyRankingSnapshotCountAggregateOutputType> | number
+        }
+      }
+    }
     Reward: {
       payload: Prisma.$RewardPayload<ExtArgs>
       fields: Prisma.RewardFieldRefs
@@ -1850,6 +1925,20 @@ export const UserLanguageBestScalarFieldEnum = {
 export type UserLanguageBestScalarFieldEnum = (typeof UserLanguageBestScalarFieldEnum)[keyof typeof UserLanguageBestScalarFieldEnum]
 
 
+export const MonthlyRankingSnapshotScalarFieldEnum = {
+  yearMonth: 'yearMonth',
+  languageId: 'languageId',
+  userId: 'userId',
+  rank: 'rank',
+  score: 'score',
+  accuracy: 'accuracy',
+  playedAt: 'playedAt',
+  snapshotAt: 'snapshotAt'
+} as const
+
+export type MonthlyRankingSnapshotScalarFieldEnum = (typeof MonthlyRankingSnapshotScalarFieldEnum)[keyof typeof MonthlyRankingSnapshotScalarFieldEnum]
+
+
 export const RewardScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2169,6 +2258,7 @@ export type GlobalOmitConfig = {
   keystrokeLog?: Prisma.KeystrokeLogOmit
   userLifetimeStats?: Prisma.UserLifetimeStatsOmit
   userLanguageBest?: Prisma.UserLanguageBestOmit
+  monthlyRankingSnapshot?: Prisma.MonthlyRankingSnapshotOmit
   reward?: Prisma.RewardOmit
   hallOfFameEntry?: Prisma.HallOfFameEntryOmit
   badgeConfig?: Prisma.BadgeConfigOmit

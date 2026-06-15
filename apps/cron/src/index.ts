@@ -6,6 +6,7 @@ import { logger } from "@repo/logger"
  * 実際のクローラ / バッチ処理は `src/task/` 配下のエントリから起動する:
  *   - `pnpm crawler:run:typescript`  : TypeScript 週次クローラ
  *   - `pnpm crawler:license-recheck` : 月次ライセンス再検証（言語非依存）
+ *   - `pnpm batch:monthly-ranking`   : 毎時月間ランキング集計
  *
  * `pnpm batch:ranking` は未実装（src/task/ranking-batch.ts はスタブ）。
  *
