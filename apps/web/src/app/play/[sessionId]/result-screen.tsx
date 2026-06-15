@@ -3,11 +3,10 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
-import { FinishPlaySessionResponse, GetMyRankingResponse, GetRankingsResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
+import { FinishPlaySessionResponse, GetMyRankingResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { CelebrationOverlay } from "@/components/celebration-overlay"
 import { GradeProgressBar } from "@/components/grade-progress-bar"
-import { RankingTable } from "@/components/ranking-table"
 import { TopTenCommentModal } from "@/components/top-ten-comment-modal"
 import { Topbar } from "@/components/topbar"
 import { gradeBadgeClass } from "@/libs/grade"
@@ -50,7 +49,6 @@ type Props = {
 export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, repoInfo, result }: Props) {
   const [me, setMe] = useState<GetMyRankingResponse | null>(null)
   const [meFetchFailed, setMeFetchFailed] = useState(false)
-  const [topRankings, setTopRankings] = useState<GetRankingsResponse | null>(null)
   const [hofModalOpen, setHofModalOpen] = useState(false)
   const [hofPromptDismissed, setHofPromptDismissed] = useState(false)
   /** リザルト到達時に 1 度だけ祝福 overlay を再生 */
@@ -81,22 +79,6 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
     }
     void loadMyRanking()
   }, [isGuest, result])
-
-  /** TOP 10 のリストは guest/authed 問わず表示するため独立 fetch */
-  useEffect(() => {
-    if (result === null) return
-    const loadTopRankings = async () => {
-      try {
-        const res = await fetch("/api/internal/rankings?language=typescript&limit=10")
-        if (!res.ok) return
-        const data = await res.json() as GetRankingsResponse
-        setTopRankings(data)
-      } catch {
-        /** TOP リストは補助情報なのでフェッチ失敗時はサイレントに非表示 */
-      }
-    }
-    void loadTopRankings()
-  }, [result])
 
   if (result === null) {
     return (
@@ -201,18 +183,6 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
               </div>
             )}
           </div>
-        )}
-
-        {topRankings !== null && topRankings.entries.length > 0 && (
-          <>
-            <div className="text-sm text-muted mb-8" style={{ textAlign: "center" }}>
-              TypeScript TOP {topRankings.entries.length} ／ {topRankings.total_ranked_players.toLocaleString()} 人中
-            </div>
-            <RankingTable
-              entries={topRankings.entries}
-              meBestPlaySessionId={me?.best_play_session_id ?? null}
-            />
-          </>
         )}
 
         <div className="stat-row">
