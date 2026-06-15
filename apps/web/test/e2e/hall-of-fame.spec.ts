@@ -5,11 +5,11 @@ import { test, expect } from "./fixtures"
  * 無ければ「まだエントリがありません」のエンプティ
  */
 
-test.describe("Hall of Fame", () => {
-  test("Hall of Fame ページが開いて言語タブが表示", async ({ page }) => {
+test.describe("殿堂入り", () => {
+  test("殿堂入りページが開いて言語タブが表示", async ({ page }) => {
     await page.goto("/hall-of-fame")
     await expect(page).toHaveURL(/\/hall-of-fame/)
-    await expect(page.getByRole("heading", { name: /Hall of Fame/ })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /殿堂入り/ })).toBeVisible()
     await expect(page.getByRole("link", { name: "TypeScript" })).toBeVisible()
   })
 
