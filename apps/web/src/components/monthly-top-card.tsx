@@ -37,9 +37,9 @@ export function MonthlyTopCard({ data }: Props) {
               <div className="flex gap-8" style={{ alignItems: "center", minWidth: 0 }}>
                 <span
                   className="text-mono text-muted"
-                  style={{ minWidth: "20px", textAlign: "right" }}
+                  style={{ minWidth: "32px", textAlign: "right" }}
                 >
-                  {entry.rank}
+                  {entry.rank} 位
                 </span>
                 <span
                   className="player-name"
