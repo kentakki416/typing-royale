@@ -192,7 +192,7 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
 
         <div className="card mb-16">
           <div className="card-header">
-            <div className="card-title">📦 今回のリポジトリ</div>
+            <div className="card-title"><span style={{ marginRight: "8px" }}>📦</span>今回のリポジトリ</div>
           </div>
           <p className="text-sm text-muted mb-8">
             今回のセッションで出題された関数は、以下の OSS リポジトリから自動抽出されたものです。
@@ -219,7 +219,7 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
 
         <div className="card mb-16">
           <div className="card-header">
-            <div className="card-title">✗ よく間違える文字</div>
+            <div className="card-title"><span style={{ marginRight: "8px" }}>❌</span>よく間違える文字</div>
           </div>
           {topMistypes.length > 0 ? (
             <div className="flex gap-12" style={{ flexWrap: "wrap" }}>
@@ -241,7 +241,7 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
         {isGuest && (
           <div className="card mb-16" style={{ borderColor: "rgba(125, 211, 252, 0.4)" }}>
             <div className="card-header">
-              <div className="card-title">💾 このスコアは保存されていません</div>
+              <div className="card-title"><span style={{ marginRight: "8px" }}>💾</span>このスコアは保存されていません</div>
             </div>
             <p className="text-sm text-muted mb-16">
               ゲストプレイのため、ランキング・グレード・達成カードには反映されていません。
@@ -311,7 +311,7 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
         {me !== null && me.best_score !== null && (
           <div className="card mb-16" style={{ borderColor: "rgba(189, 147, 249, 0.3)" }}>
             <div className="card-header">
-              <div className="card-title">⚡ エンジニアグレード</div>
+              <div className="card-title"><span style={{ marginRight: "8px" }}>⚡</span>エンジニアグレード</div>
               <span
                 className={`badge-grade ${gradeBadgeClass(me.grade.name)}`}
                 data-level={me.grade.level}
