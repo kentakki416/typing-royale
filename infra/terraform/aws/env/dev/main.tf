@@ -466,9 +466,11 @@ module "ecs_worker" {
   secrets_arn = local.ecs_common.secrets_arn
   secret_keys = local.ecs_common.secret_keys
 
-  # 初回 image push 前は CannotPullContainerError 防止のため desired_count = 0。
-  # step8 で image push 後に 1 に上げる
-  desired_count         = 0
+  # 先に ECR へ image を push してから apply する前提で 1 固定。
+  # image が未 push の状態で apply すると ECS task が CannotPullContainerError で
+  # 失敗するが、deploy workflow から image を push + task definition 更新すれば
+  # ECS が自動で再 pull して正常化するため、運用上は問題にしない。
+  desired_count         = 1
   log_retention_in_days = var.log_retention_days
   tags                  = local.common_tags
 }

@@ -19,7 +19,7 @@ infra/
 
 - [前提](#前提)
 - [1. プロジェクト名のリネーム（テンプレート流用時のみ）](#1-プロジェクト名のリネームテンプレート流用時のみ)
-- [2. Bootstrap（S3 tfstate + DynamoDB ロックテーブル）](#2-bootstraps3-tfstate--dynamodb-ロックテーブル)
+- [2. Bootstrap（S3 tfstate バケット）](#2-bootstraps3-tfstate-バケット)
 - [3. Account（OIDC / GitHub Actions IAM role / ECR）](#3-accountoidc--github-actions-iam-role--ecr)
 - [4. GitHub Environments のセットアップ](#4-github-environments-のセットアップ)
 - [5. env/dev のデプロイ](#5-envdev-のデプロイ)
@@ -36,9 +36,9 @@ infra/
 
 - [ ] `project-template` を実プロジェクト名に置換しておく。**OIDC trust policy で GitHub repo 名を一致判定するため、`github_repository` の更新は CI 復旧の必須条件**。
 
-### 2. Bootstrap（S3 tfstate + DynamoDB ロックテーブル）
+### 2. Bootstrap（S3 tfstate バケット）
 
-- [ ] remote backend に使う S3 バケットと DynamoDB ロックテーブルを 1 回だけ作る。
+- [ ] remote backend に使う S3 バケットを 1 回だけ作る。state lock は Terraform 1.10+ の S3 ネイティブロック（`use_lockfile = true`）で同バケットのロックファイルを使うため、DynamoDB テーブルは作らない。
 
 ```bash
 # ローカルでterraform applyを実行する

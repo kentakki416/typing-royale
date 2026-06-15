@@ -10,10 +10,11 @@
 ```
 terraform/
 ├── aws/
-│   ├── bootstrap/        # S3バックエンド・DynamoDBステートロック（初回のみ apply、local state）
+│   ├── bootstrap/        # S3 バックエンド（state lock は S3 ネイティブの use_lockfile、初回のみ apply、local state）
 │   ├── account/          # OIDC provider・GitHub Actions IAM role・ECR（AWS アカウント単位で共有）
 │   ├── env/
-│   │   └── dev/          # 開発環境の設定
+│   │   ├── dev/          # 開発環境の設定
+│   │   └── prd/          # 本番環境の設定
 │   └── modules/          # 再利用可能なモジュール群（alb / ecs-cluster / ecs-workload / vpc 等）
 ├── .tflint.hcl           # TFLint設定
 └── README.md
@@ -37,15 +38,14 @@ export AWS_DEFAULT_REGION="ap-northeast-1"
 
 #### 1. Bootstrap（初回のみ）
 
-tfstateを管理するためのS3バケットとDynamoDBテーブルを作成します。
+tfstate を管理するための S3 バケットを作成します。state lock は Terraform 1.10+ の S3 ネイティブロック（`use_lockfile = true`）で取得するため、DynamoDB テーブルは作りません。
 
 ```bash
 cd aws/bootstrap
 
 # 1. variables.tf の以下のデフォルト値をプロジェクトに合わせて変更
 #    - project_name
-#    - s3_bucket_name（AWSグローバルで一意にする）
-#    - dynamodb_table_name
+#    - s3_bucket_name（AWS グローバルで一意にする）
 
 # 2. リソースを作成
 terraform init
@@ -55,14 +55,13 @@ terraform apply
 
 #### 2. Backend設定
 
-Bootstrapで作成したリソースを環境側のbackendに反映します。
+Bootstrap で作成したリソースを環境側の backend に反映します。
 
 ```bash
 cd aws/env/dev
 
-# backend.tf の以下の値をBootstrapで作成した値に更新
+# backend.tf の以下の値を Bootstrap で作成した値に更新
 #   - bucket（= bootstrap の s3_bucket_name）
-#   - dynamodb_table（= bootstrap の dynamodb_table_name）
 
 terraform init
 ```
