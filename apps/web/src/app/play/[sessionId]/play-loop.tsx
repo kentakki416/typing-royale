@@ -327,7 +327,7 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
             <div className="editor-area">
               {currentProblem && (
                 <div className="code-block-source">
-                  <span>📦 {currentProblem.function_name}</span>
+                  <span title={currentProblem.function_name}>📦 {extractFilePathFromGithubUrl(currentProblem.source_url) ?? currentProblem.function_name}</span>
                   <a href={currentProblem.source_url} rel="noreferrer noopener" target="_blank">
                     GitHub で見る ↗
                   </a>
@@ -377,6 +377,25 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
       </div>
     </>
   )
+}
+
+/**
+ * source_url から GitHub のファイルパスだけを抽出する。
+ * 例: https://github.com/microsoft/vscode/blob/<sha>/src/vs/foo.ts#L1-L10
+ *     → "src/vs/foo.ts"
+ * フォーマットが想定外なら null を返す（呼び出し側で function_name にフォールバック）
+ */
+const extractFilePathFromGithubUrl = (url: string): string | null => {
+  try {
+    const u = new URL(url)
+    if (u.host !== "github.com") return null
+    const parts = u.pathname.split("/").filter((p) => p !== "")
+    /** ["{owner}", "{repo}", "blob", "{ref}", ...path] */
+    if (parts.length < 5 || parts[2] !== "blob") return null
+    return parts.slice(4).join("/")
+  } catch {
+    return null
+  }
 }
 
 /**
