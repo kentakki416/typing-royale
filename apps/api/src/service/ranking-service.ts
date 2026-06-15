@@ -1,9 +1,11 @@
-import { err, notFoundError, ok, Result } from "@repo/errors"
+import { badRequestError, err, notFoundError, ok, Result } from "@repo/errors"
 import { logger } from "@repo/logger"
 
 import { calcGrade, calcNextGrade, Grade } from "../lib/grade"
 import {
   LanguageRepository,
+  MonthlyRankingSnapshotRepository,
+  MonthlyRankingTopEntry,
   UserLanguageBestRepository,
   UserLanguageBestWithUser,
   UserLifetimeStatsRepository,
@@ -137,4 +139,64 @@ export const findMine = async (
     rank: higher + 1,
     totalRankedPlayers,
   })
+}
+
+// ========================================================
+// GET /api/rankings/monthly - 当月の言語別 TOP N
+// ========================================================
+
+type ListMonthlyRepo = {
+    languageRepository: LanguageRepository
+    monthlyRankingSnapshotRepository: MonthlyRankingSnapshotRepository
+}
+
+export type ListMonthlyInput = {
+    languageSlug: "javascript" | "typescript"
+    limit: number
+}
+
+export type ListMonthlyOutput = {
+    entries: MonthlyRankingTopEntry[]
+    yearMonth: string
+}
+
+/**
+ * 当月の言語別 TOP N を返す。
+ *
+ * 集計はバッチで `monthly_ranking_snapshots` に書き込まれているため、ここでは
+ * 単純な SELECT で読むだけ。各 (年月, 言語) ごとに上位 10 位までしか保存されないので
+ * limit が 10 を超えても 10 件以下が返る
+ */
+export const listMonthly = async (
+  input: ListMonthlyInput,
+  repo: ListMonthlyRepo,
+): Promise<Result<ListMonthlyOutput>> => {
+  logger.debug("RankingService: listMonthly", { language: input.languageSlug, limit: input.limit })
+
+  const language = await repo.languageRepository.findBySlug(input.languageSlug)
+  if (!language) return err(badRequestError(`Unsupported language: ${input.languageSlug}`))
+
+  const yearMonth = currentYearMonthJst(new Date())
+  const entries = await repo.monthlyRankingSnapshotRepository.findTopByLanguage(
+    yearMonth,
+    language.id,
+    input.limit,
+  )
+
+  return ok({ entries, yearMonth })
+}
+
+/**
+ * 与えられた時刻が属する JST 暦月を "YYYY-MM" 形式で返す純関数
+ */
+const currentYearMonthJst = (now: Date): string => {
+  const fmt = new Intl.DateTimeFormat("ja-JP", {
+    month: "2-digit",
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+  })
+  const parts = Object.fromEntries(
+    fmt.formatToParts(now).filter((p) => p.type !== "literal").map((p) => [p.type, p.value]),
+  )
+  return `${parts.year}-${parts.month}`
 }
