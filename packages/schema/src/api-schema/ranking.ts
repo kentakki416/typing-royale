@@ -88,3 +88,52 @@ export const getMyRankingResponseSchema = z.object({
 
 export type GetMyRankingQueryString = z.infer<typeof getMyRankingQueryStringSchema>
 export type GetMyRankingResponse = z.infer<typeof getMyRankingResponseSchema>
+
+// ========================================================
+// GET /api/rankings/monthly - 当月の言語別 TOP N
+// ========================================================
+
+/**
+ * GET /api/rankings/monthly の query string
+ *
+ * - language: typescript / javascript の 2 値
+ * - limit:    1〜10、デフォルト 5 (ホーム画面は 5 件表示、最大でも 10 件まで)
+ */
+export const getMonthlyRankingsQueryStringSchema = z.object({
+  language: z.enum(["typescript", "javascript"]),
+  limit: z.coerce.number().int().min(1).max(10).default(5),
+})
+
+/**
+ * 月間ランキング 1 エントリの user 表示情報
+ */
+const monthlyRankingEntryUserSchema = z.object({
+  id: z.number().int().positive(),
+  avatar_url: z.string().url().nullable(),
+  current_grade: z.string(),
+  display_name: z.string(),
+})
+
+/**
+ * 月間ランキング 1 エントリ
+ */
+const monthlyRankingEntrySchema = z.object({
+  accuracy: z.number().min(0).max(1),
+  played_at: z.string().datetime(),
+  rank: z.number().int().min(1),
+  score: z.number().int().nonnegative(),
+  user: monthlyRankingEntryUserSchema,
+})
+
+/**
+ * GET /api/rankings/monthly のレスポンス
+ *
+ * year_month は "YYYY-MM" 形式の JST 暦月
+ */
+export const getMonthlyRankingsResponseSchema = z.object({
+  entries: z.array(monthlyRankingEntrySchema).max(10),
+  year_month: z.string().regex(/^\d{4}-\d{2}$/),
+})
+
+export type GetMonthlyRankingsQueryString = z.infer<typeof getMonthlyRankingsQueryStringSchema>
+export type GetMonthlyRankingsResponse = z.infer<typeof getMonthlyRankingsResponseSchema>

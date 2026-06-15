@@ -34,6 +34,7 @@ import { PlaySessionStartSoloController } from "./controller/play-session/start-
 import { PlayerDetailController } from "./controller/player/detail"
 import { RankingListController } from "./controller/ranking/list"
 import { RankingMeController } from "./controller/ranking/me"
+import { RankingMonthlyListController } from "./controller/ranking/monthly-list"
 import { ReplayFeaturedController } from "./controller/replay/featured"
 import { ReplayGetController } from "./controller/replay/get"
 import { RewardsCardCreateController } from "./controller/rewards/cards"
@@ -55,6 +56,7 @@ import {
   PrismaKeystrokeLogRepository,
   PrismaLanguageRepository,
   PrismaMemoRepository,
+  PrismaMonthlyRankingSnapshotRepository,
   PrismaPlaySessionProblemRepository,
   PrismaPlaySessionRepository,
   PrismaProblemRepository,
@@ -105,6 +107,7 @@ const playSessionProblemRepository = new PrismaPlaySessionProblemRepository(pris
 const keystrokeLogRepository = new PrismaKeystrokeLogRepository(prisma)
 const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(prisma)
 const userLanguageBestRepository = new PrismaUserLanguageBestRepository(prisma)
+const monthlyRankingSnapshotRepository = new PrismaMonthlyRankingSnapshotRepository(prisma)
 const badgeConfigRepository = new PrismaBadgeConfigRepository(prisma)
 const hallOfFameEntryRepository = new PrismaHallOfFameEntryRepository(prisma)
 const rewardRepository = new PrismaRewardRepository(prisma)
@@ -235,6 +238,10 @@ const rankingMeController = new RankingMeController(
   languageRepository,
   userLanguageBestRepository,
   userLifetimeStatsRepository,
+)
+const rankingMonthlyListController = new RankingMonthlyListController(
+  languageRepository,
+  monthlyRankingSnapshotRepository,
 )
 
 /**
@@ -404,6 +411,7 @@ app.use(
   rankingRouter({
     list: rankingListController,
     me: rankingMeController,
+    monthlyList: rankingMonthlyListController,
   })
 )
 app.use(
