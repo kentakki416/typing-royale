@@ -37,15 +37,9 @@ resource "aws_iam_role" "github_actions_dev" {
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
-          # dev 系の GitHub Environment 全部を許可する。
-          # - dev: 通常の deploy/CI job 用
-          # - dev-api-approval: deploy workflow の approve-api job (Required reviewers ゲート) 用
-          # 新しい dev 系 Environment を作る時はここに追加する。
+          # dev は rolling deploy 運用で承認ゲートを持たないため、dev Environment のみ許可。
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = [
-              "repo:${var.github_repository}:environment:dev",
-              "repo:${var.github_repository}:environment:dev-api-approval",
-            ]
+            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repository}:environment:dev"
           }
         }
       }
@@ -57,11 +51,14 @@ resource "aws_iam_role" "github_actions_dev" {
  * prd 環境用 GitHub Actions IAM ロール（先行作成）。
  *
  * prd Environment が GitHub Settings に作成され、Required reviewers などのゲートが
- * 設定された後に、env/prd 用のワークフローからこの role を使う。trust policy は
- * `environment:prd` に限定。dev と違い AdminAccess は **意図的に付けない** ことで
- * 最小権限を強制する。当面 scoped policy (ecr_push + ecs_deploy) のみで足りない場合は、
- * env/prd の terraform plan/apply に必要な action を CloudTrail から抽出して scoped
- * policy を拡充していくこと。
+ * 設定された後に、env/prd 用のワークフローからこの role を使う。dev と違い AdminAccess
+ * は **意図的に付けない** ことで最小権限を強制する。当面 scoped policy (ecr_push +
+ * ecs_deploy + ssm_deploy_approval) で足りない場合は、env/prd の terraform plan/apply
+ * に必要な action を CloudTrail から抽出して scoped policy を拡充していくこと。
+ *
+ * 許可する GitHub Environment:
+ * - prd: 通常の deploy / CI job 用
+ * - prd-api-approval: deploy workflow の approve-api job (Required reviewers ゲート) 用
  */
 resource "aws_iam_role" "github_actions_prd" {
   name = "${var.project_name}-github-actions-prd"
@@ -80,7 +77,10 @@ resource "aws_iam_role" "github_actions_prd" {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repository}:environment:prd"
+            "token.actions.githubusercontent.com:sub" = [
+              "repo:${var.github_repository}:environment:prd",
+              "repo:${var.github_repository}:environment:prd-api-approval",
+            ]
           }
         }
       }
@@ -181,7 +181,7 @@ resource "aws_iam_role_policy_attachment" "ecs_deploy_dev" {
 # policy を細かく更新していくのは dev では運用負荷が大きいため admin で運用する。
 #
 # 含まれる権限:
-# - tfstate アクセス (S3 + DynamoDB)
+# - tfstate アクセス (S3 のみ。state lock は use_lockfile で同 bucket 内のロックファイル)
 # - VPC / EC2 / ALB / ECS / ECR / RDS / ElastiCache / Route53 / ACM /
 #   Secrets Manager / CloudWatch Logs / IAM など、step1〜10 で必要になる全リソース
 #
@@ -190,6 +190,26 @@ resource "aws_iam_role_policy_attachment" "ecs_deploy_dev" {
 resource "aws_iam_role_policy_attachment" "github_actions_admin_dev" {
   role       = aws_iam_role.github_actions_dev.name
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+# Blue/Green 承認用 SSM PutParameter ポリシー（prd 専用）。
+# deploy-aws-prd.yml の approve-api / reject-api job が
+# /${project_name}-prd-api/deploy/approval を approved / rejected に書き換えるために必要。
+# dev は rolling deploy で承認ゲートを持たないため、本ポリシーは prd role のみに attach する。
+resource "aws_iam_policy" "ssm_deploy_approval_prd" {
+  name        = "${var.project_name}-ssm-deploy-approval-prd"
+  description = "Policy for approving/rejecting Blue/Green deploy via SSM parameter (prd only)"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["ssm:PutParameter"]
+        Resource = "arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:parameter/${var.project_name}-prd-*/deploy/approval"
+      },
+    ]
+  })
 }
 
 # =============================================================================
@@ -206,4 +226,9 @@ resource "aws_iam_role_policy_attachment" "ecr_push_prd" {
 resource "aws_iam_role_policy_attachment" "ecs_deploy_prd" {
   role       = aws_iam_role.github_actions_prd.name
   policy_arn = aws_iam_policy.ecs_deploy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_deploy_approval_prd" {
+  role       = aws_iam_role.github_actions_prd.name
+  policy_arn = aws_iam_policy.ssm_deploy_approval_prd.arn
 }
