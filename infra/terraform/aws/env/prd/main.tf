@@ -341,14 +341,15 @@ module "elasticache" {
 # =============================================================================
 # var.domain_name が空のときは ACM / Route53 を作らず ALB は HTTP のみで起動する。
 # 値を入れると以下が一括作成される:
-#   1. data "aws_route53_zone" で既存の hosted zone を lookup (事前作成必須)
+#   1. data "aws_route53_zone" で Route 53 Domains 購入時に自動作成された
+#      hosted zone を lookup（Registrar 側の NS もこの zone を向くので追加の手動操作は不要）
 #   2. ACM ワイルドカード証明書 (*.<subdomain>.<domain_name>) を DNS 検証で発行
 #   3. <api_subdomain>.<subdomain>.<domain_name> の A レコード (ALB ALIAS)
 #
-# TODO (本 PR マージ後の手動セットアップ):
-#   - Route53 Console で hosted zone を作成し NS レコードをレジストラに登録
+# 前提:
+#   - Route 53 Domains で var.domain_name を購入済み（apex zone は自動作成されている）
 #   - var.domain_name を `terraform.tfvars` または `-var` で実ドメインに設定
-#   - その後 `terraform apply` で ACM / DNS / HTTPS ALB が一括作成される
+#   - apply 後 ACM / DNS / HTTPS ALB が一括作成される
 
 locals {
   dns_enabled = var.domain_name != ""
@@ -526,7 +527,6 @@ module "ecs_api" {
 # =============================================================================
 # ECS Workload: matching-worker (BullMQ ジョブ消化、ALB なし、Blue/Green なし)
 # =============================================================================
-# 初回 image push 前は CannotPullContainerError 防止のため desired_count = 0。
 
 module "ecs_worker" {
   source = "../../modules/ecs-workload"
@@ -544,9 +544,11 @@ module "ecs_worker" {
   secrets_arn = local.ecs_common.secrets_arn
   secret_keys = local.ecs_common.secret_keys
 
-  # 初回 image push 前は CannotPullContainerError 防止のため desired_count = 0。
-  # image push 後に worker を起動するときは variable 化するか、ここを 1 に上げて apply
-  desired_count         = 0
+  # 先に ECR へ image を push してから apply する前提で 1 固定。
+  # image が未 push の状態で apply すると ECS task が CannotPullContainerError で
+  # 失敗するが、deploy workflow から image を push + task definition 更新すれば
+  # ECS が自動で再 pull して正常化するため、運用上は問題にしない。
+  desired_count         = 1
   log_retention_in_days = var.log_retention_days
   tags                  = local.common_tags
 }
