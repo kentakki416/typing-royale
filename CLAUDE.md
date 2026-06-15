@@ -125,5 +125,5 @@ ESLint v9 flat config (`eslint.config.{js,mjs}`)。**全アプリ共通ルール
 
 - スキーマパッケージは依存アプリより先にビルドする必要がある
 - スキーマ変更時は `cd packages/schema && pnpm build`
-- Terraform state は S3 + DynamoDB ロック（bootstrap で構成済み）
+- Terraform state は S3 + S3 ネイティブロック（`use_lockfile = true`、Terraform 1.10+）構成（bootstrap で構成済み）
 - **共通パッケージの設計方針**: `packages/db` / `logger` / `errors` / `config` / `redis` は server-side app 横断で利用される共通基盤。Prisma / Redis は **factory のみを export** し、各 app の `src/index.ts` で 1 回呼んで Repository に DI する。詳細は [`docs/spec/shared-packages/README.md`](docs/spec/shared-packages/README.md) を参照
