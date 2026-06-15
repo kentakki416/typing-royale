@@ -7,6 +7,7 @@ import { FinishPlaySessionResponse, GetMyRankingResponse, StartSoloPlaySessionRe
 
 import { CelebrationOverlay } from "@/components/celebration-overlay"
 import { GradeProgressBar } from "@/components/grade-progress-bar"
+import { ResultSummaryPopup } from "@/components/result-summary-popup"
 import { TopTenCommentModal } from "@/components/top-ten-comment-modal"
 import { Topbar } from "@/components/topbar"
 import { gradeBadgeClass } from "@/libs/grade"
@@ -53,6 +54,11 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
   const [hofPromptDismissed, setHofPromptDismissed] = useState(false)
   /** リザルト到達時に 1 度だけ祝福 overlay を再生 */
   const [showCelebration, setShowCelebration] = useState(true)
+  /**
+   * 祝福 overlay が終わったら結果サマリーポップアップを 1 度だけ表示。
+   * 閉じると裏の詳細 ResultScreen が見える
+   */
+  const [showSummaryPopup, setShowSummaryPopup] = useState(false)
 
   /**
    * ゲスト（未ログイン）プレイの判定: /finish の persisted=false がサーバーから返る
@@ -365,7 +371,21 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
         />
       )}
 
-      {showCelebration && <CelebrationOverlay onFinished={() => setShowCelebration(false)} />}
+      {showCelebration && (
+        <CelebrationOverlay
+          onFinished={() => {
+            setShowCelebration(false)
+            setShowSummaryPopup(true)
+          }}
+        />
+      )}
+      {showSummaryPopup && (
+        <ResultSummaryPopup
+          myRanking={me}
+          onClose={() => setShowSummaryPopup(false)}
+          result={result}
+        />
+      )}
     </>
   )
 }
