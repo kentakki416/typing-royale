@@ -141,6 +141,55 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
           </div>
         </div>
 
+        {/**
+         * ランキング表示はヘッダー直下、4 stat より前に置く。
+         * 「結果発表で最初にランキングが見えるように」というフィードバックを反映
+         */}
+        {isGuest ? (
+          <div className="card mb-16 mt-16" style={{ borderColor: "rgba(125, 211, 252, 0.4)" }}>
+            <div className="card-header">
+              <div className="card-title">💾 このスコアは保存されていません</div>
+            </div>
+            <p className="text-sm text-muted mb-16">
+              ゲストプレイのため、ランキング・グレード・達成カードには反映されていません。
+              GitHub 連携すると次回以降のプレイから記録が残せます。
+            </p>
+            <div className="flex gap-12" style={{ justifyContent: "center" }}>
+              <Link className="btn btn-primary btn-large" href="/sign-in">
+                GitHub で記録を残す
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="card mb-16 mt-16">
+            <div className="card-header">
+              <div className="card-title">🏆 全期間ランキング</div>
+              <Link className="text-sm" href="/ranking">ランキング全体 →</Link>
+            </div>
+            {result.new_rank !== null ? (
+              <>
+                <div className="text-center mb-16">
+                  <div
+                    className="text-mono"
+                    style={{ color: "var(--accent)", fontSize: "36px", fontWeight: 700 }}
+                  >
+                    #{result.new_rank}
+                  </div>
+                  <div className="text-sm text-muted">
+                    TypeScript
+                    {me !== null && ` · ${me.total_ranked_players.toLocaleString()} 人中`}
+                  </div>
+                </div>
+                <div className="text-sm text-muted text-center">現在の順位を即時表示</div>
+              </>
+            ) : (
+              <div className="text-sm text-muted text-center">
+                {meFetchFailed ? "順位を取得できませんでした" : "順位を計算中..."}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="stat-row">
           <div className="stat">
             <div className="stat-value accent">{result.typed_chars}</div>
@@ -210,51 +259,6 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
                 達成カードは Rewards 機能で自動生成されます
               </p>
             </div>
-          </div>
-        )}
-
-        {isGuest ? (
-          <div className="card mb-16" style={{ borderColor: "rgba(125, 211, 252, 0.4)" }}>
-            <div className="card-header">
-              <div className="card-title">💾 このスコアは保存されていません</div>
-            </div>
-            <p className="text-sm text-muted mb-16">
-              ゲストプレイのため、ランキング・グレード・達成カードには反映されていません。
-              GitHub 連携すると次回以降のプレイから記録が残せます。
-            </p>
-            <div className="flex gap-12" style={{ justifyContent: "center" }}>
-              <Link className="btn btn-primary btn-large" href="/sign-in">
-                GitHub で記録を残す
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="card mb-16">
-            <div className="card-header">
-              <div className="card-title">🏆 全期間ランキング</div>
-              <Link className="text-sm" href="/ranking">ランキング全体 →</Link>
-            </div>
-            {result.new_rank !== null ? (
-              <>
-                <div className="text-center mb-16">
-                  <div
-                    className="text-mono"
-                    style={{ color: "var(--accent)", fontSize: "36px", fontWeight: 700 }}
-                  >
-                    #{result.new_rank}
-                  </div>
-                  <div className="text-sm text-muted">
-                    TypeScript
-                    {me !== null && ` · ${me.total_ranked_players.toLocaleString()} 人中`}
-                  </div>
-                </div>
-                <div className="text-sm text-muted text-center">現在の順位を即時表示</div>
-              </>
-            ) : (
-              <div className="text-sm text-muted text-center">
-                {meFetchFailed ? "順位を取得できませんでした" : "順位を計算中..."}
-              </div>
-            )}
           </div>
         )}
 
