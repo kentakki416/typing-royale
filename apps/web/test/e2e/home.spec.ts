@@ -23,8 +23,8 @@ test.describe("ホーム画面", () => {
 
   test("月間トップカードが TypeScript / JavaScript 並列で表示される", async ({ page }) => {
     await page.goto("/")
-    /** API がエラーでもラベルは出るため、空状態でも表示される想定 */
-    await expect(page.getByRole("heading", { name: /月間トップ/ })).toBeVisible()
+    /** card-title は div で組まれているので getByText でマッチ。API が空でもラベルは出る */
+    await expect(page.getByText("🏆 月間トップ")).toBeVisible()
     await expect(page.getByText("TypeScript").first()).toBeVisible()
     await expect(page.getByText("JavaScript").first()).toBeVisible()
   })
