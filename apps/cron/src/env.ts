@@ -14,6 +14,12 @@ const cronEnvSchema = z
     CRAWLER_PUSHED_AFTER: z.string().optional(),
     CRAWLER_REPOS_PER_RUN: z.coerce.number().int().positive().default(1),
     DATABASE_URL: z.string().url().optional(),
+    /**
+     * GitHub API への 1 リクエストあたりの timeout (ms)。
+     * vscode 級の巨大 repo の Tree API レスポンスで永遠に待たないための保険。
+     * デフォルト 300 秒（5 分）。これより長く返って来ないリクエストは諦めて次の repo へ進む
+     */
+    GITHUB_FETCH_TIMEOUT_MS: z.coerce.number().int().positive().default(300000),
     GITHUB_PAT: z.string().default(""),
     LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
     LOGGER_TYPE: z.enum(["pino", "winston", "console", "silent"]).default("pino"),

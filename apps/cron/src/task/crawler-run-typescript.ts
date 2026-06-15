@@ -30,6 +30,7 @@ const TASK_NAME = "crawler-run-typescript"
 runAsCrawlerJob({
   exec: async ({ prisma, runId, signal }) => {
     const github = new GithubClient({
+      fetchTimeoutMs: env.GITHUB_FETCH_TIMEOUT_MS,
       minStars: env.CRAWLER_MIN_STARS,
       pat: env.GITHUB_PAT,
       pushedAfter: env.CRAWLER_PUSHED_AFTER,
