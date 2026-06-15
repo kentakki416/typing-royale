@@ -199,8 +199,21 @@ flowchart TB
 
 ## クイックリファレンス
 
+### セットアップ手順 (まずここから)
+
 | ドキュメント | 内容 |
 |---|---|
+| [docs/setup/api.md](docs/setup/api.md) | API サーバーのローカル起動 (依存インストール / .env.keys / Postgres+Redis / Prisma / dev サーバー / テスト) |
+| [docs/setup/infra.md](docs/setup/infra.md) | AWS インフラ初回セットアップ (bootstrap → account → GitHub Environments → env apply → seed-secrets → image push) |
+
+### 設計や運用方針
+
+| ドキュメント | 内容 |
+|---|---|
+| [docs/README.md](docs/README.md) | プロダクト全体像（ペルソナ・MVP スコープ・体験フロー） |
+| [docs/infra.md](docs/infra.md) | インフラ設計（サービス選定・コスト試算） |
+| [apps/api/README.md](apps/api/README.md) | API サーバーの設計思想 (レイヤード / Result 型 / DI / テスト戦略) |
+| [infra/README.md](infra/README.md) | インフラ構成 / dev・prd の差分 / デプロイフロー / 日常運用コマンド |
 | [docs/mcp.md](docs/mcp.md) | MCP サーバーの一覧・使い方・追加方法 |
 | [.claude/README.md](.claude/README.md) | Claude Code の設定（Agents・Commands・Skills） |
 
@@ -257,13 +270,11 @@ ln -s ../../.env.keys apps/mobile/.env.keys
 
 ## セットアップガイド
 
-用途別のセットアップ手順は対応するディレクトリの README にまとまっている:
+初回セットアップ手順は `docs/setup/` 配下にまとまっている。詳細は上の [クイックリファレンス](#クイックリファレンス) を参照:
 
-| 対象 | 手順 | 主な内容 |
-|---|---|---|
-| API (apps/api) | [apps/api/README.md#セットアップ](apps/api/README.md#セットアップ) | dotenvx 鍵配置 / Docker Compose / Prisma generate・migrate・seed / dev サーバー起動 / ECS migration / トラブルシューティング |
-| AWS インフラ (infra/terraform) | [infra/README.md#aws-インフラのセットアップ](infra/README.md#aws-インフラのセットアップ) | プロジェクト名リネーム / Bootstrap / Account / GitHub Environments / env/dev / env/prd / トラブルシューティング |
-| Secrets Manager 投入スクリプト | [scripts/README.md](scripts/README.md) | seed-secrets.sh の使い方と前提条件 |
+- API のローカル起動 → [docs/setup/api.md](docs/setup/api.md)
+- AWS インフラ初回セットアップ → [docs/setup/infra.md](docs/setup/infra.md)
+- Secrets Manager 投入スクリプトの使い方 → [scripts/README.md](scripts/README.md)
 
 ## Claude Code（MCP設定）
 
