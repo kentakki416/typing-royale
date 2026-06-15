@@ -100,6 +100,41 @@ export function useTypingEngine({ finishedRef, problems, startAtRef, triggerFlas
   }, [triggerFlash])
 
   useEffect(() => {
+    /**
+     * カーソル位置の whitespace (` ` / `\t` / `\n`) を、ユーザー入力なしで自動的に
+     * 次の非空白文字まで進める。インデントや空白記号をいちいち打鍵させない UX 改善。
+     *
+     * 進めた分は「正しく打てた」扱いで log と各カウンタにも積む（スコア互換性 +
+     * replay-player がそのまま再生できるように）。複数問題にまたがる場合は
+     * 関数末尾完走 → 次の問題の先頭という遷移も内側で処理する
+     */
+    const advanceThroughWhitespace = () => {
+      while (true) {
+        const problem = problems[problemIndexRef.current]
+        if (!problem) return
+        const ch = problem.code_block[cursorPosRef.current]
+        if (ch !== " " && ch !== "\t" && ch !== "\n") return
+
+        const elapsed = performance.now() - startAtRef.current
+        logRef.current.push({
+          elapsedMs: elapsed,
+          inputChar: ch,
+          isCorrect: true,
+          problemIndex: problemIndexRef.current,
+        })
+        totalRef.current += 1
+        correctRef.current += 1
+        typedCharsRef.current += 1
+        cursorPosRef.current += 1
+
+        if (cursorPosRef.current >= problem.code_block.length) {
+          problemIndexRef.current += 1
+          cursorPosRef.current = 0
+          /** 次のループで新しい problem の先頭から再判定 */
+        }
+      }
+    }
+
     const onKeyDown = (e: KeyboardEvent) => {
       if (finishedRef.current || imeOn) return
       /**
@@ -114,8 +149,26 @@ export function useTypingEngine({ finishedRef, problems, startAtRef, triggerFlas
         return
       }
 
+      /**
+       * 入力を処理する前に、カーソル位置の whitespace を一気に飛ばす。
+       * これでユーザーは whitespace を打鍵せずに済み、最初の打鍵が実コード文字に当たる
+       */
+      const cursorBeforeSkip = cursorPosRef.current
+      const problemBeforeSkip = problemIndexRef.current
+      advanceThroughWhitespace()
+      const didSkip = cursorPosRef.current !== cursorBeforeSkip || problemIndexRef.current !== problemBeforeSkip
+
       const currentProblem = problems[problemIndexRef.current]
-      if (!currentProblem) return
+      if (!currentProblem) {
+        if (didSkip) {
+          setProblemIndex(problemIndexRef.current)
+          setCursorPos(cursorPosRef.current)
+          setTypedChars(typedCharsRef.current)
+          setTotalKeystrokes(totalRef.current)
+          setCorrectKeystrokes(correctRef.current)
+        }
+        return
+      }
 
       const expectedChar = currentProblem.code_block[cursorPosRef.current]
       /**
@@ -181,9 +234,18 @@ export function useTypingEngine({ finishedRef, problems, startAtRef, triggerFlas
         if (cursorPosRef.current >= currentProblem.code_block.length) {
           problemIndexRef.current += 1
           cursorPosRef.current = 0
-          setProblemIndex(problemIndexRef.current)
-          setCursorPos(0)
         }
+
+        /**
+         * 正解直後にもう一度 whitespace を飛ばす。これでカーソルが空白上に停まらず
+         * 常に「次に打つべき非空白文字」を指す
+         */
+        advanceThroughWhitespace()
+        setProblemIndex(problemIndexRef.current)
+        setCursorPos(cursorPosRef.current)
+        setTypedChars(typedCharsRef.current)
+        setCorrectKeystrokes(correctRef.current)
+        setTotalKeystrokes(totalRef.current)
       } else {
         /**
          * Miss: combo リセット + Miss SE + 短い shake 演出
@@ -194,6 +256,13 @@ export function useTypingEngine({ finishedRef, problems, startAtRef, triggerFlas
         }
         playKeyMiss()
         triggerFlashRef.current("miss", 250)
+        /** ハンドラ先頭で skip した場合は state を同期 */
+        if (didSkip) {
+          setProblemIndex(problemIndexRef.current)
+          setCursorPos(cursorPosRef.current)
+          setTypedChars(typedCharsRef.current)
+          setCorrectKeystrokes(correctRef.current)
+        }
       }
     }
     const onPaste = (e: ClipboardEvent) => e.preventDefault()
