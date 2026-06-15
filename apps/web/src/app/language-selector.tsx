@@ -6,9 +6,11 @@ import { useState, useTransition } from "react"
 import { startPlaySession } from "./actions"
 
 type Lang = {
-  id: number
+  /** 問題プール未整備等で「近日公開」扱いにし、ボタンを押せなくする場合 true */
+  comingSoon: boolean
   iconClass: string
   iconText: string
+  id: number
   name: string
 }
 
@@ -56,14 +58,26 @@ export function LanguageSelector({ languages }: Props) {
     <>
       <div className="lang-grid">
         {languages.map((lang) => (
-          <div className="lang-card" key={lang.id}>
+          <div
+            aria-disabled={lang.comingSoon ? true : undefined}
+            className="lang-card"
+            key={lang.id}
+            style={lang.comingSoon
+              ? { cursor: "not-allowed", filter: "grayscale(0.8)", opacity: 0.55 }
+              : undefined}
+          >
             <div className={`lang-icon ${lang.iconClass}`}>{lang.iconText}</div>
             <h3>{lang.name}</h3>
+            {lang.comingSoon && (
+              <div className="text-xs text-muted text-center" style={{ marginTop: "4px" }}>
+                近日公開
+              </div>
+            )}
 
             <div className="flex gap-8 mt-16" style={{ justifyContent: "center" }}>
               <button
                 className="btn btn-primary btn-play"
-                disabled={isPending}
+                disabled={isPending || lang.comingSoon}
                 type="button"
                 onClick={() => handleStart(lang.id, "solo")}
               >
@@ -71,7 +85,7 @@ export function LanguageSelector({ languages }: Props) {
               </button>
               <button
                 className="btn btn-gold"
-                disabled={isPending}
+                disabled={isPending || lang.comingSoon}
                 type="button"
                 onClick={() => handleStart(lang.id, "challenge_gods")}
               >

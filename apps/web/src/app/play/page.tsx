@@ -11,10 +11,13 @@ export const metadata: Metadata = {
 /**
  * MVP では言語マスタを取得する API がまだ無いため、ハードコードで TypeScript /
  * JavaScript を出す。DB seed の id 1/2 と一致させること
+ *
+ * JavaScript は問題プールがまだ用意されていないため `comingSoon: true` で
+ * カード自体を選択不可（disabled）にする。問題が追加され次第 false に戻す
  */
 const SUPPORTED_LANGUAGES = [
-  { id: 1, iconClass: "ts", iconText: "TS", name: "TypeScript" },
-  { id: 2, iconClass: "js", iconText: "JS", name: "JavaScript" },
+  { comingSoon: false, iconClass: "ts", iconText: "TS", id: 1, name: "TypeScript" },
+  { comingSoon: true, iconClass: "js", iconText: "JS", id: 2, name: "JavaScript" },
 ] as const
 
 /**
