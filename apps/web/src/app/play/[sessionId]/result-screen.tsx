@@ -206,7 +206,7 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
         {topRankings !== null && topRankings.entries.length > 0 && (
           <>
             <div className="text-sm text-muted mb-8" style={{ textAlign: "center" }}>
-              TypeScript TOP {topRankings.entries.length}
+              TypeScript TOP {topRankings.entries.length} ／ {topRankings.total_ranked_players.toLocaleString()} 人中
             </div>
             <RankingTable
               entries={topRankings.entries}
