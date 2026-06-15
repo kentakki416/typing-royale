@@ -204,8 +204,8 @@ export default async function HomePage() {
               <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
                 <span className="badge accent">TypeScript</span>
                 <span className="badge warning">JavaScript</span>
-                <span className="badge">Python (近日)</span>
-                <span className="badge">Go (近日)</span>
+                <span className="badge pink">Python (近日)</span>
+                <span className="badge success">Go (近日)</span>
               </div>
             </div>
           </aside>
