@@ -26,7 +26,6 @@ export function MonthlyTopSection({ jsMonthly, tsMonthly }: Props) {
   const [active, setActive] = useState<Language>("typescript")
 
   const data = active === "typescript" ? tsMonthly : jsMonthly
-  const label = LANGUAGES.find((l) => l.key === active)?.label ?? ""
 
   return (
     <div>
@@ -43,7 +42,7 @@ export function MonthlyTopSection({ jsMonthly, tsMonthly }: Props) {
           </button>
         ))}
       </div>
-      <MonthlyTopCard data={data} language={label} />
+      <MonthlyTopCard data={data} />
     </div>
   )
 }
