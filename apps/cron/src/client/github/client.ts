@@ -12,7 +12,7 @@ import type {
 const API_BASE = "https://api.github.com"
 const RAW_BASE = "https://raw.githubusercontent.com"
 const DEFAULT_USER_AGENT = "typing-royale-crawler/1.0"
-const DEFAULT_FETCH_TIMEOUT_MS = 30000
+const DEFAULT_FETCH_TIMEOUT_MS = 300000
 
 const SEARCH_LICENSE_FILTER =
   "license:mit license:apache-2.0 license:bsd-3-clause license:isc"
@@ -63,7 +63,7 @@ export type GithubClientConfig = {
    */
   pat: string
   /**
-   * 1 リクエストあたりの timeout (ms)。省略時は 30 秒。
+   * 1 リクエストあたりの timeout (ms)。省略時は 300 秒（5 分）。
    * 巨大 repo の Tree API レスポンス等で permanent stuck になるのを防ぐ
    */
   fetchTimeoutMs?: number
