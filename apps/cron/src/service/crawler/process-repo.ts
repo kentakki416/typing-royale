@@ -57,23 +57,17 @@ export const processRepo = async (
   const startedAt = performance.now()
   logger.info("processRepo: start", { fullName })
 
-  /** 1. 最新メタ + HEAD SHA を取得（5xx は retryWithBackoff で 3 回まで） */
+  /**
+   * 1. 最新メタ + HEAD SHA を取得（5xx は retryWithBackoff で 3 回まで）
+   *
+   * GithubFetchTimeoutError が出る稀なケースは crawled_repos の必須カラム
+   * (github_id / commit_sha / license / stars 等) を埋められないので disabled
+   * レコードは作れない。catch せず throw 上げて呼び出し側 task の
+   * `crawler_run_items.fail` に記録させる（次回 run でリトライ）
+   */
   logger.info("processRepo: fetching repo meta", { fullName })
   const metaStartedAt = performance.now()
-  let meta: GithubRepoMeta
-  try {
-    meta = await retryWithBackoff(async () => client.github.getRepoMeta(target.owner, target.name))
-  } catch (err) {
-    if (err instanceof GithubFetchTimeoutError) {
-      /**
-       * getRepoMeta が timeout した稀なケース: crawled_repos の必須カラム (github_id /
-       * commit_sha / license / stars 等) を持っていないので disabled レコードは作れない。
-       * 次回 run でリトライされる前提でログだけ残して throw 上げる
-       */
-      logger.warn("processRepo: getRepoMeta timed out, skipping repo", { fullName, timeoutMs: err.timeoutMs, url: err.url })
-    }
-    throw err
-  }
+  const meta = await retryWithBackoff(async () => client.github.getRepoMeta(target.owner, target.name))
   logger.info("processRepo: fetched repo meta", {
     durationMs: Math.round(performance.now() - metaStartedAt),
     fullName,
