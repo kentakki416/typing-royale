@@ -28,6 +28,7 @@
   - [集計の鮮度](#集計の鮮度)
 - [設計](#設計)
   - [集計戦略：毎時バッチ + スナップショット](#集計戦略毎時バッチ--スナップショット)
+  - [保存対象は各 (年月, 言語) ごとの上位 10 位まで](#保存対象は各-年月-言語-ごとの上位-10-位まで)
   - [`monthly_ranking_snapshots` テーブル](#monthly_ranking_snapshots-テーブル)
   - [SQL：1 ヶ月分の集計クエリ](#sql1-ヶ月分の集計クエリ)
   - [タイムゾーン](#タイムゾーン)
@@ -114,6 +115,15 @@ score-ranking と完全に同じルール：
 - リアルタイム集計（`/api/rankings/monthly` リクエスト毎に `GROUP BY` で集計）はクエリが重い + キャッシュ戦略が複雑になる
 - 毎時バッチで「単純 SELECT」できる形に整えておけば API は軽量
 
+### 保存対象は各 (年月, 言語) ごとの上位 10 位まで
+
+- バッチは `RANK() OVER (...)` で順位を付けたあと、**`WHERE rank <= 10` で切り捨ててから UPSERT** する
+- 11 位以下は保存しない理由：
+  - ホーム画面の表示は最大 5 件、API の `limit` 上限は 10 件で、それ以上は使われない
+  - ユーザー数が増えても DB サイズは「年月 × 言語 × 10」線形に抑えられる
+  - 11 位以下のユーザーに「自分の月間順位」を見せる UI も MVP では持たないので、保存する動機がない
+- 将来「月間 11 位以下も自分の順位を見たい」要望が出たら、その時点で snapshot を全件保存に拡張するか、別の集計 API を足すかを再検討する
+
 ### `monthly_ranking_snapshots` テーブル
 
 - `(year_month, language_id, user_id)` で複合 PK
@@ -149,11 +159,13 @@ SELECT
     PARTITION BY language_id
     ORDER BY score DESC, accuracy DESC, played_at ASC
   ) AS rank
-FROM user_best_in_month;
+FROM user_best_in_month
+QUALIFY rank <= 10;  -- ★ 各 (年月, 言語) ごとに上位 10 位までに絞る
 ```
 
 - `DISTINCT ON` で言語×ユーザーごとに最良のセッション 1 件に絞ったあと、`RANK() OVER` で言語別に順位付け
-- 結果を `monthly_ranking_snapshots` に UPSERT（`ON CONFLICT (year_month, language_id, user_id) DO UPDATE`）
+- **`QUALIFY rank <= 10`（PostgreSQL では同等の `WHERE rank <= 10` を CTE 化して適用）で 11 位以下を切り捨て**、結果を `monthly_ranking_snapshots` に UPSERT（`ON CONFLICT (year_month, language_id, user_id) DO UPDATE`）
+- バッチ実行のたびに順位が入れ替わる可能性があるため、UPSERT 後に **「当月分のうち今回 result に含まれなかったユーザーの行を DELETE」** で掃除する（例：先月 11 位 → 月内に追加プレイで 8 位に上がったユーザーが入る場合、押し出された 10 位の旧ユーザー行を消す）
 
 ### タイムゾーン
 

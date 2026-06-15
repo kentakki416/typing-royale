@@ -123,7 +123,16 @@ export type MonthlyRankingRow = {
 }
 
 export interface MonthlyRankingSnapshotRepository {
+  /**
+   * 当月の play_sessions を集計し、各言語ごとに tie-breaking 適用後の上位 10 位までを返す。
+   * 11 位以下は monthly_ranking_snapshots に保存する動機がない（ホーム画面の表示は最大 5、
+   * API の limit 上限は 10 でそれ以上は使われない）ため、本リポジトリで切り捨てる
+   */
   aggregateCurrentMonth: (input: AggregateInput) => Promise<MonthlyRankingRow[]>
+  /**
+   * 上位 10 位の rows を UPSERT し、当月分のうち今回の result に含まれていない user_id × language_id
+   * の行を DELETE する（順位入れ替わりに追従するため）
+   */
   upsertMany: (rows: MonthlyRankingRow[]) => Promise<void>
 }
 
@@ -133,7 +142,8 @@ export class PrismaMonthlyRankingSnapshotRepository implements MonthlyRankingSna
   aggregateCurrentMonth = async (input: AggregateInput): Promise<MonthlyRankingRow[]> => {
     /**
      * 当月の play_sessions から (language_id, user_id) ごとの max(score) を取り、
-     * tie-breaking 適用後の rank 付きで返す。月境界は JST で判断する。
+     * tie-breaking 適用後の rank 付き上位 10 位までを返す。月境界は JST で判断する。
+     * 上位 10 位限定の理由は docs/spec/monthly-ranking/README.md「保存対象は各 (年月, 言語) ごとの上位 10 位まで」を参照
      */
     return this.prisma.$queryRaw<MonthlyRankingRow[]>`
       WITH user_best AS (
@@ -151,6 +161,19 @@ export class PrismaMonthlyRankingSnapshotRepository implements MonthlyRankingSna
           AND u.can_public_ranking = TRUE
         ORDER BY ps.user_id, ps.language_id,
                  ps.score DESC, ps.accuracy DESC, ps.played_at ASC
+      ),
+      ranked AS (
+        SELECT
+          "userId",
+          "languageId",
+          score,
+          accuracy,
+          "playedAt",
+          RANK() OVER (
+            PARTITION BY "languageId"
+            ORDER BY score DESC, accuracy DESC, "playedAt" ASC
+          )::int AS rank
+        FROM user_best
       )
       SELECT
         ${input.yearMonth} AS "yearMonth",
@@ -159,11 +182,9 @@ export class PrismaMonthlyRankingSnapshotRepository implements MonthlyRankingSna
         score,
         accuracy,
         "playedAt",
-        RANK() OVER (
-          PARTITION BY "languageId"
-          ORDER BY score DESC, accuracy DESC, "playedAt" ASC
-        )::int AS rank
-      FROM user_best
+        rank
+      FROM ranked
+      WHERE rank <= 10            -- ★ 各 (年月, 言語) ごとに上位 10 位まで
       ORDER BY "languageId", rank
     `
   }
