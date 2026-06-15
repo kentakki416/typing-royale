@@ -913,14 +913,19 @@ h3 { font-size: 16px; margin-bottom: 8px; }
 
 /* Stats — heavy raised */
 .stat-row {
-  display: grid;
   /**
-   * stat の数に応じて自動レイアウト。4 個なら 4 列、3 個なら 3 列で中央揃え。
-   * minmax の最小値以下になるカラム数は自動で折返す
+   * stat の数に応じて中央寄せ。flex なので 3 個でも 4 個でも常に中央配置。
+   * 各 stat はベース 200px・最小 140px で、余白は左右に分配される
    */
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 16px;
   margin: 24px 0;
+}
+.stat-row > .stat {
+  flex: 0 1 200px;
+  min-width: 140px;
 }
 .stat {
   background:
