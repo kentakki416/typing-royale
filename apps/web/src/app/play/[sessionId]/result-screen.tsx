@@ -173,25 +173,8 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
         </div>
 
         {/**
-         * ゲストには「保存されていません」案内を残す（順位はスコア上に表示済み）
+         * スコア直下に 3 stat（累計文字数 / 正確率 / 出題数）→ 今回のリポジトリ の順で並べる
          */}
-        {isGuest && (
-          <div className="card mb-16 mt-16" style={{ borderColor: "rgba(125, 211, 252, 0.4)" }}>
-            <div className="card-header">
-              <div className="card-title">💾 このスコアは保存されていません</div>
-            </div>
-            <p className="text-sm text-muted mb-16">
-              ゲストプレイのため、ランキング・グレード・達成カードには反映されていません。
-              GitHub 連携すると次回以降のプレイから記録が残せます。
-            </p>
-            <div className="flex gap-12" style={{ justifyContent: "center" }}>
-              <Link className="btn btn-primary btn-large" href="/sign-in">
-                GitHub で記録を残す
-              </Link>
-            </div>
-          </div>
-        )}
-
         <div className="stat-row">
           <div className="stat">
             <div className="stat-value accent">{result.typed_chars}</div>
@@ -206,6 +189,46 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
             <div className="stat-label">出題数</div>
           </div>
         </div>
+
+        <div className="card mb-16">
+          <div className="card-header">
+            <div className="card-title">📦 今回のリポジトリ</div>
+          </div>
+          <div className="flex-between mb-8">
+            <div>
+              <strong>{repoInfo.owner}/{repoInfo.name}</strong>
+              <div className="text-sm text-muted">★ {repoInfo.stars.toLocaleString()}</div>
+            </div>
+            {repoInfo.homepage && (
+              <a className="text-sm" href={repoInfo.homepage} rel="noreferrer noopener" target="_blank">
+                公式サイト ↗
+              </a>
+            )}
+          </div>
+          {repoInfo.description && (
+            <p className="text-sm text-muted">{repoInfo.description}</p>
+          )}
+        </div>
+
+        {/**
+         * ゲストには「保存されていません」案内を残す（順位はスコア上に表示済み）
+         */}
+        {isGuest && (
+          <div className="card mb-16" style={{ borderColor: "rgba(125, 211, 252, 0.4)" }}>
+            <div className="card-header">
+              <div className="card-title">💾 このスコアは保存されていません</div>
+            </div>
+            <p className="text-sm text-muted mb-16">
+              ゲストプレイのため、ランキング・グレード・達成カードには反映されていません。
+              GitHub 連携すると次回以降のプレイから記録が残せます。
+            </p>
+            <div className="flex gap-12" style={{ justifyContent: "center" }}>
+              <Link className="btn btn-primary btn-large" href="/sign-in">
+                GitHub で記録を残す
+              </Link>
+            </div>
+          </div>
+        )}
 
         {isTopTenEntry && (
           <>
@@ -306,33 +329,6 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
             </div>
           </div>
         )}
-
-        <div className="card mb-16">
-          <div className="card-header">
-            <div className="card-title">📦 今回のリポジトリ</div>
-          </div>
-          <div className="flex-between mb-8">
-            <div>
-              <strong>{repoInfo.owner}/{repoInfo.name}</strong>
-              <div className="text-sm text-muted">★ {repoInfo.stars.toLocaleString()}</div>
-            </div>
-            {repoInfo.homepage && (
-              <a className="text-sm" href={repoInfo.homepage} rel="noreferrer noopener" target="_blank">
-                公式サイト ↗
-              </a>
-            )}
-          </div>
-          {repoInfo.description && (
-            <p className="text-sm text-muted">{repoInfo.description}</p>
-          )}
-          {repoInfo.topics.length > 0 && (
-            <div className="flex gap-8 mt-8" style={{ flexWrap: "wrap" }}>
-              {repoInfo.topics.slice(0, 6).map((topic) => (
-                <span className="badge" key={topic}>#{topic}</span>
-              ))}
-            </div>
-          )}
-        </div>
 
         <div className="flex gap-12 mt-24" style={{ flexWrap: "wrap", justifyContent: "center" }}>
           <Link className="btn btn-primary btn-play btn-large" href="/">
