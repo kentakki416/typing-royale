@@ -55,13 +55,14 @@ model User {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  accounts          AuthAccount[]
-  playSessions      PlaySession[]
-  lifetimeStats     UserLifetimeStats?
-  languageBests     UserLanguageBest[]
-  rewards           Reward[]
-  hallOfFameEntries HallOfFameEntry[]
-  badgeConfig       BadgeConfig?
+  accounts                AuthAccount[]
+  playSessions            PlaySession[]
+  lifetimeStats           UserLifetimeStats?
+  languageBests           UserLanguageBest[]
+  monthlyRankingSnapshots MonthlyRankingSnapshot[]
+  rewards                 Reward[]
+  hallOfFameEntries       HallOfFameEntry[]
+  badgeConfig             BadgeConfig?
 
   @@map("users")
 }
@@ -75,12 +76,13 @@ model Language {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  crawledRepos      CrawledRepo[]
-  problems          Problem[]
-  crawlerRunItems   CrawlerRunItem[]
-  playSessions      PlaySession[]
-  userLanguageBests UserLanguageBest[]
-  hallOfFameEntries HallOfFameEntry[]
+  crawledRepos            CrawledRepo[]
+  problems                Problem[]
+  crawlerRunItems         CrawlerRunItem[]
+  playSessions            PlaySession[]
+  userLanguageBests       UserLanguageBest[]
+  hallOfFameEntries       HallOfFameEntry[]
+  monthlyRankingSnapshots MonthlyRankingSnapshot[]
 
   @@map("languages")
 }
@@ -307,6 +309,27 @@ model UserLanguageBest {
   @@index([languageId, score(sort: Desc)]) /// GET /api/rankings の主クエリ (ORDER BY score DESC LIMIT)
   @@index([userId]) /// GET /api/players/:userId / GET /api/rankings/me の自分のベスト引き
   @@map("user_language_best")
+}
+
+// 月間ランキング snapshot (年月 × 言語 × ユーザー = 1 行)
+// 毎時 cron の batch:monthly-ranking が当月分を UPSERT。API は単純 SELECT で読むだけ
+// docs/spec/monthly-ranking/README.md 参照
+model MonthlyRankingSnapshot {
+  yearMonth  String   @map("year_month") /// "YYYY-MM" 形式 (JST 暦月)
+  languageId Int      @map("language_id")
+  userId     Int      @map("user_id")
+  rank       Int /// 1 起点、tie-breaking 適用後の最終順位
+  score      Int /// その月のベストスコア
+  accuracy   Float /// 上記スコア時の正確率 (tie-break 再現用)
+  playedAt   DateTime @map("played_at") /// 上記スコア時の played_at (tie-break 再現用)
+  snapshotAt DateTime @default(now()) @map("snapshot_at") /// バッチが書き込んだ時刻
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language Language @relation(fields: [languageId], references: [id], onDelete: Restrict)
+
+  @@id([yearMonth, languageId, userId])
+  @@index([yearMonth, languageId, rank]) /// ホーム画面の SELECT 主索引 (ORDER BY rank LIMIT)
+  @@map("monthly_ranking_snapshots")
 }
 
 // 達成カード PNG の生成記録
