@@ -17,6 +17,20 @@ import type {
 
 const MIN_ELIGIBLE = 30
 const SAMPLE_CAP = 100
+/**
+ * 1 repo あたり fetch する候補ソースファイルの上限。
+ *
+ * vscode のような巨大 repo では listSourceFiles が数万件返ってきて、すべてを直列で
+ * fetch すると 1 リクエスト 250ms × 万単位 = 数十分〜数時間かかる（実測 vscode で 38 分）。
+ * 最終的に SAMPLE_CAP=100 件しか採用しないので、ファイルレベルで先に shuffle → slice
+ * しておけば fetch 回数を確定的に上限化できる。
+ *
+ * 上限は「SAMPLE_CAP の数倍」を確保しておく：
+ *  - すべてのファイルから採用関数が取れるとは限らない（純データ・型定義のみのファイル等）
+ *  - 1 ファイルから平均 ~3 個の採用候補が取れると仮定すると、100 件確保には ~35 ファイル
+ *  - マージン込みで 300 に設定（300 × 250ms ≒ 75 秒で完了）
+ */
+const MAX_FETCH_FILES = 300
 const ALLOWED_LICENSES = new Set(["MIT", "Apache-2.0", "BSD-3-Clause", "ISC"])
 
 export type ProcessRepoTarget = {
@@ -111,11 +125,28 @@ export const processRepo = async (
     fullName,
   })
 
+  /**
+   * 3.5. fetch 数の上限化
+   *
+   * vscode 級の repo で files.length が数万件あっても、最終的に SAMPLE_CAP=100 件しか
+   * 採用しないので、ファイルレベルで先にランダムサンプリングしておく。これで
+   * fetch 回数 ≤ MAX_FETCH_FILES に確定される（直列 fetch で wall-clock が暴れない）
+   */
+  const filesToFetch = files.length > MAX_FETCH_FILES ? shuffle(files).slice(0, MAX_FETCH_FILES) : files
+  if (files.length > MAX_FETCH_FILES) {
+    logger.info("processRepo: pre-sampled files for fetch", {
+      fetchCount: filesToFetch.length,
+      fullName,
+      maxFetchFiles: MAX_FETCH_FILES,
+      sourceFileCount: files.length,
+    })
+  }
+
   /** 4. 各ファイルから採用候補を抽出（repo 内重複は Map で事前 dedupe） */
-  logger.info("processRepo: extracting candidates", { fileCount: files.length, fullName })
+  logger.info("processRepo: extracting candidates", { fetchCount: filesToFetch.length, fullName })
   const extractStartedAt = performance.now()
   const candidateMap = new Map<string, CreateProblemInput>()
-  for (const file of files) {
+  for (const file of filesToFetch) {
     try {
       // ソースファイルのコードを取得
       const raw = await client.github.getRawContent(target.owner, target.name, meta.commitSha, file.path)
@@ -159,7 +190,7 @@ export const processRepo = async (
   logger.info("processRepo: extracted candidates", {
     candidatesCount,
     durationMs: Math.round(performance.now() - extractStartedAt),
-    fileCount: files.length,
+    fetchCount: filesToFetch.length,
     fullName,
   })
 
