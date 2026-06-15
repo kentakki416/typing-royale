@@ -23,11 +23,16 @@
    * "神々に挑戦" mode is gold. --ghost feeds the race / progress bars and
    * HUD label that represents the god opponent — also gold.
    */
-  --gold-light: #fff8d0;
-  --gold: #ffd54a;
-  --gold-deep: #d4a017;
-  --gold-shadow: #8a6b14;
-  --ghost: #ffd54a;
+  /**
+   * 金属光沢を出すため、純粋な黄色ではなく warm 寄りの gold + bright peak で構成。
+   * gold-shine が gradient の中央に来る hot highlight として機能し、deep は warm brown 寄り
+   */
+  --gold-light: #ffeaa0;
+  --gold-shine: #ffd54a;
+  --gold: #e6b422;
+  --gold-deep: #a07014;
+  --gold-shadow: #5c3f08;
+  --ghost: #e6b422;
 
   /**
    * Editor: Dracula palette (https://draculatheme.com/) on an Alacritty-inspired
@@ -72,24 +77,28 @@
  *  6. Ambient color bleeds — blue from top, purple bottom-right, pink bottom-left
  */
 html, body {
-  background-color: #05070b;
+  /**
+   * base を全体的に明るくして後ろのデザイン (dot grid / diagonal sheen / color bleeds) を視認しやすくする。
+   * 暗くなりすぎていた vignette / bottom fog の alpha も下げ、dot grid と斜線 sheen の opacity を引き上げ
+   */
+  background-color: #0d1218;
   background-image:
-    /* Ambient color bleeds */
-    radial-gradient(ellipse 1400px 500px at 50% -5%, rgba(88, 166, 255, 0.14), transparent 60%),
-    radial-gradient(ellipse 800px 700px at 100% 100%, rgba(189, 147, 249, 0.11), transparent 60%),
-    radial-gradient(ellipse 800px 700px at 0% 100%, rgba(255, 121, 198, 0.06), transparent 60%),
-    /* Spotlight from top-center */
-    radial-gradient(ellipse 900px 600px at 50% 0%, rgba(255, 255, 255, 0.03), transparent 65%),
-    /* Bottom fog — fades to darkness */
-    linear-gradient(180deg, transparent 60%, rgba(0, 0, 0, 0.55) 100%),
-    /* Strong corner vignette */
-    radial-gradient(ellipse 100% 100% at 50% 50%, transparent 35%, rgba(0, 0, 0, 0.55) 75%, rgba(0, 0, 0, 0.8) 100%),
-    /* Tech dot grid */
-    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.06) 1px, transparent 1.5px),
-    /* Subtle diagonal sheen — adds a "polished" feel */
-    repeating-linear-gradient(135deg, transparent 0, transparent 60px, rgba(255, 255, 255, 0.008) 60px, rgba(255, 255, 255, 0.008) 120px),
-    /* Base */
-    linear-gradient(180deg, #141a25 0%, #0a0d12 55%, #05070b 100%);
+    /* Ambient color bleeds — alpha を引き上げて色味の存在感を強める */
+    radial-gradient(ellipse 1400px 500px at 50% -5%, rgba(88, 166, 255, 0.22), transparent 60%),
+    radial-gradient(ellipse 800px 700px at 100% 100%, rgba(189, 147, 249, 0.18), transparent 60%),
+    radial-gradient(ellipse 800px 700px at 0% 100%, rgba(255, 121, 198, 0.1), transparent 60%),
+    /* Spotlight from top-center — 強化 */
+    radial-gradient(ellipse 900px 600px at 50% 0%, rgba(255, 255, 255, 0.06), transparent 65%),
+    /* Bottom fog — 弱める (0.55 → 0.3) */
+    linear-gradient(180deg, transparent 60%, rgba(0, 0, 0, 0.3) 100%),
+    /* Corner vignette — 弱める (0.55/0.8 → 0.3/0.5) */
+    radial-gradient(ellipse 100% 100% at 50% 50%, transparent 35%, rgba(0, 0, 0, 0.3) 75%, rgba(0, 0, 0, 0.5) 100%),
+    /* Tech dot grid — はっきり見せる (0.06 → 0.12) */
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.12) 1px, transparent 1.5px),
+    /* Diagonal sheen — はっきり見せる (0.008 → 0.025) */
+    repeating-linear-gradient(135deg, transparent 0, transparent 60px, rgba(255, 255, 255, 0.025) 60px, rgba(255, 255, 255, 0.025) 120px),
+    /* Base — 全体的に明度アップ */
+    linear-gradient(180deg, #1c2330 0%, #131822 55%, #0d1218 100%);
   background-size:
     auto, auto, auto,
     auto,
@@ -345,15 +354,23 @@ h3 { font-size: 16px; margin-bottom: 8px; }
   isolation: isolate;
   color: #2a1a00;
   border-color: var(--gold-shadow);
+  /**
+   * 金属光沢を構成する 3 layers:
+   *  1. 横方向の hot shine band（中央付近に白っぽい光が走る）
+   *  2. 上下の sheen overlay（top に白、下に暗黒）
+   *  3. base gold gradient: edge → bright peak → mid → deep の 4 stops
+   */
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, 0.18) 100%),
-    linear-gradient(180deg, var(--gold-light) 0%, var(--gold-deep) 100%);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+    linear-gradient(180deg, transparent 38%, rgba(255, 255, 230, 0.45) 50%, transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 38%, rgba(0, 0, 0, 0.22) 100%),
+    linear-gradient(180deg, var(--gold-light) 0%, var(--gold-shine) 22%, var(--gold) 60%, var(--gold-deep) 100%);
+  text-shadow: 0 1px 0 rgba(255, 240, 200, 0.7);
   box-shadow:
     0 4px 0 var(--gold-shadow),
-    0 6px 14px rgba(255, 213, 74, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+    0 6px 22px rgba(230, 180, 34, 0.6),
+    0 0 14px rgba(255, 213, 74, 0.45),
+    inset 0 1px 0 rgba(255, 255, 240, 0.85),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.22);
 }
 .btn-gold:active {
   box-shadow:
@@ -1247,10 +1264,17 @@ h3 { font-size: 16px; margin-bottom: 8px; }
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 .progress-fill.ghost {
+  /**
+   * 金色の光沢を出すため 3 layers:
+   *  1. 横方向の hot shine band（金属の反射光）
+   *  2. 上下の sheen overlay
+   *  3. base gold gradient: edge → bright peak → mid → deep
+   */
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, transparent 45%, rgba(0, 0, 0, 0.15) 100%),
-    linear-gradient(180deg, var(--gold-light) 0%, var(--gold-deep) 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    linear-gradient(180deg, transparent 35%, rgba(255, 255, 230, 0.5) 50%, transparent 65%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, transparent 45%, rgba(0, 0, 0, 0.2) 100%),
+    linear-gradient(180deg, var(--gold-light) 0%, var(--gold-shine) 25%, var(--gold) 60%, var(--gold-deep) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 240, 0.6), 0 0 10px rgba(230, 180, 34, 0.45);
 }
 .progress-fill.success {
   background:
@@ -1272,8 +1296,10 @@ h3 { font-size: 16px; margin-bottom: 8px; }
 .race-bar-fill { height: 100%; background: var(--accent); transition: width 0.3s ease; }
 .race-bar-fill.ghost {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, transparent 45%, rgba(0, 0, 0, 0.15) 100%),
-    linear-gradient(180deg, var(--gold-light) 0%, var(--gold-deep) 100%);
+    linear-gradient(180deg, transparent 35%, rgba(255, 255, 230, 0.5) 50%, transparent 65%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, transparent 45%, rgba(0, 0, 0, 0.2) 100%),
+    linear-gradient(180deg, var(--gold-light) 0%, var(--gold-shine) 25%, var(--gold) 60%, var(--gold-deep) 100%);
+  box-shadow: 0 0 8px rgba(230, 180, 34, 0.4);
 }
 .race-percent { width: 64px; text-align: right; font-family: var(--font-mono); font-size: 13px; }
 .race-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px rgba(88, 166, 255, 0.6); }
