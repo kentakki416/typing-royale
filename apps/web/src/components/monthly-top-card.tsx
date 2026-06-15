@@ -2,8 +2,6 @@ import type { GetMonthlyRankingsResponse } from "@repo/api-schema"
 
 type Props = {
   data: GetMonthlyRankingsResponse
-  /** 表示用の言語ラベル (例: "TypeScript") */
-  language: string
 }
 
 /**
@@ -12,14 +10,11 @@ type Props = {
  * data.entries が空 / API 失敗時のフォールバック (year_month が空文字) の場合は
  * 状態に応じた空表示を出す
  */
-export function MonthlyTopCard({ data, language }: Props) {
-  const monthLabel = data.year_month === "" ? "" : formatYearMonthJa(data.year_month)
-
+export function MonthlyTopCard({ data }: Props) {
   return (
     <div>
-      <div className="flex-between mb-8">
-        <div className="text-sm" style={{ fontWeight: 600 }}>{language}</div>
-        {monthLabel !== "" && <div className="text-xs text-muted">{monthLabel}</div>}
+      <div className="mb-8" style={{ textAlign: "right" }}>
+        <div className="text-xs text-muted">スコア</div>
       </div>
 
       {data.entries.length === 0 ? (
@@ -42,9 +37,9 @@ export function MonthlyTopCard({ data, language }: Props) {
               <div className="flex gap-8" style={{ alignItems: "center", minWidth: 0 }}>
                 <span
                   className="text-mono text-muted"
-                  style={{ minWidth: "20px", textAlign: "right" }}
+                  style={{ minWidth: "32px", textAlign: "right" }}
                 >
-                  {entry.rank}
+                  {entry.rank} 位
                 </span>
                 <span
                   className="player-name"
@@ -62,9 +57,4 @@ export function MonthlyTopCard({ data, language }: Props) {
       )}
     </div>
   )
-}
-
-const formatYearMonthJa = (yearMonth: string): string => {
-  const [y, m] = yearMonth.split("-")
-  return `${y} 年 ${Number(m)} 月`
 }
