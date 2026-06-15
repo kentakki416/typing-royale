@@ -91,8 +91,19 @@ export const proxy = (req: NextRequest) => {
 }
 
 export const config = {
-  /** _next, _next/static, _next/image, favicon, public 配下を除外 */
+  /**
+   * middleware から除外するパス:
+   * - `_next/static` / `_next/image` / `favicon.ico` は Next.js が直接配信する内部資産
+   * - `.lottie` / `.svg` / `.png` 等の静的アセットは public 配下のファイル。
+   *   除外しないと未ログイン時に `/sign-in` リダイレクトが返り、
+   *   dotlottie-react などが「Invalid Lottie JSON」エラーを出す
+   *
+   * Next.js の matcher は静的解析される必要があるため、
+   * 拡張子リストはテンプレートリテラルではなくインライン文字列で記述する。
+   * 「. を含めば全部スキップ」ではなく拡張子をホワイトリスト指定することで、
+   * 将来動的セグメントに `.` を含むパスが来ても middleware を誤バイパスしない
+   */
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|public/).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:lottie|svg|png|jpg|jpeg|gif|webp|ico|css|js|woff2?|ttf|json)$).*)",
   ],
 }
