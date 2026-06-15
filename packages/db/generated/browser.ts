@@ -83,6 +83,11 @@ export type UserLifetimeStats = Prisma.UserLifetimeStatsModel
  */
 export type UserLanguageBest = Prisma.UserLanguageBestModel
 /**
+ * Model MonthlyRankingSnapshot
+ * 
+ */
+export type MonthlyRankingSnapshot = Prisma.MonthlyRankingSnapshotModel
+/**
  * Model Reward
  * 
  */

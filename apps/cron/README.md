@@ -33,6 +33,7 @@ cron / EventBridge から定期実行されるタスク群（GitHub クローラ
 | --- | --- |
 | `pnpm crawler:run:typescript` | TypeScript 用週次クローラ（GitHub API → AST → 問題化） |
 | `pnpm crawler:license-recheck` | 月次ライセンス再検証（言語非依存） |
+| `pnpm batch:monthly-ranking` | 毎時月間ランキング集計（各 (年月, 言語) ごと上位 10 位までを `monthly_ranking_snapshots` に UPSERT） |
 
 **crawler は言語ごとに独立した task** として実装する：AST 抽出層が言語固有（現在は TypeScript Compiler API、将来追加する JavaScript / Go は別 parser）で、1 言語の rate limit / 障害を他言語に波及させないため。新言語追加時は `task/crawler-run-<slug>.ts` を新規作成し、`LANGUAGE_SLUG` と `RUN_TYPE = "crawler_<slug>"` をハードコードする。現時点では TypeScript のみ。
 

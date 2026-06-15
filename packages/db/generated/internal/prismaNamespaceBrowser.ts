@@ -64,6 +64,7 @@ export const ModelName = {
   KeystrokeLog: 'KeystrokeLog',
   UserLifetimeStats: 'UserLifetimeStats',
   UserLanguageBest: 'UserLanguageBest',
+  MonthlyRankingSnapshot: 'MonthlyRankingSnapshot',
   Reward: 'Reward',
   HallOfFameEntry: 'HallOfFameEntry',
   BadgeConfig: 'BadgeConfig'
@@ -291,6 +292,20 @@ export const UserLanguageBestScalarFieldEnum = {
 } as const
 
 export type UserLanguageBestScalarFieldEnum = (typeof UserLanguageBestScalarFieldEnum)[keyof typeof UserLanguageBestScalarFieldEnum]
+
+
+export const MonthlyRankingSnapshotScalarFieldEnum = {
+  yearMonth: 'yearMonth',
+  languageId: 'languageId',
+  userId: 'userId',
+  rank: 'rank',
+  score: 'score',
+  accuracy: 'accuracy',
+  playedAt: 'playedAt',
+  snapshotAt: 'snapshotAt'
+} as const
+
+export type MonthlyRankingSnapshotScalarFieldEnum = (typeof MonthlyRankingSnapshotScalarFieldEnum)[keyof typeof MonthlyRankingSnapshotScalarFieldEnum]
 
 
 export const RewardScalarFieldEnum = {
