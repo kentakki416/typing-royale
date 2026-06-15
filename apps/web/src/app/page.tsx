@@ -43,9 +43,9 @@ export default async function HomePage() {
         <h1>
           <span
             style={{
-              background: "linear-gradient(135deg, #fff0a8 0%, #ffd54a 35%, #e6b422 65%, #a07014 100%)",
+              background: "linear-gradient(135deg, #fffae6 0%, #ffeb80 30%, #ffd54a 65%, #f5c000 100%)",
               backgroundClip: "text",
-              filter: "drop-shadow(0 2px 0 rgba(0, 0, 0, 0.45)) drop-shadow(0 0 18px rgba(255, 213, 74, 0.55))",
+              filter: "drop-shadow(0 2px 0 rgba(0, 0, 0, 0.45)) drop-shadow(0 0 22px rgba(255, 224, 102, 0.75))",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}
