@@ -313,6 +313,9 @@ model UserLanguageBest {
 
 // 月間ランキング snapshot (年月 × 言語 × ユーザー = 1 行)
 // 毎時 cron の batch:monthly-ranking が当月分を UPSERT。API は単純 SELECT で読むだけ
+// **保存対象は各 (年月, 言語) ごとの上位 10 位まで**。11 位以下はバッチ側で WHERE rank <= 10
+// により切り捨てる（ホーム画面の表示が最大 5、API の limit 上限が 10 なので、それ以上
+// 保存しても使われない）。ユーザー数が増えても DB サイズは「年月 × 言語 × 10」線形に抑える
 // docs/spec/monthly-ranking/README.md 参照
 model MonthlyRankingSnapshot {
   yearMonth  String   @map("year_month") /// "YYYY-MM" 形式 (JST 暦月)
