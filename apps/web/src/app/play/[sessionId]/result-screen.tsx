@@ -89,7 +89,7 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
   if (result === null) {
     return (
       <>
-        <Topbar />
+        <Topbar isAuthed={false} />
         <div className="container container-narrow mt-24 text-center">
           <h1>結果の保存に失敗しました</h1>
           <p className="text-muted mt-8">通信が不安定だった可能性があります</p>
@@ -114,7 +114,7 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
 
   return (
     <>
-      <Topbar />
+      <Topbar isAuthed={!isGuest} />
 
       <div className="container container-narrow">
         <div className="text-center mt-24">

@@ -38,7 +38,7 @@ export default async function MyPageHofComments() {
 
   return (
     <>
-      <Topbar />
+      <Topbar isAuthed={true} />
 
       <div className="container">
         <h1 className="mb-16">殿堂入りコメント編集</h1>

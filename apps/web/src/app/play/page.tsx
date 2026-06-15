@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import { Topbar } from "@/components/topbar"
+import { getAccessToken } from "@/libs/auth"
 
 import { LanguageSelector } from "../language-selector"
 
@@ -25,10 +26,11 @@ const SUPPORTED_LANGUAGES = [
  *
  * トップ画面（/）からの「▶ ゲストでプレイ」「⚡ 挑戦する」ボタンで遷移する
  */
-export default function PlaySelectPage() {
+export default async function PlaySelectPage() {
+  const accessToken = await getAccessToken()
   return (
     <>
-      <Topbar />
+      <Topbar isAuthed={accessToken !== null} />
 
       <div className="container container-narrow">
         <h1 className="text-center mt-24">言語を選択</h1>

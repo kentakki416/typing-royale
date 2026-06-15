@@ -6,6 +6,12 @@ type Props = {
    */
   active?: "home" | "ranking" | "hall-of-fame"
   /**
+   * 認証状態。true なら右上に「マイページ」、false なら「ログイン」を出し分ける。
+   * Topbar は client component (play-loop / result-screen) からも import されるため、
+   * 認証チェックは外側で済ませて bool だけ渡す
+   */
+  isAuthed: boolean
+  /**
    * 言語名バッジを表示する（プレイ画面用）
    */
   languageBadge?: string
@@ -19,7 +25,7 @@ type Props = {
  * 全画面共通の Top bar
  * デザイン: docs/mocks/styles.css の .topbar
  */
-export function Topbar({ active, languageBadge, modeBadge }: Props) {
+export function Topbar({ active, isAuthed, languageBadge, modeBadge }: Props) {
   return (
     <nav className="topbar">
       <div className="topbar-left">
@@ -37,9 +43,15 @@ export function Topbar({ active, languageBadge, modeBadge }: Props) {
         )}
       </div>
       <div className="topbar-right">
-        <Link className="user-chip" href="/mypage" title="マイページ">
-          <span className="user-name">マイページ</span>
-        </Link>
+        {isAuthed ? (
+          <Link className="user-chip" href="/mypage" title="マイページ">
+            <span className="user-name">マイページ</span>
+          </Link>
+        ) : (
+          <Link className="btn btn-primary" href="/sign-in">
+            ログイン
+          </Link>
+        )}
       </div>
     </nav>
   )

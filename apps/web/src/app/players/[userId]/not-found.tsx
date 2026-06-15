@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { Topbar } from "@/components/topbar"
+import { getAccessToken } from "@/libs/auth"
 
 /**
  * /players/[userId] の 404 ページ
@@ -10,10 +11,11 @@ import { Topbar } from "@/components/topbar"
  * - 不正な userId（数値変換できない / 0 以下）
  * - canPublicRanking=false のユーザー（API が 404 を返すため）
  */
-export default function NotFound() {
+export default async function NotFound() {
+  const accessToken = await getAccessToken()
   return (
     <>
-      <Topbar />
+      <Topbar isAuthed={accessToken !== null} />
       <div className="container container-narrow text-center mt-24">
         <h1>プレイヤーが見つかりません</h1>
         <p className="text-muted mt-8">
