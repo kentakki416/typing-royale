@@ -3,11 +3,10 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
-import { FinishPlaySessionResponse, GetMyRankingResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
+import { FinishPlaySessionResponse, GetMyRankingResponse, GetRankingsResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { CelebrationOverlay } from "@/components/celebration-overlay"
 import { GradeProgressBar } from "@/components/grade-progress-bar"
-import { ResultSummaryPopup } from "@/components/result-summary-popup"
 import { TopTenCommentModal } from "@/components/top-ten-comment-modal"
 import { Topbar } from "@/components/topbar"
 import { gradeBadgeClass } from "@/libs/grade"
@@ -50,15 +49,12 @@ type Props = {
 export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, repoInfo, result }: Props) {
   const [me, setMe] = useState<GetMyRankingResponse | null>(null)
   const [meFetchFailed, setMeFetchFailed] = useState(false)
+  /** 「Y 人中」表示用。guest でもランキング登録済み人数を表示するため fetch */
+  const [totalRankedPlayers, setTotalRankedPlayers] = useState<number | null>(null)
   const [hofModalOpen, setHofModalOpen] = useState(false)
   const [hofPromptDismissed, setHofPromptDismissed] = useState(false)
   /** リザルト到達時に 1 度だけ祝福 overlay を再生 */
   const [showCelebration, setShowCelebration] = useState(true)
-  /**
-   * 祝福 overlay が終わったら結果サマリーポップアップを 1 度だけ表示。
-   * 閉じると裏の詳細 ResultScreen が見える
-   */
-  const [showSummaryPopup, setShowSummaryPopup] = useState(false)
 
   /**
    * ゲスト（未ログイン）プレイの判定: /finish の persisted=false がサーバーから返る
@@ -85,6 +81,22 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
     }
     void loadMyRanking()
   }, [isGuest, result])
+
+  /** ゲスト含め「Y 人中」を出すための総参加者数取得 */
+  useEffect(() => {
+    if (result === null) return
+    const loadTotal = async () => {
+      try {
+        const res = await fetch("/api/internal/rankings?language=typescript")
+        if (!res.ok) return
+        const data = await res.json() as GetRankingsResponse
+        setTotalRankedPlayers(data.total_ranked_players)
+      } catch {
+        /** 補助情報なのでフェッチ失敗時はサイレントに非表示 */
+      }
+    }
+    void loadTotal()
+  }, [result])
 
   if (result === null) {
     return (
@@ -118,6 +130,25 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
 
       <div className="container container-narrow">
         <div className="text-center mt-24">
+          {/**
+           * スコアの上に「X 位 / Y 人中」を最初に表示
+           * - authed: result.new_rank と totalRankedPlayers が揃えば「X 位 / Y 人中」
+           * - guest: 順位は付かないので「ランキング登録なし / Y 人中登録済み」
+           */}
+          <div
+            className="text-mono mb-8"
+            style={{ color: "var(--accent)", fontSize: "28px", fontWeight: 700 }}
+          >
+            {isGuest
+              ? totalRankedPlayers !== null
+                ? `ランキング登録なし ／ ${totalRankedPlayers.toLocaleString()} 人中`
+                : "ランキング登録なし"
+              : result.new_rank !== null && totalRankedPlayers !== null
+                ? `${result.new_rank} 位 ／ ${totalRankedPlayers.toLocaleString()} 人中`
+                : meFetchFailed
+                  ? "順位を取得できませんでした"
+                  : "順位を計算中..."}
+          </div>
           <div className="text-mono text-muted text-sm">SESSION COMPLETE · 120s</div>
           <h1 className="text-mono" style={{ fontSize: "48px", margin: "8px 0" }}>
             {result.score} <span className="text-muted" style={{ fontSize: "18px" }}>pts</span>
@@ -142,54 +173,8 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
         </div>
 
         {/**
-         * ランキング表示はヘッダー直下、4 stat より前に置く。
-         * 「結果発表で最初にランキングが見えるように」というフィードバックを反映
+         * スコア直下に 3 stat（累計文字数 / 正確率 / 出題数）→ 今回のリポジトリ の順で並べる
          */}
-        {isGuest ? (
-          <div className="card mb-16 mt-16" style={{ borderColor: "rgba(125, 211, 252, 0.4)" }}>
-            <div className="card-header">
-              <div className="card-title">💾 このスコアは保存されていません</div>
-            </div>
-            <p className="text-sm text-muted mb-16">
-              ゲストプレイのため、ランキング・グレード・達成カードには反映されていません。
-              GitHub 連携すると次回以降のプレイから記録が残せます。
-            </p>
-            <div className="flex gap-12" style={{ justifyContent: "center" }}>
-              <Link className="btn btn-primary btn-large" href="/sign-in">
-                GitHub で記録を残す
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="card mb-16 mt-16">
-            <div className="card-header">
-              <div className="card-title">🏆 全期間ランキング</div>
-              <Link className="text-sm" href="/ranking">ランキング全体 →</Link>
-            </div>
-            {result.new_rank !== null ? (
-              <>
-                <div className="text-center mb-16">
-                  <div
-                    className="text-mono"
-                    style={{ color: "var(--accent)", fontSize: "36px", fontWeight: 700 }}
-                  >
-                    #{result.new_rank}
-                  </div>
-                  <div className="text-sm text-muted">
-                    TypeScript
-                    {me !== null && ` · ${me.total_ranked_players.toLocaleString()} 人中`}
-                  </div>
-                </div>
-                <div className="text-sm text-muted text-center">現在の順位を即時表示</div>
-              </>
-            ) : (
-              <div className="text-sm text-muted text-center">
-                {meFetchFailed ? "順位を取得できませんでした" : "順位を計算中..."}
-              </div>
-            )}
-          </div>
-        )}
-
         <div className="stat-row">
           <div className="stat">
             <div className="stat-value accent">{result.typed_chars}</div>
@@ -204,6 +189,71 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
             <div className="stat-label">出題数</div>
           </div>
         </div>
+
+        <div className="card mb-16">
+          <div className="card-header">
+            <div className="card-title"><span style={{ marginRight: "8px" }}>📦</span>今回のリポジトリ</div>
+          </div>
+          <p className="text-sm text-muted mb-8">
+            今回のセッションで出題された関数は、以下の OSS リポジトリから自動抽出されたものです。
+          </p>
+          <div className="flex-between mb-8">
+            <div>
+              <strong>{repoInfo.owner}/{repoInfo.name}</strong>
+              <div className="text-sm text-muted">★ {repoInfo.stars.toLocaleString()}（GitHub スター数）</div>
+            </div>
+            {repoInfo.homepage && (
+              <a className="text-sm" href={repoInfo.homepage} rel="noreferrer noopener" target="_blank">
+                公式サイト ↗
+              </a>
+            )}
+          </div>
+          {repoInfo.description && (
+            <p className="text-sm text-muted" style={{ marginTop: "8px" }}>
+              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>リポジトリ概要（GitHub より）:</span>
+              <br />
+              {repoInfo.description}
+            </p>
+          )}
+        </div>
+
+        <div className="card mb-16">
+          <div className="card-header">
+            <div className="card-title"><span style={{ marginRight: "8px" }}>❌</span>よく間違える文字</div>
+          </div>
+          {topMistypes.length > 0 ? (
+            <div className="flex gap-12" style={{ flexWrap: "wrap" }}>
+              {topMistypes.map(([char, count]) => (
+                <div className="flex-center gap-8" key={char}>
+                  <code className="inline" style={{ fontSize: "16px" }}>{char === " " ? "␣" : char}</code>
+                  <span className="text-muted text-sm">× {count}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted">今回はミスタイプの記録がありませんでした。</p>
+          )}
+        </div>
+
+        {/**
+         * ゲストには「保存されていません」案内を残す（順位はスコア上に表示済み）
+         */}
+        {isGuest && (
+          <div className="card mb-16" style={{ borderColor: "rgba(125, 211, 252, 0.4)" }}>
+            <div className="card-header">
+              <div className="card-title"><span style={{ marginRight: "8px" }}>💾</span>このスコアは保存されていません</div>
+            </div>
+            <p className="text-sm text-muted mb-16">
+              ゲストプレイのため、ランキング・グレード・達成カードには反映されていません。
+              GitHub 連携すると次回以降のプレイから記録が残せます。
+            </p>
+            <div className="flex gap-12" style={{ justifyContent: "center" }}>
+              <Link className="btn btn-primary btn-large" href="/sign-in">
+                GitHub で記録を残す
+              </Link>
+            </div>
+          </div>
+        )}
 
         {isTopTenEntry && (
           <>
@@ -261,7 +311,7 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
         {me !== null && me.best_score !== null && (
           <div className="card mb-16" style={{ borderColor: "rgba(189, 147, 249, 0.3)" }}>
             <div className="card-header">
-              <div className="card-title">⚡ エンジニアグレード</div>
+              <div className="card-title"><span style={{ marginRight: "8px" }}>⚡</span>エンジニアグレード</div>
               <span
                 className={`badge-grade ${gradeBadgeClass(me.grade.name)}`}
                 data-level={me.grade.level}
@@ -288,49 +338,6 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
             <GradeProgressBar bestScore={me.best_score} nextGrade={me.next_grade} />
           </div>
         )}
-
-        {topMistypes.length > 0 && (
-          <div className="card mb-16">
-            <div className="card-header">
-              <div className="card-title">✗ よく間違える文字</div>
-            </div>
-            <div className="flex gap-12" style={{ flexWrap: "wrap" }}>
-              {topMistypes.map(([char, count]) => (
-                <div className="flex-center gap-8" key={char}>
-                  <code className="inline" style={{ fontSize: "16px" }}>{char === " " ? "␣" : char}</code>
-                  <span className="text-muted text-sm">× {count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="card mb-16">
-          <div className="card-header">
-            <div className="card-title">📦 今回のリポジトリ</div>
-          </div>
-          <div className="flex-between mb-8">
-            <div>
-              <strong>{repoInfo.owner}/{repoInfo.name}</strong>
-              <div className="text-sm text-muted">★ {repoInfo.stars.toLocaleString()}</div>
-            </div>
-            {repoInfo.homepage && (
-              <a className="text-sm" href={repoInfo.homepage} rel="noreferrer noopener" target="_blank">
-                公式サイト ↗
-              </a>
-            )}
-          </div>
-          {repoInfo.description && (
-            <p className="text-sm text-muted">{repoInfo.description}</p>
-          )}
-          {repoInfo.topics.length > 0 && (
-            <div className="flex gap-8 mt-8" style={{ flexWrap: "wrap" }}>
-              {repoInfo.topics.slice(0, 6).map((topic) => (
-                <span className="badge" key={topic}>#{topic}</span>
-              ))}
-            </div>
-          )}
-        </div>
 
         <div className="flex gap-12 mt-24" style={{ flexWrap: "wrap", justifyContent: "center" }}>
           <Link className="btn btn-primary btn-play btn-large" href="/">
@@ -372,19 +379,7 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
       )}
 
       {showCelebration && (
-        <CelebrationOverlay
-          onFinished={() => {
-            setShowCelebration(false)
-            setShowSummaryPopup(true)
-          }}
-        />
-      )}
-      {showSummaryPopup && (
-        <ResultSummaryPopup
-          myRanking={me}
-          onClose={() => setShowSummaryPopup(false)}
-          result={result}
-        />
+        <CelebrationOverlay onFinished={() => setShowCelebration(false)} />
       )}
     </>
   )
