@@ -6,6 +6,7 @@ import type { GetPlayerResponse } from "@repo/api-schema"
 
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
+import { getAccessToken } from "@/libs/auth"
 import { gradeBadgeClass } from "@/libs/grade"
 
 type Params = { userId: string }
@@ -55,7 +56,7 @@ export const generateMetadata = async ({ params }: { params: Promise<Params> }):
  */
 export default async function PlayerDetailPage({ params }: { params: Promise<Params> }) {
   const { userId } = await params
-  const player = await fetchPlayer(userId)
+  const [player, accessToken] = await Promise.all([fetchPlayer(userId), getAccessToken()])
   if (player === null) notFound()
 
   const initials = player.user.display_name.slice(0, 2).toUpperCase()
@@ -69,7 +70,7 @@ export default async function PlayerDetailPage({ params }: { params: Promise<Par
 
   return (
     <>
-      <Topbar active="ranking" />
+      <Topbar active="ranking" isAuthed={accessToken !== null} />
 
       <div className="container">
         <div className="text-sm text-muted mb-8">

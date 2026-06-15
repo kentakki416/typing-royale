@@ -242,7 +242,7 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
         ))}
       </div>
 
-      <Topbar languageBadge="TypeScript" modeBadge={modeBadge} />
+      <Topbar isAuthed={!isGuest} languageBadge="TypeScript" modeBadge={modeBadge} />
 
       <div className={`container ${screenClass}`} style={{ position: "relative", zIndex: 1 }}>
         <div className="play-hud">

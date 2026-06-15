@@ -21,7 +21,7 @@ export default async function AccountSettingsPage() {
 
   return (
     <>
-      <Topbar />
+      <Topbar isAuthed={true} />
 
       <div className="container">
         <div className="flex gap-16 mb-24" style={{ alignItems: "center" }}>

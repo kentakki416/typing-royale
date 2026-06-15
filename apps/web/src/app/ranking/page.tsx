@@ -56,7 +56,7 @@ export default async function RankingPage({
 
   return (
     <>
-      <Topbar active="ranking" />
+      <Topbar active="ranking" isAuthed={accessToken !== null} />
 
       <div className="container">
         <div className="flex-between mb-24">

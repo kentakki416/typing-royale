@@ -6,6 +6,7 @@ import type { GetReplayResponse } from "@repo/api-schema"
 
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
+import { getAccessToken } from "@/libs/auth"
 
 import { ReplayPlayer } from "./replay-player"
 
@@ -33,10 +34,11 @@ export default async function ReplayPage({
   } catch {
     notFound()
   }
+  const accessToken = await getAccessToken()
 
   return (
     <>
-      <Topbar active="ranking" />
+      <Topbar active="ranking" isAuthed={accessToken !== null} />
 
       <div className="container container-wide">
         <div className="text-sm text-muted mb-8">

@@ -6,6 +6,7 @@ import type { GetFeaturedReplaysResponse, GetMonthlyRankingsResponse } from "@re
 import { MonthlyTopCard } from "@/components/monthly-top-card"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
+import { getAccessToken } from "@/libs/auth"
 
 /** API 失敗時のフォールバック（year_month が空のとき MonthlyTopCard は「集計準備中」を出す） */
 const EMPTY_MONTHLY: GetMonthlyRankingsResponse = { entries: [], year_month: "" }
@@ -35,6 +36,8 @@ const truncate = (s: string, n: number): string => (s.length <= n ? s : `${s.sli
  * 「言語選択 → プレイ開始」自体は /play に分離している（mock 構成と同じ）
  */
 export default async function HomePage() {
+  const accessToken = await getAccessToken()
+  const isAuthed = accessToken !== null
   const [featured, tsMonthly, jsMonthly] = await Promise.all([
     apiClient
       .get<GetFeaturedReplaysResponse>("/api/replays/featured?limit=3")
@@ -49,7 +52,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <Topbar active="home" />
+      <Topbar active="home" isAuthed={isAuthed} />
 
       <div className="hero">
         <h1>

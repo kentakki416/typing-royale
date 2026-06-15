@@ -26,7 +26,7 @@ export default async function MyPageBadge() {
 
   return (
     <>
-      <Topbar />
+      <Topbar isAuthed={true} />
 
       <div className="container">
         <h1 className="mb-16">バッジ設定</h1>

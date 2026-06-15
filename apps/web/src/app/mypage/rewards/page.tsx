@@ -24,7 +24,7 @@ export default async function MyPageRewards() {
 
   return (
     <>
-      <Topbar />
+      <Topbar isAuthed={true} />
 
       <div className="container">
         <h1 className="mb-16">獲得した特典</h1>

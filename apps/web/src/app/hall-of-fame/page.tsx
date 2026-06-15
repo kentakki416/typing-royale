@@ -5,6 +5,7 @@ import type { GetHallOfFameResponse } from "@repo/api-schema"
 
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
+import { getAccessToken } from "@/libs/auth"
 
 import { HofCards } from "./hof-cards"
 
@@ -37,14 +38,17 @@ export default async function HallOfFamePage({
     ? (rawLang as SupportedLanguage)
     : "typescript"
 
-  const data = await apiClient.get<GetHallOfFameResponse>(`/api/hall-of-fame?language=${language}`)
+  const [data, accessToken] = await Promise.all([
+    apiClient.get<GetHallOfFameResponse>(`/api/hall-of-fame?language=${language}`),
+    getAccessToken(),
+  ])
 
   const topThree = data.entries.filter((e) => e.rank <= 3)
   const rest = data.entries.filter((e) => e.rank > 3)
 
   return (
     <>
-      <Topbar active="hall-of-fame" />
+      <Topbar active="hall-of-fame" isAuthed={accessToken !== null} />
 
       <div className="container">
         <div className="text-center mb-24">
