@@ -41,12 +41,23 @@ export default async function HomePage() {
 
       <div className="hero">
         <h1>
-          Type real <span className="accent">OSS code</span>.<br />
-          Get a fancier README.
+          <span
+            style={{
+              background: "linear-gradient(135deg, #fff0a8 0%, #ffd54a 35%, #e6b422 65%, #a07014 100%)",
+              backgroundClip: "text",
+              filter: "drop-shadow(0 2px 0 rgba(0, 0, 0, 0.45)) drop-shadow(0 0 18px rgba(255, 213, 74, 0.55))",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            Typing Royale
+          </span>
+          <br />
+          Type real <span className="accent">OSS code</span>.
         </h1>
         <p>
           OSS の実コードを 120 秒で打鍵するエンジニア向けタイピングゲーム。スコアに応じて
-          README に貼れる動的バッジ・達成カード・3D アイコンがもらえる。
+          README に貼れる動的バッジ・達成カードがもらえる。
         </p>
         <div className="flex-center gap-12 mt-24" style={{ justifyContent: "center" }}>
           <Link className="btn btn-primary btn-play btn-large" href="/play">▶ プレイ開始</Link>
@@ -76,8 +87,7 @@ export default async function HomePage() {
               <div className="flex-between" style={{ alignItems: "center" }}>
                 <div style={{ flex: 1 }}>
                   <p className="text-sm">
-                    サーバーがオールタイムトップ 10 から <strong>ランダムに 1 人</strong> を選定。
-                    その神と同じ問題シーケンスで 120 秒の併走戦。
+                    殿堂入りしたユーザーの中から <strong>ランダムに 1 人</strong> を選定して、そのユーザーに挑戦できます。
                   </p>
                 </div>
                 <Link className="btn btn-gold" href="/play">挑戦する →</Link>
@@ -88,7 +98,7 @@ export default async function HomePage() {
               <div className="card mb-24">
                 <div className="card-header">
                   <div className="card-title">✨ 注目のリプレイ</div>
-                  <Link className="text-sm" href="/hall-of-fame">Hall of Fame →</Link>
+                  <Link className="text-sm" href="/hall-of-fame">殿堂入り →</Link>
                 </div>
                 <div className="row gap-16" style={{ flexWrap: "wrap" }}>
                   {featured.items.map((item) => (
@@ -156,7 +166,7 @@ export default async function HomePage() {
                 <div className="col">
                   <h3>✨ GitHub に映える特典</h3>
                   <p className="text-sm text-muted">
-                    動的 SVG バッジ・達成カード・3D アイコン・Hall of Fame。
+                    動的 SVG バッジ・達成カード・殿堂入り。
                     README が豪華になる。
                   </p>
                 </div>

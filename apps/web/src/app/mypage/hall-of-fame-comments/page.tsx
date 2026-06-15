@@ -9,7 +9,7 @@ import { apiClient } from "@/libs/api-client"
 import { CommentEditForm } from "./comment-edit-form"
 
 export const metadata: Metadata = {
-  title: "Hall of Fame コメント編集 - Typing Royale",
+  title: "殿堂入りコメント編集 - Typing Royale",
 }
 
 type Entry = GetHallOfFameResponse["entries"][number]
@@ -41,20 +41,20 @@ export default async function MyPageHofComments() {
       <Topbar />
 
       <div className="container">
-        <h1 className="mb-16">Hall of Fame コメント編集</h1>
+        <h1 className="mb-16">殿堂入りコメント編集</h1>
 
         <div className="tabs">
           <Link className="tab" href="/mypage">概要</Link>
           <Link className="tab" href="/mypage/rewards">特典</Link>
           <a className="tab" href="#">プレイ履歴</a>
           <Link className="tab" href="/mypage/badge">バッジ</Link>
-          <Link className="tab active" href="/mypage/hall-of-fame-comments">Hall of Fame</Link>
+          <Link className="tab active" href="/mypage/hall-of-fame-comments">殿堂入り</Link>
           <Link className="tab" href="/mypage/account">設定</Link>
         </div>
 
         <p className="text-sm text-muted mb-16">
           各言語の TOP 10 圏内に入っているとき、ここでコメントを編集できます。送信した瞬間に
-          <Link href="/hall-of-fame"> Hall of Fame</Link> に反映されます。
+          <Link href="/hall-of-fame"> 殿堂入り</Link> に反映されます。
         </p>
 
         <CommentEditForm jsEntry={jsEntry} tsEntry={tsEntry} />

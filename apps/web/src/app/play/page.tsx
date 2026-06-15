@@ -50,8 +50,7 @@ export default function PlaySelectPage() {
                 神々に挑戦とは？
               </h3>
               <p className="text-sm text-muted">
-                該当言語の <strong>オールタイムトップ 10 からサーバーがランダムに 1 人選定</strong>。
-                その人と同じ問題シーケンスを 120 秒で打ち、累計文字数で勝負します。相手は指名できません（運命）。
+                殿堂入りしたユーザーの中から <strong>ランダムに 1 人</strong> を選定して、そのユーザーに挑戦できます。相手は指名できません（運命）。
               </p>
             </div>
           </div>

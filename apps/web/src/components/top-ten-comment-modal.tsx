@@ -64,7 +64,7 @@ export function TopTenCommentModal({ language, onClose, open }: Props) {
     >
       <h2 style={{ color: "var(--gold-light, #ffd54a)" }}>🏆 TOP 10 入り見込み！</h2>
       <p className="text-sm text-muted mb-16">
-        Hall of Fame に掲載されます。記念にコメントを残しませんか？（任意、300 字以内）
+        殿堂入りに掲載されます。記念にコメントを残しませんか？（任意、300 字以内）
       </p>
       <textarea
         disabled={submitting || submitted}

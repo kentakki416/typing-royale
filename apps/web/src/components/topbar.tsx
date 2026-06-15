@@ -32,7 +32,7 @@ export function Topbar({ active, languageBadge, modeBadge }: Props) {
           <div className="topbar-nav">
             <Link className={active === "home" ? "active" : ""} href="/">ホーム</Link>
             <Link className={active === "ranking" ? "active" : ""} href="/ranking">ランキング</Link>
-            <Link className={active === "hall-of-fame" ? "active" : ""} href="/hall-of-fame">Hall of Fame</Link>
+            <Link className={active === "hall-of-fame" ? "active" : ""} href="/hall-of-fame">殿堂入り</Link>
           </div>
         )}
       </div>
