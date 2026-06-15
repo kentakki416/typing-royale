@@ -72,15 +72,6 @@ export default function PlaySelectPage() {
           </ul>
         </div>
 
-        <div className="card mt-16">
-          <div className="card-header"><div className="card-title">近日追加予定</div></div>
-          <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
-            <span className="badge">Python</span>
-            <span className="badge">Go</span>
-            <span className="badge">Rust</span>
-            <span className="badge">Java</span>
-          </div>
-        </div>
       </div>
 
       <div className="footer">
