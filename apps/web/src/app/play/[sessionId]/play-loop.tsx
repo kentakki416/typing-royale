@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react"
 
 import { FinishGuestPlaySessionResponse, FinishPlaySessionResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
+import { AudioControls } from "@/components/audio-controls"
 import { Topbar } from "@/components/topbar"
 import { playFinish, playUrgentTick } from "@/libs/sound-fx"
 
@@ -243,6 +244,7 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
       </div>
 
       <Topbar isAuthed={!isGuest} languageBadge="TypeScript" modeBadge={modeBadge} />
+      <AudioControls />
 
       <div className={`container ${screenClass}`} style={{ position: "relative", zIndex: 1 }}>
         <div className="play-hud">
