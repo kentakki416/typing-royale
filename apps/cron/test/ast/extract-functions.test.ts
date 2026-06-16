@@ -18,18 +18,28 @@ describe("extractFunctions", () => {
       expect(fns[0].rawText).toContain("function foo()")
     })
 
-    it("const + ArrowFunction を抽出する", () => {
+    it("const + ArrowFunction を抽出し、rawText に宣言全体を含める", () => {
       const sf = parse("const bar = (x: number) => {\n  return x * 2\n}\n")
       const fns = extractFunctions(sf)
       expect(fns).toHaveLength(1)
       expect(fns[0].functionName).toBe("bar")
+      expect(fns[0].rawText).toBe("const bar = (x: number) => {\n  return x * 2\n}")
     })
 
-    it("const + FunctionExpression を抽出する", () => {
+    it("export const + ArrowFunction も rawText に export 修飾子を含める", () => {
+      const sf = parse("export const bar = () => {\n  return 1\n}\n")
+      const fns = extractFunctions(sf)
+      expect(fns).toHaveLength(1)
+      expect(fns[0].functionName).toBe("bar")
+      expect(fns[0].rawText).toBe("export const bar = () => {\n  return 1\n}")
+    })
+
+    it("const + FunctionExpression を抽出し、rawText に宣言全体を含める", () => {
       const sf = parse("const baz = function () {\n  return 0\n}\n")
       const fns = extractFunctions(sf)
       expect(fns).toHaveLength(1)
       expect(fns[0].functionName).toBe("baz")
+      expect(fns[0].rawText).toBe("const baz = function () {\n  return 0\n}")
     })
 
     it("クラスメソッドを抽出する", () => {
@@ -37,13 +47,6 @@ describe("extractFunctions", () => {
       const fns = extractFunctions(sf)
       expect(fns).toHaveLength(1)
       expect(fns[0].functionName).toBe("greet")
-    })
-
-    it("オブジェクトリテラルのプロパティアロー関数を抽出する", () => {
-      const sf = parse("const obj = {\n  hello: () => {\n    return 1\n  },\n}\n")
-      const fns = extractFunctions(sf)
-      expect(fns).toHaveLength(1)
-      expect(fns[0].functionName).toBe("hello")
     })
 
     it("複数の関数を順番通りに抽出する", () => {
@@ -70,6 +73,24 @@ describe("extractFunctions", () => {
   describe("異常系", () => {
     it("無名 FunctionExpression（const に代入されていない）は抽出しない", () => {
       const sf = parse("(function () { return 1 })()\n")
+      const fns = extractFunctions(sf)
+      expect(fns).toHaveLength(0)
+    })
+
+    it("オブジェクトリテラルのプロパティアロー関数は抽出しない", () => {
+      const sf = parse("const obj = {\n  hello: () => {\n    return 1\n  },\n}\n")
+      const fns = extractFunctions(sf)
+      expect(fns).toHaveLength(0)
+    })
+
+    it("複数宣言の const は抽出しない", () => {
+      const sf = parse("const a = 1, foo = () => {\n  return 2\n}\n")
+      const fns = extractFunctions(sf)
+      expect(fns).toHaveLength(0)
+    })
+
+    it("for ループ初期化子の const arrow は抽出しない", () => {
+      const sf = parse("for (const handler = () => 1; ;) {\n  break\n}\n")
       const fns = extractFunctions(sf)
       expect(fns).toHaveLength(0)
     })

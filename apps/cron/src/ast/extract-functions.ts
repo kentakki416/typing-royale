@@ -13,12 +13,16 @@ export type ExtractedFunction = {
 /**
  * ソースファイルから関数ノードを抽出する関数
  *
- * 抽出対象は以下の 4 種類:
+ * 抽出対象は以下の 3 種類:
  *   1. FunctionDeclaration:    function foo(...) {}
  *   2. MethodDeclaration:      クラスメソッド / オブジェクトメソッド
- *   3. ArrowFunction / FunctionExpression を const で代入したもの:
- *      const foo = (...) => {} / const foo = function (...) {}
- *   4. オブジェクトリテラルのプロパティアロー関数: { foo: () => {} }
+ *   3. const に代入された ArrowFunction / FunctionExpression
+ *      （宣言全体を rawText に含める。例: `export const foo = (...) => {...}`）
+ *
+ * オブジェクトリテラルのプロパティアロー関数（`{ foo: () => {} }`）は
+ * 抽出対象外。タイピング画面に表示される `code_block` に名前が含まれず
+ * 「無名関数の一部」に見えるため。method shorthand（`{ foo() {} }`）は
+ * MethodDeclaration として 2. で拾われる。
  *
  * 抽出した関数ノードの子は **再帰せず** に走査を打ち切る。これにより
  * 関数内のネスト関数（メソッド内の IIFE など）が二重抽出されない。
@@ -47,16 +51,23 @@ const tryExtract = (node: ts.Node, sf: ts.SourceFile): ExtractedFunction | null 
   if (ts.isMethodDeclaration(node) && node.name) {
     return build(node, sf, node.name.getText(sf))
   }
-  /** 3. const foo = (...) => {} / const foo = function (...) {} */
+  /**
+   * 3. const foo = (...) => {} / const foo = function (...) {}
+   * 「const foo = 」を rawText に含めるため、build には VariableStatement を渡す。
+   * 単一宣言の VariableStatement (`export const foo = ...`) のみ対象。
+   * 複数宣言 (`const a = 1, foo = () => {}`) や for ループ初期化子 (`for (const x of ...)`) は対象外。
+   */
   if (ts.isVariableDeclaration(node) && node.initializer && ts.isIdentifier(node.name)) {
     const init = node.initializer
     if (ts.isArrowFunction(init) || ts.isFunctionExpression(init)) {
-      return build(init, sf, node.name.text)
+      const list = node.parent
+      if (ts.isVariableDeclarationList(list) && list.declarations.length === 1) {
+        const stmt = list.parent
+        if (ts.isVariableStatement(stmt)) {
+          return build(stmt, sf, node.name.text)
+        }
+      }
     }
-  }
-  /** 4. オブジェクトリテラルのプロパティアロー関数 { foo: () => {} } */
-  if (ts.isPropertyAssignment(node) && ts.isArrowFunction(node.initializer)) {
-    return build(node.initializer, sf, node.name.getText(sf))
   }
   return null
 }
