@@ -1251,6 +1251,37 @@ h3 { font-size: 16px; margin-bottom: 8px; }
   border-color: rgba(88,166,255,0.45);
   box-shadow: 0 1px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
 }
+/**
+ * /ranking 各行の「▶ 視聴」リンク。badge.accent の色をそのまま使いつつ、
+ * - 横幅を確保 (min-width + padding) して `▶ 視聴` を必ず横一列で表示
+ * - white-space: nowrap で記号 + 文字が wrap して縦に並ぶのを防ぐ
+ * - ログインボタン (.btn-primary) と同じパターンの下方向チャンキー影で
+ *   「リンク」ではなく「ボタン」だと一目で分かる質感に
+ */
+.ranking-watch-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 76px;
+  padding: 6px 14px;
+  white-space: nowrap;
+  text-decoration: none;
+  box-shadow:
+    0 3px 0 rgba(31, 77, 153, 0.7),
+    0 5px 10px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
+}
+.ranking-watch-btn:hover { filter: brightness(1.12); text-decoration: none; }
+.ranking-watch-btn:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 rgba(31, 77, 153, 0.7),
+    0 2px 5px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  outline: none;
+}
 .badge.purple {
   background: linear-gradient(180deg, rgba(188,140,255,0.45) 0%, rgba(188,140,255,0.18) 100%);
   color: #e1ccff;

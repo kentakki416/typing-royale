@@ -61,7 +61,7 @@ export function RankingTable({ entries, meBestPlaySessionId }: Props) {
               <td className="numeric">{(e.accuracy * 100).toFixed(1)}%</td>
               <td>
                 <Link
-                  className="badge accent"
+                  className="badge accent ranking-watch-btn"
                   href={`/replay/${e.best_play_session_id}`}
                   title="リプレイを見る"
                 >
