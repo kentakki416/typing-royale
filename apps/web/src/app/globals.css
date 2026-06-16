@@ -770,6 +770,14 @@ h3 { font-size: 16px; margin-bottom: 8px; }
   border: 1px solid rgba(21, 23, 31, 0.95);
   border-radius: 14px;
   font-family: var(--font-mono);
+  /**
+   * JetBrains Mono / Fira Code は programming ligatures を持つフォントで、
+   * 既定だと `!==` → `≠`、`===` → `≡`、`>=` → `⩾` のように合字表示されてしまう。
+   * タイピング画面では「実際に打鍵すべき文字」と表示が一致しないと混乱するため、
+   * 合字を強制的に無効化してコード原文通りに描画する。
+   */
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
   font-size: 17px;
   line-height: 1.75;
   padding: 32px;
