@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
-import type { GetMyRankingResponse, GetRankingsResponse } from "@repo/api-schema"
+import type { GetMonthlyRankingsResponse, GetMyRankingResponse } from "@repo/api-schema"
 
 import { MyRankingSidebar } from "@/components/my-ranking-sidebar"
 import { RankingTable } from "@/components/ranking-table"
@@ -10,7 +10,7 @@ import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
 
 export const metadata: Metadata = {
-  title: "ランキング - Typing Royale",
+  title: "今月のランキング - Typing Royale",
 }
 
 type Search = {
@@ -27,11 +27,15 @@ const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
 }
 
 /**
- * /ranking 画面
+ * /ranking 画面 (月間ランキング)
  *
- * 言語別 TOP 10 + サイドバーで自分の状況。Server Component が
- * rankings (公開) と me (ログイン時のみ) を並列 fetch して SSR する。
- * 言語タブは ?language=... query で永続化（Next.js Link で同一ページ再フェッチ）。
+ * 言語別の **今月のランキング** TOP 10 を表示する。データソースは
+ * `monthly_ranking_snapshots`（毎時 cron で UPSERT）。
+ *
+ * 全期間 TOP 10 は `/hall-of-fame` 側に集約する設計のため、本ページからは
+ * リプレイ「視聴」リンクや「文字数」など hall-of-fame と被る情報を出さない。
+ * サイドバーの「あなたの状況」は全期間ベース（グレード進捗を見せるため）で、
+ * 月間版の自分順位は後続 PR で追加予定
  */
 export default async function RankingPage({
   searchParams,
@@ -45,8 +49,10 @@ export default async function RankingPage({
 
   const accessToken = await getAccessToken()
 
-  const [rankings, me] = await Promise.all([
-    apiClient.get<GetRankingsResponse>(`/api/rankings?language=${language}`),
+  const [monthly, me] = await Promise.all([
+    apiClient.get<GetMonthlyRankingsResponse>(
+      `/api/rankings/monthly?language=${language}&limit=10`,
+    ),
     accessToken === null
       ? Promise.resolve(null)
       : apiClient
@@ -54,14 +60,19 @@ export default async function RankingPage({
         .catch(() => null),
   ])
 
+  /**
+   * "YYYY-MM" を「YYYY 年 M 月」に整形して見出しに使う
+   */
+  const monthLabel = formatYearMonthLabel(monthly.year_month)
+
   return (
     <>
       <Topbar active="ranking" isAuthed={accessToken !== null} />
 
       <div className="container">
         <div className="flex-between mb-24">
-          <h1>🏆 全期間ランキング</h1>
-          <div className="text-sm text-muted">現在の順位を即時表示</div>
+          <h1>📅 今月のランキング</h1>
+          <div className="text-sm text-muted">{monthLabel} のスコア・月初にリセット</div>
         </div>
 
         <div className="flex-between mb-16">
@@ -77,21 +88,18 @@ export default async function RankingPage({
             ))}
           </div>
           <div className="text-sm text-muted">
-            {rankings.total_ranked_players.toLocaleString()} 人がランキング対象
+            全期間 TOP 10 は <Link href="/hall-of-fame">殿堂入り</Link> へ
           </div>
         </div>
 
         <div className="row">
           <div className="col">
-            <RankingTable
-              entries={rankings.entries}
-              meBestPlaySessionId={me?.best_play_session_id ?? null}
-            />
+            <RankingTable entries={monthly.entries} />
 
-            {rankings.entries.length === 0 && (
+            {monthly.entries.length === 0 && (
               <div className="card text-center mt-16" style={{ padding: "48px 16px" }}>
                 <div className="text-mono text-muted mb-16">
-                  まだランキングがありません
+                  {monthLabel} はまだランキングがありません
                 </div>
                 <Link className="btn btn-primary btn-play" href="/play">
                   ▶ 最初のプレイヤーになる
@@ -110,21 +118,21 @@ export default async function RankingPage({
             <MyRankingSidebar
               language={language}
               me={me}
-              totalPlayers={rankings.total_ranked_players}
+              totalPlayers={me?.total_ranked_players ?? 0}
             />
 
             <div className="card mb-16" style={{ borderColor: "rgba(210, 153, 34, 0.3)" }}>
               <div className="card-header">
-                <div className="card-title">⚠ ランキングの仕様</div>
+                <div className="card-title">⚠ 月間ランキングの仕様</div>
               </div>
               <ul
                 className="text-sm text-muted"
                 style={{ display: "grid", gap: "6px", paddingLeft: "18px" }}
               >
-                <li>全期間（オールタイム）のみ集計</li>
-                <li>1 プレイヤーにつきベスト 1 件をランキング</li>
-                <li>同点時は正確率 → 達成日時の順で決定</li>
-                <li>順位はリアルタイムで更新（バッチ集計なし）</li>
+                <li>{monthLabel} のスコアのみ集計（JST 暦月）</li>
+                <li>月初 00:00 (JST) にリセット</li>
+                <li>1 プレイヤーにつき月内ベスト 1 件をランキング</li>
+                <li>毎時 cron で更新（最大 1 時間のラグあり）</li>
               </ul>
             </div>
           </aside>
@@ -136,4 +144,15 @@ export default async function RankingPage({
       </div>
     </>
   )
+}
+
+/**
+ * "2026-06" → "2026 年 6 月" に整形。空文字は「今月」を返す
+ */
+const formatYearMonthLabel = (ym: string): string => {
+  const match = /^(\d{4})-(\d{2})$/.exec(ym)
+  if (match === null) return "今月"
+  const year = match[1]
+  const month = Number(match[2])
+  return `${year} 年 ${month} 月`
 }

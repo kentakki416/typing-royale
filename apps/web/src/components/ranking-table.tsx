@@ -1,23 +1,26 @@
 import Link from "next/link"
 
-import type { GetRankingsResponse } from "@repo/api-schema"
+import type { GetMonthlyRankingsResponse } from "@repo/api-schema"
 
-type Entry = GetRankingsResponse["entries"][number]
+type Entry = GetMonthlyRankingsResponse["entries"][number]
 
 type Props = {
     entries: Entry[]
-    /**
-     * 自分のベストプレイ ID（自分の行をハイライトするために `entries[].best_play_session_id`
-     * と一致するものを `.me` にする）。未ログイン / ベスト未保存 / 圏外なら null
-     */
-    meBestPlaySessionId: number | null
 }
 
 /**
- * 言語別 TOP N のランキングテーブル
- * デザイン: docs/mocks/ranking.html の .table 構造を踏襲
+ * 言語別「今月の」ランキングテーブル (TOP 10)。
+ *
+ * 月間スナップショット (`monthly_ranking_snapshots`) に保存されているフィールド
+ * (rank / user / score / accuracy / played_at) のみを表示する。
+ * `best_play_session_id` や `typed_chars` は snapshot に含まれないため、
+ * 「文字数」列やリプレイ「視聴」リンクは出さない（リプレイは殿堂入り `/hall-of-fame`
+ * 側に集約する設計）。
+ *
+ * 「自分の行ハイライト」は user_id を取り出す経路が web 側にまだ無いため、
+ * 後続 PR で `/api/rankings/monthly/me` を追加するときにまとめて対応する
  */
-export function RankingTable({ entries, meBestPlaySessionId }: Props) {
+export function RankingTable({ entries }: Props) {
   if (entries.length === 0) return null
 
   return (
@@ -28,15 +31,13 @@ export function RankingTable({ entries, meBestPlaySessionId }: Props) {
             <th style={{ width: "48px" }}>順位</th>
             <th>プレイヤー</th>
             <th>グレード</th>
-            <th className="numeric">ベスト</th>
-            <th className="numeric">文字数</th>
+            <th className="numeric">スコア</th>
             <th className="numeric">正確率</th>
-            <th></th>
           </tr>
         </thead>
         <tbody>
           {entries.map((e) => (
-            <tr className={meBestPlaySessionId === e.best_play_session_id ? "me" : ""} key={e.best_play_session_id}>
+            <tr key={`${e.rank}-${e.user.id}`}>
               <td>
                 <span className={`rank-badge ${convertRankToMedalClass(e.rank)}`}>#{e.rank}</span>
               </td>
@@ -57,17 +58,7 @@ export function RankingTable({ entries, meBestPlaySessionId }: Props) {
                 </span>
               </td>
               <td className="numeric"><strong>{e.score.toLocaleString()}</strong></td>
-              <td className="numeric">{e.typed_chars.toLocaleString()}</td>
               <td className="numeric">{(e.accuracy * 100).toFixed(1)}%</td>
-              <td>
-                <Link
-                  className="badge accent ranking-watch-btn"
-                  href={`/replay/${e.best_play_session_id}`}
-                  title="リプレイを見る"
-                >
-                  ▶ 視聴
-                </Link>
-              </td>
             </tr>
           ))}
         </tbody>
