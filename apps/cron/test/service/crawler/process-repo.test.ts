@@ -42,7 +42,7 @@ const buildProblemRepo = (overrides: Partial<ProblemRepository> = {}): ProblemRe
   ...overrides,
 })
 
-/** AST 解析対象の最小サンプル。MIN_CHAR_COUNT=100 / MIN_LINE_COUNT=5 を満たす関数 */
+/** AST 解析対象の最小サンプル。MIN_CHAR_COUNT=200 / MIN_LINE_COUNT=8 を満たす関数 */
 const buildSourceWithFunctions = (count: number): string => {
   const lines: string[] = []
   for (let i = 0; i < count; i++) {
@@ -51,7 +51,10 @@ const buildSourceWithFunctions = (count: number): string => {
       "  const padded = value.padStart(40, \"*\")",
       "  const upper = padded.toUpperCase()",
       "  const lower = padded.toLowerCase()",
-      `  return upper + lower + "_${i}"`,
+      "  const prefix = upper.slice(0, 10)",
+      "  const suffix = lower.slice(-10)",
+      "  const joined = prefix + \":\" + suffix",
+      `  return joined + "_${i}"`,
       "}",
       ""
     )
