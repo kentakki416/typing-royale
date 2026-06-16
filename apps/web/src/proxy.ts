@@ -34,9 +34,14 @@ const PUBLIC_PATHS = [
    */
   "/hall-of-fame",
   /**
-   * クロール対象リポジトリ一覧は公開ページ
+   * クロール対象リポジトリ一覧は公開ページ。
+   * `/api/internal/crawled-repos` はホーム画面 Client Component (`<CrawledReposSection>`)
+   * からブラウザ fetch で叩く bridge Route Handler なので、ページ側だけでなく API も
+   * 明示的に公開しないと未ログイン時に 307 で /sign-in にリダイレクトされ、
+   * fetch が JSON parse 失敗で silent fail → サイドバーが永遠に「読み込み中…」表示になる
    */
   "/crawled-repos",
+  "/api/internal/crawled-repos",
   /**
    * ゲストプレイ: 言語選択 (/play) とプレイ画面 (/play/[sessionId]) は未ログインでもアクセス可能。
    * API 側は /api/play-sessions/guest/* （ステートレス）に分離。Server Action がログイン状態を見て叩き分ける
