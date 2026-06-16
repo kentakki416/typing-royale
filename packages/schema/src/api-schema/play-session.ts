@@ -250,14 +250,17 @@ export const finishGuestPlaySessionRequestSchema = z.object({
 
 /**
  * ゲスト用 /finish のレスポンス
- * 永続化やランキング集計に紐づくフィールドは持たない
+ * 永続化はしないが、ゲストにも「このスコアなら何位か」を見せるために
+ * 仮想 rank と総ランクイン人数を返す
  */
 export const finishGuestPlaySessionResponseSchema = z.object({
   accuracy: z.number(),
   mistype_stats: mistypeStatsSchema,
+  new_rank: z.number().int().positive().nullable(),
   problems_completed: z.number().int().nonnegative(),
   problems_played: z.number().int().nonnegative(),
   score: z.number().int().nonnegative(),
+  total_ranked_players: z.number().int().nonnegative(),
   typed_chars: z.number().int().nonnegative(),
 })
 
