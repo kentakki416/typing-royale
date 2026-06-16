@@ -9,15 +9,19 @@
 
 /**
  * combo 数 → 加算秒数
- * - combo 20:                  +1
- * - combo 40:                  +2
- * - combo 60 以降の 20 combo ごと: +3
+ * - combo 30:                  +1
+ * - combo 60:                  +2
+ * - combo 90 以降の 30 combo ごと: +3
  * - それ以外:                  null (加算なし)
+ *
+ * 旧仕様 (20/40/60+ の 20 combo step) からゲーム時間が長すぎる問題への対処として
+ * 閾値を 30 combo step に広げた。10 文字/秒以上のスピードを維持できる上級者には
+ * 理論上 無限延長の可能性が残るが、現実的にはほぼ全プレイヤーで終了する
  */
 export const comboToReward = (combo: number): number | null => {
-  if (combo === 20) return 1
-  if (combo === 40) return 2
-  if (combo >= 60 && combo % 20 === 0) return 3
+  if (combo === 30) return 1
+  if (combo === 60) return 2
+  if (combo >= 90 && combo % 30 === 0) return 3
   return null
 }
 
