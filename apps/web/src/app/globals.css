@@ -2379,11 +2379,19 @@ code.inline {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  /** 全 tier 共通で白色の水玉。背景の tier 色は box-shadow に乗せて雰囲気だけ残す */
-  background: #ffffff;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.9),
-              0 0 16px var(--combo-glow, rgba(255, 255, 255, 0.5));
+  /** combo banner の数字と同色 + 同じ glow で「数字から弾けて飛び出した」一体感を出す */
+  background: var(--combo-color, #ffd54a);
+  box-shadow: 0 0 10px var(--combo-glow, rgba(255, 255, 255, 0.7));
   animation: droplet-burst 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+/**
+ * combo-6 (虹色) では --combo-color が transparent なので、水玉も透明になってしまう。
+ * 白フォールバックで虹色テキストを引き立てる。glow は combo-6 用の蒼寄り
+ */
+.droplet-burst.combo-6 .droplet {
+  background: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.9),
+              0 0 20px rgba(78, 168, 255, 0.6);
 }
 @keyframes droplet-burst {
   0%   { transform: translate(0, 0) scale(1); opacity: 1; }
