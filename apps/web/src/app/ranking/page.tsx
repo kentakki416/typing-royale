@@ -71,7 +71,7 @@ export default async function RankingPage({
 
       <div className="container">
         <div className="flex-between mb-24">
-          <h1>📅 今月のランキング</h1>
+          <h1>🏆 今月のランキング</h1>
           <div className="text-sm text-muted">{monthLabel} のスコア・月初にリセット</div>
         </div>
 
