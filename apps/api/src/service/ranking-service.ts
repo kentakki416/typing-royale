@@ -155,17 +155,19 @@ export type ListMonthlyInput = {
     limit: number
 }
 
+export type MonthlyRankingEntryWithRank = MonthlyRankingTopEntry & { rank: number }
+
 export type ListMonthlyOutput = {
-    entries: MonthlyRankingTopEntry[]
+    entries: MonthlyRankingEntryWithRank[]
     yearMonth: string
 }
 
 /**
  * 当月の言語別 TOP N を返す。
  *
- * 集計はバッチで `monthly_ranking_snapshots` に書き込まれているため、ここでは
- * 単純な SELECT で読むだけ。各 (年月, 言語) ごとに上位 10 位までしか保存されないので
- * limit が 10 を超えても 10 件以下が返る
+ * v2 では `/finish` 内 transaction で `monthly_ranking_snapshots` が直接 UPSERT される。
+ * Repository は `ORDER BY score DESC, accuracy DESC, played_at ASC` で取り出すだけで、
+ * 順位 (`rank`) はここで `idx + 1` を振る (殿堂入りと同じ設計)
  */
 export const listMonthly = async (
   input: ListMonthlyInput,
@@ -177,11 +179,12 @@ export const listMonthly = async (
   if (!language) return err(badRequestError(`Unsupported language: ${input.languageSlug}`))
 
   const yearMonth = currentYearMonthJst(new Date())
-  const entries = await repo.monthlyRankingSnapshotRepository.findTopByLanguage(
+  const top = await repo.monthlyRankingSnapshotRepository.findTopByLanguage(
     yearMonth,
     language.id,
     input.limit,
   )
+  const entries = top.map((entry, idx) => ({ ...entry, rank: idx + 1 }))
 
   return ok({ entries, yearMonth })
 }

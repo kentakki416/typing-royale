@@ -54,14 +54,15 @@ const currentYearMonthJst = (): string => {
 
 /**
  * language + 任意人数分の user + monthly_ranking_snapshots を seed する。
- * 当月の yearMonth を使って書き込む (テストは「現在月」を見るため)
+ * 当月の yearMonth を使って書き込む (テストは「現在月」を見るため)。
+ * v2 では rank カラムは廃止済みのため seed に rank は含めず、ORDER BY score DESC, ...
+ * の順位はアプリ側 (Service) で振られる
  */
 const seedMonthlySnapshots = async (
   entries: Array<{
     accuracy: number
     displayName: string
     playedAt: Date
-    rank: number
     score: number
   }>,
 ) => {
@@ -84,7 +85,6 @@ const seedMonthlySnapshots = async (
         accuracy: e.accuracy,
         languageId: language.id,
         playedAt: e.playedAt,
-        rank: e.rank,
         score: e.score,
         userId: user.id,
         yearMonth,
@@ -98,8 +98,8 @@ describe("GET /api/rankings/monthly", () => {
   describe("正常系", () => {
     it("rank 順に entries を返し、year_month と限られたフィールドのレスポンスになる", async () => {
       const { yearMonth } = await seedMonthlySnapshots([
-        { accuracy: 0.99, displayName: "alice", playedAt: new Date("2026-06-10T03:00:00Z"), rank: 1, score: 300 },
-        { accuracy: 0.95, displayName: "bob", playedAt: new Date("2026-06-12T03:00:00Z"), rank: 2, score: 250 },
+        { accuracy: 0.99, displayName: "alice", playedAt: new Date("2026-06-10T03:00:00Z"), score: 300 },
+        { accuracy: 0.95, displayName: "bob", playedAt: new Date("2026-06-12T03:00:00Z"), score: 250 },
       ])
 
       const res = await request(app)
@@ -127,9 +127,9 @@ describe("GET /api/rankings/monthly", () => {
 
     it("limit を指定すると上位 N 件まで返す", async () => {
       await seedMonthlySnapshots([
-        { accuracy: 0.99, displayName: "u1", playedAt: new Date("2026-06-10T03:00:00Z"), rank: 1, score: 300 },
-        { accuracy: 0.98, displayName: "u2", playedAt: new Date("2026-06-10T03:00:00Z"), rank: 2, score: 280 },
-        { accuracy: 0.97, displayName: "u3", playedAt: new Date("2026-06-10T03:00:00Z"), rank: 3, score: 270 },
+        { accuracy: 0.99, displayName: "u1", playedAt: new Date("2026-06-10T03:00:00Z"), score: 300 },
+        { accuracy: 0.98, displayName: "u2", playedAt: new Date("2026-06-10T03:00:00Z"), score: 280 },
+        { accuracy: 0.97, displayName: "u3", playedAt: new Date("2026-06-10T03:00:00Z"), score: 270 },
       ])
 
       const res = await request(app)
