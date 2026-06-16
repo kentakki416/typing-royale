@@ -1,8 +1,11 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import type { GetReplayResponse } from "@repo/api-schema"
+
+import { detectBonuses } from "@/libs/combo-time-bonus"
+import { playTimeBonus } from "@/libs/sound-fx"
 
 const SESSION_MS = 120_000
 const SPEEDS = [0.5, 1, 1.5, 2] as const
@@ -29,6 +32,17 @@ export function ReplayPlayer({ data }: Props) {
   const [total, setTotal] = useState(0)
   const [problemIndex, setProblemIndex] = useState(0)
   const [cursor, setCursor] = useState(0)
+  /**
+   * combo マイルストーン (20 / 40 / 60 以降 20 ごと) を log から事前計算しておき、
+   * 再生中の playTimeRef がイベントの elapsedMs を超えた瞬間に +Ns 演出を発火する。
+   * 旧仕様 (時間ボーナス導入前) の log は detectBonuses が空配列を返すので何も起きない
+   */
+  const bonusEvents = useMemo(() => detectBonuses(logs), [logs])
+  const [bonusPopups, setBonusPopups] = useState<{ addedSec: number; id: number }[]>([])
+  const [timeBonusFlash, setTimeBonusFlash] = useState(false)
+  const bonusPopupIdRef = useRef(0)
+  const firedBonusIdxRef = useRef(0)
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   /**
    * rAF tick からも触る mutable state
@@ -43,6 +57,27 @@ export function ReplayPlayer({ data }: Props) {
   const lastWallRef = useRef<number>(0)
   const pausedRef = useRef(false)
   const speedRef = useRef(1)
+
+  /**
+   * combo ボーナス +Ns ポップアップを 1 件発火する。再生 tick 内から呼ばれる。
+   * - HUD「経過時間」セル左に span をぽんと出して 1 秒で fade out
+   * - hud-cell に time-bonus-flash クラスを 0.5 秒間付与 (gold グロー)
+   * - 効果音 playTimeBonus
+   */
+  const triggerBonusPopup = (addedSec: number) => {
+    const id = ++bonusPopupIdRef.current
+    setBonusPopups((prev) => [...prev, { addedSec, id }])
+    window.setTimeout(() => {
+      setBonusPopups((prev) => prev.filter((p) => p.id !== id))
+    }, 1000)
+    if (flashTimerRef.current !== null) clearTimeout(flashTimerRef.current)
+    setTimeBonusFlash(true)
+    flashTimerRef.current = setTimeout(() => {
+      setTimeBonusFlash(false)
+      flashTimerRef.current = null
+    }, 500)
+    playTimeBonus()
+  }
 
   /**
    * cursor 状態を最新の playTime に合わせて再計算する
@@ -79,6 +114,16 @@ export function ReplayPlayer({ data }: Props) {
     setTotal(totalRef.current)
     setProblemIndex(problemIndexRef.current)
     setCursor(cursorPosRef.current)
+    /**
+     * シーク後の再計算では bonus も同じ位置まで巻き戻し or 早送りする。
+     * 「既に発火済み (targetMs 以下) 」だけ通り過ぎたとマークし、
+     * targetMs より先のイベントは再度発火対象に戻す (戻し方向シークも対応)
+     */
+    let newFiredIdx = 0
+    while (newFiredIdx < bonusEvents.length && bonusEvents[newFiredIdx].elapsedMs <= targetMs) {
+      newFiredIdx += 1
+    }
+    firedBonusIdxRef.current = newFiredIdx
   }
 
   /**
@@ -116,6 +161,17 @@ export function ReplayPlayer({ data }: Props) {
           }
           cursorIdxRef.current += 1
         }
+        /**
+         * combo マイルストーン発火: 次の bonus event の elapsedMs が現在の再生時刻を
+         * 超えていれば triggerBonusPopup を呼ぶ。tick あたり複数発火する可能性も while で吸収
+         */
+        while (
+          firedBonusIdxRef.current < bonusEvents.length
+          && bonusEvents[firedBonusIdxRef.current].elapsedMs <= next
+        ) {
+          triggerBonusPopup(bonusEvents[firedBonusIdxRef.current].addedSec)
+          firedBonusIdxRef.current += 1
+        }
         setPlayedMs(next)
         setTypedChars(typedCharsRef.current)
         setCorrect(correctRef.current)
@@ -127,7 +183,8 @@ export function ReplayPlayer({ data }: Props) {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [logs, problems])
+    /** eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [logs, problems, bonusEvents])
 
   const togglePause = () => {
     const next = !pausedRef.current
@@ -181,7 +238,20 @@ export function ReplayPlayer({ data }: Props) {
       </div>
 
       <div className="play-hud">
-        <div className="hud-cell">
+        <div
+          className={`hud-cell ${timeBonusFlash ? "time-bonus-flash" : ""}`}
+          style={{ position: "relative" }}
+        >
+          <div className="time-bonus-popups" aria-hidden="true">
+            {bonusPopups.map((p) => (
+              <span
+                className={`time-bonus-popup time-bonus-popup-${p.addedSec}s`}
+                key={p.id}
+              >
+                +{p.addedSec}s
+              </span>
+            ))}
+          </div>
           <div className="hud-label">経過時間</div>
           <div className="hud-value">{formatMs(elapsedSec)} / 02:00</div>
         </div>
