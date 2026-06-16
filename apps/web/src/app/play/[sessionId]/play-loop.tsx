@@ -279,7 +279,7 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
                 <div className="hud-value success">{(accuracy * 100).toFixed(1)}%</div>
               </div>
               <div className="hud-cell">
-                <div className="hud-label">完走 / 出題</div>
+                <div className="hud-label">完了数 / 問題数</div>
                 <div className="hud-value">{problemIndex} / {problems.length}</div>
               </div>
             </>
