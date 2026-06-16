@@ -3,6 +3,7 @@ import Link from "next/link"
 
 import type { GetFeaturedReplaysResponse, GetMonthlyRankingsResponse } from "@repo/api-schema"
 
+import { CrawledReposSection } from "@/components/crawled-repos-section"
 import { MonthlyTopSection } from "@/components/monthly-top-section"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
@@ -189,10 +190,10 @@ export default async function HomePage() {
 
           <aside className="col-sidebar">
             <div className="card mb-16">
-              <div className="card-header"><div className="card-title">統計</div></div>
-              <p className="text-sm text-muted">
-                各種カウンタは Phase 4 / 9 で本表示します。
-              </p>
+              <div className="card-header">
+                <div className="card-title">📦 クロール対象リポジトリ</div>
+              </div>
+              <CrawledReposSection />
             </div>
 
             <div className="card">

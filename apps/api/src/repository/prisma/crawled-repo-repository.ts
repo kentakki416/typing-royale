@@ -3,11 +3,31 @@ import { PrismaClient } from "@repo/db"
 import { RepoInfo } from "../../types/domain"
 
 /**
+ * 一覧表示用のクロール済みリポジトリ情報
+ */
+export type CrawledRepoListItem = {
+    description: string | null
+    fullName: string
+    homepage: string | null
+    name: string
+    owner: string
+    stars: number
+    storedCount: number
+    topics: string[]
+}
+
+/**
  * CrawledRepo リポジトリのインターフェース
  *
- * step2 では `/solo` の eligible repo ランダム抽選のみ。書き込みは apps/cron 側の責務
+ * 書き込みは apps/cron 側の責務
  */
 export interface CrawledRepoRepository {
+    /**
+     * 指定言語の有効リポジトリを stars 降順で一覧取得。
+     * disabled=false かつ storedCount>0（実際に出題実績がある）でフィルタ
+     */
+    findActiveByLanguageId(languageId: number, limit: number): Promise<CrawledRepoListItem[]>
+
     /**
      * 指定言語の eligible（disabled=false）repo から 1 件をランダム選択
      * eligible な repo が 0 件の場合は null
@@ -26,6 +46,38 @@ export class PrismaCrawledRepoRepository implements CrawledRepoRepository {
 
   constructor(prisma: PrismaClient) {
     this._prisma = prisma
+  }
+
+  async findActiveByLanguageId(languageId: number, limit: number): Promise<CrawledRepoListItem[]> {
+    const rows = await this._prisma.crawledRepo.findMany({
+      orderBy: { stars: "desc" },
+      select: {
+        description: true,
+        fullName: true,
+        homepage: true,
+        name: true,
+        owner: true,
+        stars: true,
+        storedCount: true,
+        topics: true,
+      },
+      take: limit,
+      where: {
+        disabled: false,
+        languageId,
+        storedCount: { gt: 0 },
+      },
+    })
+    return rows.map((row) => ({
+      description: row.description,
+      fullName: row.fullName,
+      homepage: row.homepage,
+      name: row.name,
+      owner: row.owner,
+      stars: row.stars,
+      storedCount: row.storedCount,
+      topics: Array.isArray(row.topics) ? row.topics as string[] : [],
+    }))
   }
 
   async pickRandomEligibleByLanguageId(languageId: number): Promise<{

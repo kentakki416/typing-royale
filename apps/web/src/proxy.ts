@@ -34,6 +34,10 @@ const PUBLIC_PATHS = [
    */
   "/hall-of-fame",
   /**
+   * クロール対象リポジトリ一覧は公開ページ
+   */
+  "/crawled-repos",
+  /**
    * ゲストプレイ: 言語選択 (/play) とプレイ画面 (/play/[sessionId]) は未ログインでもアクセス可能。
    * API 側は /api/play-sessions/guest/* （ステートレス）に分離。Server Action がログイン状態を見て叩き分ける
    */
