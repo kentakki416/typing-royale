@@ -342,5 +342,62 @@ describe("finishSession", () => {
       }
       expect(mockTxRun).not.toHaveBeenCalled()
     })
+
+    it("combo マイルストーン未達成で elapsed_ms が 120s + tolerance を超える log は 400 で reject される", async () => {
+      // Arrange: combo 19 までしか積んでいないのに elapsed_ms = 130_000 の打鍵が紛れている
+      mockFindById.mockResolvedValue(buildState({ problemIds: [100] }))
+      mockFindManyByIds.mockResolvedValue([{ codeBlock: "a".repeat(30), id: 100 }])
+
+      const cheatLogs: KeystrokeLogs = [
+        ...Array.from({ length: 19 }, (_, i) => ({
+          elapsedMs: (i + 1) * 100,
+          inputChar: "a",
+          isCorrect: true,
+          problemIndex: 0,
+        })),
+        /** combo 20 達成しないまま 130_000 ms の打鍵 → 許容上限 (120_000 + 500) を超過 */
+        { elapsedMs: 130_000, inputChar: "a", isCorrect: true, problemIndex: 0 },
+      ]
+
+      // Act
+      const result = await finishSession(
+        { accuracy: 1, keystrokeLogs: cheatLogs, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 20 },
+        buildRepoCollection(),
+      )
+
+      // Assert
+      expect(result.ok).toBe(false)
+      if (!result.ok) {
+        expect(result.error.statusCode).toBe(400)
+        expect(result.error.type).toBe("BAD_REQUEST")
+      }
+      expect(mockTxRun).not.toHaveBeenCalled()
+    })
+
+    it("combo 20 達成済みなら 120_500 ms 程度の elapsed_ms は許容される (+1s 延長分が考慮される)", async () => {
+      // Arrange: combo 20 達成 → 累積延長 +1s → 許容 121_500ms。 121_400 ms の打鍵は通る
+      mockFindById.mockResolvedValue(buildState({ problemIds: [100] }))
+      mockFindManyByIds.mockResolvedValue([{ codeBlock: "a".repeat(30), id: 100 }])
+      mockCreatePlaySession.mockResolvedValue({ id: 999 })
+
+      const validBonusLogs: KeystrokeLogs = [
+        ...Array.from({ length: 20 }, (_, i) => ({
+          elapsedMs: (i + 1) * 100,
+          inputChar: "a",
+          isCorrect: true,
+          problemIndex: 0,
+        })),
+        { elapsedMs: 121_400, inputChar: "a", isCorrect: true, problemIndex: 0 },
+      ]
+
+      // Act
+      const result = await finishSession(
+        { accuracy: 1, keystrokeLogs: validBonusLogs, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 21 },
+        buildRepoCollection(),
+      )
+
+      // Assert
+      expect(result.ok).toBe(true)
+    })
   })
 })
