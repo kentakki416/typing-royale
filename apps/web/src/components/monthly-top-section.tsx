@@ -20,7 +20,9 @@ const LANGUAGES: { key: Language; label: string }[] = [
 
 /**
  * ホーム画面「月間トップ」カードの本体。
- * TypeScript / JavaScript をボタンで切り替える Client Component
+ * TypeScript / JavaScript をボタンで切り替える Client Component。
+ * カード見出し右側 (`page.tsx`) に「月間ランキング →」リンクが既にあるため、
+ * ここに重複した CTA リンクは置かない
  */
 export function MonthlyTopSection({ jsMonthly, tsMonthly }: Props) {
   const [active, setActive] = useState<Language>("typescript")

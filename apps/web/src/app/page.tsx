@@ -154,7 +154,7 @@ export default async function HomePage() {
             <div className="card mb-24">
               <div className="card-header">
                 <div className="card-title">🏆 月間トップ</div>
-                <Link className="text-sm" href="/ranking">全期間ランキング →</Link>
+                <Link className="text-sm" href="/ranking">月間ランキング →</Link>
               </div>
               <MonthlyTopSection jsMonthly={jsMonthly} tsMonthly={tsMonthly} />
             </div>
