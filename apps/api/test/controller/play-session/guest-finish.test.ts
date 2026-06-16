@@ -1,7 +1,7 @@
 import request from "supertest"
 
 import { PlaySessionGuestFinishController } from "../../../src/controller/play-session/guest-finish"
-import { PrismaProblemRepository } from "../../../src/repository/prisma"
+import { PrismaProblemRepository, PrismaUserLanguageBestRepository } from "../../../src/repository/prisma"
 import { playSessionRouter } from "../../../src/routes/play-session-router"
 import { attachUnhandledExceptionHandler, createTestApp } from "../helper"
 import {
@@ -13,12 +13,13 @@ import {
 } from "../setup"
 
 const problemRepository = new PrismaProblemRepository(testPrisma)
+const userLanguageBestRepository = new PrismaUserLanguageBestRepository(testPrisma)
 
 const app = createTestApp()
 app.use(
   "/api/play-sessions",
   playSessionRouter({
-    guestFinish: new PlaySessionGuestFinishController(problemRepository),
+    guestFinish: new PlaySessionGuestFinishController(problemRepository, userLanguageBestRepository),
   }),
 )
 attachUnhandledExceptionHandler(app)
@@ -104,9 +105,11 @@ describe("POST /api/play-sessions/guest/finish", () => {
       expect(res.body).toEqual({
         accuracy: 1,
         mistype_stats: {},
+        new_rank: 1,
         problems_completed: 1,
         problems_played: 1,
         score: 3,
+        total_ranked_players: 0,
         typed_chars: 3,
       })
 

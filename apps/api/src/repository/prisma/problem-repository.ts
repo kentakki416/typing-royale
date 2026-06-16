@@ -3,9 +3,10 @@ import { PrismaClient } from "@repo/db"
 import { PlaySessionProblem } from "../../types/domain"
 
 /**
- * findManyByIds の戻り値（orderIndex は呼び出し側で付与する）
+ * findManyByIds の戻り値（orderIndex は呼び出し側で付与する）。
+ * languageId は guest finish の rank 計算で必要なため SELECT に含める
  */
-export type FoundProblem = Omit<PlaySessionProblem, "orderIndex">
+export type FoundProblem = Omit<PlaySessionProblem, "orderIndex"> & { languageId: number }
 
 /**
  * Problem リポジトリのインターフェース
@@ -44,6 +45,7 @@ export class PrismaProblemRepository implements ProblemRepository {
         codeBlock: true,
         functionName: true,
         id: true,
+        languageId: true,
         lineCount: true,
         sourceUrl: true,
       },

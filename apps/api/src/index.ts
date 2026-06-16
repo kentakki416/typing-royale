@@ -225,6 +225,7 @@ const playSessionGuestStartChallengeGodsController = new PlaySessionGuestStartCh
 )
 const playSessionGuestFinishController = new PlaySessionGuestFinishController(
   problemRepository,
+  userLanguageBestRepository,
 )
 
 /**

@@ -788,6 +788,7 @@ export const createGuestChallengeGodsSession = async (
 
 type GuestFinishSessionRepo = {
     problemRepository: ProblemRepository
+    userLanguageBestRepository: UserLanguageBestRepository
 }
 
 export type FinishGuestSessionInput = {
@@ -800,9 +801,11 @@ export type FinishGuestSessionInput = {
 export type FinishGuestSessionOutput = {
     accuracy: number
     mistypeStats: MistypeStats
+    newRank: number | null
     problemsCompleted: number
     problemsPlayed: number
     score: number
+    totalRankedPlayers: number
     typedChars: number
 }
 
@@ -825,16 +828,42 @@ export const finishGuestSession = async (
   const agg = await computeServerAggregate(input, repo)
   if (!agg.ok) return agg
 
+  /**
+   * ゲストは DB に保存しないが、その時点での「もしランキング登録していたら何位か」
+   * を知れた方が UX が良いので、出題セットの言語に対する仮想 rank を算出して返す。
+   * 言語は出題された problems から派生（複数言語にまたがる構成は無いため先頭でよい）
+   */
+  const problems = await repo.problemRepository.findManyByIds(input.problemIds)
+  const languageId = problems[0]?.languageId ?? null
+  let newRank: number | null = null
+  let totalRankedPlayers = 0
+  if (languageId !== null) {
+    totalRankedPlayers = await repo.userLanguageBestRepository.countRankableByLanguage(languageId)
+    const synthetic = {
+      accuracy: input.accuracy,
+      bestPlaySessionId: 0,
+      playedAt: new Date(),
+      score: agg.value.score,
+      typedChars: input.typedChars,
+    }
+    const higher = await repo.userLanguageBestRepository.countHigherRanked(languageId, synthetic)
+    newRank = higher + 1
+  }
+
   logger.info("PlaySessionService: Guest session finished (stateless)", {
+    languageId,
+    newRank,
     score: agg.value.score,
   })
 
   return ok({
     accuracy: input.accuracy,
     mistypeStats: agg.value.mistypeStats,
+    newRank,
     problemsCompleted: agg.value.problemsCompleted,
     problemsPlayed: agg.value.problemsPlayed,
     score: agg.value.score,
+    totalRankedPlayers,
     typedChars: input.typedChars,
   })
 }

@@ -124,9 +124,9 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
       if (res.ok) {
         if (isGuest) {
           /**
-           * ゲスト用レスポンスはランキング系フィールドを持たないため、
-           * ResultScreen が期待する FinishPlaySessionResponse 形に正規化する
-           * （persisted=false 等で「ゲスト判定 + 非表示」が成立する）
+           * ゲスト用レスポンスは ResultScreen が期待する FinishPlaySessionResponse 形に
+           * 正規化する。new_rank と total_ranked_players はサーバー側で計算済みなので
+           * そのまま渡し、persisted=false で「未保存」UI を出し分ける
            */
           const guestRes = await res.json() as FinishGuestPlaySessionResponse
           result = {
@@ -134,7 +134,7 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
             best_score_updated: false,
             grade_up: null,
             mistype_stats: guestRes.mistype_stats,
-            new_rank: null,
+            new_rank: guestRes.new_rank,
             persisted: false,
             problems_completed: guestRes.problems_completed,
             problems_played: guestRes.problems_played,

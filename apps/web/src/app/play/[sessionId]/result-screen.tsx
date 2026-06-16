@@ -131,25 +131,19 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
       <div className="container container-narrow">
         <div className="text-center mt-24">
           {/**
-           * スコアの上に「X 位 / Y 人中」を最初に表示
-           * - authed: result.new_rank と totalRankedPlayers が揃えば「X 位 / Y 人中」
-           * - guest: 順位は付かないので「ランキング登録なし / Y 人中登録済み」
+           * スコアの上に「X 位 / Y 人中」を最初に表示。
+           * guest でもサーバーが仮想 rank を返すため、authed と同じく X 位 / Y 人中 を出せる
            */}
           <div
             className="text-mono mb-8"
             style={{ color: "var(--accent)", fontSize: "28px", fontWeight: 700 }}
           >
-            {isGuest
-              ? totalRankedPlayers !== null
-                ? `ランキング登録なし ／ ${totalRankedPlayers.toLocaleString()} 人中`
-                : "ランキング登録なし"
-              : result.new_rank !== null && totalRankedPlayers !== null
-                ? `${result.new_rank} 位 ／ ${totalRankedPlayers.toLocaleString()} 人中`
-                : meFetchFailed
-                  ? "順位を取得できませんでした"
-                  : "順位を計算中..."}
+            {result.new_rank !== null && totalRankedPlayers !== null
+              ? `${result.new_rank} 位 ／ ${totalRankedPlayers.toLocaleString()} 人中`
+              : meFetchFailed
+                ? "順位を取得できませんでした"
+                : "順位を計算中..."}
           </div>
-          <div className="text-mono text-muted text-sm">SESSION COMPLETE · 120s</div>
           <h1 className="text-mono" style={{ fontSize: "48px", margin: "8px 0" }}>
             {result.score} <span className="text-muted" style={{ fontSize: "18px" }}>pts</span>
           </h1>
@@ -194,9 +188,6 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
           <div className="card-header">
             <div className="card-title"><span style={{ marginRight: "8px" }}>📦</span>今回のリポジトリ</div>
           </div>
-          <p className="text-sm text-muted mb-8">
-            今回のセッションで出題された関数は、以下の OSS リポジトリから自動抽出されたものです。
-          </p>
           <div className="flex-between mb-8">
             <div>
               <strong>{repoInfo.owner}/{repoInfo.name}</strong>
