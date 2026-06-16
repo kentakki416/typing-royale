@@ -1430,6 +1430,8 @@ body.play-screen {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  /** combo-banner を absolute で右上に重ねるための anchor */
+  position: relative;
 }
 .play-screen .editor-area > .code-block-source { flex-shrink: 0; }
 .play-screen .editor-area > .code-block {
@@ -2303,58 +2305,128 @@ code.inline {
  * Game juice: combo / flash / shake 演出
  */
 
-/* Combo banner: HUD の下に出る大きなカウンター */
-.combo-banner {
-  position: fixed;
-  top: 22%;
-  right: 24px;
-  z-index: 50;
+/**
+ * combo-banner-wrapper: combo-banner と droplet-burst の共通 anchor。
+ * combo-banner と droplet が同じ右上座標から発生するように、wrapper を fixed 配置する
+ */
+.combo-banner-wrapper {
+  position: absolute;
+  top: 44px;
+  right: 18px;
+  z-index: 5;
   pointer-events: none;
+}
+
+/* Combo banner: エディタ右上に重ねる大きなカウンター (code-block-source ヘッダーの下) */
+.combo-banner {
   font-family: var(--font-mono);
   text-shadow: 0 0 24px var(--combo-glow, rgba(255,255,255,0.7)),
                0 4px 8px rgba(0,0,0,0.6);
   display: flex;
   align-items: baseline;
-  gap: 6px;
-  animation: combo-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  gap: 4px;
+  /**
+   * tierBounceKey の変化で React が remount → animation が頭から走る。
+   * 大きく弾んで 1.0 に戻る tier-bounce 風カーブ
+   */
+  animation: tier-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: top right;
 }
 .combo-banner .combo-x {
-  font-size: 32px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--combo-color, #ffd54a);
   opacity: 0.9;
 }
 .combo-banner .combo-n {
-  font-size: 64px;
+  font-size: 42px;
   font-weight: 900;
   color: var(--combo-color, #ffd54a);
   line-height: 1;
 }
 .combo-banner .combo-label {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.2em;
   color: var(--combo-color, #ffd54a);
   margin-left: 4px;
   opacity: 0.85;
 }
+/**
+ * combo 数に応じた tier 色。背景 tier (.play-backdrop.tier-N) と同じパレットを
+ * 10 combo ごとに切り替える: 蒼→翠→紫→紅→金→虹
+ */
 .combo-banner.combo-1 { --combo-color: #4ea8ff; --combo-glow: rgba(78,168,255,0.7); }
 .combo-banner.combo-2 { --combo-color: #3dffa5; --combo-glow: rgba(61,255,165,0.7); }
 .combo-banner.combo-3 { --combo-color: #c47bff; --combo-glow: rgba(196,123,255,0.7); }
-.combo-banner.combo-4 {
-  background: linear-gradient(135deg, #ff3b3b, #ffc83d, #3dffa5, #4ea8ff, #c47bff);
+.combo-banner.combo-4 { --combo-color: #ff3b3b; --combo-glow: rgba(255,59,59,0.75); }
+.combo-banner.combo-5 { --combo-color: #ffc83d; --combo-glow: rgba(255,200,61,0.75); }
+/**
+ * combo-6 (虹色): 子要素 (.combo-x / .combo-n / .combo-label) にそれぞれ
+ * background-clip を当てる必要がある。親要素にだけ適用すると <span> の色は
+ * `color: var(--combo-color)` を継承するだけで虹色グラデが効かない
+ *
+ * グラデは「赤・橙・緑・水色・濃い青・紫」の 6 色で青の比率を増やす
+ */
+.combo-banner.combo-6 {
+  --combo-color: transparent;
+  --combo-glow: rgba(78,168,255,0.7);
+}
+.combo-banner.combo-6 .combo-x,
+.combo-banner.combo-6 .combo-n,
+.combo-banner.combo-6 .combo-label {
+  /** 赤 → 橙 → 黄 → 緑 → 青 → 紫 の ROY G BIV ベース 6 色虹 */
+  background: linear-gradient(135deg, #ff3b3b, #ff8d3a, #ffd23a, #3dffa5, #4ea8ff, #c47bff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  /** 虹色グラデーション中はテキスト色を transparent にして bg を表示 */
-  --combo-color: transparent;
-  text-shadow: 0 0 28px rgba(255,255,255,0.6);
+  color: transparent;
 }
 
-@keyframes combo-pop {
-  0%   { transform: scale(0.7) translateY(8px); opacity: 0; }
-  60%  { transform: scale(1.15) translateY(0); opacity: 1; }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
+@keyframes tier-bounce {
+  0%   { transform: scale(0.5); opacity: 0; }
+  55%  { transform: scale(1.35); opacity: 1; }
+  78%  { transform: scale(0.92); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/**
+ * 10 combo ごとの tier 変化時に combo banner の右上原点から放射状に飛び出す水玉。
+ * 各 droplet には JS から `--dx` / `--dy` を渡し、放射先の座標を決める
+ */
+.droplet-burst {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+.droplet-burst .droplet {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  /** combo banner の数字と同色 + 同じ glow で「数字から弾けて飛び出した」一体感を出す */
+  background: var(--combo-color, #ffd54a);
+  box-shadow: 0 0 10px var(--combo-glow, rgba(255, 255, 255, 0.7));
+  animation: droplet-burst 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+/**
+ * combo-6 (虹色) では --combo-color が transparent なので、水玉も透明になってしまう。
+ * 白フォールバックで虹色テキストを引き立てる。glow は combo-6 用の蒼寄り
+ */
+.droplet-burst.combo-6 .droplet {
+  background: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.9),
+              0 0 20px rgba(78, 168, 255, 0.6);
+}
+@keyframes droplet-burst {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; }
 }
 
 /* Screen flash: tier up / miss / urgent で 1 回のフラッシュ + shake */
