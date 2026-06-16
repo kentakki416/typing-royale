@@ -18,6 +18,19 @@ import { useTypingEngine } from "./use-typing-engine"
  */
 const RING_DELAYS = [0, 1.2, 2.4]
 
+/**
+ * tier アップ時に combo banner から放射状に飛び出す水玉の方向 (10 個)
+ */
+const DROPLET_COUNT = 10
+const DROPLET_DISTANCE = 90
+const DROPLETS = Array.from({ length: DROPLET_COUNT }, (_, i) => {
+  const angle = (i / DROPLET_COUNT) * Math.PI * 2
+  return {
+    dx: Math.round(Math.cos(angle) * DROPLET_DISTANCE),
+    dy: Math.round(Math.sin(angle) * DROPLET_DISTANCE),
+  }
+})
+
 type Problem = StartSoloPlaySessionResponse["problems"][number]
 
 type Props = {
@@ -230,6 +243,21 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
   const diffSign = diff > 0 ? "+" : ""
   const diffClass = diff > 0 ? "success" : diff < 0 ? "error" : ""
 
+  /**
+   * combo tier (10 combo ごとの 1〜6) が変わった瞬間に水玉 burst をリセットして再生する。
+   * tierBounceKey は wrapper の droplet-burst の `key` に渡し、tier 変化のたびに
+   * 再 mount → animation が頭から走る
+   */
+  const currentComboTier = comboTier(combo)
+  const lastComboTierRef = useRef<number>(1)
+  const [tierBounceKey, setTierBounceKey] = useState(0)
+  useEffect(() => {
+    if (currentComboTier !== lastComboTierRef.current && combo > 0) {
+      setTierBounceKey((k) => k + 1)
+    }
+    lastComboTierRef.current = currentComboTier
+  }, [currentComboTier, combo])
+
   const screenClass = flashKind === null ? "" : `play-flash flash-${flashKind}`
 
   return (
@@ -286,14 +314,6 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
           )}
         </div>
 
-        {combo >= 5 && (
-          <div className={`combo-banner combo-${comboTier(combo)}`} key={combo}>
-            <span className="combo-x">×</span>
-            <span className="combo-n">{combo}</span>
-            <span className="combo-label">COMBO</span>
-          </div>
-        )}
-
         {isChallenge && (
           <div className="race">
             <div className="race-row">
@@ -328,6 +348,24 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
         <div className="row gap-16" style={{ marginTop: "16px" }}>
           <div className="col">
             <div className="editor-area">
+              <div className="combo-banner-wrapper">
+                <div className={`combo-banner combo-${currentComboTier}`} key={`banner-${tierBounceKey}`}>
+                  <span className="combo-x">×</span>
+                  <span className="combo-n">{combo}</span>
+                  <span className="combo-label">COMBO</span>
+                </div>
+                {tierBounceKey > 0 && (
+                  <div aria-hidden="true" className={`droplet-burst combo-${currentComboTier}`} key={`burst-${tierBounceKey}`}>
+                    {DROPLETS.map((d, i) => (
+                      <span
+                        className="droplet"
+                        key={i}
+                        style={{ "--dx": `${d.dx}px`, "--dy": `${d.dy}px` } as React.CSSProperties}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
               {currentProblem && (() => {
                 const meta = extractRepoAndPathFromGithubUrl(currentProblem.source_url)
                 return (
@@ -445,9 +483,12 @@ const pct = (chars: number, problems: Problem[]): number => {
 }
 
 /**
- * combo 数で表示色のティアを返す (1: 青 / 2: 緑 / 3: 紫 / 4: 虹)
+ * combo 数で表示色のティアを返す。背景 tier と同じパレットを 10 combo ごとに切り替える
+ * (1: 蒼 / 2: 翠 / 3: 紫 / 4: 紅 / 5: 金 / 6: 虹)
  */
-const comboTier = (n: number): 1 | 2 | 3 | 4 => {
+const comboTier = (n: number): 1 | 2 | 3 | 4 | 5 | 6 => {
+  if (n >= 50) return 6
+  if (n >= 40) return 5
   if (n >= 30) return 4
   if (n >= 20) return 3
   if (n >= 10) return 2
