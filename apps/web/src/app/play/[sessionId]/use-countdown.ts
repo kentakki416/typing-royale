@@ -6,7 +6,8 @@ type MilestoneKind = "urgent-30" | "urgent-10"
 
 type Options = {
   /**
-   * カウントダウン総時間 (ms)
+   * カウントダウン総時間 (ms)。combo 時間ボーナスで動的延長されるため、
+   * 「初期値」として扱う。後から `extendDuration(ms)` で増やせる
    */
   durationMs: number
   /**
@@ -26,6 +27,12 @@ type Result = {
    * 他フック (typing engine / ghost playback) が elapsed 時刻計算に共有して使う
    */
   startAtRef: React.MutableRefObject<number>
+  /**
+   * combo 時間ボーナスでセッション残り時間を動的に延長する。
+   * `extraMs` ぶん残り時間が増え、urgent-30 / urgent-10 演出が
+   * 「再び境界を下回る」ようになれば再度発火する
+   */
+  extendDuration: (extraMs: number) => void
 }
 
 /**
@@ -34,11 +41,17 @@ type Result = {
  * - 残り 30s / 10s をまたいだ瞬間に `onTierMilestone(kind)` で通知（演出 / SE 用 hook ポイント）
  * - 残り 0 に達したら `onTimeUp` を呼んで rAF を停止
  * - `startAtRef` を返すので、同じ tick 起点で `elapsedMs` を計算したい他フックが参照できる
+ * - `extendDuration(extraMs)` を呼ぶと durationMs が動的に増え、残り時間も伸びる
  */
 export function useCountdown({ durationMs, onTierMilestone, onTimeUp }: Options): Result {
   const [remainingMs, setRemainingMs] = useState(durationMs)
 
   const startAtRef = useRef<number>(0)
+  /**
+   * combo 時間ボーナスで動的延長される現在の総セッション時間。
+   * 初回 `durationMs` 引数 + 延長秒数の累積
+   */
+  const durationMsRef = useRef(durationMs)
   /**
    * 残り 30 秒 / 10 秒の境界で 1 度だけ urgent 演出を出すための gate
    */
@@ -60,7 +73,7 @@ export function useCountdown({ durationMs, onTierMilestone, onTimeUp }: Options)
     let raf = 0
     const tick = () => {
       const elapsed = performance.now() - startAtRef.current
-      const remaining = Math.max(0, durationMs - elapsed)
+      const remaining = Math.max(0, durationMsRef.current - elapsed)
       setRemainingMs(remaining)
 
       if (!fired30Ref.current && remaining <= 30_000 && remaining > 10_000) {
@@ -83,5 +96,20 @@ export function useCountdown({ durationMs, onTierMilestone, onTimeUp }: Options)
     /** eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [durationMs])
 
-  return { remainingMs, startAtRef }
+  const extendDuration = (extraMs: number) => {
+    if (extraMs <= 0) return
+    durationMsRef.current += extraMs
+    /**
+     * 延長によって残り時間が境界を再び上回ったら、urgent 演出を再発火できるよう
+     * 該当 gate を再開する
+     */
+    const newRemaining = Math.max(
+      0,
+      durationMsRef.current - (performance.now() - startAtRef.current),
+    )
+    if (newRemaining > 30_000) fired30Ref.current = false
+    if (newRemaining > 10_000) fired10Ref.current = false
+  }
+
+  return { extendDuration, remainingMs, startAtRef }
 }

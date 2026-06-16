@@ -220,6 +220,32 @@ export const playKeyHit = (combo = 0) => {
 }
 
 /**
+ * combo マイルストーン (20 / 40 / 60 / 80 / ...) 到達で時間ボーナスが付与される瞬間の SE。
+ * G5 → C6 → E6 の上昇 arpeggio で「+N 秒もらった！」感を伝える。`playTierUp` とは別音色で
+ * tier アップとは聞き分けられるようにする
+ */
+export const playTimeBonus = () => {
+  const ctx = getContext()
+  const master = getMaster()
+  if (!ctx || !master) return
+  const now = ctx.currentTime
+  const notes = [783.99, 1046.5, 1318.51]
+  notes.forEach((freq, i) => {
+    const t = now + i * 0.07
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.type = "triangle"
+    osc.frequency.setValueAtTime(freq, t)
+    gain.gain.setValueAtTime(0, t)
+    gain.gain.linearRampToValueAtTime(0.06, t + 0.01)
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18)
+    osc.connect(gain).connect(master)
+    osc.start(t)
+    osc.stop(t + 0.2)
+  })
+}
+
+/**
  * 誤打鍵時の dull thud (sawtooth を low-pass してダウンスイープ)
  */
 export const playKeyMiss = () => {
