@@ -285,14 +285,6 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
           )}
         </div>
 
-        {combo >= 5 && (
-          <div className={`combo-banner combo-${comboTier(combo)}`} key={combo}>
-            <span className="combo-x">×</span>
-            <span className="combo-n">{combo}</span>
-            <span className="combo-label">COMBO</span>
-          </div>
-        )}
-
         {isChallenge && (
           <div className="race">
             <div className="race-row">
@@ -327,6 +319,11 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
         <div className="row gap-16" style={{ marginTop: "16px" }}>
           <div className="col">
             <div className="editor-area">
+              <div className={`combo-banner combo-${comboTier(combo)}`} key={combo}>
+                <span className="combo-x">×</span>
+                <span className="combo-n">{combo}</span>
+                <span className="combo-label">COMBO</span>
+              </div>
               {currentProblem && (() => {
                 const meta = extractRepoAndPathFromGithubUrl(currentProblem.source_url)
                 return (
@@ -430,9 +427,12 @@ const pct = (chars: number, problems: Problem[]): number => {
 }
 
 /**
- * combo 数で表示色のティアを返す (1: 青 / 2: 緑 / 3: 紫 / 4: 虹)
+ * combo 数で表示色のティアを返す。背景 tier と同じパレットを 10 combo ごとに切り替える
+ * (1: 蒼 / 2: 翠 / 3: 紫 / 4: 紅 / 5: 金 / 6: 虹)
  */
-const comboTier = (n: number): 1 | 2 | 3 | 4 => {
+const comboTier = (n: number): 1 | 2 | 3 | 4 | 5 | 6 => {
+  if (n >= 50) return 6
+  if (n >= 40) return 5
   if (n >= 30) return 4
   if (n >= 20) return 3
   if (n >= 10) return 2

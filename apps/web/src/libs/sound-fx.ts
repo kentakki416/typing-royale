@@ -142,30 +142,56 @@ const getNoiseBuffer = (ctx: AudioContext): AudioBuffer => {
 }
 
 /**
+ * 10 combo ごとの音色テーブル。combo banner の色 tier と完全に同期している
+ * (combo banner も 10 combo ごとに 1→6 へ tier アップする)。
+ *
+ * - clickFreq: band-pass noise burst の中心周波数。高くなるほど「カチッ」とシャープに
+ * - octaveBoost: pentatonic ピッチアクセントの transpose 量
+ * - oscType: ピッチアクセントの波形。tier 6 のみ square で派手にする
+ */
+const KEYHIT_TIER_TABLE: { clickFreq: number; octaveBoost: number; oscType: OscillatorType }[] = [
+  /** tier 1 (combo 0-9): 基準 */
+  { clickFreq: 2400, octaveBoost: 0, oscType: "triangle" },
+  /** tier 2 (combo 10-19): クリック明るく */
+  { clickFreq: 2700, octaveBoost: 0, oscType: "triangle" },
+  /** tier 3 (combo 20-29): ピッチ +1 oct */
+  { clickFreq: 3000, octaveBoost: 1, oscType: "triangle" },
+  /** tier 4 (combo 30-39): クリック更に明るく */
+  { clickFreq: 3300, octaveBoost: 1, oscType: "triangle" },
+  /** tier 5 (combo 40-49): ピッチ +2 oct */
+  { clickFreq: 3600, octaveBoost: 2, oscType: "triangle" },
+  /** tier 6 (combo 50+): square で派手に */
+  { clickFreq: 3900, octaveBoost: 2, oscType: "square" },
+]
+
+/**
+ * combo 数から KEYHIT_TIER_TABLE のインデックス (0-5) を返す。
+ * 10 combo ごとに 1 段階上がり、combo 50 以上で頭打ち
+ */
+const keyHitTierIndex = (combo: number): number => Math.min(5, Math.floor(Math.max(0, combo) / 10))
+
+/**
  * 正解打鍵時の音。
  *
- * - レイヤー1: 12ms の band-pass noise burst (~2.5kHz) = メカニカルキーボードの
- *   「コッ / カチッ」感
- * - レイヤー2: pentatonic からランダム選択した triangle トーン = ピッチアクセント。
- *   combo の伸びでオクターブが上がり、連打が上昇メロディに聞こえる
+ * - レイヤー1: 12ms の band-pass noise burst = メカニカルキーボードの「コッ / カチッ」感
+ * - レイヤー2: pentatonic からランダム選択したトーン = ピッチアクセント
  *
- * 全体で 60ms 以下にして、高速連打しても残響が被らないようキレを優先する
+ * combo に応じて 10 combo ごとに 6 段階で音色が変化し、combo banner の tier 色と
+ * 同期する。全体で 60ms 以下に抑え、高速連打しても残響が被らないようキレを優先
  */
 export const playKeyHit = (combo = 0) => {
   const ctx = getContext()
   const master = getMaster()
   if (!ctx || !master) return
   const now = ctx.currentTime
+  const tier = KEYHIT_TIER_TABLE[keyHitTierIndex(combo)]
 
   /** ----- レイヤー 1: メカニカルクリック ----- */
   const click = ctx.createBufferSource()
   click.buffer = getNoiseBuffer(ctx)
   const clickFilter = ctx.createBiquadFilter()
   clickFilter.type = "bandpass"
-  /**
-   * combo が伸びると中心周波数を少し上げて、より「カチッ」とした明るい音にする
-   */
-  clickFilter.frequency.value = combo >= 15 ? 3200 : combo >= 5 ? 2800 : 2400
+  clickFilter.frequency.value = tier.clickFreq
   clickFilter.Q.value = 1.4
   const clickGain = ctx.createGain()
   clickGain.gain.setValueAtTime(0, now)
@@ -176,12 +202,11 @@ export const playKeyHit = (combo = 0) => {
   click.stop(now + 0.04)
 
   /** ----- レイヤー 2: ピッチアクセント ----- */
-  const octaveBoost = combo >= 30 ? 2 : combo >= 15 ? 1 : 0
   const idx = Math.floor(Math.random() * PENTATONIC_HZ.length)
-  const freq = PENTATONIC_HZ[idx] * Math.pow(2, octaveBoost)
+  const freq = PENTATONIC_HZ[idx] * Math.pow(2, tier.octaveBoost)
   const osc = ctx.createOscillator()
   const oscGain = ctx.createGain()
-  osc.type = "triangle"
+  osc.type = tier.oscType
   osc.frequency.setValueAtTime(freq, now)
   /**
    * ピッチは控えめ。click を主役にしつつ、上昇メロディが薄っすら聞こえる程度

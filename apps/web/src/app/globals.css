@@ -1399,6 +1399,8 @@ body.play-screen {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  /** combo-banner を absolute で右上に重ねるための anchor */
+  position: relative;
 }
 .play-screen .editor-area > .code-block-source { flex-shrink: 0; }
 .play-screen .editor-area > .code-block {
@@ -2272,45 +2274,51 @@ code.inline {
  * Game juice: combo / flash / shake 演出
  */
 
-/* Combo banner: HUD の下に出る大きなカウンター */
+/* Combo banner: エディタ右上に重ねる大きなカウンター (code-block-source ヘッダーの下) */
 .combo-banner {
-  position: fixed;
-  top: 22%;
-  right: 24px;
-  z-index: 50;
+  position: absolute;
+  top: 44px;
+  right: 18px;
+  z-index: 5;
   pointer-events: none;
   font-family: var(--font-mono);
   text-shadow: 0 0 24px var(--combo-glow, rgba(255,255,255,0.7)),
                0 4px 8px rgba(0,0,0,0.6);
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 4px;
   animation: combo-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .combo-banner .combo-x {
-  font-size: 32px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--combo-color, #ffd54a);
   opacity: 0.9;
 }
 .combo-banner .combo-n {
-  font-size: 64px;
+  font-size: 42px;
   font-weight: 900;
   color: var(--combo-color, #ffd54a);
   line-height: 1;
 }
 .combo-banner .combo-label {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.2em;
   color: var(--combo-color, #ffd54a);
   margin-left: 4px;
   opacity: 0.85;
 }
+/**
+ * combo 数に応じた tier 色。背景 tier (.play-backdrop.tier-N) と同じパレットを
+ * 10 combo ごとに切り替える: 蒼→翠→紫→紅→金→虹
+ */
 .combo-banner.combo-1 { --combo-color: #4ea8ff; --combo-glow: rgba(78,168,255,0.7); }
 .combo-banner.combo-2 { --combo-color: #3dffa5; --combo-glow: rgba(61,255,165,0.7); }
 .combo-banner.combo-3 { --combo-color: #c47bff; --combo-glow: rgba(196,123,255,0.7); }
-.combo-banner.combo-4 {
+.combo-banner.combo-4 { --combo-color: #ff3b3b; --combo-glow: rgba(255,59,59,0.75); }
+.combo-banner.combo-5 { --combo-color: #ffc83d; --combo-glow: rgba(255,200,61,0.75); }
+.combo-banner.combo-6 {
   background: linear-gradient(135deg, #ff3b3b, #ffc83d, #3dffa5, #4ea8ff, #c47bff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
