@@ -9,6 +9,7 @@
 | 機能名 | ステータス | 概要 | リンク |
 |---|---|---|---|
 | typing-engine | ✅ | タイピングコアエンジン。120 秒制限・関数の連続出題・入力判定・スコア計算 | [./typing-engine/README.md](./typing-engine/README.md) |
+| play-audio | ✅ | プレイ画面の SE（打鍵音・tier アップ・finish 等）と音量コントロール UI。BGM なし、Web Audio API でフル procedural 生成 | [./play-audio/README.md](./play-audio/README.md) |
 | problem-pool | ✅ | 問題プール。週次 cron で GitHub Star 上位の寛容ライセンス OSS をクロールし AST で関数本体を抽出 | [./problem-pool/README.md](./problem-pool/README.md) |
 | github-auth | ✅ | GitHub OAuth。読み取り最小スコープでのログイン・アカウント管理 | [./github-auth/README.md](./github-auth/README.md) |
 | score-ranking | ✅ | スコア記録・ランキング集計（言語×全期間トップ 1000）。**エンジニアグレード**（Intern → Fellow の 8 段階）で個人成長を可視化 | [./score-ranking/README.md](./score-ranking/README.md) |

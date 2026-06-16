@@ -1442,6 +1442,67 @@ body.play-screen {
   letter-spacing: 0.02em;
 }
 
+/**
+ * Floating audio controls (volume slider + mute toggle).
+ * Placed top-right on the play screen via fixed positioning.
+ */
+.audio-controls {
+  position: fixed;
+  top: 80px;
+  right: 16px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(15, 18, 28, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.audio-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 4px;
+  line-height: 1;
+  transition: opacity 0.15s ease;
+}
+.audio-toggle:hover { opacity: 0.75; }
+.audio-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 90px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+.audio-slider:disabled { opacity: 0.4; cursor: not-allowed; }
+.audio-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--text-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+.audio-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+.audio-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--text-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
 /* Slightly tighter HUD on play screens */
 .play-screen .hud-cell { padding: 10px 14px; }
 .play-screen .hud-value { font-size: 20px; }

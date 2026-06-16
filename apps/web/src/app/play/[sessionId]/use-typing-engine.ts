@@ -246,7 +246,7 @@ export function useTypingEngine({ finishedRef, problems, startAtRef, triggerFlas
           maxComboRef.current = comboRef.current
           setMaxCombo(maxComboRef.current)
         }
-        playKeyHit()
+        playKeyHit(comboRef.current)
 
         /**
          * tier change 検知 (typedChars 100/200/300/400/500 の境界)
