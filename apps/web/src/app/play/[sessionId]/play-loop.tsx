@@ -6,7 +6,8 @@ import { FinishGuestPlaySessionResponse, FinishPlaySessionResponse, StartSoloPla
 
 import { AudioControls } from "@/components/audio-controls"
 import { Topbar } from "@/components/topbar"
-import { playFinish, playUrgentTick } from "@/libs/sound-fx"
+import type { BonusEvent } from "@/libs/combo-time-bonus"
+import { playFinish, playTimeBonus, playUrgentTick } from "@/libs/sound-fx"
 
 import type { GhostKeystrokeLogs, GhostSummary, GhostUserDisplay } from "./types"
 import { useCountdown } from "./use-countdown"
@@ -180,7 +181,7 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
     onFinished(result, ghostSummary)
   }
 
-  const { remainingMs, startAtRef } = useCountdown({
+  const { extendDuration, remainingMs, startAtRef } = useCountdown({
     durationMs: SESSION_DURATION_MS,
     onTierMilestone: (kind) => {
       if (kind === "urgent-30") {
@@ -195,8 +196,31 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
     },
   })
 
+  /**
+   * combo マイルストーン到達時の処理:
+   * 1. 残り時間を動的に延長 (extendDuration)
+   * 2. 「+Ns」ポップアップを HUD 残り時間の左に spawn (1 秒で fade out)
+   * 3. 残り時間 HUD セル自体を gold グロー (0.5 秒)
+   * 4. 専用 SE `playTimeBonus` を鳴らす
+   */
+  const bonusPopupIdRef = useRef(0)
+  const [bonusPopups, setBonusPopups] = useState<{ addedSec: number; id: number }[]>([])
+  const [timeBonusFlash, setTimeBonusFlash] = useState(false)
+  const handleComboBonus = (event: BonusEvent) => {
+    extendDuration(event.addedSec * 1000)
+    const id = ++bonusPopupIdRef.current
+    setBonusPopups((prev) => [...prev, { addedSec: event.addedSec, id }])
+    window.setTimeout(() => {
+      setBonusPopups((prev) => prev.filter((p) => p.id !== id))
+    }, 1000)
+    setTimeBonusFlash(true)
+    window.setTimeout(() => setTimeBonusFlash(false), 500)
+    playTimeBonus()
+  }
+
   const { refs: typingRefs, state: typingState } = useTypingEngine({
     finishedRef,
+    onComboBonus: handleComboBonus,
     problems,
     startAtRef,
     triggerFlash,
@@ -277,7 +301,20 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
 
       <div className={`container ${screenClass}`} style={{ position: "relative", zIndex: 1 }}>
         <div className="play-hud">
-          <div className="hud-cell">
+          <div
+            className={`hud-cell ${timeBonusFlash ? "time-bonus-flash" : ""}`}
+            style={{ position: "relative" }}
+          >
+            <div className="time-bonus-popups" aria-hidden="true">
+              {bonusPopups.map((p) => (
+                <span
+                  className={`time-bonus-popup time-bonus-popup-${p.addedSec}s`}
+                  key={p.id}
+                >
+                  +{p.addedSec}s
+                </span>
+              ))}
+            </div>
             <div className="hud-label">残り時間</div>
             <div className={`hud-value ${remainingClass}`}>{remainingSec}s</div>
           </div>

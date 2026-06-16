@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 
 import { StartSoloPlaySessionResponse } from "@repo/api-schema"
 
+import { type BonusEvent, comboToReward } from "@/libs/combo-time-bonus"
 import { playKeyHit, playKeyMiss, playTierUp, resumeAudio } from "@/libs/sound-fx"
 
 type Problem = StartSoloPlaySessionResponse["problems"][number]
@@ -22,6 +23,11 @@ type Options = {
    * `finish` 済みかを示す共有 ref。true の間は keydown を無視する
    */
   finishedRef: React.MutableRefObject<boolean>
+  /**
+   * combo マイルストーン (20 / 40 / 60 以降 20 ごと) 到達時に呼ばれる。
+   * play-loop 側で残り時間延長 + HUD ポップアップ + 効果音を担当する
+   */
+  onComboBonus: (event: BonusEvent) => void
   problems: Problem[]
   /**
    * countdown と揃えた `performance.now()` 起点
@@ -68,7 +74,7 @@ type Result = {
  * tier 切り替え（typedChars 100/200/300/400/500）は内部で検知し、上がったら
  * `playTierUp()` + `triggerFlash("tier-up", 700)` を発火する
  */
-export function useTypingEngine({ finishedRef, problems, startAtRef, triggerFlash }: Options): Result {
+export function useTypingEngine({ finishedRef, onComboBonus, problems, startAtRef, triggerFlash }: Options): Result {
   const [problemIndex, setProblemIndex] = useState(0)
   const [cursorPos, setCursorPos] = useState(0)
   const [typedChars, setTypedChars] = useState(0)
@@ -90,6 +96,18 @@ export function useTypingEngine({ finishedRef, problems, startAtRef, triggerFlas
   const comboRef = useRef(0)
   const maxComboRef = useRef(0)
   const tierRef = useRef(1)
+  /**
+   * 既発火の combo マイルストーン (20 / 40 / 60 / 80 / ...) を保持する。
+   * miss でリセット後に再度同じ combo に達しても 2 度目は発火させない (1 セッション 1 回)
+   */
+  const triggeredMilestonesRef = useRef<Set<number>>(new Set())
+  /**
+   * onComboBonus の参照を最新に保つ
+   */
+  const onComboBonusRef = useRef(onComboBonus)
+  useEffect(() => {
+    onComboBonusRef.current = onComboBonus
+  }, [onComboBonus])
   /**
    * triggerFlash の参照を最新に保つ（毎レンダーで新しい関数になるため、
    * useEffect 依存に直接入れると keydown ハンドラが毎回付け替わってしまう）
@@ -247,6 +265,21 @@ export function useTypingEngine({ finishedRef, problems, startAtRef, triggerFlas
           setMaxCombo(maxComboRef.current)
         }
         playKeyHit(comboRef.current)
+
+        /**
+         * combo マイルストーン (20 / 40 / 60 以降 20 ごと) 到達で時間ボーナスを通知。
+         * 同じマイルストーンは 1 セッション 1 回のみ発火。判定ロジックは
+         * `@/libs/combo-time-bonus` の `comboToReward` (= サーバー側 cheat 検証と同一)
+         */
+        const bonusReward = comboToReward(comboRef.current)
+        if (bonusReward !== null && !triggeredMilestonesRef.current.has(comboRef.current)) {
+          triggeredMilestonesRef.current.add(comboRef.current)
+          onComboBonusRef.current({
+            addedSec: bonusReward,
+            elapsedMs: elapsed,
+            milestoneCombo: comboRef.current,
+          })
+        }
 
         /**
          * tier change 検知 (typedChars 100/200/300/400/500 の境界)

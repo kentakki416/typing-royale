@@ -2469,3 +2469,61 @@ code.inline {
   0%, 100% { text-shadow: 0 0 0 transparent; }
   50%      { text-shadow: 0 0 20px rgba(255, 80, 80, 0.9); }
 }
+
+/**
+ * combo マイルストーン (20 / 40 / 60 以降 20 ごと) で時間ボーナス +Ns が付与される瞬間の演出。
+ * - 残り時間 HUD の左に絶対配置で +1s / +2s / +3s をポップアップ
+ * - hud-cell 全体に 0.5 秒 gold グロー
+ * 詳細仕様: docs/spec/combo-time-bonus/README.md
+ */
+.time-bonus-popups {
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
+  margin-right: 12px;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  z-index: 10;
+}
+.time-bonus-popup {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-shadow:
+    0 0 12px var(--time-bonus-glow, rgba(255, 213, 74, 0.7)),
+    0 2px 4px rgba(0, 0, 0, 0.5);
+  animation: time-bonus-fly 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  white-space: nowrap;
+}
+.time-bonus-popup.time-bonus-popup-1s {
+  color: #4ea8ff;
+  --time-bonus-glow: rgba(78, 168, 255, 0.7);
+}
+.time-bonus-popup.time-bonus-popup-2s {
+  color: #3dffa5;
+  --time-bonus-glow: rgba(61, 255, 165, 0.7);
+}
+.time-bonus-popup.time-bonus-popup-3s {
+  color: #ffc83d;
+  --time-bonus-glow: rgba(255, 200, 61, 0.85);
+}
+@keyframes time-bonus-fly {
+  0%   { transform: translateY(8px); opacity: 0; }
+  20%  { transform: translateY(0); opacity: 1; }
+  80%  { transform: translateY(-12px); opacity: 1; }
+  100% { transform: translateY(-24px); opacity: 0; }
+}
+
+.hud-cell.time-bonus-flash {
+  animation: time-bonus-cell-flash 0.5s ease-out;
+}
+@keyframes time-bonus-cell-flash {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 200, 61, 0.6); }
+  40%  { box-shadow: 0 0 24px 4px rgba(255, 200, 61, 0.85); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 200, 61, 0); }
+}
