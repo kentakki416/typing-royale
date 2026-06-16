@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { useState } from "react"
 
 import type { GetMonthlyRankingsResponse } from "@repo/api-schema"
@@ -21,11 +20,9 @@ const LANGUAGES: { key: Language; label: string }[] = [
 
 /**
  * ホーム画面「月間トップ」カードの本体。
- * TypeScript / JavaScript をボタンで切り替える Client Component
- *
- * カード下端には「もっと見る (TOP 10) →」リンクを置き、`/ranking?language=...`
- * へ active 言語付きで遷移させる。ホームは TOP 5 のサマリ、/ranking は TOP 10
- * の詳細という階層を分かりやすくする
+ * TypeScript / JavaScript をボタンで切り替える Client Component。
+ * カード見出し右側 (`page.tsx`) に「月間ランキング →」リンクが既にあるため、
+ * ここに重複した CTA リンクは置かない
  */
 export function MonthlyTopSection({ jsMonthly, tsMonthly }: Props) {
   const [active, setActive] = useState<Language>("typescript")
@@ -48,14 +45,6 @@ export function MonthlyTopSection({ jsMonthly, tsMonthly }: Props) {
         ))}
       </div>
       <MonthlyTopCard data={data} />
-      <div className="text-center mt-12">
-        <Link
-          className="text-sm text-muted"
-          href={`/ranking?language=${active}`}
-        >
-          もっと見る (TOP 10) →
-        </Link>
-      </div>
     </div>
   )
 }
