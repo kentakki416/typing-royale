@@ -172,6 +172,8 @@ describe("POST /api/play-sessions/:id/finish", () => {
         score: 3,
         /** ベスト 1 件しか無いので 10 位は null */
         top_ten_boundary_score: null,
+        /** ベスト 1 件しかランクインしていないので total=1 */
+        total_ranked_players: 1,
         typed_chars: 3,
       })
 

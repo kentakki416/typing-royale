@@ -120,6 +120,11 @@ export const finishPlaySessionResponseSchema = z.object({
     to: finishGradeSchema,
   }).nullable(),
   new_rank: z.number().int().min(1).nullable(),
+  /**
+   * /finish 時点での当該言語のランクイン総人数（ZSCORE と同時に取れるので
+   * レスポンスに含めて、リザルト画面の「Y 人中」表示の追加 fetch を不要にする）
+   */
+  total_ranked_players: z.number().int().nonnegative(),
   top_ten_boundary_score: z.number().int().nonnegative().nullable(),
 })
 

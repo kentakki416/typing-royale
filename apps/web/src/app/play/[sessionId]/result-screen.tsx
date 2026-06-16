@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
-import { FinishPlaySessionResponse, GetMyRankingResponse, GetRankingsResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
+import { FinishPlaySessionResponse, GetMyRankingResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { CelebrationOverlay } from "@/components/celebration-overlay"
 import { GradeProgressBar } from "@/components/grade-progress-bar"
@@ -48,9 +48,6 @@ type Props = {
  */
 export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, repoInfo, result }: Props) {
   const [me, setMe] = useState<GetMyRankingResponse | null>(null)
-  const [meFetchFailed, setMeFetchFailed] = useState(false)
-  /** 「Y 人中」表示用。guest でもランキング登録済み人数を表示するため fetch */
-  const [totalRankedPlayers, setTotalRankedPlayers] = useState<number | null>(null)
   const [hofModalOpen, setHofModalOpen] = useState(false)
   const [hofPromptDismissed, setHofPromptDismissed] = useState(false)
   /** リザルト到達時に 1 度だけ祝福 overlay を再生 */
@@ -65,38 +62,23 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
     if (result === null) return
     /** ゲストは /api/rankings/me が 401 になるためフェッチをスキップ */
     if (isGuest) return
-    /** TS 固定でフェッチ（言語選択を引き継ぐ仕組みは後続 step で対応） */
+    /**
+     * TS 固定でフェッチ（言語選択を引き継ぐ仕組みは後続 step で対応）。
+     * me は GradeProgressBar のグレード進捗表示に使う補助情報。
+     * 取得失敗時は単に未表示で、リザルト全体の体験には影響しない
+     */
     const loadMyRanking = async () => {
       try {
         const res = await fetch("/api/internal/my-ranking?language=typescript")
-        if (!res.ok) {
-          setMeFetchFailed(true)
-          return
-        }
+        if (!res.ok) return
         const data = await res.json() as GetMyRankingResponse
         setMe(data)
       } catch {
-        setMeFetchFailed(true)
+        /** 補助情報のためサイレントに非表示 */
       }
     }
     void loadMyRanking()
   }, [isGuest, result])
-
-  /** ゲスト含め「Y 人中」を出すための総参加者数取得 */
-  useEffect(() => {
-    if (result === null) return
-    const loadTotal = async () => {
-      try {
-        const res = await fetch("/api/internal/rankings?language=typescript")
-        if (!res.ok) return
-        const data = await res.json() as GetRankingsResponse
-        setTotalRankedPlayers(data.total_ranked_players)
-      } catch {
-        /** 補助情報なのでフェッチ失敗時はサイレントに非表示 */
-      }
-    }
-    void loadTotal()
-  }, [result])
 
   if (result === null) {
     return (
@@ -132,17 +114,16 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
         <div className="text-center mt-24">
           {/**
            * スコアの上に「X 位 / Y 人中」を最初に表示。
-           * guest でもサーバーが仮想 rank を返すため、authed と同じく X 位 / Y 人中 を出せる
+           * new_rank と total_ranked_players は /finish のレスポンス（サーバー側で確定済み）
+           * から直接受け取るので、追加 fetch やローディング状態は持たない
            */}
           <div
             className="text-mono mb-8"
             style={{ color: "var(--accent)", fontSize: "28px", fontWeight: 700 }}
           >
-            {result.new_rank !== null && totalRankedPlayers !== null
-              ? `${result.new_rank} 位 ／ ${totalRankedPlayers.toLocaleString()} 人中`
-              : meFetchFailed
-                ? "順位を取得できませんでした"
-                : "順位を計算中..."}
+            {result.new_rank !== null
+              ? `${result.new_rank} 位 ／ ${result.total_ranked_players.toLocaleString()} 人中`
+              : null}
           </div>
           <h1 className="text-mono" style={{ fontSize: "48px", margin: "8px 0" }}>
             {result.score} <span className="text-muted" style={{ fontSize: "18px" }}>pts</span>

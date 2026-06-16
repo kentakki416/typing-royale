@@ -628,6 +628,7 @@ export const finishSession = async (
    * ランキング系の追加クエリ（トランザクション後）
    * - 自分の最新ベスト + 自分より上位の数 → new_rank
    * - 10 位スコア（10 件未満なら null）
+   * - 当該言語のランクイン総人数（リザルト画面「Y 人中」表示用）
    */
   const updatedBest = await repo.userLanguageBestRepository.findMine(
     state.userId,
@@ -637,6 +638,7 @@ export const finishSession = async (
     ? null
     : (await repo.userLanguageBestRepository.countHigherRanked(state.languageId, updatedBest)) + 1
   const topTenBoundaryScore = await repo.userLanguageBestRepository.findTenthScore(state.languageId)
+  const totalRankedPlayers = await repo.userLanguageBestRepository.countRankableByLanguage(state.languageId)
 
   /**
    * グレードアップが発生していれば達成カード PNG を自動生成 (rewards step6)
@@ -691,6 +693,7 @@ export const finishSession = async (
     problemsPlayed,
     score,
     topTenBoundaryScore,
+    totalRankedPlayers,
     typedChars: input.typedChars,
   })
 }

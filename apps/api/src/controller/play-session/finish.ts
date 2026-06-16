@@ -110,6 +110,7 @@ export class PlaySessionFinishController {
       problems_played: result.value.problemsPlayed,
       score: result.value.score,
       top_ten_boundary_score: result.value.topTenBoundaryScore,
+      total_ranked_players: result.value.totalRankedPlayers,
       typed_chars: result.value.typedChars,
     })
     return res.status(200).json(response)

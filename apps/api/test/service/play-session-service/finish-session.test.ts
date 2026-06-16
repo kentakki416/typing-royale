@@ -30,6 +30,7 @@ const mockUpsertIfBest = vi.fn<(_0: UpsertIfBestInput, _1?: TransactionContext) 
 const mockFindMineBest = vi.fn<(_0: number, _1: number) => Promise<MyLanguageBest | null>>()
 const mockCountHigherRanked = vi.fn<(_0: number, _1: MyLanguageBest) => Promise<number>>()
 const mockFindTenthScore = vi.fn<(_0: number) => Promise<number | null>>()
+const mockCountRankableByLanguage = vi.fn<(_0: number) => Promise<number>>()
 const mockTxRun = vi.fn<<T>(fn: (tx: TransactionContext) => Promise<T>) => Promise<T>>()
 
 const mockPlaySessionStateRepository: PlaySessionStateRepository = {
@@ -62,7 +63,7 @@ const mockUserLifetimeStatsRepository: UserLifetimeStatsRepository = {
 
 const mockUserLanguageBestRepository: UserLanguageBestRepository = {
   countHigherRanked: mockCountHigherRanked,
-  countRankableByLanguage: vi.fn(),
+  countRankableByLanguage: mockCountRankableByLanguage,
   findAllByUserId: vi.fn(),
   findMine: mockFindMineBest,
   findTenthScore: mockFindTenthScore,
@@ -147,6 +148,7 @@ describe("finishSession", () => {
     mockFindMineBest.mockResolvedValue(null)
     mockCountHigherRanked.mockResolvedValue(0)
     mockFindTenthScore.mockResolvedValue(null)
+    mockCountRankableByLanguage.mockResolvedValue(0)
   })
 
   describe("正常系", () => {
