@@ -141,6 +141,7 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
             problems_played: guestRes.problems_played,
             score: guestRes.score,
             top_ten_boundary_score: null,
+            total_ranked_players: guestRes.total_ranked_players,
             typed_chars: guestRes.typed_chars,
           }
         } else {

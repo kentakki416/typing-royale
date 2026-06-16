@@ -109,4 +109,9 @@ export type FinishResult = {
     gradeUp: { from: FinishGrade; to: FinishGrade } | null
     newRank: number | null
     topTenBoundaryScore: number | null
+    /**
+     * 当該言語のランクイン総人数。リザルト画面「Y 人中」表示用。
+     * /finish 内で同じ Redis/Prisma レイヤから取得して、別 fetch を不要にする
+     */
+    totalRankedPlayers: number
 }
