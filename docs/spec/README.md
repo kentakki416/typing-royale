@@ -14,7 +14,8 @@
 | problem-pool | ✅ | 問題プール。週次 cron で GitHub Star 上位の寛容ライセンス OSS をクロールし AST で関数本体を抽出 | [./problem-pool/README.md](./problem-pool/README.md) |
 | github-auth | ✅ | GitHub OAuth。読み取り最小スコープでのログイン・アカウント管理 | [./github-auth/README.md](./github-auth/README.md) |
 | score-ranking | ✅ | スコア記録・ランキング集計（言語×全期間トップ 1000）。**エンジニアグレード**（Intern → Fellow の 8 段階）で個人成長を可視化 | [./score-ranking/README.md](./score-ranking/README.md) |
-| monthly-ranking | ✅ | 月間ランキング（JST 暦月）。ホーム画面に言語別 top 5 を 2 カラム表示。毎時 cron で `monthly_ranking_snapshots` を更新 | [./monthly-ranking/README.md](./monthly-ranking/README.md) |
+| monthly-ranking | 🟡 v2 設計中 | 月間ランキング（JST 暦月）。`/finish` 内で `monthly_ranking_snapshots` を**リアルタイム同期 UPSERT**。cron 廃止、`rank` カラム廃止、TOP 10 cap 維持。/ranking は当月 TOP 10、ホームは TOP 5 サマリ | [./monthly-ranking/README.md](./monthly-ranking/README.md) |
+| result-top-ten-popup | 🟡 設計中 | リザルト画面到達時の TOP 10 入賞お知らせポップアップ。殿堂入り入賞 (挑戦される) / 月間 TOP 10 入賞 (視聴される) の 2 種を順次表示 | [./result-top-ten-popup/README.md](./result-top-ten-popup/README.md) |
 | ghost-battle | ✅ | ゴースト併走（「神々に挑戦」モード）。言語選択画面のボタンからランダムなトップ 10 と同じ問題シーケンスで対戦 | [./ghost-battle/README.md](./ghost-battle/README.md) |
 | replay-viewer |　✅ | リプレイ閲覧。トップ 10 入賞プレイのキーストローク再描画 | [./replay-viewer/README.md](./replay-viewer/README.md) |
 | rewards | ✅ | 特典（リワード）。SVG バッジ・達成カード・3D アイコン・Hall of Fame | [./rewards/README.md](./rewards/README.md) |
