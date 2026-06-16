@@ -15,6 +15,7 @@ import { AuthRefreshController } from "./controller/auth/refresh"
 import { BadgeConfigGetController } from "./controller/badge/config-get"
 import { BadgeConfigUpdateController } from "./controller/badge/config-update"
 import { BadgeSvgController } from "./controller/badge/svg"
+import { CrawledRepoListController } from "./controller/crawled-repo/list"
 import { HallOfFameCommentCreateController } from "./controller/hall-of-fame/comment-create"
 import { HallOfFameCommentUpdateController } from "./controller/hall-of-fame/comment-update"
 import { HallOfFameListController } from "./controller/hall-of-fame/list"
@@ -71,6 +72,7 @@ import {
 import { IoRedisHealthRepository, IoRedisPlaySessionStateRepository, IoRedisRefreshTokenRepository } from "./repository/redis"
 import { authRouter } from "./routes/auth-router"
 import { badgeRouter } from "./routes/badge-router"
+import { crawledRepoRouter } from "./routes/crawled-repo-router"
 import { hallOfFameRouter } from "./routes/hall-of-fame-router"
 import { healthRouter } from "./routes/health-router"
 import { memoRouter } from "./routes/memo-router"
@@ -226,6 +228,14 @@ const playSessionGuestStartChallengeGodsController = new PlaySessionGuestStartCh
 const playSessionGuestFinishController = new PlaySessionGuestFinishController(
   problemRepository,
   userLanguageBestRepository,
+)
+
+/**
+ * CrawledRepo Controller のインスタンス化
+ */
+const crawledRepoListController = new CrawledRepoListController(
+  crawledRepoRepository,
+  languageRepository,
 )
 
 /**
@@ -405,6 +415,12 @@ app.use(
     guestStartSolo: playSessionGuestStartSoloController,
     startChallengeGods: playSessionStartChallengeGodsController,
     startSolo: playSessionStartSoloController,
+  })
+)
+app.use(
+  "/api/crawled-repos",
+  crawledRepoRouter({
+    list: crawledRepoListController,
   })
 )
 app.use(
