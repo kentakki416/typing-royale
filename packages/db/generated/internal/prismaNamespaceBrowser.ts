@@ -298,7 +298,6 @@ export const MonthlyRankingSnapshotScalarFieldEnum = {
   yearMonth: 'yearMonth',
   languageId: 'languageId',
   userId: 'userId',
-  rank: 'rank',
   score: 'score',
   accuracy: 'accuracy',
   playedAt: 'playedAt',

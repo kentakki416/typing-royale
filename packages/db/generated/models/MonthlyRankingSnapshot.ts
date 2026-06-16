@@ -29,7 +29,6 @@ export type AggregateMonthlyRankingSnapshot = {
 export type MonthlyRankingSnapshotAvgAggregateOutputType = {
   languageId: number | null
   userId: number | null
-  rank: number | null
   score: number | null
   accuracy: number | null
 }
@@ -37,7 +36,6 @@ export type MonthlyRankingSnapshotAvgAggregateOutputType = {
 export type MonthlyRankingSnapshotSumAggregateOutputType = {
   languageId: number | null
   userId: number | null
-  rank: number | null
   score: number | null
   accuracy: number | null
 }
@@ -46,7 +44,6 @@ export type MonthlyRankingSnapshotMinAggregateOutputType = {
   yearMonth: string | null
   languageId: number | null
   userId: number | null
-  rank: number | null
   score: number | null
   accuracy: number | null
   playedAt: Date | null
@@ -57,7 +54,6 @@ export type MonthlyRankingSnapshotMaxAggregateOutputType = {
   yearMonth: string | null
   languageId: number | null
   userId: number | null
-  rank: number | null
   score: number | null
   accuracy: number | null
   playedAt: Date | null
@@ -68,7 +64,6 @@ export type MonthlyRankingSnapshotCountAggregateOutputType = {
   yearMonth: number
   languageId: number
   userId: number
-  rank: number
   score: number
   accuracy: number
   playedAt: number
@@ -80,7 +75,6 @@ export type MonthlyRankingSnapshotCountAggregateOutputType = {
 export type MonthlyRankingSnapshotAvgAggregateInputType = {
   languageId?: true
   userId?: true
-  rank?: true
   score?: true
   accuracy?: true
 }
@@ -88,7 +82,6 @@ export type MonthlyRankingSnapshotAvgAggregateInputType = {
 export type MonthlyRankingSnapshotSumAggregateInputType = {
   languageId?: true
   userId?: true
-  rank?: true
   score?: true
   accuracy?: true
 }
@@ -97,7 +90,6 @@ export type MonthlyRankingSnapshotMinAggregateInputType = {
   yearMonth?: true
   languageId?: true
   userId?: true
-  rank?: true
   score?: true
   accuracy?: true
   playedAt?: true
@@ -108,7 +100,6 @@ export type MonthlyRankingSnapshotMaxAggregateInputType = {
   yearMonth?: true
   languageId?: true
   userId?: true
-  rank?: true
   score?: true
   accuracy?: true
   playedAt?: true
@@ -119,7 +110,6 @@ export type MonthlyRankingSnapshotCountAggregateInputType = {
   yearMonth?: true
   languageId?: true
   userId?: true
-  rank?: true
   score?: true
   accuracy?: true
   playedAt?: true
@@ -217,7 +207,6 @@ export type MonthlyRankingSnapshotGroupByOutputType = {
   yearMonth: string
   languageId: number
   userId: number
-  rank: number
   score: number
   accuracy: number
   playedAt: Date
@@ -251,7 +240,6 @@ export type MonthlyRankingSnapshotWhereInput = {
   yearMonth?: Prisma.StringFilter<"MonthlyRankingSnapshot"> | string
   languageId?: Prisma.IntFilter<"MonthlyRankingSnapshot"> | number
   userId?: Prisma.IntFilter<"MonthlyRankingSnapshot"> | number
-  rank?: Prisma.IntFilter<"MonthlyRankingSnapshot"> | number
   score?: Prisma.IntFilter<"MonthlyRankingSnapshot"> | number
   accuracy?: Prisma.FloatFilter<"MonthlyRankingSnapshot"> | number
   playedAt?: Prisma.DateTimeFilter<"MonthlyRankingSnapshot"> | Date | string
@@ -264,7 +252,6 @@ export type MonthlyRankingSnapshotOrderByWithRelationInput = {
   yearMonth?: Prisma.SortOrder
   languageId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  rank?: Prisma.SortOrder
   score?: Prisma.SortOrder
   accuracy?: Prisma.SortOrder
   playedAt?: Prisma.SortOrder
@@ -281,7 +268,6 @@ export type MonthlyRankingSnapshotWhereUniqueInput = Prisma.AtLeast<{
   yearMonth?: Prisma.StringFilter<"MonthlyRankingSnapshot"> | string
   languageId?: Prisma.IntFilter<"MonthlyRankingSnapshot"> | number
   userId?: Prisma.IntFilter<"MonthlyRankingSnapshot"> | number
-  rank?: Prisma.IntFilter<"MonthlyRankingSnapshot"> | number
   score?: Prisma.IntFilter<"MonthlyRankingSnapshot"> | number
   accuracy?: Prisma.FloatFilter<"MonthlyRankingSnapshot"> | number
   playedAt?: Prisma.DateTimeFilter<"MonthlyRankingSnapshot"> | Date | string
@@ -294,7 +280,6 @@ export type MonthlyRankingSnapshotOrderByWithAggregationInput = {
   yearMonth?: Prisma.SortOrder
   languageId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  rank?: Prisma.SortOrder
   score?: Prisma.SortOrder
   accuracy?: Prisma.SortOrder
   playedAt?: Prisma.SortOrder
@@ -313,7 +298,6 @@ export type MonthlyRankingSnapshotScalarWhereWithAggregatesInput = {
   yearMonth?: Prisma.StringWithAggregatesFilter<"MonthlyRankingSnapshot"> | string
   languageId?: Prisma.IntWithAggregatesFilter<"MonthlyRankingSnapshot"> | number
   userId?: Prisma.IntWithAggregatesFilter<"MonthlyRankingSnapshot"> | number
-  rank?: Prisma.IntWithAggregatesFilter<"MonthlyRankingSnapshot"> | number
   score?: Prisma.IntWithAggregatesFilter<"MonthlyRankingSnapshot"> | number
   accuracy?: Prisma.FloatWithAggregatesFilter<"MonthlyRankingSnapshot"> | number
   playedAt?: Prisma.DateTimeWithAggregatesFilter<"MonthlyRankingSnapshot"> | Date | string
@@ -322,7 +306,6 @@ export type MonthlyRankingSnapshotScalarWhereWithAggregatesInput = {
 
 export type MonthlyRankingSnapshotCreateInput = {
   yearMonth: string
-  rank: number
   score: number
   accuracy: number
   playedAt: Date | string
@@ -335,7 +318,6 @@ export type MonthlyRankingSnapshotUncheckedCreateInput = {
   yearMonth: string
   languageId: number
   userId: number
-  rank: number
   score: number
   accuracy: number
   playedAt: Date | string
@@ -344,7 +326,6 @@ export type MonthlyRankingSnapshotUncheckedCreateInput = {
 
 export type MonthlyRankingSnapshotUpdateInput = {
   yearMonth?: Prisma.StringFieldUpdateOperationsInput | string
-  rank?: Prisma.IntFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   playedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -357,7 +338,6 @@ export type MonthlyRankingSnapshotUncheckedUpdateInput = {
   yearMonth?: Prisma.StringFieldUpdateOperationsInput | string
   languageId?: Prisma.IntFieldUpdateOperationsInput | number
   userId?: Prisma.IntFieldUpdateOperationsInput | number
-  rank?: Prisma.IntFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   playedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -368,7 +348,6 @@ export type MonthlyRankingSnapshotCreateManyInput = {
   yearMonth: string
   languageId: number
   userId: number
-  rank: number
   score: number
   accuracy: number
   playedAt: Date | string
@@ -377,7 +356,6 @@ export type MonthlyRankingSnapshotCreateManyInput = {
 
 export type MonthlyRankingSnapshotUpdateManyMutationInput = {
   yearMonth?: Prisma.StringFieldUpdateOperationsInput | string
-  rank?: Prisma.IntFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   playedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -388,7 +366,6 @@ export type MonthlyRankingSnapshotUncheckedUpdateManyInput = {
   yearMonth?: Prisma.StringFieldUpdateOperationsInput | string
   languageId?: Prisma.IntFieldUpdateOperationsInput | number
   userId?: Prisma.IntFieldUpdateOperationsInput | number
-  rank?: Prisma.IntFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   playedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -415,7 +392,6 @@ export type MonthlyRankingSnapshotCountOrderByAggregateInput = {
   yearMonth?: Prisma.SortOrder
   languageId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  rank?: Prisma.SortOrder
   score?: Prisma.SortOrder
   accuracy?: Prisma.SortOrder
   playedAt?: Prisma.SortOrder
@@ -425,7 +401,6 @@ export type MonthlyRankingSnapshotCountOrderByAggregateInput = {
 export type MonthlyRankingSnapshotAvgOrderByAggregateInput = {
   languageId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  rank?: Prisma.SortOrder
   score?: Prisma.SortOrder
   accuracy?: Prisma.SortOrder
 }
@@ -434,7 +409,6 @@ export type MonthlyRankingSnapshotMaxOrderByAggregateInput = {
   yearMonth?: Prisma.SortOrder
   languageId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  rank?: Prisma.SortOrder
   score?: Prisma.SortOrder
   accuracy?: Prisma.SortOrder
   playedAt?: Prisma.SortOrder
@@ -445,7 +419,6 @@ export type MonthlyRankingSnapshotMinOrderByAggregateInput = {
   yearMonth?: Prisma.SortOrder
   languageId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  rank?: Prisma.SortOrder
   score?: Prisma.SortOrder
   accuracy?: Prisma.SortOrder
   playedAt?: Prisma.SortOrder
@@ -455,7 +428,6 @@ export type MonthlyRankingSnapshotMinOrderByAggregateInput = {
 export type MonthlyRankingSnapshotSumOrderByAggregateInput = {
   languageId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  rank?: Prisma.SortOrder
   score?: Prisma.SortOrder
   accuracy?: Prisma.SortOrder
 }
@@ -546,7 +518,6 @@ export type MonthlyRankingSnapshotUncheckedUpdateManyWithoutLanguageNestedInput 
 
 export type MonthlyRankingSnapshotCreateWithoutUserInput = {
   yearMonth: string
-  rank: number
   score: number
   accuracy: number
   playedAt: Date | string
@@ -557,7 +528,6 @@ export type MonthlyRankingSnapshotCreateWithoutUserInput = {
 export type MonthlyRankingSnapshotUncheckedCreateWithoutUserInput = {
   yearMonth: string
   languageId: number
-  rank: number
   score: number
   accuracy: number
   playedAt: Date | string
@@ -597,7 +567,6 @@ export type MonthlyRankingSnapshotScalarWhereInput = {
   yearMonth?: Prisma.StringFilter<"MonthlyRankingSnapshot"> | string
   languageId?: Prisma.IntFilter<"MonthlyRankingSnapshot"> | number
   userId?: Prisma.IntFilter<"MonthlyRankingSnapshot"> | number
-  rank?: Prisma.IntFilter<"MonthlyRankingSnapshot"> | number
   score?: Prisma.IntFilter<"MonthlyRankingSnapshot"> | number
   accuracy?: Prisma.FloatFilter<"MonthlyRankingSnapshot"> | number
   playedAt?: Prisma.DateTimeFilter<"MonthlyRankingSnapshot"> | Date | string
@@ -606,7 +575,6 @@ export type MonthlyRankingSnapshotScalarWhereInput = {
 
 export type MonthlyRankingSnapshotCreateWithoutLanguageInput = {
   yearMonth: string
-  rank: number
   score: number
   accuracy: number
   playedAt: Date | string
@@ -617,7 +585,6 @@ export type MonthlyRankingSnapshotCreateWithoutLanguageInput = {
 export type MonthlyRankingSnapshotUncheckedCreateWithoutLanguageInput = {
   yearMonth: string
   userId: number
-  rank: number
   score: number
   accuracy: number
   playedAt: Date | string
@@ -653,7 +620,6 @@ export type MonthlyRankingSnapshotUpdateManyWithWhereWithoutLanguageInput = {
 export type MonthlyRankingSnapshotCreateManyUserInput = {
   yearMonth: string
   languageId: number
-  rank: number
   score: number
   accuracy: number
   playedAt: Date | string
@@ -662,7 +628,6 @@ export type MonthlyRankingSnapshotCreateManyUserInput = {
 
 export type MonthlyRankingSnapshotUpdateWithoutUserInput = {
   yearMonth?: Prisma.StringFieldUpdateOperationsInput | string
-  rank?: Prisma.IntFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   playedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -673,7 +638,6 @@ export type MonthlyRankingSnapshotUpdateWithoutUserInput = {
 export type MonthlyRankingSnapshotUncheckedUpdateWithoutUserInput = {
   yearMonth?: Prisma.StringFieldUpdateOperationsInput | string
   languageId?: Prisma.IntFieldUpdateOperationsInput | number
-  rank?: Prisma.IntFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   playedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -683,7 +647,6 @@ export type MonthlyRankingSnapshotUncheckedUpdateWithoutUserInput = {
 export type MonthlyRankingSnapshotUncheckedUpdateManyWithoutUserInput = {
   yearMonth?: Prisma.StringFieldUpdateOperationsInput | string
   languageId?: Prisma.IntFieldUpdateOperationsInput | number
-  rank?: Prisma.IntFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   playedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -693,7 +656,6 @@ export type MonthlyRankingSnapshotUncheckedUpdateManyWithoutUserInput = {
 export type MonthlyRankingSnapshotCreateManyLanguageInput = {
   yearMonth: string
   userId: number
-  rank: number
   score: number
   accuracy: number
   playedAt: Date | string
@@ -702,7 +664,6 @@ export type MonthlyRankingSnapshotCreateManyLanguageInput = {
 
 export type MonthlyRankingSnapshotUpdateWithoutLanguageInput = {
   yearMonth?: Prisma.StringFieldUpdateOperationsInput | string
-  rank?: Prisma.IntFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   playedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -713,7 +674,6 @@ export type MonthlyRankingSnapshotUpdateWithoutLanguageInput = {
 export type MonthlyRankingSnapshotUncheckedUpdateWithoutLanguageInput = {
   yearMonth?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.IntFieldUpdateOperationsInput | number
-  rank?: Prisma.IntFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   playedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -723,7 +683,6 @@ export type MonthlyRankingSnapshotUncheckedUpdateWithoutLanguageInput = {
 export type MonthlyRankingSnapshotUncheckedUpdateManyWithoutLanguageInput = {
   yearMonth?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.IntFieldUpdateOperationsInput | number
-  rank?: Prisma.IntFieldUpdateOperationsInput | number
   score?: Prisma.IntFieldUpdateOperationsInput | number
   accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
   playedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -736,7 +695,6 @@ export type MonthlyRankingSnapshotSelect<ExtArgs extends runtime.Types.Extension
   yearMonth?: boolean
   languageId?: boolean
   userId?: boolean
-  rank?: boolean
   score?: boolean
   accuracy?: boolean
   playedAt?: boolean
@@ -749,7 +707,6 @@ export type MonthlyRankingSnapshotSelectCreateManyAndReturn<ExtArgs extends runt
   yearMonth?: boolean
   languageId?: boolean
   userId?: boolean
-  rank?: boolean
   score?: boolean
   accuracy?: boolean
   playedAt?: boolean
@@ -762,7 +719,6 @@ export type MonthlyRankingSnapshotSelectUpdateManyAndReturn<ExtArgs extends runt
   yearMonth?: boolean
   languageId?: boolean
   userId?: boolean
-  rank?: boolean
   score?: boolean
   accuracy?: boolean
   playedAt?: boolean
@@ -775,14 +731,13 @@ export type MonthlyRankingSnapshotSelectScalar = {
   yearMonth?: boolean
   languageId?: boolean
   userId?: boolean
-  rank?: boolean
   score?: boolean
   accuracy?: boolean
   playedAt?: boolean
   snapshotAt?: boolean
 }
 
-export type MonthlyRankingSnapshotOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"yearMonth" | "languageId" | "userId" | "rank" | "score" | "accuracy" | "playedAt" | "snapshotAt", ExtArgs["result"]["monthlyRankingSnapshot"]>
+export type MonthlyRankingSnapshotOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"yearMonth" | "languageId" | "userId" | "score" | "accuracy" | "playedAt" | "snapshotAt", ExtArgs["result"]["monthlyRankingSnapshot"]>
 export type MonthlyRankingSnapshotInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   language?: boolean | Prisma.LanguageDefaultArgs<ExtArgs>
@@ -810,10 +765,6 @@ export type $MonthlyRankingSnapshotPayload<ExtArgs extends runtime.Types.Extensi
     languageId: number
     userId: number
     /**
-     * 1 起点、tie-breaking 適用後の最終順位
-     */
-    rank: number
-    /**
      * その月のベストスコア
      */
     score: number
@@ -826,7 +777,7 @@ export type $MonthlyRankingSnapshotPayload<ExtArgs extends runtime.Types.Extensi
      */
     playedAt: Date
     /**
-     * バッチが書き込んだ時刻
+     * 行を書き込んだ時刻
      */
     snapshotAt: Date
   }, ExtArgs["result"]["monthlyRankingSnapshot"]>
@@ -1257,7 +1208,6 @@ export interface MonthlyRankingSnapshotFieldRefs {
   readonly yearMonth: Prisma.FieldRef<"MonthlyRankingSnapshot", 'String'>
   readonly languageId: Prisma.FieldRef<"MonthlyRankingSnapshot", 'Int'>
   readonly userId: Prisma.FieldRef<"MonthlyRankingSnapshot", 'Int'>
-  readonly rank: Prisma.FieldRef<"MonthlyRankingSnapshot", 'Int'>
   readonly score: Prisma.FieldRef<"MonthlyRankingSnapshot", 'Int'>
   readonly accuracy: Prisma.FieldRef<"MonthlyRankingSnapshot", 'Float'>
   readonly playedAt: Prisma.FieldRef<"MonthlyRankingSnapshot", 'DateTime'>
