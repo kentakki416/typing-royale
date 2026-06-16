@@ -5,6 +5,7 @@ import { logger } from "@repo/logger"
 
 import { PLAY_SESSION_TTL_SECONDS, PROBLEMS_PER_SESSION } from "../const"
 import { CardStorage } from "../lib/card-storage"
+import { detectBonuses, totalBonusSec } from "../lib/combo-time-bonus"
 import {
   aggregateMistypeStats,
   aggregateProblemProgress,
@@ -231,6 +232,18 @@ const pickChallengeGodsPlaySet = async (
   return ok({ ghost, orderedProblems })
 }
 
+/**
+ * 1 セッションの基本プレイ時間 (= クライアント側 SESSION_DURATION_MS と一致)。
+ * combo マイルストーンで動的に延長される分を含めて許容 elapsed_ms 上限を算出する
+ */
+const BASE_SESSION_DURATION_MS = 120_000
+
+/**
+ * ネットワーク遅延・rAF tick の揺れ・finish 送信タイミングのズレを吸収するバッファ。
+ * クライアントの最後の打鍵が 120_050 ms のような僅かな超過は弾かない
+ */
+const ELAPSED_MS_TOLERANCE_MS = 500
+
 type ComputeServerAggregateRepo = {
     problemRepository: ProblemRepository
 }
@@ -271,6 +284,27 @@ const computeServerAggregate = async (
   const logSize = Buffer.byteLength(JSON.stringify(input.keystrokeLogs), "utf8")
   if (logSize > MAX_KEYSTROKE_LOG_BYTES) {
     return err(badRequestError("Keystroke log too large"))
+  }
+
+  /**
+   * combo マイルストーン (20 / 40 / 60 以降 20 ごと) で動的に時間ボーナスが付与される。
+   * クライアントから受け取った log を時系列再生して許容 elapsed_ms 上限を算出し、
+   * それを超える打鍵が混ざっていれば cheat と判定して reject する。
+   * 詳細仕様: docs/spec/combo-time-bonus/README.md
+   */
+  const bonusEvents = detectBonuses(input.keystrokeLogs)
+  const maxAllowedElapsedMs
+    = BASE_SESSION_DURATION_MS + totalBonusSec(bonusEvents) * 1000 + ELAPSED_MS_TOLERANCE_MS
+  const maxLogElapsedMs = input.keystrokeLogs.reduce(
+    (max, e) => Math.max(max, e.elapsedMs),
+    0,
+  )
+  if (maxLogElapsedMs > maxAllowedElapsedMs) {
+    logger.warn("PlaySessionService: keystroke log exceeds allowed elapsed_ms", {
+      maxAllowedElapsedMs,
+      maxLogElapsedMs,
+    })
+    return err(badRequestError("Keystroke log exceeds allowed elapsed_ms"))
   }
 
   const problems = await repo.problemRepository.findManyByIds(input.problemIds)
