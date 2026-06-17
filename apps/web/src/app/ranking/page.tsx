@@ -41,7 +41,7 @@ const LANGUAGE_IDS: Record<SupportedLanguage, number> = {
  * /ranking 画面 (月間ランキング)
  *
  * 言語別の **今月のランキング** TOP 10 を表示する。データソースは
- * `monthly_ranking_snapshots`（毎時 cron で UPSERT）。
+ * `monthly_ranking_snapshots`（/finish 同期 UPSERT、リアルタイム反映）。
  *
  * 全期間 TOP 10 は `/hall-of-fame` 側に集約する設計のため、本ページからは
  * リプレイ「視聴」リンクや「文字数」など hall-of-fame と被る情報を出さない。
@@ -143,9 +143,10 @@ export default async function RankingPage({
                 style={{ display: "grid", gap: "6px", paddingLeft: "18px" }}
               >
                 <li>{monthLabel} のスコアのみ集計（JST 暦月）</li>
-                <li>月初 00:00 (JST) にリセット</li>
+                <li>月初 00:00 (JST) に次の年月へ切り替わる</li>
                 <li>1 プレイヤーにつき月内ベスト 1 件をランキング</li>
-                <li>毎時 cron で更新（最大 1 時間のラグあり）</li>
+                <li>プレイ完了と同時にリアルタイム反映</li>
+                <li>上位 10 名のみ保持（圏外スコアは保存されない）</li>
               </ul>
             </div>
           </aside>
