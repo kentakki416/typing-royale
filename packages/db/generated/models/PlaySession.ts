@@ -336,7 +336,6 @@ export type PlaySessionWhereInput = {
   problems?: Prisma.PlaySessionProblemListRelationFilter
   keystrokeLog?: Prisma.XOR<Prisma.KeystrokeLogNullableScalarRelationFilter, Prisma.KeystrokeLogWhereInput> | null
   bestOfUserLanguage?: Prisma.UserLanguageBestListRelationFilter
-  hallOfFameEntries?: Prisma.HallOfFameEntryListRelationFilter
 }
 
 export type PlaySessionOrderByWithRelationInput = {
@@ -363,7 +362,6 @@ export type PlaySessionOrderByWithRelationInput = {
   problems?: Prisma.PlaySessionProblemOrderByRelationAggregateInput
   keystrokeLog?: Prisma.KeystrokeLogOrderByWithRelationInput
   bestOfUserLanguage?: Prisma.UserLanguageBestOrderByRelationAggregateInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryOrderByRelationAggregateInput
 }
 
 export type PlaySessionWhereUniqueInput = Prisma.AtLeast<{
@@ -393,7 +391,6 @@ export type PlaySessionWhereUniqueInput = Prisma.AtLeast<{
   problems?: Prisma.PlaySessionProblemListRelationFilter
   keystrokeLog?: Prisma.XOR<Prisma.KeystrokeLogNullableScalarRelationFilter, Prisma.KeystrokeLogWhereInput> | null
   bestOfUserLanguage?: Prisma.UserLanguageBestListRelationFilter
-  hallOfFameEntries?: Prisma.HallOfFameEntryListRelationFilter
 }, "id">
 
 export type PlaySessionOrderByWithAggregationInput = {
@@ -459,7 +456,6 @@ export type PlaySessionCreateInput = {
   problems?: Prisma.PlaySessionProblemCreateNestedManyWithoutPlaySessionInput
   keystrokeLog?: Prisma.KeystrokeLogCreateNestedOneWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionUncheckedCreateInput = {
@@ -482,7 +478,6 @@ export type PlaySessionUncheckedCreateInput = {
   problems?: Prisma.PlaySessionProblemUncheckedCreateNestedManyWithoutPlaySessionInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedCreateNestedOneWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionUpdateInput = {
@@ -504,7 +499,6 @@ export type PlaySessionUpdateInput = {
   problems?: Prisma.PlaySessionProblemUpdateManyWithoutPlaySessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUpdateOneWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionUncheckedUpdateInput = {
@@ -527,7 +521,6 @@ export type PlaySessionUncheckedUpdateInput = {
   problems?: Prisma.PlaySessionProblemUncheckedUpdateManyWithoutPlaySessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedUpdateOneWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionCreateManyInput = {
@@ -919,20 +912,6 @@ export type PlaySessionUpdateOneRequiredWithoutBestOfUserLanguageNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.PlaySessionUpdateToOneWithWhereWithoutBestOfUserLanguageInput, Prisma.PlaySessionUpdateWithoutBestOfUserLanguageInput>, Prisma.PlaySessionUncheckedUpdateWithoutBestOfUserLanguageInput>
 }
 
-export type PlaySessionCreateNestedOneWithoutHallOfFameEntriesInput = {
-  create?: Prisma.XOR<Prisma.PlaySessionCreateWithoutHallOfFameEntriesInput, Prisma.PlaySessionUncheckedCreateWithoutHallOfFameEntriesInput>
-  connectOrCreate?: Prisma.PlaySessionCreateOrConnectWithoutHallOfFameEntriesInput
-  connect?: Prisma.PlaySessionWhereUniqueInput
-}
-
-export type PlaySessionUpdateOneRequiredWithoutHallOfFameEntriesNestedInput = {
-  create?: Prisma.XOR<Prisma.PlaySessionCreateWithoutHallOfFameEntriesInput, Prisma.PlaySessionUncheckedCreateWithoutHallOfFameEntriesInput>
-  connectOrCreate?: Prisma.PlaySessionCreateOrConnectWithoutHallOfFameEntriesInput
-  upsert?: Prisma.PlaySessionUpsertWithoutHallOfFameEntriesInput
-  connect?: Prisma.PlaySessionWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.PlaySessionUpdateToOneWithWhereWithoutHallOfFameEntriesInput, Prisma.PlaySessionUpdateWithoutHallOfFameEntriesInput>, Prisma.PlaySessionUncheckedUpdateWithoutHallOfFameEntriesInput>
-}
-
 export type PlaySessionCreateWithoutUserInput = {
   mode: string
   typedChars: number
@@ -951,7 +930,6 @@ export type PlaySessionCreateWithoutUserInput = {
   problems?: Prisma.PlaySessionProblemCreateNestedManyWithoutPlaySessionInput
   keystrokeLog?: Prisma.KeystrokeLogCreateNestedOneWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionUncheckedCreateWithoutUserInput = {
@@ -973,7 +951,6 @@ export type PlaySessionUncheckedCreateWithoutUserInput = {
   problems?: Prisma.PlaySessionProblemUncheckedCreateNestedManyWithoutPlaySessionInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedCreateNestedOneWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionCreateOrConnectWithoutUserInput = {
@@ -1041,7 +1018,6 @@ export type PlaySessionCreateWithoutLanguageInput = {
   problems?: Prisma.PlaySessionProblemCreateNestedManyWithoutPlaySessionInput
   keystrokeLog?: Prisma.KeystrokeLogCreateNestedOneWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionUncheckedCreateWithoutLanguageInput = {
@@ -1063,7 +1039,6 @@ export type PlaySessionUncheckedCreateWithoutLanguageInput = {
   problems?: Prisma.PlaySessionProblemUncheckedCreateNestedManyWithoutPlaySessionInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedCreateNestedOneWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionCreateOrConnectWithoutLanguageInput = {
@@ -1110,7 +1085,6 @@ export type PlaySessionCreateWithoutCrawledRepoInput = {
   problems?: Prisma.PlaySessionProblemCreateNestedManyWithoutPlaySessionInput
   keystrokeLog?: Prisma.KeystrokeLogCreateNestedOneWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionUncheckedCreateWithoutCrawledRepoInput = {
@@ -1132,7 +1106,6 @@ export type PlaySessionUncheckedCreateWithoutCrawledRepoInput = {
   problems?: Prisma.PlaySessionProblemUncheckedCreateNestedManyWithoutPlaySessionInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedCreateNestedOneWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionCreateOrConnectWithoutCrawledRepoInput = {
@@ -1179,7 +1152,6 @@ export type PlaySessionCreateWithoutGhostedByInput = {
   problems?: Prisma.PlaySessionProblemCreateNestedManyWithoutPlaySessionInput
   keystrokeLog?: Prisma.KeystrokeLogCreateNestedOneWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionUncheckedCreateWithoutGhostedByInput = {
@@ -1201,7 +1173,6 @@ export type PlaySessionUncheckedCreateWithoutGhostedByInput = {
   problems?: Prisma.PlaySessionProblemUncheckedCreateNestedManyWithoutPlaySessionInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedCreateNestedOneWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionCreateOrConnectWithoutGhostedByInput = {
@@ -1227,7 +1198,6 @@ export type PlaySessionCreateWithoutGhostSessionInput = {
   problems?: Prisma.PlaySessionProblemCreateNestedManyWithoutPlaySessionInput
   keystrokeLog?: Prisma.KeystrokeLogCreateNestedOneWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionUncheckedCreateWithoutGhostSessionInput = {
@@ -1249,7 +1219,6 @@ export type PlaySessionUncheckedCreateWithoutGhostSessionInput = {
   problems?: Prisma.PlaySessionProblemUncheckedCreateNestedManyWithoutPlaySessionInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedCreateNestedOneWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionCreateOrConnectWithoutGhostSessionInput = {
@@ -1291,7 +1260,6 @@ export type PlaySessionUpdateWithoutGhostedByInput = {
   problems?: Prisma.PlaySessionProblemUpdateManyWithoutPlaySessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUpdateOneWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionUncheckedUpdateWithoutGhostedByInput = {
@@ -1313,7 +1281,6 @@ export type PlaySessionUncheckedUpdateWithoutGhostedByInput = {
   problems?: Prisma.PlaySessionProblemUncheckedUpdateManyWithoutPlaySessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedUpdateOneWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionUpsertWithWhereUniqueWithoutGhostSessionInput = {
@@ -1350,7 +1317,6 @@ export type PlaySessionCreateWithoutProblemsInput = {
   ghostedBy?: Prisma.PlaySessionCreateNestedManyWithoutGhostSessionInput
   keystrokeLog?: Prisma.KeystrokeLogCreateNestedOneWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionUncheckedCreateWithoutProblemsInput = {
@@ -1372,7 +1338,6 @@ export type PlaySessionUncheckedCreateWithoutProblemsInput = {
   ghostedBy?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutGhostSessionInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedCreateNestedOneWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionCreateOrConnectWithoutProblemsInput = {
@@ -1409,7 +1374,6 @@ export type PlaySessionUpdateWithoutProblemsInput = {
   ghostedBy?: Prisma.PlaySessionUpdateManyWithoutGhostSessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUpdateOneWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionUncheckedUpdateWithoutProblemsInput = {
@@ -1431,7 +1395,6 @@ export type PlaySessionUncheckedUpdateWithoutProblemsInput = {
   ghostedBy?: Prisma.PlaySessionUncheckedUpdateManyWithoutGhostSessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedUpdateOneWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionCreateWithoutKeystrokeLogInput = {
@@ -1452,7 +1415,6 @@ export type PlaySessionCreateWithoutKeystrokeLogInput = {
   ghostedBy?: Prisma.PlaySessionCreateNestedManyWithoutGhostSessionInput
   problems?: Prisma.PlaySessionProblemCreateNestedManyWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionUncheckedCreateWithoutKeystrokeLogInput = {
@@ -1474,7 +1436,6 @@ export type PlaySessionUncheckedCreateWithoutKeystrokeLogInput = {
   ghostedBy?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutGhostSessionInput
   problems?: Prisma.PlaySessionProblemUncheckedCreateNestedManyWithoutPlaySessionInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionCreateOrConnectWithoutKeystrokeLogInput = {
@@ -1511,7 +1472,6 @@ export type PlaySessionUpdateWithoutKeystrokeLogInput = {
   ghostedBy?: Prisma.PlaySessionUpdateManyWithoutGhostSessionNestedInput
   problems?: Prisma.PlaySessionProblemUpdateManyWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionUncheckedUpdateWithoutKeystrokeLogInput = {
@@ -1533,7 +1493,6 @@ export type PlaySessionUncheckedUpdateWithoutKeystrokeLogInput = {
   ghostedBy?: Prisma.PlaySessionUncheckedUpdateManyWithoutGhostSessionNestedInput
   problems?: Prisma.PlaySessionProblemUncheckedUpdateManyWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionCreateWithoutBestOfUserLanguageInput = {
@@ -1554,7 +1513,6 @@ export type PlaySessionCreateWithoutBestOfUserLanguageInput = {
   ghostedBy?: Prisma.PlaySessionCreateNestedManyWithoutGhostSessionInput
   problems?: Prisma.PlaySessionProblemCreateNestedManyWithoutPlaySessionInput
   keystrokeLog?: Prisma.KeystrokeLogCreateNestedOneWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionUncheckedCreateWithoutBestOfUserLanguageInput = {
@@ -1576,7 +1534,6 @@ export type PlaySessionUncheckedCreateWithoutBestOfUserLanguageInput = {
   ghostedBy?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutGhostSessionInput
   problems?: Prisma.PlaySessionProblemUncheckedCreateNestedManyWithoutPlaySessionInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedCreateNestedOneWithoutPlaySessionInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedCreateNestedManyWithoutPlaySessionInput
 }
 
 export type PlaySessionCreateOrConnectWithoutBestOfUserLanguageInput = {
@@ -1613,7 +1570,6 @@ export type PlaySessionUpdateWithoutBestOfUserLanguageInput = {
   ghostedBy?: Prisma.PlaySessionUpdateManyWithoutGhostSessionNestedInput
   problems?: Prisma.PlaySessionProblemUpdateManyWithoutPlaySessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUpdateOneWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionUncheckedUpdateWithoutBestOfUserLanguageInput = {
@@ -1635,109 +1591,6 @@ export type PlaySessionUncheckedUpdateWithoutBestOfUserLanguageInput = {
   ghostedBy?: Prisma.PlaySessionUncheckedUpdateManyWithoutGhostSessionNestedInput
   problems?: Prisma.PlaySessionProblemUncheckedUpdateManyWithoutPlaySessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedUpdateOneWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutPlaySessionNestedInput
-}
-
-export type PlaySessionCreateWithoutHallOfFameEntriesInput = {
-  mode: string
-  typedChars: number
-  accuracy: number
-  score: number
-  problemsPlayed: number
-  problemsCompleted: number
-  mistypeStats: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  playedAt: Date | string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutPlaySessionsInput
-  language: Prisma.LanguageCreateNestedOneWithoutPlaySessionsInput
-  crawledRepo: Prisma.CrawledRepoCreateNestedOneWithoutPlaySessionsInput
-  ghostSession?: Prisma.PlaySessionCreateNestedOneWithoutGhostedByInput
-  ghostedBy?: Prisma.PlaySessionCreateNestedManyWithoutGhostSessionInput
-  problems?: Prisma.PlaySessionProblemCreateNestedManyWithoutPlaySessionInput
-  keystrokeLog?: Prisma.KeystrokeLogCreateNestedOneWithoutPlaySessionInput
-  bestOfUserLanguage?: Prisma.UserLanguageBestCreateNestedManyWithoutPlaySessionInput
-}
-
-export type PlaySessionUncheckedCreateWithoutHallOfFameEntriesInput = {
-  id?: number
-  userId: number
-  languageId: number
-  mode: string
-  ghostSessionId?: number | null
-  crawledRepoId: number
-  typedChars: number
-  accuracy: number
-  score: number
-  problemsPlayed: number
-  problemsCompleted: number
-  mistypeStats: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  playedAt: Date | string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  ghostedBy?: Prisma.PlaySessionUncheckedCreateNestedManyWithoutGhostSessionInput
-  problems?: Prisma.PlaySessionProblemUncheckedCreateNestedManyWithoutPlaySessionInput
-  keystrokeLog?: Prisma.KeystrokeLogUncheckedCreateNestedOneWithoutPlaySessionInput
-  bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedCreateNestedManyWithoutPlaySessionInput
-}
-
-export type PlaySessionCreateOrConnectWithoutHallOfFameEntriesInput = {
-  where: Prisma.PlaySessionWhereUniqueInput
-  create: Prisma.XOR<Prisma.PlaySessionCreateWithoutHallOfFameEntriesInput, Prisma.PlaySessionUncheckedCreateWithoutHallOfFameEntriesInput>
-}
-
-export type PlaySessionUpsertWithoutHallOfFameEntriesInput = {
-  update: Prisma.XOR<Prisma.PlaySessionUpdateWithoutHallOfFameEntriesInput, Prisma.PlaySessionUncheckedUpdateWithoutHallOfFameEntriesInput>
-  create: Prisma.XOR<Prisma.PlaySessionCreateWithoutHallOfFameEntriesInput, Prisma.PlaySessionUncheckedCreateWithoutHallOfFameEntriesInput>
-  where?: Prisma.PlaySessionWhereInput
-}
-
-export type PlaySessionUpdateToOneWithWhereWithoutHallOfFameEntriesInput = {
-  where?: Prisma.PlaySessionWhereInput
-  data: Prisma.XOR<Prisma.PlaySessionUpdateWithoutHallOfFameEntriesInput, Prisma.PlaySessionUncheckedUpdateWithoutHallOfFameEntriesInput>
-}
-
-export type PlaySessionUpdateWithoutHallOfFameEntriesInput = {
-  mode?: Prisma.StringFieldUpdateOperationsInput | string
-  typedChars?: Prisma.IntFieldUpdateOperationsInput | number
-  accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
-  score?: Prisma.IntFieldUpdateOperationsInput | number
-  problemsPlayed?: Prisma.IntFieldUpdateOperationsInput | number
-  problemsCompleted?: Prisma.IntFieldUpdateOperationsInput | number
-  mistypeStats?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  playedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutPlaySessionsNestedInput
-  language?: Prisma.LanguageUpdateOneRequiredWithoutPlaySessionsNestedInput
-  crawledRepo?: Prisma.CrawledRepoUpdateOneRequiredWithoutPlaySessionsNestedInput
-  ghostSession?: Prisma.PlaySessionUpdateOneWithoutGhostedByNestedInput
-  ghostedBy?: Prisma.PlaySessionUpdateManyWithoutGhostSessionNestedInput
-  problems?: Prisma.PlaySessionProblemUpdateManyWithoutPlaySessionNestedInput
-  keystrokeLog?: Prisma.KeystrokeLogUpdateOneWithoutPlaySessionNestedInput
-  bestOfUserLanguage?: Prisma.UserLanguageBestUpdateManyWithoutPlaySessionNestedInput
-}
-
-export type PlaySessionUncheckedUpdateWithoutHallOfFameEntriesInput = {
-  id?: Prisma.IntFieldUpdateOperationsInput | number
-  userId?: Prisma.IntFieldUpdateOperationsInput | number
-  languageId?: Prisma.IntFieldUpdateOperationsInput | number
-  mode?: Prisma.StringFieldUpdateOperationsInput | string
-  ghostSessionId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  crawledRepoId?: Prisma.IntFieldUpdateOperationsInput | number
-  typedChars?: Prisma.IntFieldUpdateOperationsInput | number
-  accuracy?: Prisma.FloatFieldUpdateOperationsInput | number
-  score?: Prisma.IntFieldUpdateOperationsInput | number
-  problemsPlayed?: Prisma.IntFieldUpdateOperationsInput | number
-  problemsCompleted?: Prisma.IntFieldUpdateOperationsInput | number
-  mistypeStats?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  playedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  ghostedBy?: Prisma.PlaySessionUncheckedUpdateManyWithoutGhostSessionNestedInput
-  problems?: Prisma.PlaySessionProblemUncheckedUpdateManyWithoutPlaySessionNestedInput
-  keystrokeLog?: Prisma.KeystrokeLogUncheckedUpdateOneWithoutPlaySessionNestedInput
-  bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionCreateManyUserInput = {
@@ -1775,7 +1628,6 @@ export type PlaySessionUpdateWithoutUserInput = {
   problems?: Prisma.PlaySessionProblemUpdateManyWithoutPlaySessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUpdateOneWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionUncheckedUpdateWithoutUserInput = {
@@ -1797,7 +1649,6 @@ export type PlaySessionUncheckedUpdateWithoutUserInput = {
   problems?: Prisma.PlaySessionProblemUncheckedUpdateManyWithoutPlaySessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedUpdateOneWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionUncheckedUpdateManyWithoutUserInput = {
@@ -1852,7 +1703,6 @@ export type PlaySessionUpdateWithoutLanguageInput = {
   problems?: Prisma.PlaySessionProblemUpdateManyWithoutPlaySessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUpdateOneWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionUncheckedUpdateWithoutLanguageInput = {
@@ -1874,7 +1724,6 @@ export type PlaySessionUncheckedUpdateWithoutLanguageInput = {
   problems?: Prisma.PlaySessionProblemUncheckedUpdateManyWithoutPlaySessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedUpdateOneWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionUncheckedUpdateManyWithoutLanguageInput = {
@@ -1929,7 +1778,6 @@ export type PlaySessionUpdateWithoutCrawledRepoInput = {
   problems?: Prisma.PlaySessionProblemUpdateManyWithoutPlaySessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUpdateOneWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionUncheckedUpdateWithoutCrawledRepoInput = {
@@ -1951,7 +1799,6 @@ export type PlaySessionUncheckedUpdateWithoutCrawledRepoInput = {
   problems?: Prisma.PlaySessionProblemUncheckedUpdateManyWithoutPlaySessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedUpdateOneWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionUncheckedUpdateManyWithoutCrawledRepoInput = {
@@ -2006,7 +1853,6 @@ export type PlaySessionUpdateWithoutGhostSessionInput = {
   problems?: Prisma.PlaySessionProblemUpdateManyWithoutPlaySessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUpdateOneWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionUncheckedUpdateWithoutGhostSessionInput = {
@@ -2028,7 +1874,6 @@ export type PlaySessionUncheckedUpdateWithoutGhostSessionInput = {
   problems?: Prisma.PlaySessionProblemUncheckedUpdateManyWithoutPlaySessionNestedInput
   keystrokeLog?: Prisma.KeystrokeLogUncheckedUpdateOneWithoutPlaySessionNestedInput
   bestOfUserLanguage?: Prisma.UserLanguageBestUncheckedUpdateManyWithoutPlaySessionNestedInput
-  hallOfFameEntries?: Prisma.HallOfFameEntryUncheckedUpdateManyWithoutPlaySessionNestedInput
 }
 
 export type PlaySessionUncheckedUpdateManyWithoutGhostSessionInput = {
@@ -2057,14 +1902,12 @@ export type PlaySessionCountOutputType = {
   ghostedBy: number
   problems: number
   bestOfUserLanguage: number
-  hallOfFameEntries: number
 }
 
 export type PlaySessionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   ghostedBy?: boolean | PlaySessionCountOutputTypeCountGhostedByArgs
   problems?: boolean | PlaySessionCountOutputTypeCountProblemsArgs
   bestOfUserLanguage?: boolean | PlaySessionCountOutputTypeCountBestOfUserLanguageArgs
-  hallOfFameEntries?: boolean | PlaySessionCountOutputTypeCountHallOfFameEntriesArgs
 }
 
 /**
@@ -2098,13 +1941,6 @@ export type PlaySessionCountOutputTypeCountBestOfUserLanguageArgs<ExtArgs extend
   where?: Prisma.UserLanguageBestWhereInput
 }
 
-/**
- * PlaySessionCountOutputType without action
- */
-export type PlaySessionCountOutputTypeCountHallOfFameEntriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.HallOfFameEntryWhereInput
-}
-
 
 export type PlaySessionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -2130,7 +1966,6 @@ export type PlaySessionSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   problems?: boolean | Prisma.PlaySession$problemsArgs<ExtArgs>
   keystrokeLog?: boolean | Prisma.PlaySession$keystrokeLogArgs<ExtArgs>
   bestOfUserLanguage?: boolean | Prisma.PlaySession$bestOfUserLanguageArgs<ExtArgs>
-  hallOfFameEntries?: boolean | Prisma.PlaySession$hallOfFameEntriesArgs<ExtArgs>
   _count?: boolean | Prisma.PlaySessionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["playSession"]>
 
@@ -2206,7 +2041,6 @@ export type PlaySessionInclude<ExtArgs extends runtime.Types.Extensions.Internal
   problems?: boolean | Prisma.PlaySession$problemsArgs<ExtArgs>
   keystrokeLog?: boolean | Prisma.PlaySession$keystrokeLogArgs<ExtArgs>
   bestOfUserLanguage?: boolean | Prisma.PlaySession$bestOfUserLanguageArgs<ExtArgs>
-  hallOfFameEntries?: boolean | Prisma.PlaySession$hallOfFameEntriesArgs<ExtArgs>
   _count?: boolean | Prisma.PlaySessionCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type PlaySessionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2233,7 +2067,6 @@ export type $PlaySessionPayload<ExtArgs extends runtime.Types.Extensions.Interna
     problems: Prisma.$PlaySessionProblemPayload<ExtArgs>[]
     keystrokeLog: Prisma.$KeystrokeLogPayload<ExtArgs> | null
     bestOfUserLanguage: Prisma.$UserLanguageBestPayload<ExtArgs>[]
-    hallOfFameEntries: Prisma.$HallOfFameEntryPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -2680,7 +2513,6 @@ export interface Prisma__PlaySessionClient<T, Null = never, ExtArgs extends runt
   problems<T extends Prisma.PlaySession$problemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlaySession$problemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PlaySessionProblemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   keystrokeLog<T extends Prisma.PlaySession$keystrokeLogArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlaySession$keystrokeLogArgs<ExtArgs>>): Prisma.Prisma__KeystrokeLogClient<runtime.Types.Result.GetResult<Prisma.$KeystrokeLogPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   bestOfUserLanguage<T extends Prisma.PlaySession$bestOfUserLanguageArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlaySession$bestOfUserLanguageArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserLanguageBestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  hallOfFameEntries<T extends Prisma.PlaySession$hallOfFameEntriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlaySession$hallOfFameEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$HallOfFameEntryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3233,30 +3065,6 @@ export type PlaySession$bestOfUserLanguageArgs<ExtArgs extends runtime.Types.Ext
   take?: number
   skip?: number
   distinct?: Prisma.UserLanguageBestScalarFieldEnum | Prisma.UserLanguageBestScalarFieldEnum[]
-}
-
-/**
- * PlaySession.hallOfFameEntries
- */
-export type PlaySession$hallOfFameEntriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the HallOfFameEntry
-   */
-  select?: Prisma.HallOfFameEntrySelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the HallOfFameEntry
-   */
-  omit?: Prisma.HallOfFameEntryOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.HallOfFameEntryInclude<ExtArgs> | null
-  where?: Prisma.HallOfFameEntryWhereInput
-  orderBy?: Prisma.HallOfFameEntryOrderByWithRelationInput | Prisma.HallOfFameEntryOrderByWithRelationInput[]
-  cursor?: Prisma.HallOfFameEntryWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.HallOfFameEntryScalarFieldEnum | Prisma.HallOfFameEntryScalarFieldEnum[]
 }
 
 /**

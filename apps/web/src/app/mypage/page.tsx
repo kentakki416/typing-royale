@@ -69,7 +69,6 @@ export default async function MyPage() {
           <Link className="tab" href="/mypage/rewards">特典</Link>
           <a className="tab" href="#">プレイ履歴</a>
           <Link className="tab" href="/mypage/badge">バッジ</Link>
-          <Link className="tab" href="/mypage/hall-of-fame-comments">殿堂入り</Link>
           <Link className="tab" href="/mypage/account">設定</Link>
         </div>
 

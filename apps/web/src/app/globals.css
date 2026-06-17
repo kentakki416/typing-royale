@@ -2466,3 +2466,16 @@ code.inline {
   40%  { box-shadow: 0 0 24px 4px rgba(255, 200, 61, 0.85); }
   100% { box-shadow: 0 0 0 0 rgba(255, 200, 61, 0); }
 }
+
+/**
+ * TopTenAnnouncementModal の祝福用 scale-in アニメ。
+ * dialog 自体に animation を当て、open 時に背面紙吹雪と一緒にふわっと現れる
+ */
+.top-ten-announcement-dialog[open] {
+  animation: top-ten-announcement-pop 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes top-ten-announcement-pop {
+  0%   { opacity: 0; transform: scale(0.82); }
+  60%  { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}

@@ -100,15 +100,6 @@ export function CurtainModal({ entry, onClose }: Props) {
           </div>
         </div>
 
-        {entry.comment !== null && (
-          <div className="card mt-24" style={{ padding: "16px 18px" }}>
-            <div className="card-title text-sm mb-8" style={{ color: "var(--gold-light)" }}>💬 殿堂入りコメント</div>
-            <div className="hof-comment" style={{ fontSize: "14px", lineHeight: 1.7, marginTop: 0 }}>
-              &ldquo;{entry.comment}&rdquo;
-            </div>
-          </div>
-        )}
-
         {entry.user.favorite_repo_url !== null && repoLabel !== null && (
           <div className="card mt-16" style={{ padding: "16px 18px" }}>
             <div className="card-title text-sm mb-8" style={{ color: "var(--accent)" }}>📦 お気に入りリポジトリ</div>

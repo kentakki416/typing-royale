@@ -399,7 +399,6 @@ export const ModelName = {
   UserLanguageBest: 'UserLanguageBest',
   MonthlyRankingSnapshot: 'MonthlyRankingSnapshot',
   Reward: 'Reward',
-  HallOfFameEntry: 'HallOfFameEntry',
   BadgeConfig: 'BadgeConfig'
 } as const
 
@@ -416,7 +415,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "authAccount" | "memo" | "user" | "language" | "crawledRepo" | "problem" | "crawlerRun" | "crawlerRunItem" | "playSession" | "playSessionProblem" | "keystrokeLog" | "userLifetimeStats" | "userLanguageBest" | "monthlyRankingSnapshot" | "reward" | "hallOfFameEntry" | "badgeConfig"
+    modelProps: "authAccount" | "memo" | "user" | "language" | "crawledRepo" | "problem" | "crawlerRun" | "crawlerRunItem" | "playSession" | "playSessionProblem" | "keystrokeLog" | "userLifetimeStats" | "userLanguageBest" | "monthlyRankingSnapshot" | "reward" | "badgeConfig"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1530,80 +1529,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    HallOfFameEntry: {
-      payload: Prisma.$HallOfFameEntryPayload<ExtArgs>
-      fields: Prisma.HallOfFameEntryFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.HallOfFameEntryFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HallOfFameEntryPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.HallOfFameEntryFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HallOfFameEntryPayload>
-        }
-        findFirst: {
-          args: Prisma.HallOfFameEntryFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HallOfFameEntryPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.HallOfFameEntryFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HallOfFameEntryPayload>
-        }
-        findMany: {
-          args: Prisma.HallOfFameEntryFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HallOfFameEntryPayload>[]
-        }
-        create: {
-          args: Prisma.HallOfFameEntryCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HallOfFameEntryPayload>
-        }
-        createMany: {
-          args: Prisma.HallOfFameEntryCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.HallOfFameEntryCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HallOfFameEntryPayload>[]
-        }
-        delete: {
-          args: Prisma.HallOfFameEntryDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HallOfFameEntryPayload>
-        }
-        update: {
-          args: Prisma.HallOfFameEntryUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HallOfFameEntryPayload>
-        }
-        deleteMany: {
-          args: Prisma.HallOfFameEntryDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.HallOfFameEntryUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.HallOfFameEntryUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HallOfFameEntryPayload>[]
-        }
-        upsert: {
-          args: Prisma.HallOfFameEntryUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$HallOfFameEntryPayload>
-        }
-        aggregate: {
-          args: Prisma.HallOfFameEntryAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateHallOfFameEntry>
-        }
-        groupBy: {
-          args: Prisma.HallOfFameEntryGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.HallOfFameEntryGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.HallOfFameEntryCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.HallOfFameEntryCountAggregateOutputType> | number
-        }
-      }
-    }
     BadgeConfig: {
       payload: Prisma.$BadgeConfigPayload<ExtArgs>
       fields: Prisma.BadgeConfigFieldRefs
@@ -1952,20 +1877,6 @@ export const RewardScalarFieldEnum = {
 export type RewardScalarFieldEnum = (typeof RewardScalarFieldEnum)[keyof typeof RewardScalarFieldEnum]
 
 
-export const HallOfFameEntryScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  languageId: 'languageId',
-  bestPlaySessionId: 'bestPlaySessionId',
-  comment: 'comment',
-  commentSubmittedAt: 'commentSubmittedAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type HallOfFameEntryScalarFieldEnum = (typeof HallOfFameEntryScalarFieldEnum)[keyof typeof HallOfFameEntryScalarFieldEnum]
-
-
 export const BadgeConfigScalarFieldEnum = {
   userId: 'userId',
   displayItems: 'displayItems',
@@ -2259,7 +2170,6 @@ export type GlobalOmitConfig = {
   userLanguageBest?: Prisma.UserLanguageBestOmit
   monthlyRankingSnapshot?: Prisma.MonthlyRankingSnapshotOmit
   reward?: Prisma.RewardOmit
-  hallOfFameEntry?: Prisma.HallOfFameEntryOmit
   badgeConfig?: Prisma.BadgeConfigOmit
 }
 

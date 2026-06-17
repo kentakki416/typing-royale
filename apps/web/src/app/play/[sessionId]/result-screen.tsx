@@ -8,7 +8,6 @@ import { FinishPlaySessionResponse, GetMyRankingResponse, StartSoloPlaySessionRe
 import { CelebrationOverlay } from "@/components/celebration-overlay"
 import { GradeProgressBar } from "@/components/grade-progress-bar"
 import { TopTenAnnouncementModal, TopTenAnnouncementKind } from "@/components/top-ten-announcement-modal"
-import { TopTenCommentModal } from "@/components/top-ten-comment-modal"
 import { Topbar } from "@/components/topbar"
 import { gradeBadgeClass } from "@/libs/grade"
 
@@ -49,8 +48,6 @@ type Props = {
  */
 export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, repoInfo, result }: Props) {
   const [me, setMe] = useState<GetMyRankingResponse | null>(null)
-  const [hofModalOpen, setHofModalOpen] = useState(false)
-  const [hofPromptDismissed, setHofPromptDismissed] = useState(false)
   /** リザルト到達時に 1 度だけ祝福 overlay を再生 */
   const [showCelebration, setShowCelebration] = useState(true)
   /**
@@ -124,15 +121,6 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
   const topMistypes = Object.entries(result.mistype_stats)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
-
-  /**
-   * TOP 10 入り判定はランキングへの掲載が前提なので、ゲストには出さない。
-   * boundary===null (ベスト 10 件未満) も入賞扱い、自分が 10 位入りした
-   * ケース (score === boundary) も含めるため `>=` で比較する
-   */
-  const isTopTenEntry = !isGuest
-    && (result.top_ten_boundary_score === null
-        || result.score >= result.top_ten_boundary_score)
 
   return (
     <>
@@ -253,46 +241,6 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
               </Link>
             </div>
           </div>
-        )}
-
-        {isTopTenEntry && (
-          <>
-            <div className="card mb-16" style={{ borderColor: "rgba(255, 213, 74, 0.5)" }}>
-              <div className="text-center">
-                <strong style={{ color: "var(--gold-light)" }}>🏆 TOP 10 入り見込み！</strong>
-                <p className="text-sm text-muted mt-8 mb-16">
-                  殿堂入りに掲載されます。記念にコメントを残しませんか？
-                </p>
-                {hofPromptDismissed ? (
-                  <p className="text-sm text-muted">
-                    コメントはマイページからいつでも編集できます
-                  </p>
-                ) : (
-                  <div className="flex gap-12" style={{ justifyContent: "center" }}>
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => setHofModalOpen(true)}
-                      type="button"
-                    >
-                      コメントを残す
-                    </button>
-                    <button
-                      className="btn"
-                      onClick={() => setHofPromptDismissed(true)}
-                      type="button"
-                    >
-                      あとで書く
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-            <TopTenCommentModal
-              language="typescript"
-              onClose={() => { setHofModalOpen(false); setHofPromptDismissed(true) }}
-              open={hofModalOpen}
-            />
-          </>
         )}
 
         {result.grade_up !== null && (

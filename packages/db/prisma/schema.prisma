@@ -61,7 +61,6 @@ model User {
   languageBests           UserLanguageBest[]
   monthlyRankingSnapshots MonthlyRankingSnapshot[]
   rewards                 Reward[]
-  hallOfFameEntries       HallOfFameEntry[]
   badgeConfig             BadgeConfig?
 
   @@map("users")
@@ -81,7 +80,6 @@ model Language {
   crawlerRunItems         CrawlerRunItem[]
   playSessions            PlaySession[]
   userLanguageBests       UserLanguageBest[]
-  hallOfFameEntries       HallOfFameEntry[]
   monthlyRankingSnapshots MonthlyRankingSnapshot[]
 
   @@map("languages")
@@ -225,7 +223,6 @@ model PlaySession {
   problems           PlaySessionProblem[]
   keystrokeLog       KeystrokeLog?
   bestOfUserLanguage UserLanguageBest[]
-  hallOfFameEntries  HallOfFameEntry[]
 
   @@index([userId, playedAt(sort: Desc)]) /// マイページの履歴表示用
   @@index([languageId, score(sort: Desc)]) /// score-ranking の言語別 × スコア降順集計
@@ -351,28 +348,6 @@ model Reward {
 
   @@index([userId, grantedAt(sort: Desc)]) /// マイページ特典タブの最新順表示
   @@map("rewards")
-}
-
-// Hall of Fame コメント (1 ユーザー × 1 言語 = 1 行)
-// rank は保存しない (リアルタイム集計のため、user_language_best を ORDER BY して JOIN)
-// docs/spec/rewards/README.md「Hall of Fame コメントの入力タイミング」参照
-model HallOfFameEntry {
-  id                 Int       @id @default(autoincrement())
-  userId             Int       @map("user_id")
-  languageId         Int       @map("language_id")
-  bestPlaySessionId  Int       @map("best_play_session_id") /// この入賞を確定させた PlaySession
-  comment            String?   @db.VarChar(300) /// 最大 300 文字。null = 未入力
-  commentSubmittedAt DateTime? @map("comment_submitted_at") /// コメント最初の送信時刻 (履歴用)
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  language    Language    @relation(fields: [languageId], references: [id], onDelete: Restrict)
-  playSession PlaySession @relation(fields: [bestPlaySessionId], references: [id], onDelete: Restrict)
-
-  @@unique([userId, languageId]) /// 1 ユーザー × 1 言語 = 1 コメント
-  @@index([languageId]) /// Hall of Fame ページの言語別取得 (rank 順は user_language_best を ORDER BY して LEFT JOIN)
-  @@map("hall_of_fame_entries")
 }
 
 // ユーザーごとの SVG バッジ表示設定

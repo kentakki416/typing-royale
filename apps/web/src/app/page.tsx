@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
-import type { GetFeaturedReplaysResponse, GetMonthlyRankingsResponse } from "@repo/api-schema"
+import type { GetMonthlyRankingsResponse } from "@repo/api-schema"
 
 import { CrawledReposSection } from "@/components/crawled-repos-section"
 import { MonthlyTopSection } from "@/components/monthly-top-section"
@@ -16,20 +16,12 @@ export const metadata: Metadata = {
   title: "Typing Royale",
 }
 
-const LANGUAGE_LABEL: Record<string, string> = {
-  javascript: "JavaScript",
-  typescript: "TypeScript",
-}
-
-const truncate = (s: string, n: number): string => (s.length <= n ? s : `${s.slice(0, n - 1)}…`)
-
 /**
  * トップ画面（mock: top.html 準拠の landing）
  *
  * 主な要素:
  * - hero（タイトル + CTA 2 つ）
  * - god-frame card（神々に挑戦の紹介）
- * - 注目のリプレイ（殿堂入りコメント駆動の featured 3 件）
  * - 月間トップ（TypeScript / JavaScript の当月 TOP 5 を並列 fetch）
  * - 「なぜ Typing Royale か」3 col 説明
  * - sidebar に統計 placeholder + 対応言語バッジ
@@ -39,10 +31,7 @@ const truncate = (s: string, n: number): string => (s.length <= n ? s : `${s.sli
 export default async function HomePage() {
   const accessToken = await getAccessToken()
   const isAuthed = accessToken !== null
-  const [featured, tsMonthly, jsMonthly] = await Promise.all([
-    apiClient
-      .get<GetFeaturedReplaysResponse>("/api/replays/featured?limit=3")
-      .catch(() => ({ items: [] })),
+  const [tsMonthly, jsMonthly] = await Promise.all([
     apiClient
       .get<GetMonthlyRankingsResponse>("/api/rankings/monthly?language=typescript&limit=5")
       .catch(() => EMPTY_MONTHLY),
@@ -110,47 +99,6 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {featured.items.length > 0 && (
-              <div className="card mb-24">
-                <div className="card-header">
-                  <div className="card-title">✨ 注目のリプレイ</div>
-                  <Link className="text-sm" href="/hall-of-fame">殿堂入り →</Link>
-                </div>
-                <div className="row gap-16" style={{ flexWrap: "wrap" }}>
-                  {featured.items.map((item) => (
-                    <div className="col" key={item.play_session_id} style={{ minWidth: "220px" }}>
-                      <div className="card" style={{ height: "100%" }}>
-                        <div className="flex-center gap-12 mb-8">
-                          <FeaturedAvatar
-                            avatarUrl={item.player.avatar_url}
-                            displayName={item.player.display_name}
-                          />
-                          <div>
-                            <div className="player-name">@{item.player.display_name}</div>
-                            <div className="text-xs text-muted">
-                              {LANGUAGE_LABEL[item.language] ?? item.language} · {item.stats.score.toLocaleString()} pts
-                            </div>
-                          </div>
-                        </div>
-                        <div
-                          className="text-sm text-muted mb-8"
-                          style={{ minHeight: "48px" }}
-                        >
-                          「{truncate(item.comment, 60)}」
-                        </div>
-                        <Link
-                          className="btn btn-primary"
-                          href={`/replay/${item.play_session_id}`}
-                        >
-                          ▶ 視聴する
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div className="card mb-24">
               <div className="card-header">
                 <div className="card-title">🏆 月間トップ</div>
@@ -213,16 +161,5 @@ export default async function HomePage() {
         <a href="#">利用規約</a> · <a href="#">プライバシー</a> · <a href="#">ライセンス一覧</a>
       </div>
     </>
-  )
-}
-
-const FeaturedAvatar = ({ avatarUrl, displayName }: { avatarUrl: string | null; displayName: string }) => {
-  const initials = displayName.slice(0, 2).toUpperCase()
-  if (avatarUrl === null) {
-    return <span className="avatar">{initials}</span>
-  }
-  return (
-    /* eslint-disable-next-line @next/next/no-img-element */
-    <img alt={displayName} className="avatar" src={avatarUrl} />
   )
 }

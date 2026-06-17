@@ -2,7 +2,7 @@ import { err, notFoundError, ok, Result } from "@repo/errors"
 import { logger } from "@repo/logger"
 
 import type { KeystrokeLogRepository } from "../repository/prisma/keystroke-log-repository"
-import type { FeaturedReplayRow, ReplayRepository, ReplaySource } from "../repository/prisma/replay-repository"
+import type { ReplayRepository, ReplaySource } from "../repository/prisma/replay-repository"
 import type { KeystrokeLogs } from "../types/domain"
 
 type GetReplayInput = {
@@ -43,23 +43,4 @@ export const getReplay = async (
   }
 
   return ok({ keystrokeLogs, source })
-}
-
-type ListFeaturedInput = {
-    language?: string
-    limit: number
-}
-
-/**
- * 注目リプレイ一覧
- *
- * `hall_of_fame_entries` のコメント付きエントリを `commentSubmittedAt DESC` で limit 件返す。
- * 空配列でも 200 を返したいため Result でなく素の Promise を返す
- */
-export const listFeatured = async (
-  input: ListFeaturedInput,
-  repo: { replayRepository: ReplayRepository },
-): Promise<FeaturedReplayRow[]> => {
-  logger.debug("ReplayService: listFeatured", { ...input })
-  return repo.replayRepository.findFeatured(input)
 }

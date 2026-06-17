@@ -81,9 +81,6 @@ export function HofCards({ entries }: Props) {
                     </div>
                   </div>
                 </div>
-                {e.comment !== null && (
-                  <div className="hof-comment">&ldquo;{e.comment}&rdquo;</div>
-                )}
               </div>
             </div>
           )
