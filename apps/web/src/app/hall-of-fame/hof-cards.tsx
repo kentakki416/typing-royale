@@ -5,6 +5,7 @@ import { useState } from "react"
 import type { GetHallOfFameResponse } from "@repo/api-schema"
 
 import { CrownSvg } from "@/components/crown-svg"
+import { formatPlayedAtDate } from "@/libs/format-date"
 import { formatUsername } from "@/libs/format-username"
 
 import { CurtainModal } from "./curtain-modal"
@@ -81,6 +82,9 @@ export function HofCards({ entries }: Props) {
                       >
                         {capitalizeGradeSlug(e.user.current_grade)}
                       </span>
+                    </div>
+                    <div className="text-xs text-muted" style={{ marginTop: "4px" }}>
+                      達成: {formatPlayedAtDate(e.played_at)}
                     </div>
                     {e.user.favorite_repo_url !== null && (
                       <GithubLink url={e.user.favorite_repo_url} />
