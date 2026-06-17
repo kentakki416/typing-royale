@@ -9,6 +9,8 @@ import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
 
+import { PlayNowButton } from "./play-now-button"
+
 export const metadata: Metadata = {
   title: "今月のランキング - Typing Royale",
 }
@@ -24,6 +26,15 @@ type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]
 const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   javascript: "JavaScript",
   typescript: "TypeScript",
+}
+
+/**
+ * 言語 slug → DB の Language.id マップ。 packages/db/prisma/seed.ts と
+ * apps/web/src/app/play/page.tsx の `SUPPORTED_LANGUAGES` と整合させる
+ */
+const LANGUAGE_IDS: Record<SupportedLanguage, number> = {
+  javascript: 2,
+  typescript: 1,
 }
 
 /**
@@ -101,16 +112,18 @@ export default async function RankingPage({
                 <div className="text-mono text-muted mb-16">
                   {monthLabel} はまだランキングがありません
                 </div>
-                <Link className="btn btn-primary btn-play" href="/play">
-                  ▶ 最初のプレイヤーになる
-                </Link>
+                <PlayNowButton
+                  label="▶ 最初のプレイヤーになる"
+                  languageId={LANGUAGE_IDS[language]}
+                />
               </div>
             )}
 
             <div className="text-center mt-16">
-              <Link className="btn btn-primary btn-play btn-large" href="/play">
-                ▶ プレイしてランクアップ
-              </Link>
+              <PlayNowButton
+                className="btn btn-primary btn-play btn-large"
+                languageId={LANGUAGE_IDS[language]}
+              />
             </div>
           </div>
 
