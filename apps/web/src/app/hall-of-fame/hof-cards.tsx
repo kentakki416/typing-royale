@@ -84,7 +84,7 @@ export function HofCards({ entries }: Props) {
                       </span>
                     </div>
                     <div className="text-xs text-muted" style={{ marginTop: "4px" }}>
-                      🗓 達成: {formatPlayedAtDate(e.played_at)}
+                      達成: {formatPlayedAtDate(e.played_at)}
                     </div>
                     {e.user.favorite_repo_url !== null && (
                       <GithubLink url={e.user.favorite_repo_url} />
