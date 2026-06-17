@@ -1671,17 +1671,14 @@ code.inline {
 }
 
 /**
- * Hall of Fame カード一覧の黒台座コンテナ。
- * TOP 10 を縦に並べ、ページ全体スクロールで閲覧する (内部スクロールは持たない)。
- * 回転光リング (.hof-card::before の inset: -2px) がコンテナ端でクリップされないよう
- * 内側に余白を取る
+ * Hall of Fame カード一覧コンテナ。
+ * 黒台座は廃止し、 ページ背景にそのままカードが並ぶ。 縦に gap を取るだけのシンプル
+ * な flex/grid。 回転光リング (.hof-card::before) は inset 余白付きで描画されるので
+ * 親側の padding は不要
  */
 .hof-cards-stack {
   display: grid;
   gap: 20px;
-  background: #05080d;
-  border-radius: 20px;
-  padding: 32px 24px;
 }
 
 /* Hall of Fame card — pedestal feel */
