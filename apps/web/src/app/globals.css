@@ -1728,6 +1728,69 @@ code.inline {
 }
 
 /**
+ * TOP 3 強調レイヤー (サイズは 4-10 と同じまま)
+ * - メタル色の box-shadow グロー
+ * - 背景に薄いメタル tint を追加 (radial-gradient レイヤー強化)
+ * - 背面に放射 spotlight (`::after`) を blur で重ねる
+ * - 1 位だけシャドウとグローを厚めに
+ *
+ * 4-10 位 (data-rank="white") には適用しない
+ */
+.hof-card.has-crown[data-rank="gold"] {
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 0%, rgba(255, 213, 74, 0.18), transparent 65%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 14%, transparent 88%, rgba(0, 0, 0, 0.22) 100%),
+    linear-gradient(180deg, #2a2620 0%, #181513 100%);
+  box-shadow:
+    0 8px 0 rgba(0, 0, 0, 0.4),
+    0 18px 36px rgba(0, 0, 0, 0.55),
+    0 0 56px rgba(255, 213, 74, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.hof-card.has-crown[data-rank="silver"] {
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 0%, rgba(216, 222, 233, 0.14), transparent 65%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 14%, transparent 88%, rgba(0, 0, 0, 0.22) 100%),
+    linear-gradient(180deg, #262a32 0%, #161a22 100%);
+  box-shadow:
+    0 8px 0 rgba(0, 0, 0, 0.4),
+    0 14px 32px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(216, 222, 233, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.hof-card.has-crown[data-rank="bronze"] {
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 0%, rgba(205, 127, 50, 0.14), transparent 65%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 14%, transparent 88%, rgba(0, 0, 0, 0.22) 100%),
+    linear-gradient(180deg, #2a221b 0%, #1a1612 100%);
+  box-shadow:
+    0 8px 0 rgba(0, 0, 0, 0.4),
+    0 14px 32px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(205, 127, 50, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/**
+ * 背面の放射 spotlight (TOP 3 のみ)。 ::before は回転光リングに使用済みなので
+ * ::after を blur ありの radial-gradient で重ねて「カード裏から光が漏れる」表現
+ */
+.hof-card.has-crown[data-rank="gold"]::after,
+.hof-card.has-crown[data-rank="silver"]::after,
+.hof-card.has-crown[data-rank="bronze"]::after {
+  content: '';
+  position: absolute;
+  inset: -28px;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at 50% 50%, var(--hof-spotlight), transparent 70%);
+  filter: blur(22px);
+  pointer-events: none;
+}
+.hof-card.has-crown[data-rank="gold"]   { --hof-spotlight: rgba(255, 213, 74, 0.55); }
+.hof-card.has-crown[data-rank="silver"] { --hof-spotlight: rgba(216, 222, 233, 0.38); }
+.hof-card.has-crown[data-rank="bronze"] { --hof-spotlight: rgba(205, 127, 50, 0.38); }
+
+/**
  * Rotating light ring around top-3 Hall of Fame cards.
  * Same trick as .god-frame::before (conic-gradient masked to a 2px ring)
  * but with the rank's metal color via the --hof-shine-* variables.
