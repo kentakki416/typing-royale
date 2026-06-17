@@ -8,11 +8,34 @@
       <stop offset="0%" stop-color="#e5e7eb"/>
       <stop offset="100%" stop-color="#6b7280"/>
     </linearGradient>
+    <linearGradient id="topHiB2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e5e7eb" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#e5e7eb" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="shimmerB2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f9fafb" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#f9fafb" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#f9fafb" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="clipB2">
+      <rect width="360" height="80" rx="10"/>
+    </clipPath>
   </defs>
-  <rect width="360" height="80" rx="10" fill="url(#bgB2)" stroke="url(#acB2)" stroke-width="1.5"/>
-  <rect x="0" y="0" width="6" height="80" rx="3" fill="url(#acB2)"/>
-  <text x="22" y="24" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="11" font-weight="700" fill="#e5e7eb" letter-spacing="2">🥈 HALL OF FAME</text>
-  <text x="22" y="52" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="22" font-weight="900" fill="#fff">RANK #2 · TS</text>
-  <text x="22" y="71" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="12" font-weight="700" fill="#e5e7eb" opacity="0.85">@yamada</text>
+  <g clip-path="url(#clipB2)">
+    <rect width="360" height="80" fill="url(#bgB2)"/>
+    <rect width="360" height="40" fill="url(#topHiB2)"/>
+    <rect x="-140" y="0" width="140" height="80" fill="url(#shimmerB2)" opacity="0.85" transform="skewX(-18)">
+      <animate attributeName="x" from="-180" to="420" dur="3.6s" begin="0.6s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+  <rect width="360" height="80" rx="10" fill="none" stroke="url(#acB2)" stroke-width="1.5">
+    <animate attributeName="stroke-opacity" values="0.6;0.95;0.6" dur="2.6s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="0" y="0" width="6" height="80" rx="3" fill="url(#acB2)">
+    <animate attributeName="opacity" values="0.8;1;0.8" dur="2.6s" repeatCount="indefinite"/>
+  </rect>
+  <text x="22" y="24" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="11" font-weight="700" fill="#e5e7eb" letter-spacing="2" style="filter: drop-shadow(0 0 4px rgba(229,231,235,0.5))">🥈 HALL OF FAME</text>
+  <text x="22" y="52" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="22" font-weight="900" fill="#fff" style="filter: drop-shadow(0 0 6px rgba(229,231,235,0.3))">RANK #2 · TS</text>
+  <text x="22" y="71" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="12" font-weight="700" fill="#e5e7eb" opacity="0.9">@yamada</text>
   <text x="338" y="72" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="9" fill="#e5e7eb" opacity="0.55" text-anchor="end">typing-royale</text>
 </svg>

@@ -4,18 +4,37 @@
       <stop offset="0%" stop-color="#1f2937"/>
       <stop offset="100%" stop-color="#030712"/>
     </linearGradient>
-    <radialGradient id="glow7" cx="50%" cy="35%" r="60%">
+    <radialGradient id="glow7" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#cbd5e1" stop-opacity="0.32"/>
+      <stop offset="100%" stop-color="#cbd5e1" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sheen7" x1="0%" y1="0%" x2="60%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="topHi7" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#cbd5e1" stop-opacity="0.18"/>
       <stop offset="100%" stop-color="#cbd5e1" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="vignette7" cx="50%" cy="100%" r="80%">
+      <stop offset="60%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.55"/>
     </radialGradient>
   </defs>
   <rect width="1200" height="630" fill="url(#bg7)"/>
   <rect width="1200" height="630" fill="url(#glow7)"/>
-  <rect x="40" y="40" width="1120" height="550" rx="24" fill="none" stroke="#cbd5e1" stroke-width="3" stroke-opacity="0.35"/>
-  <text x="600" y="135" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="34" font-weight="700" fill="#cbd5e1" letter-spacing="6" text-anchor="middle" opacity="0.95">💎 HALL OF FAME</text>
-  <text x="600" y="320" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="180" font-weight="900" fill="#fff" text-anchor="middle" style="text-shadow: 0 6px 32px rgba(0,0,0,0.55)">RANK #7</text>
+  <rect width="1200" height="220" fill="url(#topHi7)"/>
+  <rect width="1200" height="630" fill="url(#sheen7)"/>
+  <rect width="1200" height="630" fill="url(#vignette7)"/>
+  <circle cx="180" cy="135" r="1.8" fill="#cbd5e1" opacity="0.7"/>
+  <circle cx="1020" cy="105" r="2" fill="#cbd5e1" opacity="0.75"/>
+  <rect x="40" y="40" width="1120" height="550" rx="24" fill="none" stroke="#cbd5e1" stroke-width="3" stroke-opacity="0.45"/>
+  <rect x="44" y="44" width="1112" height="542" rx="22" fill="none" stroke="#ffffff" stroke-width="1" stroke-opacity="0.18"/>
+  <text x="600" y="135" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="34" font-weight="700" fill="#cbd5e1" letter-spacing="6" text-anchor="middle" opacity="0.98" style="filter: drop-shadow(0 2px 8px rgba(203,213,225,0.5))">💎 HALL OF FAME</text>
+  <text x="600" y="320" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="180" font-weight="900" fill="#fff" text-anchor="middle" style="text-shadow: 0 6px 32px rgba(0,0,0,0.6), 0 0 20px rgba(203,213,225,0.4)">RANK #7</text>
   <text x="600" y="410" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="44" font-weight="700" fill="#fff" text-anchor="middle" opacity="0.97">@kobayashi</text>
-  <rect x="510" y="445" width="180" height="46" rx="23" fill="#fff" fill-opacity="0.12" stroke="#cbd5e1" stroke-opacity="0.45" stroke-width="1.5"/>
+  <rect x="510" y="445" width="180" height="46" rx="23" fill="#fff" fill-opacity="0.14" stroke="#cbd5e1" stroke-opacity="0.6" stroke-width="1.5"/>
   <text x="600" y="476" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">TypeScript</text>
-  <text x="600" y="555" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="22" fill="#cbd5e1" text-anchor="middle" opacity="0.62">Typing Royale</text>
+  <text x="600" y="555" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="22" fill="#cbd5e1" text-anchor="middle" opacity="0.7">Typing Royale</text>
 </svg>
