@@ -22,11 +22,12 @@ const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
 }
 
 /**
- * Hall of Fame 公開ページ（mock: hall-of-fame.html 準拠）
+ * Hall of Fame 公開ページ
  *
  * - 言語タブ切替
- * - 上位 3 名はクラウン付き hof-card、クリックでカーテン演出 → 神モーダル
- * - 4 位以下はテーブル形式でコメント + リプレイリンク表示
+ * - TOP 10 を全件カード形式で表示 (TOP 3 はクラウン + 金/銀/銅、4-10 は白色)
+ * - 縦長になるためカード群は内部スクロール
+ * - 全カードはクリックでカーテン演出 → 神モーダル
  */
 export default async function HallOfFamePage({
   searchParams,
@@ -42,9 +43,6 @@ export default async function HallOfFamePage({
     apiClient.get<GetHallOfFameResponse>(`/api/hall-of-fame?language=${language}`),
     getAccessToken(),
   ])
-
-  const topThree = data.entries.filter((e) => e.rank <= 3)
-  const rest = data.entries.filter((e) => e.rank > 3)
 
   return (
     <>
@@ -81,54 +79,7 @@ export default async function HallOfFamePage({
             </Link>
           </div>
         ) : (
-          <>
-            {topThree.length > 0 && <HofCards entries={topThree} />}
-
-            {rest.length > 0 && (
-              <div className="card mt-24">
-                <div className="card-header">
-                  <div className="card-title">4 位以下</div>
-                </div>
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: "48px" }}>順位</th>
-                      <th>プレイヤー</th>
-                      <th className="numeric">ベスト</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rest.map((e) => (
-                      <tr key={e.best_play_session_id}>
-                        <td>
-                          <span className="rank-badge">#{e.rank}</span>
-                        </td>
-                        <td>
-                          <div className="player-cell">
-                            <PlayerAvatar avatarUrl={e.user.avatar_url} displayName={e.user.display_name} />
-                            <Link href={`/players/${e.user.id}`}>
-                              <strong>@{e.user.display_name}</strong>
-                            </Link>
-                          </div>
-                        </td>
-                        <td className="numeric"><strong>{e.score.toLocaleString()}</strong></td>
-                        <td>
-                          <Link
-                            className="badge accent"
-                            href={`/replay/${e.best_play_session_id}`}
-                            title="リプレイを見る"
-                          >
-                            ▶ リプレイ
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </>
+          <HofCards entries={data.entries} />
         )}
       </div>
 
@@ -136,16 +87,5 @@ export default async function HallOfFamePage({
         <Link href="/">トップに戻る</Link>
       </div>
     </>
-  )
-}
-
-const PlayerAvatar = ({ avatarUrl, displayName }: { avatarUrl: string | null; displayName: string }) => {
-  const initials = displayName.slice(0, 2).toUpperCase()
-  if (avatarUrl === null) {
-    return <span className="avatar sm">{initials}</span>
-  }
-  return (
-    /* eslint-disable-next-line @next/next/no-img-element */
-    <img alt={displayName} className="avatar sm" src={avatarUrl} />
   )
 }

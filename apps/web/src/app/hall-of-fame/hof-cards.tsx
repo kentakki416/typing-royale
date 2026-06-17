@@ -14,77 +14,80 @@ type Props = {
   entries: Entry[]
 }
 
-type Rank = 1 | 2 | 3
+type CrownedRank = 1 | 2 | 3
+type CrownSlug = "gold" | "silver" | "bronze"
+type RankSlug = CrownSlug | "white"
 
-const RANK_META: Record<Rank, { color: string; label: string; slug: "gold" | "silver" | "bronze" }> = {
-  1: { color: "#ffd54a", label: "#1", slug: "gold" },
-  2: { color: "#c0c8d3", label: "#2", slug: "silver" },
-  3: { color: "#d2956b", label: "#3", slug: "bronze" },
+const CROWN_META: Record<CrownedRank, { color: string; slug: CrownSlug }> = {
+  1: { color: "#ffd54a", slug: "gold" },
+  2: { color: "#c0c8d3", slug: "silver" },
+  3: { color: "#d2956b", slug: "bronze" },
+}
+
+const slugForRank = (rank: number): RankSlug => {
+  if (rank === 1) return "gold"
+  if (rank === 2) return "silver"
+  if (rank === 3) return "bronze"
+  return "white"
 }
 
 /**
- * Hall of Fame 上位 3 名のクラウン付きカード
+ * Hall of Fame TOP 10 のクラウン付きカード一覧
  *
- * クリックで CurtainModal（カーテン演出 + 神モーダル）を開く。
- * 1 件だけマウントする state を持ち、open === null でモーダル非表示
+ * - TOP 1〜3 はクラウン + メタル色 (金/銀/銅) の回転光リング
+ * - 4〜10 はクラウン無し + 白色の回転光リングで統一感を出す
+ * - 全カードはクリックで CurtainModal を開く (タップ可)
  */
 export function HofCards({ entries }: Props) {
   const [open, setOpen] = useState<Entry | null>(null)
 
   return (
     <>
-      <div
-        style={{
-          background: "#05080d",
-          borderRadius: "20px",
-          display: "grid",
-          gap: "20px",
-          padding: "32px 24px",
-        }}
-      >
-        {entries.map((e) => {
-          const rank = e.rank as Rank
-          const meta = RANK_META[rank]
-          if (!meta) return null
-          return (
-            <div
-              className="hof-card has-crown tappable"
-              data-rank={meta.slug}
-              key={e.best_play_session_id}
-              onClick={() => setOpen(e)}
-              onKeyDown={(ev) => {
-                if (ev.key === "Enter" || ev.key === " ") {
-                  ev.preventDefault()
-                  setOpen(e)
-                }
-              }}
-              role="button"
-              tabIndex={0}
-            >
-              <CrownWrapper slug={meta.slug} />
-              <span className="tap-hint">👆 タップ</span>
-              <div className={`hof-rank ${meta.slug}`}>{meta.label}</div>
-              <div className="hof-info">
-                <div className="flex-center gap-12 mb-8">
-                  <PlayerAvatar avatarUrl={e.user.avatar_url} displayName={e.user.display_name} large />
-                  <div>
-                    <h3 style={{ margin: 0 }}>@{e.user.display_name}</h3>
-                    <div className="text-sm text-muted">
-                      {e.score.toLocaleString()} pts · {e.typed_chars.toLocaleString()} 文字 · {(e.accuracy * 100).toFixed(1)}%
-                      {" · "}
-                      <span
-                        className={`badge-grade ${e.user.current_grade}`}
-                        data-level={GRADE_LEVELS[e.user.current_grade] ?? 1}
-                      >
-                        {capitalizeGradeSlug(e.user.current_grade)}
-                      </span>
+      <div className="hof-cards-scroll">
+        <div className="hof-cards-stack">
+          {entries.map((e) => {
+            const slug = slugForRank(e.rank)
+            const crowned = e.rank <= 3
+            return (
+              <div
+                className="hof-card has-crown tappable"
+                data-rank={slug}
+                key={e.best_play_session_id}
+                onClick={() => setOpen(e)}
+                onKeyDown={(ev) => {
+                  if (ev.key === "Enter" || ev.key === " ") {
+                    ev.preventDefault()
+                    setOpen(e)
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
+                {crowned && <CrownWrapper slug={CROWN_META[e.rank as CrownedRank].slug} />}
+                <span className="tap-hint">👆 タップ</span>
+                <div className={`hof-rank ${slug}`}>#{e.rank}</div>
+                <div className="hof-info">
+                  <div className="flex-center gap-12 mb-8">
+                    <PlayerAvatar avatarUrl={e.user.avatar_url} displayName={e.user.display_name} large />
+                    <div>
+                      <h3 style={{ margin: 0 }}>@{e.user.display_name}</h3>
+                      <div className="text-sm text-muted">
+                        {e.score.toLocaleString()} pts · {e.typed_chars.toLocaleString()} 文字 · {(e.accuracy * 100).toFixed(1)}%
+                        {" · "}
+                        <span
+                          className={`badge-grade ${e.user.current_grade}`}
+                          data-level={GRADE_LEVELS[e.user.current_grade] ?? 1}
+                        >
+                          {capitalizeGradeSlug(e.user.current_grade)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
 
       {open !== null && (
@@ -109,7 +112,7 @@ const PlayerAvatar = ({ avatarUrl, displayName, large }: { avatarUrl: string | n
  * 既存 .hof-crown 位置スタイル (left -10px / top -18px / rotate -14deg) を維持しつつ
  * 立体表現の CrownSvg を埋め込む
  */
-const CrownWrapper = ({ slug }: { slug: "gold" | "silver" | "bronze" }) => (
+const CrownWrapper = ({ slug }: { slug: CrownSlug }) => (
   <span aria-hidden="true" className={`hof-crown ${slug}`}>
     <CrownSvg scope={`hof-card-${slug}`} slug={slug} variant="card" />
   </span>
