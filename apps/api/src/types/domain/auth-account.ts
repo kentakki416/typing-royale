@@ -9,7 +9,7 @@ export type AuthAccount = {
     createdAt: Date
     id: number
     /**
-     * "google" | "github" | "dev"
+     * "github" | "dev"
      */
     provider: string
     /**

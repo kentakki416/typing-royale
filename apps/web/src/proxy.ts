@@ -18,7 +18,6 @@ const PUBLIC_PATHS = [
   "/",
   "/sign-in",
   "/api/auth/callback/github",
-  "/api/auth/callback/google",
   /**
    * score-ranking の公開画面: 未ログインでも閲覧可能
    * step5 では /ranking を追加し忘れていたため、本 step (step7) で /players と同時に追加

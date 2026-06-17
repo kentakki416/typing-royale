@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
-import { startGithubOAuth, startGoogleOAuth } from "./actions"
+import { startGithubOAuth } from "./actions"
 
 export const metadata: Metadata = {
   title: "サインイン - Typing Royale",
@@ -69,10 +69,6 @@ export default async function SignInPage({ searchParams }: Props) {
               </svg>
               GitHub でサインイン
             </button>
-          </form>
-
-          <form action={startGoogleOAuth}>
-            <button className="btn btn-block" type="submit">Google でサインイン</button>
           </form>
         </div>
 

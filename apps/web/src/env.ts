@@ -24,11 +24,6 @@ const webEnvSchema = z
     GITHUB_CLIENT_ID: z.string().default(""),
 
     /**
-     * Google OAuth クライアント ID
-     */
-    GOOGLE_CLIENT_ID: z.string().default(""),
-
-    /**
      * フロント自身の origin（OAuth redirect_uri 構築に使用）
      */
     NEXT_PUBLIC_APP_URL: z.string().url(),

@@ -50,17 +50,6 @@ const apiEnvSchema = z
     GITHUB_CLIENT_SECRET: z.string().default(""),
 
     /**
-     * Google OAuth クライアント ID
-     * dev 環境では "dummy" でも動くため optional 扱い
-     */
-    GOOGLE_CLIENT_ID: z.string().default("dummy"),
-
-    /**
-     * Google OAuth クライアントシークレット
-     */
-    GOOGLE_CLIENT_SECRET: z.string().default("dummy"),
-
-    /**
      * Access Token 有効期限（例: "15m" / "1h"）
      */
     JWT_ACCESS_EXPIRATION: z.string().default("15m"),

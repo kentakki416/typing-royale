@@ -2,7 +2,6 @@ import { err, notFoundError, ok, Result, unauthorizedError } from "@repo/errors"
 import { logger } from "@repo/logger"
 
 import { GithubUserInfo, type IGithubOAuthClient } from "../client/github-oauth"
-import { type IGoogleOAuthClient, GoogleUserInfo } from "../client/google-oauth"
 import {
   AuthAccountRepository,
   TransactionRunner,
@@ -17,9 +16,6 @@ export type AuthenticateWithProviderSuccess = {
     refreshToken: string
     user: User
 }
-
-/** 後方互換のため Google 用エイリアスを残す */
-export type AuthenticateWithGoogleSuccess = AuthenticateWithProviderSuccess
 
 export type AuthenticateWithGithubSuccess = AuthenticateWithProviderSuccess
 
@@ -36,78 +32,6 @@ type TokenGenerators = {
 }
 
 const REFRESH_TTL_SECONDS = 60 * 60 * 24 * 7
-
-/**
- * Google アカウントでの認証
- *
- * Next.js 側で取得した Authorization Code を Google で検証し、UserInfo を取得する。
- * 既存ユーザーが居なければ User + AuthAccount を作成し、Access/Refresh Token を発行する。
- *
- * 業務エラー（現状なし）は Result.err として返し、外部サービス障害などの予期しないエラーは throw する。
- */
-export const authenticateWithGoogle = async (
-  input: { code: string; redirectUri: string },
-  repo: Repositories,
-  googleAuthClient: IGoogleOAuthClient,
-  tokenGenerators: TokenGenerators
-): Promise<Result<AuthenticateWithProviderSuccess>> => {
-  logger.info("AuthService: Starting Google authentication")
-
-  const googleUser: GoogleUserInfo = await googleAuthClient.getUserInfo(input.code, input.redirectUri)
-  logger.debug("AuthService: Retrieved Google user info", {
-    email: googleUser.email,
-    googleId: googleUser.id,
-  })
-
-  const existingAccount = await repo.authAccountRepository.findByProvider("google", googleUser.id)
-
-  let user: User
-  let isNewUser = false
-
-  if (existingAccount) {
-    logger.info("AuthService: Existing user found", { userId: existingAccount.user.id })
-    user = existingAccount.user
-  } else {
-    isNewUser = true
-    logger.info("AuthService: Creating new user")
-    /**
-     * User と AuthAccount を 1 トランザクションで作成。どちらか片方だけが残る不整合を防ぐ。
-     */
-    user = await repo.transactionRunner.run(async (tx) => {
-      const newUser = await repo.userRepository.create(
-        {
-          avatarUrl: googleUser.picture,
-          displayName: googleUser.name,
-          email: googleUser.email,
-        },
-        tx,
-      )
-      await repo.authAccountRepository.create(
-        {
-          provider: "google",
-          providerAccountId: googleUser.id,
-          userId: newUser.id,
-        },
-        tx,
-      )
-      return newUser
-    })
-    logger.info("AuthService: New user created", { userId: user.id })
-  }
-
-  const accessToken = tokenGenerators.generateAccessToken(user.id)
-  const { jti, token: refreshToken } = tokenGenerators.generateRefreshToken(user.id)
-  await repo.refreshTokenRepository.save(jti, user.id, REFRESH_TTL_SECONDS)
-
-  logger.debug("AuthService: Tokens issued", { userId: user.id })
-
-  return ok({
-    accessToken,
-    isNewUser,
-    refreshToken,
-    user,
-  })
-}
 
 /**
  * GitHub アカウントでの認証

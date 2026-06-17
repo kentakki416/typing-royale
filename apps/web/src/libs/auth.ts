@@ -11,7 +11,7 @@ const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 7
 
 /**
  * sameSite="lax" を使う理由:
- * OAuth コールバック（google.com → /api/auth/callback/google → /）は cross-site 起点の
+ * OAuth コールバック（github.com → /api/auth/callback/github → /）は cross-site 起点の
  * 連鎖ナビゲーションになるため、strict だと最終遷移先で cookie が送信されず
  * proxy が認証無しと判定してしまう。CSRF は state パラメータで対策済み。
  */
