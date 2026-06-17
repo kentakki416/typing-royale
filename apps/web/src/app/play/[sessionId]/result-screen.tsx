@@ -7,6 +7,7 @@ import { FinishPlaySessionResponse, GetMyRankingResponse, StartSoloPlaySessionRe
 
 import { CelebrationOverlay } from "@/components/celebration-overlay"
 import { GradeProgressBar } from "@/components/grade-progress-bar"
+import { TopTenAnnouncementModal, TopTenAnnouncementKind } from "@/components/top-ten-announcement-modal"
 import { TopTenCommentModal } from "@/components/top-ten-comment-modal"
 import { Topbar } from "@/components/topbar"
 import { gradeBadgeClass } from "@/libs/grade"
@@ -52,6 +53,24 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
   const [hofPromptDismissed, setHofPromptDismissed] = useState(false)
   /** リザルト到達時に 1 度だけ祝福 overlay を再生 */
   const [showCelebration, setShowCelebration] = useState(true)
+  /**
+   * TOP 10 入賞お知らせのキュー
+   * 殿堂入り → 月間 の順に push し、先頭から順に表示する。
+   * `result` は ResultScreen マウント時点で確定済みなので lazy init で 1 度だけ計算する
+   * (詳細: docs/spec/result-top-ten-popup/README.md)
+   */
+  const [announcementQueue, setAnnouncementQueue] = useState<TopTenAnnouncementKind[]>(() => {
+    if (result === null || !result.persisted) return []
+    const queue: TopTenAnnouncementKind[] = []
+    if (result.top_ten_boundary_score !== null && result.score > result.top_ten_boundary_score) {
+      queue.push("all-time")
+    }
+    if (result.monthly_top_ten_boundary_score === null
+        || result.score >= result.monthly_top_ten_boundary_score) {
+      queue.push("monthly")
+    }
+    return queue
+  })
 
   /**
    * ゲスト（未ログイン）プレイの判定: /finish の persisted=false がサーバーから返る
@@ -352,6 +371,14 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
 
       {showCelebration && (
         <CelebrationOverlay onFinished={() => setShowCelebration(false)} />
+      )}
+
+      {announcementQueue.length > 0 && (
+        <TopTenAnnouncementModal
+          kind={announcementQueue[0]}
+          onClose={() => setAnnouncementQueue((prev) => prev.slice(1))}
+          open
+        />
       )}
     </>
   )
