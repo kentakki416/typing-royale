@@ -4,6 +4,7 @@ import { PlaySessionFinishController } from "../../../src/controller/play-sessio
 import { LocalCardStorage } from "../../../src/lib/card-storage"
 import {
   PrismaKeystrokeLogRepository,
+  PrismaMonthlyRankingSnapshotRepository,
   PrismaPlaySessionProblemRepository,
   PrismaPlaySessionRepository,
   PrismaProblemRepository,
@@ -33,6 +34,7 @@ const keystrokeLogRepository = new PrismaKeystrokeLogRepository(testPrisma)
 const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(testPrisma)
 const userLanguageBestRepository = new PrismaUserLanguageBestRepository(testPrisma)
 const userRepository = new PrismaUserRepository(testPrisma)
+const monthlyRankingSnapshotRepository = new PrismaMonthlyRankingSnapshotRepository(testPrisma)
 const rewardRepository = new PrismaRewardRepository(testPrisma)
 const transactionRunner = new PrismaTransactionRunner(testPrisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(testRedis)
@@ -48,6 +50,7 @@ app.use(
     finish: new PlaySessionFinishController(
       cardStorage,
       keystrokeLogRepository,
+      monthlyRankingSnapshotRepository,
       playSessionProblemRepository,
       playSessionRepository,
       playSessionStateRepository,
@@ -165,6 +168,8 @@ describe("POST /api/play-sessions/:id/finish", () => {
         /** score=3 は Intern (threshold=0) のまま → grade_up=null（Intern→Intern は通知しない） */
         grade_up: null,
         mistype_stats: {},
+        /** monthly snapshot も 1 件しか無いので boundary=null（10 件未満 = 誰でも入賞） */
+        monthly_top_ten_boundary_score: null,
         new_rank: 1,
         persisted: true,
         problems_completed: 1,
@@ -503,6 +508,174 @@ describe("POST /api/play-sessions/:id/finish", () => {
       expect(stats.currentGrade).toBe("junior")
       expect(stats.currentGradeReachedAt).not.toBeNull()
     }, 10000)
+
+    /**
+     * v2 で導入された monthly_ranking_snapshots の /finish 同期 UPSERT を検証する。
+     * リアルタイム反映設計 (cron 廃止) のため、/finish 直後に snapshot が更新されている
+     */
+    describe("monthly_ranking_snapshots の同期 UPSERT", () => {
+      /** 当月の "YYYY-MM" 文字列 (JST) を取得 */
+      const currentYearMonth = (): string => {
+        const fmt = new Intl.DateTimeFormat("ja-JP", {
+          month: "2-digit",
+          timeZone: "Asia/Tokyo",
+          year: "numeric",
+        })
+        const parts = Object.fromEntries(
+          fmt.formatToParts(new Date()).filter((p) => p.type !== "literal").map((p) => [p.type, p.value]),
+        )
+        return `${parts.year}-${parts.month}`
+      }
+
+      it("当月 snapshot 0 件の状態で finish → 自分の行が 1 件 upsert され boundary=null", async () => {
+        const { sessionId, token, user } = await seedFinishContext()
+
+        const res = await request(app)
+          .post(`/api/play-sessions/${sessionId}/finish`)
+          .set("Authorization", `Bearer ${token}`)
+          .send({
+            accuracy: 1,
+            keystroke_logs: [
+              { elapsed_ms: 100, input_char: "a", is_correct: true, problem_index: 0 },
+              { elapsed_ms: 200, input_char: "b", is_correct: true, problem_index: 0 },
+              { elapsed_ms: 300, input_char: "c", is_correct: true, problem_index: 0 },
+            ],
+            typed_chars: 3,
+          })
+
+        expect(res.status).toBe(200)
+        /** 10 件未満なので boundary は null（誰でも入賞判定対象） */
+        expect(res.body.monthly_top_ten_boundary_score).toBeNull()
+
+        const language = await testPrisma.language.findFirstOrThrow()
+        const rows = await testPrisma.monthlyRankingSnapshot.findMany({
+          where: { languageId: language.id, userId: user.id, yearMonth: currentYearMonth() },
+        })
+        expect(rows).toHaveLength(1)
+        expect(rows[0]).toMatchObject({ accuracy: 1, score: 3 })
+      })
+
+      it("当月 10 件すでに埋まっており自分のスコアが boundary 超なら、自分の行が入り最下位 1 件が delete される (cap 維持)", async () => {
+        const { language, sessionId, token, user } = await seedFinishContext()
+
+        /** 他ユーザー 10 件を score 100..109 (自分は 3 を超える 3 が入って push する設定とは別) で seed */
+        const otherUsers = await Promise.all(
+          Array.from({ length: 10 }, async (_, i) =>
+            testPrisma.user.create({
+              data: {
+                canPublicRanking: true,
+                displayName: `other${i}`,
+                email: `other${i}@example.com`,
+              },
+            }),
+          ),
+        )
+        const yearMonth = currentYearMonth()
+        await Promise.all(
+          otherUsers.map((u, i) =>
+            testPrisma.monthlyRankingSnapshot.create({
+              data: {
+                accuracy: 0.9,
+                languageId: language.id,
+                playedAt: new Date("2026-06-10T00:00:00Z"),
+                /** score 1 (最下位) .. 10 になるよう敢えて低スコアで埋め、自分の 3 が確実に入賞 */
+                score: i + 1,
+                userId: u.id,
+                yearMonth,
+              },
+            }),
+          ),
+        )
+
+        const res = await request(app)
+          .post(`/api/play-sessions/${sessionId}/finish`)
+          .set("Authorization", `Bearer ${token}`)
+          .send({
+            accuracy: 1,
+            keystroke_logs: [
+              { elapsed_ms: 100, input_char: "a", is_correct: true, problem_index: 0 },
+              { elapsed_ms: 200, input_char: "b", is_correct: true, problem_index: 0 },
+              { elapsed_ms: 300, input_char: "c", is_correct: true, problem_index: 0 },
+            ],
+            typed_chars: 3,
+          })
+
+        expect(res.status).toBe(200)
+        /** cap 維持: 自分が入って 10 件のまま */
+        const total = await testPrisma.monthlyRankingSnapshot.count({
+          where: { languageId: language.id, yearMonth },
+        })
+        expect(total).toBe(10)
+        /** 自分の行は存在し score=3 */
+        const myRow = await testPrisma.monthlyRankingSnapshot.findUnique({
+          where: { yearMonth_languageId_userId: { languageId: language.id, userId: user.id, yearMonth } },
+        })
+        expect(myRow).toMatchObject({ score: 3 })
+        /** 元々最下位だった score=1 (otherUsers[0]) の行が消えている */
+        const evicted = await testPrisma.monthlyRankingSnapshot.findUnique({
+          where: { yearMonth_languageId_userId: { languageId: language.id, userId: otherUsers[0].id, yearMonth } },
+        })
+        expect(evicted).toBeNull()
+      })
+
+      it("当月 10 件埋まっており自分のスコアが boundary 未満なら snapshot は触らない", async () => {
+        const { language, sessionId, token, user } = await seedFinishContext()
+
+        /** 他ユーザー 10 件を score 100..109 で seed → boundary=100、自分の score=3 は入賞しない */
+        const otherUsers = await Promise.all(
+          Array.from({ length: 10 }, async (_, i) =>
+            testPrisma.user.create({
+              data: {
+                canPublicRanking: true,
+                displayName: `other${i}`,
+                email: `other${i}@example.com`,
+              },
+            }),
+          ),
+        )
+        const yearMonth = currentYearMonth()
+        await Promise.all(
+          otherUsers.map((u, i) =>
+            testPrisma.monthlyRankingSnapshot.create({
+              data: {
+                accuracy: 0.95,
+                languageId: language.id,
+                playedAt: new Date("2026-06-10T00:00:00Z"),
+                score: 100 + i,
+                userId: u.id,
+                yearMonth,
+              },
+            }),
+          ),
+        )
+
+        const res = await request(app)
+          .post(`/api/play-sessions/${sessionId}/finish`)
+          .set("Authorization", `Bearer ${token}`)
+          .send({
+            accuracy: 1,
+            keystroke_logs: [
+              { elapsed_ms: 100, input_char: "a", is_correct: true, problem_index: 0 },
+              { elapsed_ms: 200, input_char: "b", is_correct: true, problem_index: 0 },
+              { elapsed_ms: 300, input_char: "c", is_correct: true, problem_index: 0 },
+            ],
+            typed_chars: 3,
+          })
+
+        expect(res.status).toBe(200)
+        /** boundary は 100 (現状の最下位) のまま返る */
+        expect(res.body.monthly_top_ten_boundary_score).toBe(100)
+        /** 件数は 10 のまま、自分の行は入っていない */
+        const total = await testPrisma.monthlyRankingSnapshot.count({
+          where: { languageId: language.id, yearMonth },
+        })
+        expect(total).toBe(10)
+        const myRow = await testPrisma.monthlyRankingSnapshot.findUnique({
+          where: { yearMonth_languageId_userId: { languageId: language.id, userId: user.id, yearMonth } },
+        })
+        expect(myRow).toBeNull()
+      })
+    })
   })
 
   describe("異常系", () => {

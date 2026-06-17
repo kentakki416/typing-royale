@@ -18,6 +18,7 @@ import {
   GhostSourceSession,
   KeystrokeLogRepository,
   LanguageRepository,
+  MonthlyRankingSnapshotRepository,
   PlaySessionProblemRepository,
   PlaySessionRepository,
   ProblemRepository,
@@ -587,6 +588,7 @@ export const createChallengeGodsSession = async (
 type FinishSessionRepo = {
     cardStorage: CardStorage
     keystrokeLogRepository: KeystrokeLogRepository
+    monthlyRankingSnapshotRepository: MonthlyRankingSnapshotRepository
     playSessionProblemRepository: PlaySessionProblemRepository
     playSessionRepository: PlaySessionRepository
     playSessionStateRepository: PlaySessionStateRepository
@@ -596,6 +598,24 @@ type FinishSessionRepo = {
     userLanguageBestRepository: UserLanguageBestRepository
     userLifetimeStatsRepository: UserLifetimeStatsRepository
     userRepository: UserRepository
+}
+
+const MONTHLY_TOP_TEN_CAP = 10
+
+/**
+ * 与えられた時刻が属する JST 暦月を "YYYY-MM" 形式で返す純関数。
+ * monthly_ranking_snapshots.year_month に書き込む唯一のヘルパ
+ */
+const currentYearMonthJst = (now: Date): string => {
+  const fmt = new Intl.DateTimeFormat("ja-JP", {
+    month: "2-digit",
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+  })
+  const parts = Object.fromEntries(
+    fmt.formatToParts(now).filter((p) => p.type !== "literal").map((p) => [p.type, p.value]),
+  )
+  return `${parts.year}-${parts.month}`
 }
 
 export type FinishSessionInput = {
@@ -675,6 +695,57 @@ export const finishSession = async (
   const totalRankedPlayers = await repo.userLanguageBestRepository.countRankableByLanguage(state.languageId)
 
   /**
+   * 月間 TOP 10 snapshot の同期 UPSERT + cap 維持
+   * - 入賞条件: snapshot 件数 < cap OR 今回スコアが現 boundary 以上
+   * - 入賞時に自分の行を upsert し、件数が cap を超えていれば自分以外の最下位を 1 件 delete
+   * - 入賞しない場合は snapshot を一切触らない
+   * - 自分の当月過去ベストとの比較は snapshot.upsert の `update` で「上書き」される。
+   *   過去ベストの方が高い場合は今回スコアが boundary 未満になり、自然に入賞しない
+   * - 詳細: docs/spec/result-top-ten-popup/step1-api-finish-monthly-extension.md
+   */
+  const yearMonth = currentYearMonthJst(playedAt)
+  const beforeCount = await repo.monthlyRankingSnapshotRepository.countByLanguage(
+    yearMonth,
+    state.languageId,
+  )
+  const beforeBoundary = beforeCount < MONTHLY_TOP_TEN_CAP
+    ? null
+    : await repo.monthlyRankingSnapshotRepository.findBoundaryScore(
+      yearMonth,
+      state.languageId,
+      MONTHLY_TOP_TEN_CAP,
+    )
+  const isMonthlyTopTenEntry = beforeCount < MONTHLY_TOP_TEN_CAP
+    || score >= (beforeBoundary ?? 0)
+
+  if (isMonthlyTopTenEntry) {
+    await repo.monthlyRankingSnapshotRepository.upsertForUser({
+      accuracy: input.accuracy,
+      languageId: state.languageId,
+      playedAt,
+      score,
+      userId: state.userId,
+      yearMonth,
+    })
+    const afterCount = await repo.monthlyRankingSnapshotRepository.countByLanguage(
+      yearMonth,
+      state.languageId,
+    )
+    if (afterCount > MONTHLY_TOP_TEN_CAP) {
+      await repo.monthlyRankingSnapshotRepository.deleteLowestExcluding(
+        yearMonth,
+        state.languageId,
+        state.userId,
+      )
+    }
+  }
+  const monthlyTopTenBoundaryScore = await repo.monthlyRankingSnapshotRepository.findBoundaryScore(
+    yearMonth,
+    state.languageId,
+    MONTHLY_TOP_TEN_CAP,
+  )
+
+  /**
    * グレードアップが発生していれば達成カード PNG を自動生成 (rewards step6)
    * 失敗しても /finish 全体は成功扱い: rewards 行は assetUrl=null で残り、
    * マイページから再生成リクエストが可能
@@ -721,6 +792,7 @@ export const finishSession = async (
         to: { level: gradeUp.to.level, name: gradeUp.to.name, slug: gradeUp.to.slug },
       },
     mistypeStats,
+    monthlyTopTenBoundaryScore,
     newRank,
     persisted: true,
     problemsCompleted,

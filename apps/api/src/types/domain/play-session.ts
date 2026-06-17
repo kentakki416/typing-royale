@@ -107,6 +107,11 @@ export type FinishResult = {
     /** score-ranking step3 で追加 */
     bestScoreUpdated: boolean
     gradeUp: { from: FinishGrade; to: FinishGrade } | null
+    /**
+     * 月間 TOP 10 cap 内の最低スコア（自分の upsert 反映後の値）。
+     * 当月 snapshot が 10 件未満なら null。result-top-ten-popup spec を参照
+     */
+    monthlyTopTenBoundaryScore: number | null
     newRank: number | null
     topTenBoundaryScore: number | null
     /**

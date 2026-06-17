@@ -195,6 +195,7 @@ const playSessionStartSoloController = new PlaySessionStartSoloController(
 const playSessionFinishController = new PlaySessionFinishController(
   cardStorage,
   keystrokeLogRepository,
+  monthlyRankingSnapshotRepository,
   playSessionProblemRepository,
   playSessionRepository,
   playSessionStateRepository,
