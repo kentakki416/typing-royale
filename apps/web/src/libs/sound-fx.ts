@@ -8,57 +8,25 @@
  *   アクセント (C メジャー pentatonic からランダム)」を重ねた 2 レイヤー構成。
  *   メカ感で打鍵の実感を、ピッチで音楽的な高揚感を出す。combo に応じてピッチが
  *   オクターブ上に持ち上がり、上昇メロディに聞こえる
- * - master volume / mute は localStorage に永続化する
+ * - master volume は固定値。アプリ内で音量 UI を持たず OS / ブラウザ側で調整する
  * - AudioContext はブラウザの autoplay policy 上「ユーザー操作後」に
  *   resume が必要なので、初回 keydown で `resumeAudio()` を呼ぶ
  */
 
-const STORAGE_VOLUME_KEY = "typing-royale.audio.volume"
-const STORAGE_MUTED_KEY = "typing-royale.audio.muted"
+const MASTER_VOLUME = 0.6
 
 let cachedContext: AudioContext | null = null
 let masterGain: GainNode | null = null
-let masterVolume = 0.6
-let muted = false
-let prefsLoaded = false
-
-/**
- * volume / muted の変更を購読する listener。
- * `useSyncExternalStore` から呼ばれて UI と sound-fx の状態を同期する
- */
-type PrefsListener = () => void
-const prefsListeners = new Set<PrefsListener>()
-const notifyPrefsChange = () => prefsListeners.forEach((fn) => fn())
-
-export const subscribeAudioPrefs = (fn: PrefsListener): (() => void) => {
-  prefsListeners.add(fn)
-  return () => {
-    prefsListeners.delete(fn)
-  }
-}
-
-const loadPrefs = () => {
-  if (prefsLoaded) return
-  if (typeof window === "undefined") return
-  prefsLoaded = true
-  const v = window.localStorage.getItem(STORAGE_VOLUME_KEY)
-  if (v !== null) {
-    const n = Number(v)
-    if (!Number.isNaN(n)) masterVolume = Math.max(0, Math.min(1, n))
-  }
-  if (window.localStorage.getItem(STORAGE_MUTED_KEY) === "1") muted = true
-}
 
 const getContext = (): AudioContext | null => {
   if (typeof window === "undefined") return null
-  loadPrefs()
   if (cachedContext !== null) return cachedContext
   const Ctx = window.AudioContext
     ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
   if (!Ctx) return null
   cachedContext = new Ctx()
   masterGain = cachedContext.createGain()
-  masterGain.gain.setValueAtTime(muted ? 0 : masterVolume, cachedContext.currentTime)
+  masterGain.gain.setValueAtTime(MASTER_VOLUME, cachedContext.currentTime)
   masterGain.connect(cachedContext.destination)
   return cachedContext
 }
@@ -66,44 +34,6 @@ const getContext = (): AudioContext | null => {
 const getMaster = (): GainNode | null => {
   getContext()
   return masterGain
-}
-
-export const getMasterVolume = (): number => {
-  loadPrefs()
-  return masterVolume
-}
-
-export const isMuted = (): boolean => {
-  loadPrefs()
-  return muted
-}
-
-export const setMasterVolume = (v: number) => {
-  loadPrefs()
-  masterVolume = Math.max(0, Math.min(1, v))
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(STORAGE_VOLUME_KEY, String(masterVolume))
-  }
-  const master = getMaster()
-  const ctx = getContext()
-  if (master && ctx) {
-    master.gain.setTargetAtTime(muted ? 0 : masterVolume, ctx.currentTime, 0.02)
-  }
-  notifyPrefsChange()
-}
-
-export const setMuted = (m: boolean) => {
-  loadPrefs()
-  muted = m
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(STORAGE_MUTED_KEY, m ? "1" : "0")
-  }
-  const master = getMaster()
-  const ctx = getContext()
-  if (master && ctx) {
-    master.gain.setTargetAtTime(m ? 0 : masterVolume, ctx.currentTime, 0.02)
-  }
-  notifyPrefsChange()
 }
 
 /**

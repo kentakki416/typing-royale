@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from "react"
 
 import { FinishGuestPlaySessionResponse, FinishPlaySessionResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
-import { AudioControls } from "@/components/audio-controls"
 import { Topbar } from "@/components/topbar"
 import type { BonusEvent } from "@/libs/combo-time-bonus"
 import { playFinish, playTimeBonus, playUrgentTick } from "@/libs/sound-fx"
@@ -270,19 +269,22 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
   const diffClass = diff > 0 ? "success" : diff < 0 ? "error" : ""
 
   /**
-   * combo tier (10 combo ごとの 1〜6) が変わった瞬間に水玉 burst をリセットして再生する。
-   * tierBounceKey は wrapper の droplet-burst の `key` に渡し、tier 変化のたびに
+   * 10 combo マイルストーン (10, 20, 30, ...) に到達するたびに水玉 burst をリセットして
+   * 再生する。`comboTier` は 50 で虹 (tier 6) 固定になるが、虹到達後も 10 ごとに
+   * 演出を出したいので tier 変化ではなく `Math.floor(combo / 10)` の変化で発火する。
+   * tierBounceKey は wrapper の droplet-burst の `key` に渡し、変化のたびに
    * 再 mount → animation が頭から走る
    */
   const currentComboTier = comboTier(combo)
-  const lastComboTierRef = useRef<number>(1)
+  const comboDecade = Math.floor(combo / 10)
+  const lastComboDecadeRef = useRef<number>(0)
   const [tierBounceKey, setTierBounceKey] = useState(0)
   useEffect(() => {
-    if (currentComboTier !== lastComboTierRef.current && combo > 0) {
+    if (comboDecade !== lastComboDecadeRef.current && combo > 0) {
       setTierBounceKey((k) => k + 1)
     }
-    lastComboTierRef.current = currentComboTier
-  }, [currentComboTier, combo])
+    lastComboDecadeRef.current = comboDecade
+  }, [combo, comboDecade])
 
   const screenClass = flashKind === null ? "" : `play-flash flash-${flashKind}`
 
@@ -299,7 +301,6 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
       </div>
 
       <Topbar isAuthed={!isGuest} languageBadge="TypeScript" modeBadge={modeBadge} />
-      <AudioControls />
 
       <div className={`container ${screenClass}`} style={{ position: "relative", zIndex: 1 }}>
         <div className="play-hud">
