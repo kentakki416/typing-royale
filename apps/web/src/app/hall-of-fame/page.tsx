@@ -7,6 +7,7 @@ import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
 
+import { ChallengeGodsButton } from "./challenge-gods-button"
 import { HofCards } from "./hof-cards"
 
 export const metadata: Metadata = {
@@ -19,6 +20,15 @@ type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]
 const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
   javascript: "JavaScript",
   typescript: "TypeScript",
+}
+
+/**
+ * 言語 slug → DB の Language.id マップ。 packages/db/prisma/seed.ts と
+ * apps/web/src/app/play/page.tsx の `SUPPORTED_LANGUAGES` と整合させる
+ */
+const LANGUAGE_IDS: Record<SupportedLanguage, number> = {
+  javascript: 2,
+  typescript: 1,
 }
 
 /**
@@ -52,10 +62,10 @@ export default async function HallOfFamePage({
         <div className="text-center mb-24">
           <div style={{ fontSize: "56px" }}>🏛</div>
           <h1>殿堂入り — 神々の殿堂</h1>
-          <p className="text-muted">言語別オールタイムトップ 10。上位 3 名は神々の称号付き。</p>
+          <p className="text-muted">言語別オールタイムトップ 10。</p>
         </div>
 
-        <div className="text-center mb-24">
+        <div className="flex-between mb-24" style={{ alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
           <div className="pills">
             {SUPPORTED_LANGUAGES.map((lang) => (
               <Link
@@ -67,6 +77,7 @@ export default async function HallOfFamePage({
               </Link>
             ))}
           </div>
+          <ChallengeGodsButton languageId={LANGUAGE_IDS[language]} />
         </div>
 
         {data.entries.length === 0 ? (
