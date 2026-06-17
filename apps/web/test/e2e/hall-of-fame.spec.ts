@@ -10,7 +10,11 @@ test.describe("殿堂入り", () => {
     await page.goto("/hall-of-fame")
     await expect(page).toHaveURL(/\/hall-of-fame/)
     await expect(page.getByRole("heading", { name: /殿堂入り/ })).toBeVisible()
-    await expect(page.getByRole("link", { name: "TypeScript" })).toBeVisible()
+    /**
+     * 言語タブと、 dummy users の GitHub リンク (microsoft/TypeScript 等) が両方
+     * "TypeScript" を含むので exact 一致で言語タブだけを指す
+     */
+    await expect(page.getByRole("link", { name: "TypeScript", exact: true })).toBeVisible()
   })
 
   test("上位 3 名カードがあればクリックで神モーダルが開く", async ({ page }) => {
