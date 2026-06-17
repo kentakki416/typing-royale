@@ -121,7 +121,7 @@ export function CurtainModal({ entry, onClose }: Props) {
 
         {entry.user.favorite_repo_url !== null && repoLabel !== null && (
           <div className="card mt-16" style={{ padding: "16px 18px" }}>
-            <div className="card-title text-sm mb-8" style={{ color: "var(--accent)" }}>📦 お気に入りリポジトリ</div>
+            <div className="card-title text-sm mb-8" style={{ color: "var(--accent)" }}>🔗 GitHub</div>
             <a
               className="text-mono text-sm"
               href={entry.user.favorite_repo_url}

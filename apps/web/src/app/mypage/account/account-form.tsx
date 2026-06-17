@@ -53,13 +53,13 @@ export function AccountForm({ initialUser }: Props) {
           </div>
 
           <div className="mb-16">
-            <label className="text-sm" htmlFor="favorite_repo_url">お気に入りリポジトリ URL</label>
+            <label className="text-sm" htmlFor="favorite_repo_url">GitHub リンク</label>
             <input
               defaultValue={displayUser.favorite_repo_url ?? ""}
               id="favorite_repo_url"
               maxLength={200}
               name="favorite_repo_url"
-              placeholder="https://github.com/owner/repo"
+              placeholder="https://github.com/yourname"
               style={{
                 background: "var(--bg-base)",
                 border: "1px solid var(--border)",
@@ -74,7 +74,7 @@ export function AccountForm({ initialUser }: Props) {
               type="url"
             />
             <p className="text-xs text-muted mt-8">
-              殿堂入りモーダルで「お気に入りリポジトリ」として公開されます。空欄で削除。
+              プロフィールでも、お気に入りリポジトリでも OK。殿堂入りに掲載されると他のユーザーから参照されます。空欄で削除。
             </p>
           </div>
 

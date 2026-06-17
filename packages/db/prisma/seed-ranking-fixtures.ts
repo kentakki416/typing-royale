@@ -28,15 +28,16 @@ const FIXTURE_PROBLEM_AST_HASH = "fixture-ranking-seed-ast-v1"
 type FixtureUser = {
   email: string
   displayName: string
+  favoriteRepoUrl?: string
   lifetimeBest: number
   monthlyCurrent: number
 }
 
 const fixtureUsers: FixtureUser[] = [
-  { displayName: "Charlie (dev)", email: "charlie@dev.local", lifetimeBest: 1500, monthlyCurrent: 1400 },
-  { displayName: "Dave (dev)", email: "dave@dev.local", lifetimeBest: 1200, monthlyCurrent: 1100 },
-  { displayName: "Eve (dev)", email: "eve@dev.local", lifetimeBest: 1000, monthlyCurrent: 900 },
-  { displayName: "Frank (dev)", email: "frank@dev.local", lifetimeBest: 800, monthlyCurrent: 700 },
+  { displayName: "Charlie (dev)", email: "charlie@dev.local", favoriteRepoUrl: "https://github.com/microsoft/TypeScript", lifetimeBest: 1500, monthlyCurrent: 1400 },
+  { displayName: "Dave (dev)", email: "dave@dev.local", favoriteRepoUrl: "https://github.com/facebook/react", lifetimeBest: 1200, monthlyCurrent: 1100 },
+  { displayName: "Eve (dev)", email: "eve@dev.local", favoriteRepoUrl: "https://github.com/vercel/next.js", lifetimeBest: 1000, monthlyCurrent: 900 },
+  { displayName: "Frank (dev)", email: "frank@dev.local", favoriteRepoUrl: "https://github.com/nodejs/node", lifetimeBest: 800, monthlyCurrent: 700 },
   { displayName: "Grace (dev)", email: "grace@dev.local", lifetimeBest: 600, monthlyCurrent: 500 },
   { displayName: "Henry (dev)", email: "henry@dev.local", lifetimeBest: 400, monthlyCurrent: 300 },
   { displayName: "Ivy (dev)", email: "ivy@dev.local", lifetimeBest: 200, monthlyCurrent: 150 },
@@ -138,8 +139,16 @@ export const seedRankingFixtures = async (prisma: PrismaClient): Promise<void> =
   /** 当月分の dummy users */
   for (const f of fixtureUsers) {
     const user = await prisma.user.upsert({
-      create: { canPublicRanking: true, displayName: f.displayName, email: f.email },
-      update: { displayName: f.displayName },
+      create: {
+        canPublicRanking: true,
+        displayName: f.displayName,
+        email: f.email,
+        favoriteRepoUrl: f.favoriteRepoUrl ?? null,
+      },
+      update: {
+        displayName: f.displayName,
+        favoriteRepoUrl: f.favoriteRepoUrl ?? null,
+      },
       where: { email: f.email },
     })
 
