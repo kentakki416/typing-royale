@@ -72,6 +72,8 @@ step1 で追加した `user_language_best` テーブルへの書き込みと、`
   "best_score_updated": true,
   "new_rank": 87,
   "top_ten_boundary_score": 1041,
+  "monthly_top_ten_boundary_score": 612,
+  "total_ranked_players": 53871,
   "grade_up": {
     "from": { "level": 4, "name": "Senior Engineer", "slug": "senior" },
     "to":   { "level": 5, "name": "Staff Engineer",  "slug": "staff" }
@@ -84,6 +86,8 @@ step1 で追加した `user_language_best` テーブルへの書き込みと、`
 | `best_score_updated` | bool | この `/finish` でその言語のベストを更新したか |
 | `new_rank` | int \| null | upsert 後の言語別順位（`COUNT(自分より上位) + 1`）。ベスト未更新なら旧順位を返す。`canPublicRanking=false` でも自分自身は順位を見れる |
 | `top_ten_boundary_score` | int \| null | 直近の言語別 10 位スコア（ベスト 10 件未満なら null）。クライアントが「TOP 10 入りモーダルを開くべきか」判定する |
+| `monthly_top_ten_boundary_score` | int \| null | 今月（JST）の言語別 10 位スコア（`monthly_ranking_snapshots` 由来、10 件未満なら null）。リザルト画面で月間 TOP 10 入りモーダル判定に利用 |
+| `total_ranked_players` | int | この言語の全期間ランカー数（`canPublicRanking=true`）。リザルト画面の「○○人中 N 位」表示に利用 |
 | `grade_up` | object \| null | グレードアップが発生したときのみ。`from` / `to` でクライアントが祝賀演出を出す |
 
 ### エラー
@@ -114,12 +118,14 @@ sequenceDiagram
     Svc->>DB: INSERT keystroke_logs (compressed)
     Svc->>DB: UPSERT user_lifetime_stats<br/>bestScore = MAX(prev, new)<br/>+ currentGrade, currentGradeReachedAt (本step追加)
     Svc->>DB: UPSERT user_language_best<br/>WHERE userId, languageId<br/>IF newScore > currentBest THEN update (本step追加)
+    Svc->>DB: UPSERT monthly_ranking_snapshots<br/>WHERE yearMonth=currentYearMonthJst(playedAt), languageId<br/>cap 維持 + 月間 10 位 boundary 取得 (本step追加)
     Svc->>DB: COMMIT
 
     Svc->>R: DEL play_session_state:{id}
     Svc->>DB: SELECT score FROM user_language_best<br/>WHERE languageId=? ORDER BY score DESC LIMIT 1 OFFSET 9<br/>→ topTenBoundaryScore
+    Svc->>DB: SELECT COUNT(*) FROM user_language_best WHERE languageId=? AND canPublicRanking=true<br/>→ totalRankedPlayers
     Svc->>DB: SELECT my row + COUNT(higher) → new_rank
-    Svc-->>Ctrl: ok({ ...既存, top_ten_boundary_score, grade_up, new_rank, best_score_updated })
+    Svc-->>Ctrl: ok({ ...既存, top_ten_boundary_score, monthly_top_ten_boundary_score, total_ranked_players, grade_up, new_rank, best_score_updated })
     Ctrl-->>C: 200 {...}
 ```
 
@@ -617,8 +623,10 @@ describe("POST /api/play-sessions/:id/finish", () => {
           from: { level: 1, name: "Intern", slug: "intern" },
           to: { level: 2, name: "Junior Developer", slug: "junior" },
         },
+        monthly_top_ten_boundary_score: null,
         new_rank: 1,
         top_ten_boundary_score: null,
+        total_ranked_players: 1,
       })
 
       const updated = await testPrisma.userLanguageBest.findUnique({

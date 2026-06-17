@@ -189,7 +189,7 @@ sequenceDiagram
 |---|---|
 | `current_grade` / `best_score`（`GET /api/user/lifetime-stats` 由来 — score-ranking 機能の API、本 step ではモックで OK） | `nextGrade`, `pointsToNext` |
 
-score-ranking の閾値表（Intern 0 / Junior 100 / Mid 250 / Senior 400 / Staff 600 / Principal 800 / Distinguished 1000 / Fellow 1200）を `apps/web/src/libs/grade.ts` に持たせて純粋関数化する。閾値の正本は score-ranking 機能なので、コメントで「lifetime-stats API が出来たらそこから降ってきた値を使う」と書いておく。
+グレード閾値の正本は **score-ranking 機能** に集約されているため、本 step では閾値表を持たず [`../score-ranking/README.md`](../score-ranking/README.md) を参照する。`apps/web/src/libs/grade.ts` には「`current_grade` / `best_score` を入力に `nextGrade` / `pointsToNext` を計算する純粋関数」だけを置き、閾値テーブルは score-ranking spec の値を import / 参照する形にする（重複定義しない）。
 
 ## 対応内容
 

@@ -56,7 +56,7 @@
   "user": {
     "id": 12,
     "avatar_url": "https://avatars.githubusercontent.com/u/...",
-    "display_name": "sakurai_dev",
+    "github_username": "sakurai_dev",
     "joined_at": "2026-01-08T00:00:00.000Z"
   },
   "lifetime_stats": {
@@ -252,7 +252,7 @@ const gradeSchema = z.object({
 const playerUserSchema = z.object({
   id: z.number().int().positive(),
   avatar_url: z.string().url().nullable(),
-  display_name: z.string(),
+  github_username: z.string().nullable(),
   joined_at: z.string().datetime(),
 })
 
@@ -348,13 +348,13 @@ export type PublicProfileUser = {
     avatarUrl: string | null
     canPublicRanking: boolean
     createdAt: Date
-    displayName: string
+    githubUsername: string | null
     id: number
 }
 
 async findPublicProfile(userId: number): Promise<PublicProfileUser | null> {
   const row = await this._prisma.user.findUnique({
-    select: { avatarUrl: true, canPublicRanking: true, createdAt: true, displayName: true, id: true },
+    select: { avatarUrl: true, canPublicRanking: true, createdAt: true, githubUsername: true, id: true },
     where: { id: userId },
   })
   if (row === null) return null
@@ -362,7 +362,7 @@ async findPublicProfile(userId: number): Promise<PublicProfileUser | null> {
     avatarUrl: row.avatarUrl,
     canPublicRanking: row.canPublicRanking,
     createdAt: row.createdAt,
-    displayName: row.displayName ?? `user${row.id}`,
+    githubUsername: row.githubUsername ?? `user${row.id}`,
     id: row.id,
   }
 }
@@ -423,7 +423,7 @@ export type PlayerDetailResult = {
     }
     user: {
         avatarUrl: string | null
-        displayName: string
+        githubUsername: string | null
         id: number
         joinedAt: Date
     }
@@ -563,7 +563,7 @@ export class PlayerDetailController {
       user: {
         id: result.value.user.id,
         avatar_url: result.value.user.avatarUrl,
-        display_name: result.value.user.displayName,
+        github_username: result.value.user.githubUsername,
         joined_at: result.value.user.joinedAt.toISOString(),
       },
     }
@@ -638,7 +638,7 @@ describe("GET /api/players/:userId", () => {
   describe("正常系", () => {
     it("公開ユーザーの詳細を返す", async () => {
       const user = await testPrisma.user.create({
-        data: { canPublicRanking: true, displayName: "sakurai_dev" },
+        data: { canPublicRanking: true, githubUsername: "sakurai_dev" },
       })
       await testPrisma.userLifetimeStats.create({
         data: { bestScore: 1490, currentGrade: "fellow", streakDays: 28, totalSessions: 142, totalTypedChars: 512847n, userId: user.id },
@@ -654,7 +654,7 @@ describe("GET /api/players/:userId", () => {
           current_grade: { level: 8, name: "Fellow", slug: "fellow" },
           total_typed_chars: 512847,
         }),
-        user: expect.objectContaining({ display_name: "sakurai_dev" }),
+        user: expect.objectContaining({ github_username: "sakurai_dev" }),
       })
     })
   })

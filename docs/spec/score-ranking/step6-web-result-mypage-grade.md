@@ -233,6 +233,13 @@ type Props = {
     result: FinishPlaySessionResponse | null
 }
 
+/**
+ * NOTE: `result.monthly_top_ten_boundary_score` と `result.total_ranked_players` は
+ *       /finish レスポンスに含まれており、リザルト画面側で次の用途に直接利用する:
+ *       - `monthly_top_ten_boundary_score`: 今回スコアが月間 TOP 10 圏内かを判定し、
+ *         圏内なら月間 TOP 10 入りモーダル / 演出を出す
+ *       - `total_ranked_players`: 「○○人中 N 位」表示の母数として利用
+
 export function ResultScreen({ repoInfo, result }: Props) {
   const [me, setMe] = useState<GetMyRankingResponse | null>(null)
 
@@ -613,6 +620,11 @@ const RankingRow = ({ badge, label, ranking }: {
   )
 }
 ```
+
+> NOTE: 上記の 3 バリアント（圏内 / 圏外 / 未プレイ）切り替えは設計上のリファレンス。
+> 現状の `apps/web/src/app/mypage` 実装はこの判定ロジックを持たない簡略版になっており、
+> `ranking.best_score` / `ranking.rank` をそのまま表示するだけのテーブルになっている。
+> 厳密な「圏内 / 圏外 / 未プレイ」演出はリザルト画面側（`monthly_top_ten_boundary_score` などを利用）に寄せている。
 
 ## 動作確認
 

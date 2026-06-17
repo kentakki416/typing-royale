@@ -21,20 +21,20 @@ export const getMonthlyRankingsQueryStringSchema = z.object({
 })
 
 export const monthlyRankingEntrySchema = z.object({
-  accuracy: z.number(),
+  accuracy: z.number().min(0).max(1),
   played_at: z.string().datetime(),
-  rank: z.number().int().positive(),      /// アプリ側で算出 (idx+1)
+  rank: z.number().int().min(1),      /// アプリ側で算出 (idx+1)
   score: z.number().int().nonnegative(),
   user: z.object({
     avatar_url: z.string().url().nullable(),
     current_grade: z.string(),
-    display_name: z.string(),
+    github_username: z.string().nullable(),
     id: z.number().int().positive(),
   }),
 })
 
 export const getMonthlyRankingsResponseSchema = z.object({
-  entries: z.array(monthlyRankingEntrySchema),
+  entries: z.array(monthlyRankingEntrySchema).max(10),
   /** "YYYY-MM" 形式 (JST) */
   year_month: z.string().regex(/^\d{4}-\d{2}$/),
 })
@@ -55,21 +55,30 @@ export type MonthlyRankingTopEntry = {
   user: {
     avatarUrl: string | null
     currentGrade: string
-    displayName: string
+    githubUsername: string
     id: number
   }
 }
 
+export type UpsertMonthlySnapshotInput = {
+  accuracy: number
+  languageId: number
+  playedAt: Date
+  score: number
+  userId: number
+  yearMonth: string
+}
+
 export interface MonthlyRankingSnapshotRepository {
-  findTopByLanguage: (yearMonth: string, languageId: number, limit: number) => Promise<MonthlyRankingTopEntry[]>
+  /** capSize 件のうち何件が現在保存されているか */
+  countByLanguage: (yearMonth: string, languageId: number) => Promise<number>
   /** TOP 10 cap 維持時の boundary score (= MIN(score)) を取得。0 件なら null */
   findBoundaryScore: (yearMonth: string, languageId: number, capSize: number) => Promise<number | null>
   /** /finish 内で自分の行を upsert */
-  upsertForUser: (input: { yearMonth: string; languageId: number; userId: number; score: number; accuracy: number; playedAt: Date }, tx?: TransactionContext) => Promise<void>
+  upsertForUser: (input: UpsertMonthlySnapshotInput, tx?: TransactionContext) => Promise<void>
   /** TOP capSize を超過したとき、自分以外の最低スコア行を delete */
   deleteLowestExcluding: (yearMonth: string, languageId: number, excludeUserId: number, tx?: TransactionContext) => Promise<void>
-  /** capSize 件のうち何件が現在保存されているか */
-  countByLanguage: (yearMonth: string, languageId: number) => Promise<number>
+  findTopByLanguage: (yearMonth: string, languageId: number, limit: number) => Promise<MonthlyRankingTopEntry[]>
 }
 ```
 
@@ -91,15 +100,15 @@ findTopByLanguage = async (yearMonth, languageId, limit) => {
     take: limit,
     where: { languageId, yearMonth },
   })
-  return rows.map((r) => ({
-    accuracy: r.accuracy,
-    playedAt: r.playedAt,
-    score: r.score,
+  return rows.map((row) => ({
+    accuracy: row.accuracy,
+    playedAt: row.playedAt,
+    score: row.score,
     user: {
-      avatarUrl: r.user.avatarUrl,
-      currentGrade: r.user.lifetimeStats?.currentGrade ?? "intern",
-      displayName: r.user.displayName,
-      id: r.user.id,
+      avatarUrl: row.user.avatarUrl,
+      currentGrade: row.user.lifetimeStats?.currentGrade ?? "intern",
+      githubUsername: row.user.githubUsername ?? "anonymous",
+      id: row.user.id,
     },
   }))
 }
@@ -109,20 +118,21 @@ findTopByLanguage = async (yearMonth, languageId, limit) => {
 
 ```ts
 export const listMonthly = async (
-  input: { language: "javascript" | "typescript"; limit: number },
+  input: { languageSlug: "javascript" | "typescript"; limit: number },
   repo: {
     languageRepository: LanguageRepository
     monthlyRankingSnapshotRepository: MonthlyRankingSnapshotRepository
   },
 ): Promise<Result<{ entries: MonthlyRankingEntryWithRank[]; yearMonth: string }>> => {
-  logger.debug("RankingService: listMonthly", { language: input.language, limit: input.limit })
+  logger.debug("RankingService: listMonthly", { languageSlug: input.languageSlug, limit: input.limit })
 
-  const language = await repo.languageRepository.findBySlug(input.language)
+  const language = await repo.languageRepository.findBySlug(input.languageSlug)
   if (language === null) {
-    return err(badRequestError(`Unsupported language: ${input.language}`))
+    return err(badRequestError(`Unsupported language: ${input.languageSlug}`))
   }
 
-  const yearMonth = currentYearMonthJst()
+  /** 純関数として `new Date()` を明示的に渡す（テスト時に固定時刻を注入できる） */
+  const yearMonth = currentYearMonthJst(new Date())
   const top = await repo.monthlyRankingSnapshotRepository.findTopByLanguage(
     yearMonth,
     language.id,

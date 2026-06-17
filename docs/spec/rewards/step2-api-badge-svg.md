@@ -1,6 +1,6 @@
 # step2: 動的 SVG バッジ API + badge_configs CRUD
 
-README に貼る動的 SVG バッジを返す公開 API `GET /badge/:username.svg` と、表示項目を変更する `GET / PUT /api/users/me/badge-config` を実装する。
+README に貼る動的 SVG バッジを返す公開 API `GET /badge/:username.svg` と、表示項目を変更する `GET / PUT /api/user/badge-config` を実装する。
 
 SVG は **JSX を介さず文字列テンプレートで生成** する（badge は固定レイアウトで装飾も限定的なため satori はオーバーキル）。 6 種の `displayItems` slug（`grade` / `best_score` / `rank` / `streak_days` / `typed_chars` / `username`）から `badge_configs.displayItems` で選択された項目のみを縦に積む。
 
@@ -12,16 +12,16 @@ CDN キャッシュ前提のため `Cache-Control: public, max-age=300, stale-wh
 - [依存](#依存)
 - [リクエスト](#リクエスト)
   - [GET /badge/:username.svg](#get-badgeusernamesvg)
-  - [GET /api/users/me/badge-config](#get-apiusersmebadge-config)
-  - [PUT /api/users/me/badge-config](#put-apiusersmebadge-config)
+  - [GET /api/user/badge-config](#get-apiusersmebadge-config)
+  - [PUT /api/user/badge-config](#put-apiusersmebadge-config)
 - [レスポンス](#レスポンス)
   - [GET /badge/:username.svg](#get-badgeusernamesvg-1)
-  - [GET /api/users/me/badge-config](#get-apiusersmebadge-config-1)
-  - [PUT /api/users/me/badge-config](#put-apiusersmebadge-config-1)
+  - [GET /api/user/badge-config](#get-apiusersmebadge-config-1)
+  - [PUT /api/user/badge-config](#put-apiusersmebadge-config-1)
   - [エラー](#エラー)
 - [処理フロー](#処理フロー)
   - [GET /badge/:username.svg の流れ](#get-badgeusernamesvg-の流れ)
-  - [PUT /api/users/me/badge-config の流れ](#put-apiusersmebadge-config-の流れ)
+  - [PUT /api/user/badge-config の流れ](#put-apiusersmebadge-config-の流れ)
 - [SVG 生成ロジック](#svg-生成ロジック)
 - [設計方針](#設計方針)
 - [対応内容](#対応内容)
@@ -30,7 +30,7 @@ CDN キャッシュ前提のため `Cache-Control: public, max-age=300, stale-wh
 
 ## 対象 API
 
-| 項目 | GET /badge/:username.svg | GET /api/users/me/badge-config | PUT /api/users/me/badge-config |
+| 項目 | GET /badge/:username.svg | GET /api/user/badge-config | PUT /api/user/badge-config |
 |---|---|---|---|
 | 認証 | 不要（公開、CDN キャッシュ前提） | 必須 (Bearer JWT) | 必須 (Bearer JWT) |
 | 副作用 | なし | なし | `badge_configs` upsert |
@@ -54,29 +54,27 @@ CDN キャッシュ前提のため `Cache-Control: public, max-age=300, stale-wh
 
 | Path Param | 型 | 制約 | 説明 |
 |---|---|---|---|
-| `username` | string | 1-40 chars, 英数 + `-` + `_` | `User.displayName` 一致で引く |
+| `username` | string | 1-40 chars, 英数 + `-` + `_` | `User.githubUsername` で引く |
 
 クエリ：なし（表示項目は `badge_configs.displayItems` から取得）
 
-### GET /api/users/me/badge-config
+### GET /api/user/badge-config
 
 なし（認証 cookie のみ）
 
-### PUT /api/users/me/badge-config
+### PUT /api/user/badge-config
 
 Body:
 
 ```json
 {
-  "display_items": ["grade", "best_score", "rank"],
-  "theme": "dark"
+  "display_items": ["grade", "best_score", "rank"]
 }
 ```
 
 | フィールド | 型 | 必須 | 制約 | 説明 |
 |---|---|---|---|---|
 | `display_items` | string[] | yes | 1-5 要素、各要素は `grade` / `best_score` / `rank` / `streak_days` / `typed_chars` / `username` から選択（重複なし） | バッジに表示する項目 |
-| `theme` | string | yes | `dark` / `light` | テーマ |
 
 ## レスポンス
 
@@ -92,12 +90,11 @@ Body:
 
 `canPublicRanking=false` または存在しない `username`: 200 OK + 「Private / Not Found」表示の SVG（CDN キャッシュ前提のため 404 にしない）
 
-### GET /api/users/me/badge-config
+### GET /api/user/badge-config
 
 ```json
 {
   "display_items": ["grade", "best_score"],
-  "theme": "dark",
   "updated_at": "2026-06-08T12:34:56.000Z"
 }
 ```
@@ -105,12 +102,11 @@ Body:
 | フィールド | 型 | 説明 |
 |---|---|---|
 | `display_items` | string[] | 設定済み or default `["grade", "best_score"]` |
-| `theme` | string | `dark` / `light` |
 | `updated_at` | string (ISO 8601) | 最終更新 |
 
 未保存ユーザーでもデフォルト値を返す（200、`badge_configs` 行が無くてもクライアントは「設定済み」として扱える）
 
-### PUT /api/users/me/badge-config
+### PUT /api/user/badge-config
 
 `GET` と同じ shape を返す（upsert 後の値）
 
@@ -118,7 +114,7 @@ Body:
 
 | Status | type | 条件 | クライアント挙動 |
 |---|---|---|---|
-| 400 | BAD_REQUEST | `display_items` 不正 / `theme` 不正 | バリデーションエラー表示 |
+| 400 | BAD_REQUEST | `display_items` 不正 | バリデーションエラー表示 |
 | 401 | UNAUTHORIZED | JWT 無し | ログイン誘導 |
 
 `GET /badge/:username.svg` は **404 を返さず常に 200** で SVG を返す（CDN キャッシュ前提）
@@ -137,7 +133,7 @@ sequenceDiagram
     CDN->>Ctrl: GET /badge/sakurai_dev.svg
     Ctrl->>Ctrl: Zod 検証 (username)
     Ctrl->>Svc: render({ username })
-    Svc->>DB: SELECT users WHERE displayName = ? AND canPublicRanking = true
+    Svc->>DB: SELECT users WHERE githubUsername = ? AND canPublicRanking = true
     alt 不在 or canPublicRanking=false
         Svc-->>Ctrl: ok({ svg: privateSvg() })
     else 存在
@@ -147,7 +143,7 @@ sequenceDiagram
             Svc->>DB: SELECT user_language_best WHERE userId AND languageId=ts
             Svc->>DB: COUNT(higher) → rank
         end
-        Svc->>Svc: SVG 文字列を組み立て (theme + displayItems)
+        Svc->>Svc: SVG 文字列を組み立て (displayItems)
         Svc-->>Ctrl: ok({ svg })
     end
     Ctrl-->>CDN: 200 image/svg+xml + Cache-Control
@@ -156,14 +152,14 @@ sequenceDiagram
 #### 流れ
 
 1. Controller が `username` を Zod で検証（NG なら 200 + 「Bad Request」SVG）
-2. Service が `User` を `displayName` で取得（NG / `canPublicRanking=false` なら「Private」SVG を返して 200）
+2. Service が `User` を `githubUsername` で取得（NG / `canPublicRanking=false` なら「Private」SVG を返して 200）
 3. `user_lifetime_stats` を取得（無ければ defaults）
-4. `badge_configs` を取得（無ければ default `["grade", "best_score"]` / `dark`）
+4. `badge_configs` を取得（無ければ default `["grade", "best_score"]`）
 5. `displayItems` に `rank` が含まれていれば TS の `user_language_best` を引いて `countHigherRanked + 1`
-6. SVG を文字列テンプレートで組み立て（width/height/theme/各行 text 要素）
+6. SVG を文字列テンプレートで組み立て（width/height/各行 text 要素、常に黒背景）
 7. Controller が `Content-Type: image/svg+xml` + `Cache-Control: public, max-age=300, stale-while-revalidate=600` で返す
 
-### PUT /api/users/me/badge-config の流れ
+### PUT /api/user/badge-config の流れ
 
 ```mermaid
 sequenceDiagram
@@ -173,19 +169,19 @@ sequenceDiagram
     participant Svc as badge.upsertConfig
     participant DB as Postgres
 
-    C->>Mw: PUT /api/users/me/badge-config (Bearer JWT)
+    C->>Mw: PUT /api/user/badge-config (Bearer JWT)
     Mw->>Ctrl: req.userId 注入
-    Ctrl->>Ctrl: Zod 検証 (display_items / theme)
-    Ctrl->>Svc: upsertConfig({ userId, displayItems, theme })
+    Ctrl->>Ctrl: Zod 検証 (display_items)
+    Ctrl->>Svc: upsertConfig({ userId, displayItems })
     Svc->>DB: UPSERT badge_configs WHERE userId = ?
-    Svc-->>Ctrl: ok({ displayItems, theme, updatedAt })
+    Svc-->>Ctrl: ok({ displayItems, updatedAt })
     Ctrl-->>C: 200 {...}
 ```
 
 #### 流れ
 
 1. 認証 middleware が `req.userId` を注入
-2. Controller が Zod で `display_items` (1-5 要素, 列挙) / `theme` (列挙) を検証
+2. Controller が Zod で `display_items` (1-5 要素, 列挙) を検証
 3. Service が `badge_configs` を upsert
 4. レスポンス組み立て (snake_case 変換)
 
@@ -208,7 +204,6 @@ type BadgeData = {
 type BuildBadgeInput = {
   data: BadgeData
   displayItems: string[]
-  theme: "dark" | "light"
 }
 ```
 
@@ -217,7 +212,7 @@ type BuildBadgeInput = {
 実装方針：
 
 - 幅 280 / 行高 24 / 行数 = `displayItems.length` で高さ可変
-- `theme === "dark"` なら `#0d1117` 背景 / `#ffffff` 文字、`light` は `#ffffff` 背景 / `#0d1117` 文字
+- 常に黒背景固定（`#0d1117` 背景 / `#ffffff` 文字）。テーマ選択は廃止
 - `xml:lang="ja"` を付与 (ChatGPT 等で読み上げ時の言語識別)
 - アクセント色（gold `#d29922`）は「Typing Royale」ロゴ行と grade 行に使う
 
@@ -227,11 +222,10 @@ type BuildBadgeInput = {
 
 - **satori を使わない理由**: バッジは固定レイアウトで画像 / フォントの埋め込みも不要。プレーン SVG 文字列テンプレートで十分軽量。satori は達成カード PNG (step6) で導入する
 - **CDN キャッシュ前提で 404 を返さない理由**: GitHub Camo CDN は 4xx をキャッシュしない一方、間違って 404 が camo に入ると README から削除されるまで「壊れた画像アイコン」が表示される。「Private」「Not Found」SVG を 200 で返す方が UX 良い
-- **`username` で引く理由**: バッジ URL は `https://typing-royale.example.com/badge/sakurai_dev.svg` のような **覚えやすい URL** にしたい。`/badge/12.svg` だと README に貼ったときに「12 は誰?」になる。`displayName` を path にする (`User.displayName` は GitHub username 初期値、`@@unique` ではないため衝突可能性あり → 注意点で記載)
+- **`username` で引く理由**: バッジ URL は `https://typing-royale.example.com/badge/sakurai_dev.svg` のような **覚えやすい URL** にしたい。`/badge/12.svg` だと README に貼ったときに「12 は誰?」になる。`User.githubUsername` を path にする（GitHub OAuth ログイン時の login をそのまま使うので衝突しない）
 - **rank 計算は TS 固定**: バッジに「TS と JS の両方の rank」を出すと幅が広がる。`displayItems: ["rank"]` は **言語別ベスト 1 件しかない場合のみ意味** があるが、ユーザーがメイン言語を選ぶ仕組みが必要。MVP では TS 固定 (将来 `?lang=ts` クエリ追加)
-- **`badge_configs` が無いユーザーの default**: `["grade", "best_score"]` / `dark` を空読みで返す。`/finish` 初回時に勝手に row 作る方が DB が増えて重い
+- **`badge_configs` が無いユーザーの default**: `["grade", "best_score"]` を空読みで返す。`/finish` 初回時に勝手に row 作る方が DB が増えて重い
 - **`Cache-Control: max-age=300`**: 5 分 TTL。グレードアップやベスト更新が反映されるまで最大 5 分遅延するが、CDN コストを抑えるためのトレードオフ。`stale-while-revalidate=600` で背景再取得も許可
-- **`username` の collision 対応**: 現状 `User.displayName` は `@@unique` ではない。本 step では「最初に hit した 1 件」を返す方針 (`findFirst`)。将来 username 衝突問題が顕在化したら別 PR で `User.username` カラム + `@@unique` を追加
 - **PUT を upsert にする理由**: 初回設定でも 2 回目以降の更新でも同じエンドポイントで完結。POST/PATCH を分けると client 側で「初回か否か」を判別する必要があり煩雑
 
 ## 対応内容
@@ -249,12 +243,10 @@ export const getBadgeSvgPathParamSchema = z.object({
 
 export const updateBadgeConfigRequestSchema = z.object({
   display_items: z.array(z.enum(DISPLAY_ITEM_SLUGS)).min(1).max(5),
-  theme: z.enum(["dark", "light"]),
 })
 
 export const getBadgeConfigResponseSchema = z.object({
   display_items: z.array(z.enum(DISPLAY_ITEM_SLUGS)),
-  theme: z.enum(["dark", "light"]),
   updated_at: z.string().datetime(),
 })
 
@@ -270,13 +262,12 @@ import { PrismaClient } from "@repo/db"
 
 export type BadgeConfigRow = {
     displayItems: string[]
-    theme: string
     updatedAt: Date
 }
 
 export interface BadgeConfigRepository {
     findByUserId(userId: number): Promise<BadgeConfigRow | null>
-    upsert(userId: number, input: { displayItems: string[]; theme: string }): Promise<BadgeConfigRow>
+    upsert(userId: number, input: { displayItems: string[] }): Promise<BadgeConfigRow>
 }
 
 export class PrismaBadgeConfigRepository implements BadgeConfigRepository {
@@ -291,20 +282,18 @@ export class PrismaBadgeConfigRepository implements BadgeConfigRepository {
     if (row === null) return null
     return {
       displayItems: row.displayItems as string[],
-      theme: row.theme,
       updatedAt: row.updatedAt,
     }
   }
 
-  async upsert(userId: number, input: { displayItems: string[]; theme: string }): Promise<BadgeConfigRow> {
+  async upsert(userId: number, input: { displayItems: string[] }): Promise<BadgeConfigRow> {
     const row = await this._prisma.badgeConfig.upsert({
-      create: { displayItems: input.displayItems, theme: input.theme, userId },
-      update: { displayItems: input.displayItems, theme: input.theme },
+      create: { displayItems: input.displayItems, userId },
+      update: { displayItems: input.displayItems },
       where: { userId },
     })
     return {
       displayItems: row.displayItems as string[],
-      theme: row.theme,
       updatedAt: row.updatedAt,
     }
   }
@@ -313,16 +302,16 @@ export class PrismaBadgeConfigRepository implements BadgeConfigRepository {
 
 ### `apps/api/src/repository/prisma/user-repository.ts`（拡張）
 
-`findByDisplayName` を追加 (公開バッジ生成用):
+`findByGithubUsername` を追加 (公開バッジ生成用):
 
 ```typescript
-async findByDisplayName(displayName: string): Promise<PublicProfileUser | null> {
+async findByGithubUsername(githubUsername: string): Promise<PublicProfileUser | null> {
   const row = await this._prisma.user.findFirst({
-    select: { id: true, avatarUrl: true, canPublicRanking: true, createdAt: true, displayName: true },
-    where: { displayName },
+    select: { id: true, avatarUrl: true, canPublicRanking: true, createdAt: true, githubUsername: true },
+    where: { githubUsername },
   })
   if (row === null) return null
-  return { ...row, displayName: row.displayName ?? `user${row.id}` }
+  return { ...row, githubUsername: row.githubUsername }
 }
 ```
 
@@ -357,14 +346,14 @@ export const render = async (
         userRepository: UserRepository
     },
 ): Promise<Result<{ svg: string }>> => {
-  const user = await repo.userRepository.findByDisplayName(input.username)
+  const user = await repo.userRepository.findByGithubUsername(input.username)
   if (user === null || !user.canPublicRanking) {
     return ok({ svg: getPrivateBadgeSvg() })
   }
 
   const lifetime = await repo.userLifetimeStatsRepository.findByUserId(user.id)
   const config = (await repo.badgeConfigRepository.findByUserId(user.id))
-    ?? { displayItems: ["grade", "best_score"], theme: "dark", updatedAt: new Date() }
+    ?? { displayItems: ["grade", "best_score"], updatedAt: new Date() }
 
   let rank: number | null = null
   if (config.displayItems.includes("rank")) {
@@ -382,9 +371,8 @@ export const render = async (
   const typedChars = Number(lifetime?.totalTypedChars ?? 0n)
 
   const svg = buildBadgeSvg({
-    data: { bestScore, grade, rank, streakDays: lifetime?.streakDays ?? 0, typedChars, username: user.displayName },
+    data: { bestScore, grade, rank, streakDays: lifetime?.streakDays ?? 0, typedChars, username: user.githubUsername },
     displayItems: config.displayItems,
-    theme: config.theme === "light" ? "light" : "dark",
   })
 
   logger.debug("BadgeService: rendered", { displayItems: config.displayItems, username: input.username })
@@ -396,16 +384,15 @@ export const getConfig = async (
   repo: { badgeConfigRepository: BadgeConfigRepository },
 ): Promise<BadgeConfigRow> => {
   const row = await repo.badgeConfigRepository.findByUserId(input.userId)
-  return row ?? { displayItems: ["grade", "best_score"], theme: "dark", updatedAt: new Date(0) }
+  return row ?? { displayItems: ["grade", "best_score"], updatedAt: new Date(0) }
 }
 
 export const upsertConfig = async (
-  input: { userId: number; displayItems: string[]; theme: string },
+  input: { userId: number; displayItems: string[] },
   repo: { badgeConfigRepository: BadgeConfigRepository },
 ): Promise<BadgeConfigRow> => {
   return repo.badgeConfigRepository.upsert(input.userId, {
     displayItems: input.displayItems,
-    theme: input.theme,
   })
 }
 ```
@@ -500,7 +487,7 @@ export const badgeRouter = (controllers: BadgeRouterControllers): Router => {
 
 ### `apps/api/src/routes/user-router.ts`（編集）
 
-`/api/users/me/badge-config` GET / PUT を追加する（既存 `userRouter` に optional controller を 2 つ追加）。
+`/api/user/badge-config` GET / PUT を追加する（既存 `userRouter` に optional controller を 2 つ追加）。
 
 ### `apps/api/src/index.ts`（編集）
 
@@ -522,14 +509,14 @@ export const PUBLIC_PATHS: readonly string[] = [
 | 公開 SVG (data あり) | seed 後 `curl -i http://localhost:8080/badge/Alice%20(dev).svg` → 200 + `image/svg+xml` + Cache-Control header |
 | 公開 SVG (不在) | `curl -i http://localhost:8080/badge/nobody.svg` → 200 + 「Private/Not Found」SVG |
 | 公開 SVG (Private) | canPublicRanking=false の user → 同上 |
-| バッジ設定 GET (未保存) | `curl -H "Authorization: Bearer $T" /api/users/me/badge-config` → 200 default 値 |
-| バッジ設定 PUT | `curl -X PUT -d '{"display_items":["grade","rank"],"theme":"light"}'` → 200 + DB に row が upsert される |
-| バリデーション | `display_items=["invalid"]` → 400、空配列 → 400、6 要素 → 400 |
+| バッジ設定 GET (未保存) | `curl -H "Authorization: Bearer $T" /api/user/badge-config` → 200 default 値 |
+| バッジ設定 PUT | `curl -X PUT -d '{"display_items":["grade","rank"]}'` → 200 + DB に row が upsert される |
+| バリデーション | `display_items=["invalid"]` → 400、空配列 → 400、6 要素超 → 400 |
 | Service ユニット | `apps/api/test/service/badge-service/` に render / upsertConfig の test (正常系 2 / 異常系 1) |
-| Controller integration | `/badge/:username.svg` で実 Postgres 経由、`/api/users/me/badge-config` で upsert 確認 |
+| Controller integration | `/badge/:username.svg` で実 Postgres 経由、`/api/user/badge-config` で upsert 確認 |
 | Lint / Build / Test | `pnpm lint && pnpm build && pnpm test` |
 
 ## 次の step での利用
 
-- **step3 (マイページバッジ設定)**: 本 step の `GET /api/users/me/badge-config` を Server Component から、`PUT /api/users/me/badge-config` を Server Action から呼ぶ。`<img src="/badge/{username}.svg">` でプレビュー表示
+- **step3 (マイページバッジ設定)**: 本 step の `GET /api/user/badge-config` を Server Component から、`PUT /api/user/badge-config` を Server Action から呼ぶ。`<img src="/badge/{username}.svg">` でプレビュー表示
 - **README 上の埋め込み**: 本 step 完了後、ユーザーは `<img src="https://typing-royale.example.com/badge/{username}.svg">` を README に貼れるようになる

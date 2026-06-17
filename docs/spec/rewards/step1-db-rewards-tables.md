@@ -1,5 +1,7 @@
 # step1: rewards / hall_of_fame_entries / badge_configs テーブル追加
 
+> **注記**：後続 PR で `hall_of_fame_entries` テーブルと `badge_configs.theme` カラムは廃止された（migration 20260617130000 で drop 済み）。Hall of Fame コメント機能は撤去され、Hall of Fame の表示は `user_language_best` のリアルタイム集計のみで成立する。バッジ背景は常に黒固定。本 step の記述は当時の設計記録として残すが、現状の DB スキーマには適用されていない箇所がある。
+
 rewards 機能の永続化基盤として 3 テーブルを Prisma schema に追加する。
 
 3 テーブルはそれぞれ独立した責務を持つ：
@@ -36,7 +38,7 @@ rewards 機能の永続化基盤として 3 テーブルを Prisma schema に追
 |---|---|---|---|
 | Prisma model | `Reward` | `HallOfFameEntry` | `BadgeConfig` |
 | 行数見積もり | ユーザー × グレードアップ回数 (8 回上限) × 節目イベント数 | ユニーク player 数 × 言語数（最大数十万） | ユニーク player 数 |
-| 書き込み | step6 の `POST /api/rewards/cards` + `/finish` 拡張 | step4 の `POST /api/hall-of-fame/comments` + `PATCH /api/hall-of-fame/comments/:entryId` | step2 の `PUT /api/users/me/badge-config` |
+| 書き込み | step6 の `POST /api/rewards/cards` + `/finish` 拡張 | （廃止済み） | step2 の `PUT /api/user/badge-config` |
 | 読み出し | step6 の `GET /api/rewards/me` | step4 の `GET /api/hall-of-fame` + step5 の Hall of Fame ページ | step2 の `GET /badge/:username.svg` + マイページバッジ設定 |
 
 ## スキーマ追加
@@ -66,30 +68,24 @@ model Reward {
 }
 ```
 
-### `hall_of_fame_entries` モデル
+### `hall_of_fame_entries` モデル【廃止済み】
+
+> **廃止済み**：後続 PR で Hall of Fame コメント機能ごと撤去された。`hall_of_fame_entries` テーブルは drop 済み（migration 20260617130000）。当時の定義は以下のとおりだった（参考のみ）。
 
 ```prisma
-// Hall of Fame コメント (1 ユーザー × 1 言語 = 1 行)
-// rank は保存しない (リアルタイム集計のため、user_language_best を ORDER BY して JOIN)
-// docs/spec/rewards/README.md「Hall of Fame コメントの入力タイミング」参照
-model HallOfFameEntry {
-  id                 Int       @id @default(autoincrement())
-  userId             Int       @map("user_id")
-  languageId         Int       @map("language_id")
-  bestPlaySessionId  Int       @map("best_play_session_id") /// この入賞を確定させた PlaySession
-  comment            String?   @db.VarChar(300) /// 最大 300 文字。null = 未入力
-  commentSubmittedAt DateTime? @map("comment_submitted_at") /// コメント送信時刻 (履歴用)
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  language    Language    @relation(fields: [languageId], references: [id], onDelete: Restrict)
-  playSession PlaySession @relation(fields: [bestPlaySessionId], references: [id], onDelete: Restrict)
-
-  @@unique([userId, languageId]) /// 1 ユーザー × 1 言語 = 1 コメント
-  @@index([languageId]) /// Hall of Fame ページの言語別取得 (rank 順は user_language_best を ORDER BY して LEFT JOIN)
-  @@map("hall_of_fame_entries")
-}
+// 廃止: hall_of_fame_entries テーブルは drop 済み
+// model HallOfFameEntry {
+//   id                 Int       @id @default(autoincrement())
+//   userId             Int       @map("user_id")
+//   languageId         Int       @map("language_id")
+//   bestPlaySessionId  Int       @map("best_play_session_id")
+//   comment            String?   @db.VarChar(300)
+//   commentSubmittedAt DateTime? @map("comment_submitted_at")
+//   createdAt          DateTime  @default(now()) @map("created_at")
+//   updatedAt          DateTime  @updatedAt @map("updated_at")
+//   ...
+//   @@map("hall_of_fame_entries")
+// }
 ```
 
 ### `badge_configs` モデル
@@ -99,8 +95,7 @@ model HallOfFameEntry {
 // docs/spec/rewards/README.md「動的 SVG バッジの配信戦略」参照
 model BadgeConfig {
   userId       Int      @id @map("user_id")
-  displayItems Json     @default("[\"grade\", \"best_score\"]") @map("display_items") /// 表示要素 slug 配列 (grade / best_score / rank / streak_days / typed_chars)
-  theme        String   @default("dark") /// "dark" / "light"
+  displayItems Json     @default("[\"grade\", \"best_score\"]") @map("display_items") /// 表示要素 slug 配列 (grade / best_score / rank / streak_days / typed_chars / username)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -118,7 +113,6 @@ model BadgeConfig {
 model User {
   // ... 既存
   rewards            Reward[]
-  hallOfFameEntries  HallOfFameEntry[]
   badgeConfig        BadgeConfig?
 }
 ```

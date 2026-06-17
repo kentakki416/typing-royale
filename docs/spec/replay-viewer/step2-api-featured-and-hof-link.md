@@ -1,5 +1,7 @@
 # step2: 注目リプレイ API + Hall of Fame / Landing からの動線
 
+> **ステータス: 未着手**。Hall of Fame は table ではなく cards + curtain modal 構成（`apps/web/src/app/hall-of-fame/hof-cards.tsx` + `apps/web/src/app/hall-of-fame/curtain-modal.tsx`）に変更されたため、step2 の Hall of Fame 改修方針は再設計が必要。リプレイ動線は curtain modal 内の「▶ リプレイを見る」ボタンとして既に実装済みであり、本 step の Hall of Fame 改修は実質不要（featured API + Landing カードのみが残タスク）。
+
 step1 で `/replay/[playSessionId]` 単独画面と API は完成済み。本 step では (1) 注目リプレイ一覧 API `GET /api/replays/featured` を新設、(2) Hall of Fame の各エントリに「▶ リプレイ」リンクを追加、(3) Landing (`/`) に「✨ 注目のリプレイ」セクションを追加することで、複数の入口からリプレイ視聴に誘導する。
 
 featured の定義は「`hall_of_fame_entries` のうち **コメント付き** を `comment_submitted_at DESC` で最大 N 件」とする。コメントを残した入賞者は紹介価値が高いというシグナルを活用する（コメント無しは紛れ込まない）。
@@ -41,7 +43,7 @@ featured の定義は「`hall_of_fame_entries` のうち **コメント付き** 
 
 | Route | コンポーネント | 概要 |
 |---|---|---|
-| `/hall-of-fame` (修正) | Server | テーブルに「リプレイ」列を追加し `<Link href="/replay/{best_play_session_id}">▶ リプレイ</Link>` を出す |
+| `/hall-of-fame` (改修済) | Server + Client | 既に cards + curtain modal 構成に移行済み。curtain modal 内の「▶ リプレイを見る」ボタン（`<Link href="/replay/{best_play_session_id}">`）が実装済みのため本 step で追加改修なし |
 | `/` Landing (修正) | Server | 「✨ 注目のリプレイ」セクションを追加し `/api/replays/featured?limit=3` を Server-side fetch して 3 件をカードで横並び |
 
 呼び出す API:
@@ -55,12 +57,12 @@ featured の定義は「`hall_of_fame_entries` のうち **コメント付き** 
 
 | 画面 | モックファイル | 反映すべき要素 |
 |---|---|---|
-| Hall of Fame | [`docs/mocks/hall-of-fame.html`](../../mocks/hall-of-fame.html) | 各エントリの「▶ リプレイ」ボタン。本 step では現在の table レイアウトを維持し、コメント列の右に「リプレイ」列を 1 つ追加 |
+| Hall of Fame | [`docs/mocks/hall-of-fame.html`](../../mocks/hall-of-fame.html) | カード + curtain modal 内のボタン（実装済）。本 step での Hall of Fame 改修は不要 |
 | Landing `/` | [`docs/mocks/top.html`](../../mocks/top.html) | 既存セクション（タイピング紹介 / 神々モード紹介）の下に「✨ 注目のリプレイ」カードを 3 枚横並びで追加（avatar + 表示名 + 言語 / スコア / 「▶ 視聴」ボタン） |
 
 ### モックから読み取った主要構造
 
-- Hall of Fame: テーブル末尾列に `<Link className="badge accent" href="...">▶ リプレイ</Link>` を追加。スタイルは `/ranking` の「▶ 視聴」と同じ
+- Hall of Fame: cards + curtain modal 内のボタン（実装済）。table レイアウト時代の追加列方針は破棄
 - Landing: `card` + `flex-center` + `avatar lg` + `text-mono` 数字 + `btn btn-primary` のスタイルで 3 枚をグリッド表示
 - 既存 globals.css の `.card` / `.avatar.lg` / `.btn-primary` / `.badge.accent` で十分（追加 CSS なし）
 
@@ -69,7 +71,7 @@ featured の定義は「`hall_of_fame_entries` のうち **コメント付き** 
 | 依存先 | 何を使うか | 本 step での扱い |
 |---|---|---|
 | `hall_of_fame_entries`（既存） | `comment` / `commentSubmittedAt` / `bestPlaySessionId` | featured API で comment IS NOT NULL を `commentSubmittedAt DESC` で取得 |
-| `play_sessions` + `users` + `user_lifetime_stats`（既存） | スコア・正確率・display_name・grade・avatar | featured レスポンスに同梱 |
+| `play_sessions` + `users` + `user_lifetime_stats`（既存） | スコア・正確率・github_username・grade・avatar | featured レスポンスに同梱 |
 | `Language`（既存） | slug でフィルタ | `?language=...` の絞り込みに利用 |
 | step1 の `GET /api/replays/:id`（既存） | カード / Hall of Fame からの遷移先 | 変更なし |
 
@@ -97,7 +99,7 @@ featured の定義は「`hall_of_fame_entries` のうち **コメント付き** 
       "player": {
         "avatar_url": null,
         "current_grade": "fellow",
-        "display_name": "@alice",
+        "github_username": "alice",
         "user_id": 1
       },
       "stats": {
@@ -189,7 +191,7 @@ const featuredReplayItemSchema = z.object({
   player: z.object({
     avatar_url: z.string().url().nullable(),
     current_grade: z.string(),
-    display_name: z.string(),
+    github_username: z.string().nullable(),
     user_id: z.number().int().positive(),
   }),
   stats: z.object({
@@ -230,7 +232,7 @@ export type FeaturedReplayRow = {
     user: {
         avatarUrl: string | null
         currentGrade: string | null
-        displayName: string | null
+        githubUsername: string | null
         id: number
     }
 }
@@ -240,6 +242,8 @@ export interface ReplayRepository {
     findFeatured(input: { language?: string; limit: number }): Promise<FeaturedReplayRow[]>
 }
 ```
+
+`currentGrade` は `users` テーブル直下ではなく `user_lifetime_stats.currentGrade` を join して取得する（include の `lifetimeStats: { select: { currentGrade: true } }` を経由して Repository 側で平坦化する）。`displayName` カラムは廃止済みなので使わない。
 
 実装は `prisma.hallOfFameEntry.findMany` で:
 - `where: { comment: { not: null }, language: input.language ? { slug: input.language } : undefined }`
@@ -282,7 +286,7 @@ export class ReplayFeaturedController {
         player: {
           avatar_url: row.user.avatarUrl,
           current_grade: row.user.currentGrade ?? "intern",
-          display_name: row.user.displayName ?? `user${row.user.id}`,
+          github_username: row.user.githubUsername,
           user_id: row.user.id,
         },
         stats: {
@@ -320,15 +324,9 @@ if (controllers.get) {
 
 `replayFeaturedController` を生成し `replayRouter({ featured, get })` に渡す。
 
-### `apps/web/src/app/hall-of-fame/page.tsx`（修正）
+### `apps/web/src/app/hall-of-fame/`（実装済み・改修不要）
 
-table header に `<th></th>` を追加。各 `<tr>` の末尾に：
-
-```tsx
-<td>
-  <Link className="badge accent" href={`/replay/${e.best_play_session_id}`}>▶ リプレイ</Link>
-</td>
-```
+Hall of Fame は既に cards + curtain modal 構成に移行済みで、curtain modal 内に「▶ リプレイを見る」ボタン（`<Link href="/replay/${e.bestPlaySessionId}">`）が組み込まれている。本 step で `hall-of-fame/page.tsx` を変更する必要はない。
 
 ### `apps/web/src/app/page.tsx`（修正）
 
@@ -345,9 +343,9 @@ Landing の Server Component で `apiClient.get<GetFeaturedReplaysResponse>("/ap
       {featured.items.map((item) => (
         <div className="card col" key={item.play_session_id}>
           <div className="flex-center gap-12 mb-8">
-            <PlayerAvatar avatarUrl={item.player.avatar_url} displayName={item.player.display_name} />
+            <PlayerAvatar avatarUrl={item.player.avatar_url} githubUsername={item.player.github_username} />
             <div>
-              <div className="player-name">@{item.player.display_name}</div>
+              <div className="player-name">@{item.player.github_username ?? `user${item.player.user_id}`}</div>
               <div className="text-xs text-muted">{LANGUAGE_LABEL[item.language] ?? item.language} · {item.stats.score} pts</div>
             </div>
           </div>

@@ -68,20 +68,7 @@ const seekTo = (targetMs: number) => {
 
 ### 5. 残り時間 HUD の総時間計算
 
-リプレイの残り時間表示は、log の最終 `elapsed_ms` を「セッション全長」として扱う：
-
-```typescript
-const sessionTotalMs = logs.length > 0
-  ? Math.max(120_000, logs[logs.length - 1]!.elapsed_ms)
-  : 120_000
-
-const remainingMs = Math.max(0, sessionTotalMs - currentElapsedMs)
-```
-
-これにより：
-
-- 旧仕様（時間ボーナス導入前）のリプレイは log 最終 elapsed_ms <= 120_000 → 残り時間は 120s から始まる
-- 新仕様のリプレイは sessionTotalMs > 120_000 → 残り時間も伸びた状態から始まる
+リプレイは現状 `SESSION_MS = 120_000` 固定で再生する。log が 120s を超える場合の動的拡張（log 最終 elapsed_ms をセッション全長として扱う等）は未実装（将来対応）。
 
 ### 6. CSS は [step3](./step3-web-engine-and-countdown.md) と共通
 
@@ -92,15 +79,15 @@ const remainingMs = Math.max(0, sessionTotalMs - currentElapsedMs)
 ### 旧仕様リプレイ（時間ボーナス導入前のセッション）
 
 1. dev サーバーで時間ボーナス導入前に記録されたリプレイ ID を開く
-2. ポップアップが **1 つも発火しない**（log に combo 20 達成タイミングが無いか、累積延長 0 秒）
+2. ポップアップが **1 つも発火しない**（log に combo 30 達成タイミングが無いか、累積延長 0 秒）
 3. HUD の残り時間は 120s から始まり 0 で終了
 
 ### 新仕様リプレイ（時間ボーナス込みのセッション）
 
 1. dev サーバーで時間ボーナス導入後に記録されたリプレイを開く
-2. 再生中、combo 20 / 40 / 60 ... 達成タイミングで `+1s` / `+2s` / `+3s` ポップアップが発火
+2. 再生中、combo 30 / 60 / 90 ... 達成タイミングで `+1s` / `+2s` / `+3s` ポップアップが発火
 3. HUD グローも同期する
-4. 残り時間 HUD は延長後のセッション全長（例: 138s）から始まる
+4. リプレイは現状 120s 固定で延長表示は未実装
 
 ### スクショ
 

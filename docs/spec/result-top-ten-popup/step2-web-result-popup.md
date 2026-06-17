@@ -15,16 +15,18 @@ import { useEffect, useRef } from "react"
 type Kind = "all-time" | "monthly"
 type Props = { kind: Kind; onClose: () => void; open: boolean }
 
-const CONTENT: Record<Kind, { title: string; message: string; accent: string }> = {
+const CONTENT: Record<Kind, { title: string; message: string; accent: string; textGlow: string }> = {
   "all-time": {
     title: "🏆 殿堂入りにランクインしました",
     message: "他のユーザーがあなたに挑戦することが可能になります。",
-    accent: "var(--gold-light, #ffd54a)",
+    accent: "#ffd54a",
+    textGlow: "0 0 12px rgba(255, 213, 74, 0.6)",
   },
   "monthly": {
-    title: "📅 月間 TOP 10 にランクインしました",
+    title: "🏆 月間 TOP 10 にランクインしました",
     message: "他のユーザーがあなたのタイピングを視聴することが可能になります。",
-    accent: "var(--accent, #58a6ff)",
+    accent: "#7dd3fc",
+    textGlow: "0 0 12px rgba(125, 211, 252, 0.6)",
   },
 }
 
@@ -49,19 +51,17 @@ export function TopTenAnnouncementModal({ kind, onClose, open }: Props) {
 
 ### 2. ResultScreen (`apps/web/src/app/play/[sessionId]/result-screen.tsx`)
 
-`useState` でキュー管理、`useEffect` でリザルト到達時に判定して push:
+`useState` の lazy initializer で `result` から直接 queue を 1 度だけ構築する。`result` はリザルト到達時点で確定しており後から変わらないため、useEffect での再計算は不要:
 
 ```tsx
-const [announcementQueue, setAnnouncementQueue]
-  = useState<("all-time" | "monthly")[]>([])
-
-useEffect(() => {
-  if (result === null || isGuest) return
+const [announcementQueue, setAnnouncementQueue] = useState<("all-time" | "monthly")[]>(() => {
+  /** ゲスト (= persisted=false) は対象外 */
+  if (!result.persisted) return []
   const queue: ("all-time" | "monthly")[] = []
 
-  /** 殿堂入り入賞: 既存ロジックと同じ */
-  if (result.top_ten_boundary_score !== null
-      && result.score > result.top_ten_boundary_score) {
+  /** 殿堂入り入賞: null は全期間 10 件未満で誰でも入賞、>= は upsert 後の自分の score と一致するケースを含む */
+  if (result.top_ten_boundary_score === null
+      || result.score >= result.top_ten_boundary_score) {
     queue.push("all-time")
   }
 
@@ -71,9 +71,8 @@ useEffect(() => {
     queue.push("monthly")
   }
 
-  if (queue.length > 0) setAnnouncementQueue(queue)
-  /** eslint-disable-next-line react-hooks/exhaustive-deps */
-}, [isGuest, result])
+  return queue
+})
 
 const closeTopAnnouncement = () => {
   setAnnouncementQueue((prev) => prev.slice(1))
@@ -98,8 +97,16 @@ return (
 ポイント:
 
 - `queue.length > 0 && <Modal />` で「先頭の kind だけ表示」、`onClose` で先頭を削除して次があれば自動で次が表示される
-- ゲスト (`isGuest === true`) は判定せず queue が空のまま (= ポップアップ無し)
+- ゲスト判定は `!result.persisted` で揃える (= ランキング登録されていない => ポップアップ無し)
 - `result.monthly_top_ten_boundary_score` は `/finish` レスポンスに含まれる前提 (step1 で追加済み)
+
+### 演出
+
+`<TopTenAnnouncementModal>` には以下のアニメーション演出を載せる:
+
+- **textGlow**: タイトル文字に `text-shadow` で `kind` ごとの accent カラーの glow をかける (CONTENT の `textGlow` フィールド)
+- **scale-in アニメ**: モーダル本体は表示時に `transform: scale(0.92) → scale(1)` + `opacity: 0 → 1` で軽くポップアップ
+- **紙吹雪 Lottie**: 背面に `@lottiefiles/dotlottie-react` の `<DotLottieReact />` で `/celebration.lottie` を `autoplay loop={false}` で再生し、入賞のお祝い感を出す (モーダルの z-index より低く、本体テキストを邪魔しない)
 
 ### 3. 既存「TOP 10 入り見込み」インラインカードはそのまま残す
 
@@ -118,6 +125,8 @@ return (
 3. **どちらも該当しない**: ポップアップ 0 枚で即リザルト本体表示
 
 ### スクショ
+
+撮影未完了 (TODO):
 
 - `docs/screenshots/result-top-ten-popup/all-time.png` (殿堂入りポップアップ)
 - `docs/screenshots/result-top-ten-popup/monthly.png` (月間ポップアップ)

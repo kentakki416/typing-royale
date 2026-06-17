@@ -35,9 +35,9 @@ packages/errors/
   },
   "dependencies": {},
   "devDependencies": {
+    "@repo/eslint-config": "workspace:^",
+    "@repo/typescript-config": "workspace:^",
     "@types/node": "^24.10.1",
-    "@typescript-eslint/eslint-plugin": "^8.46.4",
-    "@typescript-eslint/parser": "^8.46.4",
     "eslint": "^9.39.1",
     "typescript": "^5.9.3"
   }
@@ -165,19 +165,17 @@ export type { ApiError, ApiErrorType, Result } from "./result"
 
 ```json
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
-    "module": "commonjs",
-    "moduleResolution": "node",
     "outDir": "./dist",
-    "rootDir": "./src",
-    "declaration": true,
-    "composite": true
+    "rootDir": "./src"
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
 ```
+
+`module` / `moduleResolution` / `declaration` / `composite` 等は `@repo/typescript-config/base.json` で集約済み。
 
 ### 6. `packages/errors/.gitignore` / `eslint.config.js`
 
@@ -191,11 +189,13 @@ eslint config は `packages/schema/eslint.config.js` をコピー。
 
 ### 7. `apps/api` 側の互換 wrapper
 
+> **現在の状態**: step6 完了済みのため、`apps/api/src/types/result.ts` は **既に削除されている**。step3 単独移行時は以下の 1 行 wrapper を一時的に置いて互換維持していた（履歴記録）。
+
 `apps/api/src/types/result.ts` を 1 行に置き換え：
 
 ```typescript
 /**
- * @deprecated step5 で削除予定。新規コードは "@repo/errors" から直接 import すること
+ * @deprecated step6 で削除予定。新規コードは "@repo/errors" から直接 import すること
  */
 export * from "@repo/errors"
 ```

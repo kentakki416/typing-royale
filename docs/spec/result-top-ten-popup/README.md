@@ -45,7 +45,7 @@
 ### 対象ユーザー
 
 - **ログインユーザーのみ** (`persisted=true`)。ゲストは対象外 — ゲストはランキングに登録されないため
-- 各言語別に判定。本機能の MVP は TypeScript のみ対応 (`/finish` のセッション言語は現状 TypeScript 固定)
+- 各言語別に判定。サーバー判定はセッションの言語別に行うが、result 画面のグレード補助 fetch のみ TypeScript 固定
 
 ### ポップアップの種類と文言
 
@@ -55,7 +55,7 @@
 - ボタン: 「OK」(1 つだけ)
 
 #### 月間 TOP 10
-- タイトル: 「📅 月間 TOP 10 にランクインしました」
+- タイトル: 「🏆 月間 TOP 10 にランクインしました」
 - 本文: 「他のユーザーがあなたのタイピングを視聴することが可能になります。」
 - ボタン: 「OK」(1 つだけ)
 
@@ -63,7 +63,7 @@
 
 | 種別 | 判定 |
 |---|---|
-| 殿堂入り | `result.score > result.top_ten_boundary_score` (= 既存の `isTopTenEntry` 判定) |
+| 殿堂入り | `result.top_ten_boundary_score === null` または `result.score >= result.top_ten_boundary_score`（`findTenthScore` が upsert 後の値を返すため、自分自身が境界 score と一致するケースを含めて `>=` で判定する。`null` は全期間で 10 件未満の状態） |
 | 月間 TOP 10 | `result.monthly_top_ten_boundary_score` が `null` (= 当月 10 件未満) または `result.score >= result.monthly_top_ten_boundary_score` |
 
 判定は **サーバー側 `/finish`** で行い、レスポンスに含めて返す。クライアントは booly な判定だけ受け取って表示するか決める (= cheat 不可能)。
@@ -122,25 +122,24 @@ export const finishPlaySessionResponseSchema = z.object({
 // 既存: const topTenBoundaryScore = await ...userLanguageBestRepository.findTenthScore(state.languageId)
 
 // 新規: 月間 TOP 10 cap 維持 + boundary 取得
-const yearMonth = currentYearMonthJst()
+const yearMonth = currentYearMonthJst(playedAt)
 const monthlyCount = await repo.monthlyRankingSnapshotRepository.countByLanguage(yearMonth, state.languageId)
 const monthlyBoundary = monthlyCount === 0
   ? null
-  : await repo.monthlyRankingSnapshotRepository.findBoundaryScore(yearMonth, state.languageId, 10)
+  : await repo.monthlyRankingSnapshotRepository.findBoundaryScore(yearMonth, state.languageId, MONTHLY_TOP_TEN_CAP)
 
-// 入賞条件
-const myMonthlyBest = ... // 今回のセッションのスコアか、当月過去ベスト か高い方
-const isMonthlyTopTen = monthlyCount < 10 || myMonthlyBest >= (monthlyBoundary ?? 0)
+// 入賞条件 (今回スコアで判定。upsert の update で過去ベストが上書きされる前提)
+const isMonthlyTopTen = monthlyCount < MONTHLY_TOP_TEN_CAP || score >= (monthlyBoundary ?? 0)
 
 if (isMonthlyTopTen) {
-  // 自分の行を upsert
+  // 自分の行を upsert (update 時は今回スコアで上書き)
   await repo.monthlyRankingSnapshotRepository.upsertForUser({
     yearMonth, languageId: state.languageId, userId: state.userId,
-    score: myMonthlyBest, accuracy: ..., playedAt: ...,
+    score, accuracy, playedAt,
   })
-  // TOP 10 cap 維持: 11 件以上になったら自分以外の最低スコアを delete
+  // TOP 10 cap 維持: cap 件超になったら自分以外の最低スコアを delete
   const newCount = await repo.monthlyRankingSnapshotRepository.countByLanguage(yearMonth, state.languageId)
-  if (newCount > 10) {
+  if (newCount > MONTHLY_TOP_TEN_CAP) {
     await repo.monthlyRankingSnapshotRepository.deleteLowestExcluding(yearMonth, state.languageId, state.userId)
   }
 }
@@ -173,19 +172,21 @@ const isMonthlyTopTenEntry = !isGuest && (
 `apps/web/src/app/play/[sessionId]/result-screen.tsx`:
 
 ```tsx
-const [announcementQueue, setAnnouncementQueue] = useState<("all-time" | "monthly")[]>([])
-
-useEffect(() => {
-  if (result === null || isGuest) return
+/**
+ * useState の lazy initializer 内で result から直接 queue を 1 度だけ計算する。
+ * result はリザルト到達時点で確定しており、後から変わらないため useEffect は不要。
+ */
+const [announcementQueue, setAnnouncementQueue] = useState<("all-time" | "monthly")[]>(() => {
+  if (!result.persisted) return []  // ゲスト (= persisted=false) は対象外
   const queue: ("all-time" | "monthly")[] = []
-  if (result.top_ten_boundary_score !== null && result.score > result.top_ten_boundary_score) {
+  if (result.top_ten_boundary_score === null || result.score >= result.top_ten_boundary_score) {
     queue.push("all-time")
   }
   if (result.monthly_top_ten_boundary_score === null || result.score >= result.monthly_top_ten_boundary_score) {
     queue.push("monthly")
   }
-  if (queue.length > 0) setAnnouncementQueue(queue)
-}, [isGuest, result])
+  return queue
+})
 
 const closeTopAnnouncement = () => {
   setAnnouncementQueue((prev) => prev.slice(1))

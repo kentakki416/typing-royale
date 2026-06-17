@@ -46,9 +46,9 @@ packages/logger/
     "winston": "^3.19.0"
   },
   "devDependencies": {
+    "@repo/eslint-config": "workspace:^",
+    "@repo/typescript-config": "workspace:^",
     "@types/node": "^24.10.1",
-    "@typescript-eslint/eslint-plugin": "^8.46.4",
-    "@typescript-eslint/parser": "^8.46.4",
     "eslint": "^9.39.1",
     "typescript": "^5.9.3"
   }
@@ -57,7 +57,7 @@ packages/logger/
 
 ### 3. `packages/logger/src/const.ts`
 
-`apps/api/src/const/index.ts` から `LOGGER_TYPE` 定数を移設する。
+`apps/api/src/const/index.ts` から `LOGGER_TYPE` / `NODE_ENV` / `LOG_LEVEL` 定数を移設する。これらは logger 実装内部（pino-logger / winston-logger 等）でも参照するため、logger パッケージにまとめて置いた方が結合が綺麗になる。
 
 ```typescript
 /**
@@ -72,6 +72,24 @@ export const LOGGER_TYPE = {
 } as const
 
 export type LoggerType = typeof LOGGER_TYPE[keyof typeof LOGGER_TYPE]
+
+/**
+ * Node の実行環境
+ */
+export const NODE_ENV = {
+  DEV: "development",
+  PRD: "production",
+} as const
+
+/**
+ * ログレベル
+ */
+export const LOG_LEVEL = {
+  DEBUG: "debug",
+  INFO: "info",
+  WARN: "warn",
+  ERROR: "error",
+} as const
 ```
 
 ### 4. `packages/logger/src/interface.ts`
@@ -123,16 +141,16 @@ import { AsyncLocalStorage } from "async_hooks"
  * リクエストスコープのログコンテキスト
  * Express middleware や cron の job 開始時に logContext.run({...}, fn) で設定する
  */
-export type LogContext = {
+export interface LogContext {
   requestId?: string
-  userId?: number
-  jobId?: string
+  userId?: number | string
 }
 
 export const logContext = new AsyncLocalStorage<LogContext>()
 ```
 
-(`requestId` / `userId` 以外に cron 向けの `jobId` を追加。app 側で必要なら更に拡張。)
+- `userId` は `number | string` 両対応（GitHub OAuth の provider account id を string で持つケース、内部 user id を number で持つケースの両方を吸収）
+- cron / batch から呼ぶ場合も同じ `requestId` フィールドで job 識別子を渡せばよい（jobId 専用フィールドは設けない）
 
 ### 6. `packages/logger/src/{console,pino,winston,silent}-logger.ts`
 
@@ -207,9 +225,9 @@ export const logger = LoggerFactory.getLogger()
 ### 8. `packages/logger/src/index.ts`
 
 ```typescript
-export { LOGGER_TYPE } from "./const"
-export type { LoggerType } from "./const"
 export { ConsoleLogger } from "./console-logger"
+export { LOG_LEVEL, LOGGER_TYPE, NODE_ENV } from "./const"
+export type { LoggerType } from "./const"
 export { logContext } from "./context"
 export type { LogContext } from "./context"
 export type { ILogger, LogMetadata } from "./interface"
@@ -218,6 +236,8 @@ export { PinoLogger } from "./pino-logger"
 export { SilentLogger } from "./silent-logger"
 export { WinstonLogger } from "./winston-logger"
 ```
+
+`LOG_LEVEL` / `NODE_ENV` / `LOGGER_TYPE` / `LoggerType` を `@repo/logger` から re-export することで、apps/api 側からは `const/index.ts` を介さず `@repo/logger` だけ見れば全部揃う形にする。
 
 ### 9. `packages/logger/tsconfig.json`
 
@@ -249,16 +269,18 @@ eslint config は `packages/schema/eslint.config.js` をコピー。
 
 ### 11. `apps/api` 側の互換 wrapper
 
+> **現在の状態**: step6 完了済みのため、`apps/api/src/log/` ディレクトリは **既に削除されている**。step2 単独移行時は以下の 1 行 wrapper を一時的に置いて互換維持していた（履歴記録）。
+
 `apps/api/src/log/index.ts` を 1 行に置き換え：
 
 ```typescript
 /**
- * @deprecated step5 で削除予定。新規コードは "@repo/logger" から直接 import すること
+ * @deprecated step6 で削除予定。新規コードは "@repo/logger" から直接 import すること
  */
 export * from "@repo/logger"
 ```
 
-`apps/api/src/log/` 配下の他のファイル（console-logger.ts / pino-logger.ts / 等）は **物理的に削除**（packages/logger に移設済みのため）。
+`apps/api/src/log/` 配下の他のファイル（console-logger.ts / pino-logger.ts / 等）は **物理的に削除**（packages/logger に移設済みのため）。step6 完了時点では `apps/api/src/log/index.ts` 自体も削除済み。
 
 `apps/api/src/const/index.ts` から `LOGGER_TYPE` を削除し、`@repo/logger` から re-export する：
 

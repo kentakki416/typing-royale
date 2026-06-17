@@ -136,7 +136,7 @@
 #### TOP N（`GET /api/rankings`）
 
 ```sql
-SELECT ulb.*, u.display_name, u.avatar_url, uls.current_grade
+SELECT ulb.*, u.github_username, u.avatar_url, uls.current_grade
 FROM user_language_best ulb
 INNER JOIN users u ON u.id = ulb.user_id
 LEFT JOIN user_lifetime_stats uls ON uls.user_id = ulb.user_id
@@ -279,7 +279,7 @@ const calcGrade = (bestScore: number) =>
 | --- | --- | --- |
 | POST | `/api/play-sessions/solo` / `/api/play-sessions/challenge-gods` | プレイ開始（[`../typing-engine/README.md`](../typing-engine/README.md) 参照） |
 | POST | `/api/play-sessions/:id/finish` | 120 秒終了時のプレイ結果保存。`user_language_best` を upsert し、レスポンスに `new_rank` / `top_ten_boundary_score` / `grade_up` / `best_score_updated` を含めて返す |
-| GET | `/api/rankings` | `language` を指定して全期間トップ 10 + `total_ranked_players` を取得（リアルタイム集計） |
+| GET | `/api/rankings` | `language` を指定して全期間トップ 10 + `total_ranked_players` を取得（リアルタイム集計）。`/ranking` 画面は月間ランキング（`/api/rankings/monthly`）を表示し、全期間 TOP 10 は `/hall-of-fame` に集約 |
 | GET | `/api/rankings/me` | 自分の現在順位 + ベストスコア + 現在のグレード + 次のグレードまでの進捗。詳細は[自分の順位 API レスポンス](#自分の順位-api-レスポンス) |
 | GET | `/api/players/:userId` | プレイヤー詳細・グレード・ベストスコア・累計打鍵数・言語別ベスト |
 
@@ -290,7 +290,7 @@ const calcGrade = (bestScore: number) =>
 | `play_sessions` | `id`, `userId`, `languageId`, `mode(solo/challenge_gods)`, `ghostSessionId(nullable)`, `crawledRepoId(FK)`, `typedChars`, `accuracy`, `score`, `problemsPlayed`, `problemsCompleted`, `mistypeStats(jsonb)`, `playedAt` | プレイ結果 1 件（120 秒固定セッション、既存）。`flagged` カラムは将来追加 |
 | `play_session_problems` | `id`, `playSessionId`, `problemId`, `orderIndex`, `charsTyped`, `completed(bool)` | セッション中に出題された問題のシーケンス（既存） |
 | `user_language_best` | `id`, `userId`, `languageId`, `bestPlaySessionId(FK)`, `score`, `accuracy`, `typedChars`, `playedAt` | **本機能で新規追加**。1 ユーザー × 1 言語 = ベスト 1 件。`/finish` で upsert、`GET /api/rankings` / `/me` がリアルタイムで ORDER BY して順位算出 |
-| `user_lifetime_stats` | `userId(PK)`, `totalTypedChars`, `totalSessions`, `bestScore`, `bestScoreByLanguage(jsonb)`, `currentGrade(string)`, `currentGradeReachedAt(datetime)`, `lifetimeMistypeStats(jsonb)`, `streakDays`, `lastPlayedDate`, `updatedAt` | 特典・グレード判定に使う累計値。`bestScore` は全言語通算のベストスコア（グレード判定の基準）。`currentGrade` は slug（`intern` / `junior` / ...）。**本機能で `currentGrade` / `currentGradeReachedAt` の書き込みを `/finish` から開始** |
+| `user_lifetime_stats` | `userId(PK)`, `totalTypedChars(BigInt)`, `totalSessions`, `bestScore`, `bestScoreByLanguage(jsonb)`, `currentGrade(string)`, `currentGradeReachedAt(datetime)`, `lifetimeMistypeStats(jsonb)`, `streakDays`, `lastPlayedDate`, `updatedAt` | 特典・グレード判定に使う累計値。`bestScore` は全言語通算のベストスコア（グレード判定の基準）。`currentGrade` は slug（`intern` / `junior` / ...）。**本機能で `currentGrade` / `currentGradeReachedAt` の書き込みを `/finish` から開始** |
 
 ```mermaid
 erDiagram
@@ -307,7 +307,8 @@ erDiagram
     USER {
         string id PK
         string githubUsername
-        string displayName
+        string avatarUrl
+        string favoriteRepoUrl
         bool canPublicRanking
     }
     PLAY_SESSION {
@@ -345,7 +346,7 @@ erDiagram
     }
     USER_LIFETIME_STATS {
         string userId PK
-        int totalTypedChars
+        bigint totalTypedChars
         int totalSessions
         int bestScore
         json bestScoreByLanguage
@@ -353,6 +354,7 @@ erDiagram
         datetime currentGradeReachedAt
         json lifetimeMistypeStats
         int streakDays
+        date lastPlayedDate
     }
 ```
 

@@ -93,7 +93,7 @@
   "player": {
     "avatar_url": null,
     "current_grade": "fellow",
-    "display_name": "@alice",
+    "github_username": "alice",
     "user_id": 1
   },
   "language": "typescript",
@@ -134,7 +134,7 @@
 |---|---|---|
 | `play_session_id` | number | 対象セッション ID |
 | `player.user_id` | number | プレイヤーの user_id |
-| `player.display_name` | string | 表示名 |
+| `player.github_username` | string \| null | GitHub username（未連携時は null） |
 | `player.avatar_url` | string \| null | アバター URL |
 | `player.current_grade` | string | グレード slug |
 | `language` | string | 言語 slug |
@@ -145,7 +145,7 @@
 | `stats.played_at` | string (ISO) | プレイ日時 |
 | `problems[]` | array(20) | 出題シーケンス（既存 playSessionProblemSchema 流用） |
 | `keystroke_logs[]` | array | キーストローク（既存 keystrokeEntrySchema 流用） |
-| `repo_info` | object | 出典情報（既存 repoInfoSchema + `license: string \| null`） |
+| `repo_info` | object | 出典情報（既存 repoInfoSchema + `license: string`、NOT NULL） |
 
 ### エラー
 
@@ -161,13 +161,16 @@
 ```mermaid
 sequenceDiagram
     participant U as 視聴者
-    participant Rk as /ranking
+    participant HoF as /hall-of-fame
+    participant Modal as CurtainModal
     participant W as /replay/[id]
     participant API as Express API
     participant DB as Postgres
 
-    U->>Rk: ランキングテーブルの「▶」をクリック
-    Rk->>W: Link で /replay/{best_play_session_id} 遷移
+    U->>HoF: Hall of Fame カードをクリック
+    HoF->>Modal: CurtainModal を開く（4-10 位は fade + scale-in、1-3 位はカーテン演出）
+    U->>Modal: 「▶ リプレイを見る」ボタンをクリック
+    Modal->>W: Link で /replay/{best_play_session_id} 遷移
     W->>API: GET /api/replays/{id}
     API->>DB: play_session + player + play_session_problems + keystroke_logs + crawled_repo
     alt 不在 / publicRanking=false / keystroke 欠落
@@ -260,7 +263,7 @@ const replayKeystrokeEntrySchema = z.object({
 const replayRepoInfoSchema = z.object({
   description: z.string().nullable(),
   homepage: z.string().nullable(),
-  license: z.string().nullable(),
+  license: z.string(),
   name: z.string(),
   owner: z.string(),
   stars: z.number().int().nonnegative(),
@@ -278,7 +281,7 @@ export const getReplayResponseSchema = z.object({
   player: z.object({
     avatar_url: z.string().url().nullable(),
     current_grade: z.string(),
-    display_name: z.string(),
+    github_username: z.string().nullable(),
     user_id: z.number().int().positive(),
   }),
   problems: z.array(replayProblemSchema).min(1).max(20),
@@ -316,27 +319,27 @@ export type ReplaySourceRow = {
       sourceUrl: string
     }
   }>
+  accuracy: number
   crawledRepo: {
     description: string | null
     homepage: string | null
-    license: string | null
+    license: string
     name: string
     owner: string
     stars: number
     topics: unknown
   }
-  finalAccuracy: number
-  finalScore: number
-  finalTypedChars: number
   id: number
   playedAt: Date
   problemsCompleted: number
+  score: number
+  typedChars: number
   user: {
     avatarUrl: string | null
     canPublicRanking: boolean
-    displayName: string | null
+    currentGrade: string
+    githubUsername: string | null
     id: number
-    lifetimeStats: { currentGrade: string } | null
   }
 }
 
@@ -372,7 +375,7 @@ export class PrismaReplayRepository implements ReplayRepository {
         user: {
           include: { lifetimeStats: { select: { currentGrade: true } } },
           select: {
-            avatarUrl: true, canPublicRanking: true, displayName: true,
+            avatarUrl: true, canPublicRanking: true, githubUsername: true,
             id: true, lifetimeStats: true,
           },
         },
@@ -381,16 +384,22 @@ export class PrismaReplayRepository implements ReplayRepository {
     })
     if (!row) return null
     return {
+      accuracy: row.accuracy,
       crawledRepo: row.crawledRepo,
-      finalAccuracy: row.finalAccuracy,
-      finalScore: row.finalScore,
-      finalTypedChars: row.finalTypedChars,
       id: row.id,
       language: { slug: row.language.slug },
       playedAt: row.playedAt,
       problems: row.problems.map((p) => ({ orderIndex: p.orderIndex, problem: p.problem })),
-      problemsCompleted: row.problems.filter((p) => p.completed).length,
-      user: row.user,
+      problemsCompleted: row.problemsCompleted,
+      score: row.score,
+      typedChars: row.typedChars,
+      user: {
+        avatarUrl: row.user.avatarUrl,
+        canPublicRanking: row.user.canPublicRanking,
+        currentGrade: row.user.lifetimeStats?.currentGrade ?? "intern",
+        githubUsername: row.user.githubUsername,
+        id: row.user.id,
+      },
     }
   }
 }
@@ -473,8 +482,8 @@ export class ReplayGetController {
       play_session_id: source.id,
       player: {
         avatar_url: source.user.avatarUrl,
-        current_grade: source.user.lifetimeStats?.currentGrade ?? "intern",
-        display_name: source.user.displayName ?? `user${source.user.id}`,
+        current_grade: source.user.currentGrade ?? "intern",
+        github_username: source.user.githubUsername,
         user_id: source.user.id,
       },
       problems: source.problems.map((p) => ({
@@ -496,11 +505,11 @@ export class ReplayGetController {
         topics: Array.isArray(source.crawledRepo.topics) ? source.crawledRepo.topics as string[] : [],
       },
       stats: {
-        accuracy: source.finalAccuracy,
+        accuracy: source.accuracy,
         played_at: source.playedAt.toISOString(),
         problems_completed: source.problemsCompleted,
-        score: source.finalScore,
-        typed_chars: source.finalTypedChars,
+        score: source.score,
+        typed_chars: source.typedChars,
       },
     })
     return res.status(200).json(response)
@@ -532,15 +541,9 @@ export const replayRouter = (controllers: ReplayRouterControllers): Router => {
 - `app.use("/api/replays", replayRouter({ get: replayGetController }))`
 - `PUBLIC_PATHS` に `/api/replays` を追加
 
-### `apps/web/src/components/ranking-table.tsx`（修正）
+### リプレイ動線
 
-「▶」アイコンを `<Link>` に差し替え：
-
-```tsx
-<td>
-  <Link className="badge" href={`/replay/${e.best_play_session_id}`} title="リプレイを見る">▶ 視聴</Link>
-</td>
-```
+リプレイへの動線は **ランキングテーブルではなく Hall of Fame 経由** とする。Hall of Fame のカード（`apps/web/src/app/hall-of-fame/hof-cards.tsx`）をクリックすると `CurtainModal`（`apps/web/src/app/hall-of-fame/curtain-modal.tsx`）が開き、その中に「▶ リプレイを見る」ボタン（`<Link href={`/replay/${bestPlaySessionId}`}>`）を配置する。`ranking-table.tsx` は本 step では変更しない。
 
 ### `apps/web/src/app/replay/[playSessionId]/page.tsx`（新規）
 
@@ -550,6 +553,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import type { GetReplayResponse } from "@repo/api-schema"
 import { Topbar } from "@/components/topbar"
+import { getAccessToken } from "@/libs/auth/session"
 import { apiClient } from "@/libs/api-client"
 import { ReplayPlayer } from "./replay-player"
 
@@ -559,6 +563,7 @@ export default async function ReplayPage({
   params,
 }: { params: Promise<{ playSessionId: string }> }) {
   const { playSessionId } = await params
+  const accessToken = await getAccessToken()
   let data: GetReplayResponse
   try {
     data = await apiClient.get<GetReplayResponse>(`/api/replays/${playSessionId}`)
@@ -568,7 +573,7 @@ export default async function ReplayPage({
 
   return (
     <>
-      <Topbar />
+      <Topbar active="ranking" isAuthed={accessToken !== null} />
       <div className="container container-wide">
         <div className="text-sm text-muted mb-8"><Link href="/ranking">← ランキング</Link></div>
         <ReplayPlayer data={data} />
@@ -589,6 +594,7 @@ export default async function ReplayPage({
   - プログレスバークリックで `playedMs` を更新（シーク）
   - 倍速 pill: 0.5x / 1x / 1.5x / 2x
 - 出典カードと出題シーケンスサイドバーを描画
+- combo マイルストーン (30/60/90...) のキーストロークログから `detectBonuses` で `+Ns` ポップアップを発火し、効果音 `playTimeBonus` を鳴らす演出を組み込む（ghost-battle / 通常プレイと同じ演出を再生時刻ベースでもトリガーする）
 
 ### `apps/web/src/app/replay/[playSessionId]/not-found.tsx`（新規）
 

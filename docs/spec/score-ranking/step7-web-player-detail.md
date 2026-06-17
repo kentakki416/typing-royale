@@ -151,7 +151,7 @@ export const generateMetadata = async ({ params }: { params: Promise<Params> }):
   const tsBest = player.language_bests.find((b) => b.language.slug === "typescript")
   return {
     description: `グレード: ${player.lifetime_stats.current_grade.name} · ベストスコア: ${player.lifetime_stats.best_score} pts${tsBest ? ` · TS 全期間 #${tsBest.rank}` : ""}`,
-    title: `@${player.user.display_name} - Typing Royale`,
+    title: `@${player.user.github_username} - Typing Royale`,
   }
 }
 
@@ -160,7 +160,7 @@ export default async function PlayerDetailPage({ params }: { params: Promise<Par
   const player = await fetchPlayer(userId)
   if (player === null) notFound()
 
-  const initials = player.user.display_name.slice(0, 2).toUpperCase()
+  const initials = player.user.github_username.slice(0, 2).toUpperCase()
   const grade = player.lifetime_stats.current_grade
   const tsBest = player.language_bests.find((b) => b.language.slug === "typescript")
   const jsBest = player.language_bests.find((b) => b.language.slug === "javascript")
@@ -171,6 +171,10 @@ export default async function PlayerDetailPage({ params }: { params: Promise<Par
 
   return (
     <>
+      {/**
+       * ランキング動線（/ranking 月間ランキング）に加え、/hall-of-fame からも
+       * プレイヤー詳細に遷移するため Topbar の active は "ranking" を維持する。
+       */}
       <Topbar active="ranking" />
 
       <div className="container">
@@ -187,7 +191,7 @@ export default async function PlayerDetailPage({ params }: { params: Promise<Par
               </span>
             ) : (
               <img
-                alt={player.user.display_name}
+                alt={player.user.github_username}
                 className="avatar lg"
                 src={player.user.avatar_url}
                 style={{ height: "96px", width: "96px" }}
@@ -195,7 +199,7 @@ export default async function PlayerDetailPage({ params }: { params: Promise<Par
             )}
 
             <div style={{ flex: 1 }}>
-              <h1 style={{ marginBottom: "4px" }}>@{player.user.display_name}</h1>
+              <h1 style={{ marginBottom: "4px" }}>@{player.user.github_username}</h1>
               <div className="text-muted mb-8">
                                 参加: {joinedYmd} · 連続 <strong style={{ color: "var(--success)" }}>{player.lifetime_stats.streak_days} 日</strong>
               </div>

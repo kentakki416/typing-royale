@@ -85,7 +85,7 @@ score-ranking と完全に同じルール：
 カード 2 つ（TypeScript / JavaScript）を横並びで配置。各カード内の各エントリで以下を表示：
 
 - 順位（1〜5）
-- アバター + `display_name`
+- `github_username`（`@username` 表記）。アバターは未表示
 - スコア
 
 #### `/ranking` 画面 (TOP 10)
@@ -109,9 +109,9 @@ score-ranking と完全に同じルール：
 
 ### 集計戦略：`/finish` 同期 UPSERT (TOP 10 cap)
 
-旧設計は「毎時 cron で集計し直す」だったが、リアルタイム性を取るために **`/finish` 内 transaction で snapshot を同期 UPSERT** する設計に変更した。
+旧設計は「毎時 cron で集計し直す」だったが、リアルタイム性を取るために **`persistFinishedSessionAtomic` の transaction commit 後に snapshot 処理を同期実行** する設計に変更した。
 
-`/finish` 時の処理（既存の 5 テーブル書き込みと同じ tx 内に組み込む）：
+`/finish` 時の処理（メインの 5 テーブル書き込みを行う transaction が COMMIT した後に、同期で実行する）：
 
 1. 当月の自分の monthly best (= 通常は今回のプレイの score) を計算
 2. 当月の TOP 10 boundary score を取得 (`monthly_ranking_snapshots` 内で最低スコアを取る)
@@ -237,7 +237,8 @@ sequenceDiagram
     API->>DB: BEGIN TX
     API->>DB: play_sessions / play_session_problems / keystroke_logs を書き込み
     API->>DB: user_lifetime_stats / user_language_best を upsert
-    Note over API,DB: 月間ランキング処理 (本機能で追加)
+    API->>DB: COMMIT TX
+    Note over API,DB: 月間ランキング処理 (本機能で追加。tx commit 後に同期実行)
     API->>DB: SELECT 最低スコアと count FROM monthly_ranking_snapshots WHERE year_month=$ym AND language_id=$lid
     DB-->>API: { boundary_score, count }
     alt 圏内 (count < 10 OR myScore >= boundary)
@@ -246,7 +247,6 @@ sequenceDiagram
             API->>DB: DELETE 最低スコア 1 行 (自分以外)
         end
     end
-    API->>DB: COMMIT TX
     API-->>Client: response (new_rank, monthly_top_ten_boundary_score など)
 ```
 
