@@ -53,6 +53,12 @@ export function TopTenAnnouncementModal({ kind, onClose, open }: Props) {
         border: `1px solid ${content.accent}`,
         borderRadius: "8px",
         color: "var(--text-primary)",
+        /**
+         * showModal() の中央配置は UA デフォルトの margin: auto に依存しているため、
+         * style 上書きで margin が消えないよう明示する (一部ブラウザ / グローバル CSS
+         * リセット環境で左上に張り付くのを防止)
+         */
+        margin: "auto",
         padding: "24px",
         width: "min(480px, 90vw)",
       }}
