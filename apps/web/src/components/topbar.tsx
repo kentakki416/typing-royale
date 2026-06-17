@@ -4,7 +4,7 @@ type Props = {
   /**
    * 現在アクティブなナビゲーション項目
    */
-  active?: "home" | "ranking" | "hall-of-fame"
+  active?: "crawled-repos" | "hall-of-fame" | "home" | "ranking"
   /**
    * 認証状態。true なら右上に「マイページ」、false なら「ログイン」を出し分ける。
    * Topbar は client component (play-loop / result-screen) からも import されるため、
@@ -39,6 +39,7 @@ export function Topbar({ active, isAuthed, languageBadge, modeBadge }: Props) {
             <Link className={active === "home" ? "active" : ""} href="/">ホーム</Link>
             <Link className={active === "ranking" ? "active" : ""} href="/ranking">ランキング</Link>
             <Link className={active === "hall-of-fame" ? "active" : ""} href="/hall-of-fame">殿堂入り</Link>
+            <Link className={active === "crawled-repos" ? "active" : ""} href="/crawled-repos">クロール対象リポジトリ</Link>
           </div>
         )}
       </div>

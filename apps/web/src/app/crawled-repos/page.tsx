@@ -50,7 +50,7 @@ export default async function CrawledReposPage({
 
   return (
     <>
-      <Topbar isAuthed={accessToken !== null} />
+      <Topbar active="crawled-repos" isAuthed={accessToken !== null} />
 
       <div className="container">
         <div className="flex-between mb-24">
