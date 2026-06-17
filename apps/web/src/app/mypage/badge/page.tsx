@@ -41,7 +41,7 @@ export default async function MyPageBadge() {
 
         <BadgeForm
           initialDisplayItems={config.display_items}
-          username={me.display_name ?? `user${me.id}`}
+          username={me.github_username ?? `user${me.id}`}
         />
       </div>
 

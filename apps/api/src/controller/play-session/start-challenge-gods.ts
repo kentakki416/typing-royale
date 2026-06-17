@@ -67,7 +67,7 @@ export class PlaySessionStartChallengeGodsController {
       ghost_user_display: {
         avatar_url: result.value.ghostUserDisplay.avatarUrl,
         best_score: result.value.ghostUserDisplay.bestScore,
-        display_name: result.value.ghostUserDisplay.displayName,
+        github_username: result.value.ghostUserDisplay.githubUsername,
         grade: result.value.ghostUserDisplay.grade,
       },
       problems: result.value.problems.map((p) => ({

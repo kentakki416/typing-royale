@@ -445,10 +445,10 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
                 </div>
                 <div className="flex-center gap-12 mb-8">
                   <span className="avatar">
-                    {ghostUserDisplay.display_name.slice(0, 2).toUpperCase()}
+                    {(ghostUserDisplay.github_username ?? "??").slice(0, 2).toUpperCase()}
                   </span>
                   <div>
-                    <div className="player-name">{ghostUserDisplay.display_name}</div>
+                    <div className="player-name">@{ghostUserDisplay.github_username ?? "anonymous"}</div>
                     <div className="text-sm text-muted">{ghostUserDisplay.grade}</div>
                   </div>
                 </div>

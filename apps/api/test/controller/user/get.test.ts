@@ -32,7 +32,7 @@ describe("GET /api/user", () => {
       const user = await testPrisma.user.create({
         data: {
           avatarUrl: "https://example.com/avatar.jpg",
-          displayName: "Test User",
+          githubUsername: "Test User",
           email: "test@example.com",
         },
       })
@@ -48,7 +48,7 @@ describe("GET /api/user", () => {
         avatar_url: "https://example.com/avatar.jpg",
         can_public_ranking: true,
         created_at: expect.any(String),
-        display_name: "Test User",
+        github_username: "Test User",
         email: "test@example.com",
         favorite_repo_url: null,
         id: user.id,

@@ -3,16 +3,17 @@ import { z } from "zod"
 /**
  * 共通の user オブジェクトスキーマ（GET / PATCH のレスポンスで共通利用）
  *
- * - display_name: GitHub username 等を初期値に持つ表示名
+ * - github_username: GitHub OAuth ログイン時に取得した username (login)。 表示は `@<username>`。
+ *   dev-login ユーザーや GitHub OAuth 以前のユーザーは null
  * - can_public_ranking: false でランキング集計対象から完全除外（順位そのものを計算しない）
  */
 const userSchema = z.object({
   avatar_url: z.string().nullable(),
   can_public_ranking: z.boolean(),
   created_at: z.string(),
-  display_name: z.string().nullable(),
   email: z.string().nullable(),
   favorite_repo_url: z.string().nullable(),
+  github_username: z.string().nullable(),
   id: z.number(),
 })
 
@@ -34,13 +35,12 @@ export type GetUserResponse = z.infer<typeof getUserResponseSchema>
 /**
  * 認証中ユーザー更新リクエストのスキーマ
  *
- * 全フィールドが optional だが、最低 1 つは渡す前提（refine で検証）。
- * display_name は 1〜50 文字に制限（前後 trim 済みを想定）。
+ * 表示名はもう編集できない (GitHub login で固定)。 マイページから編集できるのは
+ * 公開設定とお気に入りリポジトリ URL のみ。全フィールド optional だが最低 1 つ必要
  */
 export const updateUserRequestSchema = z
   .object({
     can_public_ranking: z.boolean().optional(),
-    display_name: z.string().trim().min(1).max(50).optional(),
     /**
      * プロフィール公開用のお気に入りリポジトリ URL。
      * null で空欄リセット、undefined で変更なし。汎用 URL を許容（github.com 限定にしない）
@@ -50,7 +50,6 @@ export const updateUserRequestSchema = z
   .refine(
     (v) =>
       v.can_public_ranking !== undefined
-      || v.display_name !== undefined
       || v.favorite_repo_url !== undefined,
     { message: "At least one field is required" },
   )

@@ -149,7 +149,7 @@ export type FinishPlaySessionResponse = z.infer<typeof finishPlaySessionResponse
 const ghostUserDisplaySchema = z.object({
   avatar_url: z.string().url().nullable(),
   best_score: z.number().int().nonnegative(),
-  display_name: z.string(),
+  github_username: z.string().nullable(),
   grade: z.string(),
 })
 

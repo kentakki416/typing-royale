@@ -54,7 +54,7 @@ export class HallOfFameListController {
           id: e.user.id,
           avatar_url: e.user.avatarUrl,
           current_grade: e.user.currentGrade,
-          display_name: e.user.displayName,
+          github_username: e.user.githubUsername,
           favorite_repo_url: e.user.favoriteRepoUrl,
         },
       })),

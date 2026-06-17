@@ -132,8 +132,8 @@ describe("GET /api/rankings/me", () => {
       const { token, user } = await createTestUser()
 
       /** 上位 2 人 */
-      const top1 = await testPrisma.user.create({ data: { displayName: "top1", email: "t1@example.com" } })
-      const top2 = await testPrisma.user.create({ data: { displayName: "top2", email: "t2@example.com" } })
+      const top1 = await testPrisma.user.create({ data: { githubUsername: "top1", email: "t1@example.com" } })
+      const top2 = await testPrisma.user.create({ data: { githubUsername: "top2", email: "t2@example.com" } })
       await insertBest({ accuracy: 0.99, languageId: language.id, playedAt: new Date("2026-05-01"), repoId: repo.id, score: 900, userId: top1.id })
       await insertBest({ accuracy: 0.98, languageId: language.id, playedAt: new Date("2026-05-10"), repoId: repo.id, score: 800, userId: top2.id })
 
@@ -175,7 +175,7 @@ describe("GET /api/rankings/me", () => {
       const { token, user } = await createTestUser({ canPublicRanking: false })
 
       /** 公開ユーザー 1 人 */
-      const pub = await testPrisma.user.create({ data: { displayName: "pub", email: "pub@example.com" } })
+      const pub = await testPrisma.user.create({ data: { githubUsername: "pub", email: "pub@example.com" } })
       await insertBest({ accuracy: 0.95, languageId: language.id, playedAt: new Date("2026-05-01"), repoId: repo.id, score: 1000, userId: pub.id })
 
       /** 自分（非公開） */

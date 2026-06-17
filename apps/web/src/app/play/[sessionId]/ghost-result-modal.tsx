@@ -56,7 +56,7 @@ export function GhostResultModal({ ghostSummary, ghostUserDisplay, problems, res
           <h2 style={{ color: headingColor }}>{heading}</h2>
           <p className="modal-sub">
             <span style={{ color: "var(--gold)", fontWeight: 700 }}>
-              神 {ghostUserDisplay.display_name}
+              神 {ghostUserDisplay.github_username}
             </span>
             {" "}に <strong>{summarize()}</strong>
           </p>

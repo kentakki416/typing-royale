@@ -21,7 +21,7 @@ export type MonthlyRankingTopEntry = {
   user: {
     avatarUrl: string | null
     currentGrade: string
-    displayName: string
+    githubUsername: string
     id: number
   }
 }
@@ -199,7 +199,7 @@ export class PrismaMonthlyRankingSnapshotRepository implements MonthlyRankingSna
     score: number
     user: {
       avatarUrl: string | null
-      displayName: string | null
+      githubUsername: string | null
       id: number
       lifetimeStats: { currentGrade: string | null } | null
     }
@@ -210,7 +210,7 @@ export class PrismaMonthlyRankingSnapshotRepository implements MonthlyRankingSna
     user: {
       avatarUrl: row.user.avatarUrl,
       currentGrade: row.user.lifetimeStats?.currentGrade ?? "intern",
-      displayName: row.user.displayName ?? "anonymous",
+      githubUsername: row.user.githubUsername ?? "anonymous",
       id: row.user.id,
     },
   })

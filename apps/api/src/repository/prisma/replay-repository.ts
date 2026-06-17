@@ -38,7 +38,7 @@ export type ReplaySource = {
         avatarUrl: string | null
         canPublicRanking: boolean
         currentGrade: string | null
-        displayName: string | null
+        githubUsername: string | null
         id: number
     }
 }
@@ -125,7 +125,7 @@ export class PrismaReplayRepository implements ReplayRepository {
         avatarUrl: row.user.avatarUrl,
         canPublicRanking: row.user.canPublicRanking,
         currentGrade: row.user.lifetimeStats?.currentGrade ?? null,
-        displayName: row.user.displayName,
+        githubUsername: row.user.githubUsername,
         id: row.user.id,
       },
     }

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
  */
 export default async function AccountSettingsPage() {
   const me = await apiClient.get<GetUserResponse>("/api/user")
-  const initials = (me.display_name ?? "??").slice(0, 2).toUpperCase()
+  const initials = (me.github_username ?? "??").slice(0, 2).toUpperCase()
 
   return (
     <>
@@ -27,7 +27,7 @@ export default async function AccountSettingsPage() {
         <div className="flex gap-16 mb-24" style={{ alignItems: "center" }}>
           <span className="avatar lg">{initials}</span>
           <div style={{ flex: 1 }}>
-            <h1 style={{ marginBottom: "4px" }}>{me.display_name ?? "(no name)"}</h1>
+            <h1 style={{ marginBottom: "4px" }}>{me.github_username ?? "(no name)"}</h1>
             <div className="text-muted text-sm">アカウント設定</div>
           </div>
           <Link className="btn" href="/mypage">← マイページに戻る</Link>

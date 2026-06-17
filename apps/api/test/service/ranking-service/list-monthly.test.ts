@@ -33,7 +33,7 @@ const buildEntry = (overrides?: Partial<MonthlyRankingTopEntry>): MonthlyRanking
   user: {
     avatarUrl: null,
     currentGrade: "senior",
-    displayName: "alice",
+    githubUsername: "alice",
     id: 1,
   },
   ...overrides,
@@ -49,7 +49,7 @@ describe("listMonthly", () => {
       mockFindBySlug.mockResolvedValueOnce({ id: 1, name: "TypeScript", slug: "typescript" })
       mockFindTopByLanguage.mockResolvedValueOnce([
         buildEntry({ rank: 1, score: 300 }),
-        buildEntry({ rank: 2, score: 250, user: { ...buildEntry().user, id: 2, displayName: "bob" } }),
+        buildEntry({ rank: 2, score: 250, user: { ...buildEntry().user, id: 2, githubUsername: "bob" } }),
       ])
 
       const result = await listMonthly(

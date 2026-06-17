@@ -12,7 +12,7 @@ import {
 } from "../../../src/repository/prisma"
 import { render } from "../../../src/service/badge-service"
 
-const mockFindByDisplayName = vi.fn<(_0: string) => Promise<PublicProfileUser | null>>()
+const mockFindByGithubUsername = vi.fn<(_0: string) => Promise<PublicProfileUser | null>>()
 const mockFindLifetimeStats = vi.fn<(_0: number) => Promise<UserLifetimeStatsSummary | null>>()
 const mockFindBadgeConfig = vi.fn<(_0: number) => Promise<BadgeConfigRow | null>>()
 const mockFindBySlug = vi.fn<(_0: string) => Promise<LanguageRef | null>>()
@@ -22,7 +22,7 @@ const mockCountHigherRanked = vi.fn<(_0: number, _1: MyLanguageBest) => Promise<
 const mockUserRepository: UserRepository = {
   create: vi.fn(),
   delete: vi.fn(),
-  findByDisplayName: mockFindByDisplayName,
+  findByGithubUsername: mockFindByGithubUsername,
   findByEmail: vi.fn(),
   findById: vi.fn(),
   findPublicProfile: vi.fn(),
@@ -69,12 +69,12 @@ describe("badge.render", () => {
 
   describe("正常系", () => {
     it("公開ユーザー (config / stats あり) で SVG を生成する", async () => {
-      mockFindByDisplayName.mockResolvedValue({
+      mockFindByGithubUsername.mockResolvedValue({
         id: 1,
         avatarUrl: null,
         canPublicRanking: true,
         createdAt: new Date(),
-        displayName: "alice",
+        githubUsername: "alice",
       })
       mockFindLifetimeStats.mockResolvedValue({
         bestScore: 543,
@@ -100,12 +100,12 @@ describe("badge.render", () => {
     })
 
     it("rank が displayItems に含まれるとき TS の順位を算出して埋め込む", async () => {
-      mockFindByDisplayName.mockResolvedValue({
+      mockFindByGithubUsername.mockResolvedValue({
         id: 1,
         avatarUrl: null,
         canPublicRanking: true,
         createdAt: new Date(),
-        displayName: "alice",
+        githubUsername: "alice",
       })
       mockFindLifetimeStats.mockResolvedValue({
         bestScore: 543,
@@ -136,12 +136,12 @@ describe("badge.render", () => {
     })
 
     it("badge_configs / lifetime_stats が無くても defaults で SVG を返す", async () => {
-      mockFindByDisplayName.mockResolvedValue({
+      mockFindByGithubUsername.mockResolvedValue({
         id: 1,
         avatarUrl: null,
         canPublicRanking: true,
         createdAt: new Date(),
-        displayName: "alice",
+        githubUsername: "alice",
       })
       mockFindLifetimeStats.mockResolvedValue(null)
       mockFindBadgeConfig.mockResolvedValue(null)
@@ -157,7 +157,7 @@ describe("badge.render", () => {
 
   describe("異常系", () => {
     it("ユーザーが存在しないとき private SVG を返す", async () => {
-      mockFindByDisplayName.mockResolvedValue(null)
+      mockFindByGithubUsername.mockResolvedValue(null)
 
       const result = await render({ username: "nobody" }, buildRepoCollection())
 
@@ -165,12 +165,12 @@ describe("badge.render", () => {
     })
 
     it("canPublicRanking=false のユーザーで private SVG を返す", async () => {
-      mockFindByDisplayName.mockResolvedValue({
+      mockFindByGithubUsername.mockResolvedValue({
         id: 1,
         avatarUrl: null,
         canPublicRanking: false,
         createdAt: new Date(),
-        displayName: "hidden",
+        githubUsername: "hidden",
       })
 
       const result = await render({ username: "hidden" }, buildRepoCollection())

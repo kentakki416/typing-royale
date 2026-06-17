@@ -8,20 +8,17 @@ import { apiClient } from "@/libs/api-client"
 import { clearAuthCookies } from "@/libs/auth"
 
 /**
- * 表示名 / ランキング公開設定の更新
- *
- * フォーム経由で呼ばれる。Zod の trim/長さ制約は API 側でも検証されるが、
- * ここでも軽くガードしてサーバー往復を減らす。
+ * GitHub リンク / ランキング公開設定の更新。 表示名は GitHub username 固定で
+ * 編集できない。 Zod の trim/長さ制約は API 側でも検証されるが、 ここでも軽く
+ * ガードしてサーバー往復を減らす
  */
 export const updateProfileAction = async (
   _prev: { error?: string; success?: boolean },
   formData: FormData,
 ): Promise<{ error?: string; success?: boolean; user?: UpdateUserResponse }> => {
-  const displayNameRaw = formData.get("display_name")
   const canPublicRankingRaw = formData.get("can_public_ranking")
   const favoriteRepoUrlRaw = formData.get("favorite_repo_url")
 
-  const displayName = typeof displayNameRaw === "string" ? displayNameRaw.trim() : undefined
   const canPublicRanking = canPublicRankingRaw === "on" || canPublicRankingRaw === "true"
   /**
    * 空文字は null（クリア）、未入力は undefined（変更なし）として扱う
@@ -33,9 +30,6 @@ export const updateProfileAction = async (
       ? null
       : favoriteRepoUrlTrimmed
 
-  if (displayName !== undefined && (displayName.length < 1 || displayName.length > 50)) {
-    return { error: "表示名は 1〜50 文字で入力してください。" }
-  }
   if (typeof favoriteRepoUrl === "string") {
     if (favoriteRepoUrl.length > 200) {
       return { error: "お気に入りリポジトリ URL は 200 文字以下で入力してください。" }
@@ -50,7 +44,6 @@ export const updateProfileAction = async (
   try {
     const updated = await apiClient.patch<UpdateUserResponse>("/api/user", {
       can_public_ranking: canPublicRanking,
-      display_name: displayName,
       favorite_repo_url: favoriteRepoUrl,
     })
     return { success: true, user: updateUserResponseSchema.parse(updated) }

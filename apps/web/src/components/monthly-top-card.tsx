@@ -45,7 +45,7 @@ export function MonthlyTopCard({ data }: Props) {
                   className="player-name"
                   style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                 >
-                  {entry.user.display_name}
+                  {entry.user.github_username}
                 </span>
               </div>
               <div className="text-mono text-sm" style={{ flexShrink: 0 }}>

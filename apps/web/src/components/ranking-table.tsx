@@ -45,7 +45,7 @@ export function RankingTable({ entries }: Props) {
                 <div className="player-cell">
                   <PlayerAvatar entry={e} />
                   <Link href={`/players/${e.user.id}`}>
-                    <strong>@{e.user.display_name}</strong>
+                    <strong>@{e.user.github_username ?? `user${e.user.id}`}</strong>
                   </Link>
                 </div>
               </td>
@@ -75,13 +75,14 @@ const convertRankToMedalClass = (rank: number): string => {
 }
 
 const PlayerAvatar = ({ entry }: { entry: Entry }) => {
-  const initials = entry.user.display_name.slice(0, 2).toUpperCase()
+  const name = entry.user.github_username ?? `user${entry.user.id}`
+  const initials = name.slice(0, 2).toUpperCase()
   if (entry.user.avatar_url === null) {
     return <span className="avatar sm">{initials}</span>
   }
   return (
     /* eslint-disable-next-line @next/next/no-img-element */
-    <img alt={entry.user.display_name} className="avatar sm" src={entry.user.avatar_url} />
+    <img alt={name} className="avatar sm" src={entry.user.avatar_url} />
   )
 }
 

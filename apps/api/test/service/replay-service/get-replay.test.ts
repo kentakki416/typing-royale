@@ -36,7 +36,7 @@ const buildSource = (overrides: Partial<ReplaySource> = {}): ReplaySource => ({
     avatarUrl: null,
     canPublicRanking: true,
     currentGrade: "senior",
-    displayName: "Alice",
+    githubUsername: "Alice",
     id: 1,
   },
   ...overrides,
@@ -105,7 +105,7 @@ describe("replay.getReplay", () => {
           avatarUrl: null,
           canPublicRanking: false,
           currentGrade: "senior",
-          displayName: "Alice",
+          githubUsername: "Alice",
           id: 1,
         },
       }))

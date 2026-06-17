@@ -37,7 +37,7 @@ const buildTopEntry = (overrides?: Partial<UserLanguageBestWithUser>): UserLangu
   user: {
     avatarUrl: null,
     currentGrade: "senior",
-    displayName: "tester",
+    githubUsername: "tester",
     id: 1,
   },
   ...overrides,
@@ -52,9 +52,9 @@ describe("ranking.list", () => {
     it("ベストありの言語で TOP N と rank を 1..N で採番して返す", async () => {
       mockFindBySlug.mockResolvedValue({ id: 1, slug: "typescript" })
       mockFindTopByLanguage.mockResolvedValue([
-        buildTopEntry({ score: 800, user: { avatarUrl: null, currentGrade: "principal", displayName: "u1", id: 1 } }),
-        buildTopEntry({ score: 600, user: { avatarUrl: null, currentGrade: "staff", displayName: "u2", id: 2 } }),
-        buildTopEntry({ score: 400, user: { avatarUrl: null, currentGrade: "senior", displayName: "u3", id: 3 } }),
+        buildTopEntry({ score: 800, user: { avatarUrl: null, currentGrade: "principal", githubUsername: "u1", id: 1 } }),
+        buildTopEntry({ score: 600, user: { avatarUrl: null, currentGrade: "staff", githubUsername: "u2", id: 2 } }),
+        buildTopEntry({ score: 400, user: { avatarUrl: null, currentGrade: "senior", githubUsername: "u3", id: 3 } }),
       ])
       mockCountRankableByLanguage.mockResolvedValue(3)
 

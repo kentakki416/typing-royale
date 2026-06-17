@@ -79,7 +79,7 @@ describe("POST /api/auth/github", () => {
           avatar_url: "https://avatars.githubusercontent.com/u/100?v=4",
           can_public_ranking: true,
           created_at: expect.any(String),
-          display_name: "New Octo",
+          github_username: "newoctocat",
           email: null,
           id: expect.any(Number),
         },
@@ -93,7 +93,7 @@ describe("POST /api/auth/github", () => {
       expect(createdAuthAccount?.user).toMatchObject({
         avatarUrl: "https://avatars.githubusercontent.com/u/100?v=4",
         canPublicRanking: true,
-        displayName: "New Octo",
+        githubUsername: "newoctocat",
       })
 
       /** Redis に Refresh Token が保存されている */
@@ -102,7 +102,7 @@ describe("POST /api/auth/github", () => {
       expect(await refreshTokenRepository.findUserId(payload!.jti)).toBe(createdAuthAccount!.userId)
     })
 
-    it("name が null の場合、login を displayName に採用する", async () => {
+    it("name が null の場合、login を githubUsername に採用する", async () => {
       mockGetUserInfo.mockResolvedValue({
         avatarUrl: null,
         id: "200",
@@ -117,7 +117,7 @@ describe("POST /api/auth/github", () => {
       expect(res.status).toBe(200)
       expect(res.body.user).toMatchObject({
         avatar_url: null,
-        display_name: "anonyoct",
+        github_username: "anonyoct",
       })
     })
 
@@ -125,7 +125,7 @@ describe("POST /api/auth/github", () => {
       const user = await testPrisma.user.create({
         data: {
           avatarUrl: "https://avatars.githubusercontent.com/u/300?v=4",
-          displayName: "Existing Oct",
+          githubUsername: "Existing Oct",
         },
       })
       await testPrisma.authAccount.create({
@@ -156,7 +156,7 @@ describe("POST /api/auth/github", () => {
           avatar_url: "https://avatars.githubusercontent.com/u/300?v=4",
           can_public_ranking: true,
           created_at: expect.any(String),
-          display_name: "Existing Oct",
+          github_username: "Existing Oct",
           email: null,
           id: user.id,
         },

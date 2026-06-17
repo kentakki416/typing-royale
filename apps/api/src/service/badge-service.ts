@@ -38,7 +38,7 @@ export const render = async (
 ): Promise<{ svg: string }> => {
   logger.debug("BadgeService: render", { username: input.username })
 
-  const user = await repo.userRepository.findByDisplayName(input.username)
+  const user = await repo.userRepository.findByGithubUsername(input.username)
   if (user === null || !user.canPublicRanking) {
     return { svg: getPrivateBadgeSvg() }
   }
@@ -69,7 +69,7 @@ export const render = async (
     rank,
     streakDays: lifetime?.streakDays ?? 0,
     typedChars,
-    username: user.displayName,
+    username: user.githubUsername,
   }
 
   const svg = buildBadgeSvg({

@@ -24,24 +24,6 @@ afterAll(async () => {
 
 describe("PATCH /api/user", () => {
   describe("正常系", () => {
-    it("display_name を更新する", async () => {
-      const { token, user } = await createTestUser({ displayName: "Old Name" })
-
-      const res = await request(app)
-        .patch("/api/user")
-        .set("Authorization", `Bearer ${token}`)
-        .send({ display_name: "New Name" })
-
-      expect(res.status).toBe(200)
-      expect(res.body).toMatchObject({
-        display_name: "New Name",
-        id: user.id,
-      })
-
-      const updated = await testPrisma.user.findUnique({ where: { id: user.id } })
-      expect(updated).toMatchObject({ displayName: "New Name" })
-    })
-
     it("can_public_ranking を false に切り替える", async () => {
       const { token, user } = await createTestUser({ canPublicRanking: true })
 
@@ -71,22 +53,10 @@ describe("PATCH /api/user", () => {
       expect(res.body).toEqual({ error: expect.any(String), status_code: 400 })
     })
 
-    it("display_name が 50 文字を超える場合、400 を返す", async () => {
-      const { token } = await createTestUser()
-
-      const res = await request(app)
-        .patch("/api/user")
-        .set("Authorization", `Bearer ${token}`)
-        .send({ display_name: "a".repeat(51) })
-
-      expect(res.status).toBe(400)
-      expect(res.body).toEqual({ error: expect.any(String), status_code: 400 })
-    })
-
     it("認証ヘッダが無い場合、401 を返す", async () => {
       const res = await request(app)
         .patch("/api/user")
-        .send({ display_name: "x" })
+        .send({ can_public_ranking: false })
 
       expect(res.status).toBe(401)
       expect(res.body).toEqual({ error: expect.any(String), status_code: 401 })

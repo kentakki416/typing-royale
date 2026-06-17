@@ -30,7 +30,6 @@ export const getUserById = async (
 
 export type UpdateUserInput = {
     canPublicRanking?: boolean
-    displayName?: string
     /**
      * undefined で変更なし、null で空欄リセット
      */
@@ -38,7 +37,8 @@ export type UpdateUserInput = {
 }
 
 /**
- * ユーザー情報の更新（表示名・ランキング公開設定）
+ * ユーザー情報の更新（ランキング公開設定 / お気に入りリポジトリ）。
+ * 表示名は GitHub username 固定で編集不可
  *
  * 認証ミドルウェアで req.userId を確定済みの前提のため、
  * NOT_FOUND は実質的に「アカウントが削除済み」を意味する。

@@ -5,6 +5,7 @@ import { useState } from "react"
 import type { GetHallOfFameResponse } from "@repo/api-schema"
 
 import { CrownSvg } from "@/components/crown-svg"
+import { formatUsername } from "@/libs/format-username"
 
 import { CurtainModal } from "./curtain-modal"
 
@@ -47,6 +48,7 @@ export function HofCards({ entries }: Props) {
         {entries.map((e) => {
           const slug = slugForRank(e.rank)
           const crowned = e.rank <= 3
+          const username = formatUsername(e.user)
           return (
             <div
               className="hof-card has-crown tappable"
@@ -67,9 +69,9 @@ export function HofCards({ entries }: Props) {
               <div className={`hof-rank ${slug}`}>#{e.rank}</div>
               <div className="hof-info">
                 <div className="flex-center gap-12 mb-8">
-                  <PlayerAvatar avatarUrl={e.user.avatar_url} displayName={e.user.display_name} large />
+                  <PlayerAvatar avatarUrl={e.user.avatar_url} githubUsername={username} large />
                   <div>
-                    <h3 style={{ margin: 0 }}>@{e.user.display_name}</h3>
+                    <h3 style={{ margin: 0 }}>@{username}</h3>
                     <div className="text-sm text-muted">
                       {e.score.toLocaleString()} pts · {e.typed_chars.toLocaleString()} 文字 · {(e.accuracy * 100).toFixed(1)}%
                       {" · "}
@@ -135,14 +137,14 @@ const formatGithubLabel = (url: string): string => {
   }
 }
 
-const PlayerAvatar = ({ avatarUrl, displayName, large }: { avatarUrl: string | null; displayName: string; large?: boolean }) => {
-  const initials = displayName.slice(0, 2).toUpperCase()
+const PlayerAvatar = ({ avatarUrl, githubUsername, large }: { avatarUrl: string | null; githubUsername: string; large?: boolean }) => {
+  const initials = githubUsername.slice(0, 2).toUpperCase()
   if (avatarUrl === null) {
     return <span className={`avatar ${large ? "lg" : "sm"}`}>{initials}</span>
   }
   return (
     /* eslint-disable-next-line @next/next/no-img-element */
-    <img alt={displayName} className={`avatar ${large ? "lg" : "sm"}`} src={avatarUrl} />
+    <img alt={githubUsername} className={`avatar ${large ? "lg" : "sm"}`} src={avatarUrl} />
   )
 }
 

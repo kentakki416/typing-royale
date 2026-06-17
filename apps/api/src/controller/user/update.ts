@@ -12,8 +12,9 @@ import * as service from "../../service"
 /**
  * PATCH /api/user
  *
- * 認証中ユーザーの表示名 / ランキング公開設定の部分更新。
- * リクエストボディは display_name / can_public_ranking の少なくとも 1 つが必須。
+ * 認証中ユーザーの公開設定 / お気に入りリポジトリの部分更新。
+ * 表示名は GitHub username 固定で編集不可。
+ * リクエストボディは can_public_ranking / favorite_repo_url の少なくとも 1 つが必須。
  */
 export class UserUpdateController {
   constructor(private userRepository: UserRepository) {}
@@ -27,7 +28,6 @@ export class UserUpdateController {
       req.userId!,
       {
         canPublicRanking: body.can_public_ranking,
-        displayName: body.display_name,
         favoriteRepoUrl: body.favorite_repo_url,
       },
       { userRepository: this.userRepository },
@@ -41,7 +41,7 @@ export class UserUpdateController {
       avatar_url: result.value.avatarUrl,
       can_public_ranking: result.value.canPublicRanking,
       created_at: result.value.createdAt.toISOString(),
-      display_name: result.value.displayName,
+      github_username: result.value.githubUsername,
       email: result.value.email,
       favorite_repo_url: result.value.favoriteRepoUrl,
       id: result.value.id,

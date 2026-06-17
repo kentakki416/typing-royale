@@ -57,7 +57,7 @@ export class RankingListController {
           id: e.user.id,
           avatar_url: e.user.avatarUrl,
           current_grade: e.user.currentGrade,
-          display_name: e.user.displayName,
+          github_username: e.user.githubUsername,
         },
       })),
       language: result.value.language,

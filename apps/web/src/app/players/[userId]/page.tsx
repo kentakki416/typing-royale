@@ -39,7 +39,7 @@ export const generateMetadata = async ({ params }: { params: Promise<Params> }):
   const tsBest = player.language_bests.find((b) => b.language.slug === "typescript")
   return {
     description: `グレード: ${player.lifetime_stats.current_grade.name} · ベストスコア: ${player.lifetime_stats.best_score} pts${tsBest ? ` · TS 全期間 #${tsBest.rank}` : ""}`,
-    title: `@${player.user.display_name} - Typing Royale`,
+    title: `@${player.user.github_username ?? `user${player.user.id}`} - Typing Royale`,
   }
 }
 
@@ -59,7 +59,8 @@ export default async function PlayerDetailPage({ params }: { params: Promise<Par
   const [player, accessToken] = await Promise.all([fetchPlayer(userId), getAccessToken()])
   if (player === null) notFound()
 
-  const initials = player.user.display_name.slice(0, 2).toUpperCase()
+  const username = player.user.github_username ?? `user${player.user.id}`
+  const initials = username.slice(0, 2).toUpperCase()
   const grade = player.lifetime_stats.current_grade
   const tsBest = player.language_bests.find((b) => b.language.slug === "typescript")
   const jsBest = player.language_bests.find((b) => b.language.slug === "javascript")
@@ -86,7 +87,7 @@ export default async function PlayerDetailPage({ params }: { params: Promise<Par
             ) : (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
-                alt={player.user.display_name}
+                alt={username}
                 className="avatar lg"
                 src={player.user.avatar_url}
                 style={{ height: "96px", width: "96px" }}
@@ -94,7 +95,7 @@ export default async function PlayerDetailPage({ params }: { params: Promise<Par
             )}
 
             <div style={{ flex: 1 }}>
-              <h1 style={{ marginBottom: "4px" }}>@{player.user.display_name}</h1>
+              <h1 style={{ marginBottom: "4px" }}>@{username}</h1>
               <div className="text-muted mb-8">
                 参加: {joinedYmd} · 連続{" "}
                 <strong style={{ color: "var(--success)" }}>

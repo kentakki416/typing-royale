@@ -32,7 +32,7 @@ export class UserGetController {
       avatar_url: result.value.avatarUrl,
       can_public_ranking: result.value.canPublicRanking,
       created_at: result.value.createdAt.toISOString(),
-      display_name: result.value.displayName,
+      github_username: result.value.githubUsername,
       email: result.value.email,
       favorite_repo_url: result.value.favoriteRepoUrl,
       id: result.value.id,

@@ -36,14 +36,14 @@ export const attachUnhandledExceptionHandler = (app: express.Express): void => {
 export const createTestUser = async (overrides?: {
   avatarUrl?: string
   canPublicRanking?: boolean
-  displayName?: string
+  githubUsername?: string
   email?: string
 }): Promise<{ token: string; user: User }> => {
   const prismaUser = await testPrisma.user.create({
     data: {
       avatarUrl: overrides?.avatarUrl ?? "https://example.com/avatar.jpg",
       canPublicRanking: overrides?.canPublicRanking ?? true,
-      displayName: overrides?.displayName ?? "Test User",
+      githubUsername: overrides?.githubUsername ?? "Test User",
       email: overrides?.email ?? `test-${Date.now()}@example.com`,
     },
   })
@@ -52,7 +52,7 @@ export const createTestUser = async (overrides?: {
     avatarUrl: prismaUser.avatarUrl,
     canPublicRanking: prismaUser.canPublicRanking,
     createdAt: prismaUser.createdAt,
-    displayName: prismaUser.displayName,
+    githubUsername: prismaUser.githubUsername,
     email: prismaUser.email,
     favoriteRepoUrl: prismaUser.favoriteRepoUrl,
     id: prismaUser.id,
