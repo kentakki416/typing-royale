@@ -14,30 +14,34 @@ type Props = {
   onClose: () => void
 }
 
-type Rank = 1 | 2 | 3
+type CrownedRank = 1 | 2 | 3
+type CrownSlug = "gold" | "silver" | "bronze"
+type RankSlug = CrownSlug | "white"
 
-const RANK_SLUG: Record<Rank, "gold" | "silver" | "bronze"> = {
+const CROWNED_RANK_SLUG: Record<CrownedRank, CrownSlug> = {
   1: "gold",
   2: "silver",
   3: "bronze",
 }
 
-const RANK_LABEL: Record<Rank, string> = {
-  1: "TS オールタイム #1",
-  2: "TS オールタイム #2",
-  3: "TS オールタイム #3",
+const slugForRank = (rank: number): RankSlug => {
+  if (rank === 1) return "gold"
+  if (rank === 2) return "silver"
+  if (rank === 3) return "bronze"
+  return "white"
 }
 
 /**
- * Hall of Fame 上位 3 名の神モーダル
+ * Hall of Fame 全 TOP 10 の神モーダル
  *
  * `.curtain-stage.active[data-rank=...]` 構造を 1.8 秒のカーテン演出付きで表示。
- * バックドロップクリックまたは × ボタンで onClose を呼ぶ。
- * ESC キーでも閉じる
+ * TOP 1〜3 はクラウン付き + 金 / 銀 / 銅 パレット、4 位以降はクラウン無し + 白色パレット。
+ * バックドロップクリックまたは × ボタンで onClose を呼ぶ。 ESC キーでも閉じる
  */
 export function CurtainModal({ entry, onClose }: Props) {
-  const rank = entry.rank as Rank
-  const slug = RANK_SLUG[rank] ?? "gold"
+  const slug = slugForRank(entry.rank)
+  const crowned = entry.rank <= 3
+  const rankLabel = `TS オールタイム #${entry.rank}`
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -67,15 +71,21 @@ export function CurtainModal({ entry, onClose }: Props) {
       <div className="god-modal" onClick={(e) => e.stopPropagation()}>
         <button aria-label="閉じる" className="modal-close" onClick={onClose} type="button">×</button>
 
-        <span aria-hidden="true" className="god-modal-crown">
-          <CrownSvg scope={`god-modal-${slug}`} slug={slug} variant="modal" />
-        </span>
+        {crowned && (
+          <span aria-hidden="true" className="god-modal-crown">
+            <CrownSvg
+              scope={`god-modal-${slug}`}
+              slug={CROWNED_RANK_SLUG[entry.rank as CrownedRank]}
+              variant="modal"
+            />
+          </span>
+        )}
 
         <div className="text-center">
           <PlayerAvatar avatarUrl={entry.user.avatar_url} displayName={entry.user.display_name} />
           <h2 style={{ fontSize: "28px", margin: "16px 0 6px" }}>@{entry.user.display_name}</h2>
           <div className="flex gap-8" style={{ flexWrap: "wrap", justifyContent: "center" }}>
-            <span className={`badge ${slug}`}>{RANK_LABEL[rank] ?? `#${rank}`}</span>
+            <span className={`badge ${slug}`}>{rankLabel}</span>
             <span
               className={`badge-grade ${entry.user.current_grade}`}
               data-level={GRADE_LEVELS[entry.user.current_grade] ?? 1}
