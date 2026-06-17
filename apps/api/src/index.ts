@@ -14,8 +14,6 @@ import { BadgeConfigGetController } from "./controller/badge/config-get"
 import { BadgeConfigUpdateController } from "./controller/badge/config-update"
 import { BadgeSvgController } from "./controller/badge/svg"
 import { CrawledRepoListController } from "./controller/crawled-repo/list"
-import { HallOfFameCommentCreateController } from "./controller/hall-of-fame/comment-create"
-import { HallOfFameCommentUpdateController } from "./controller/hall-of-fame/comment-update"
 import { HallOfFameListController } from "./controller/hall-of-fame/list"
 import { HealthLivenessController } from "./controller/health/liveness"
 import { HealthReadinessController } from "./controller/health/readiness"
@@ -34,7 +32,6 @@ import { PlayerDetailController } from "./controller/player/detail"
 import { RankingListController } from "./controller/ranking/list"
 import { RankingMeController } from "./controller/ranking/me"
 import { RankingMonthlyListController } from "./controller/ranking/monthly-list"
-import { ReplayFeaturedController } from "./controller/replay/featured"
 import { ReplayGetController } from "./controller/replay/get"
 import { RewardsCardCreateController } from "./controller/rewards/cards"
 import { RewardsListMeController } from "./controller/rewards/me"
@@ -51,7 +48,6 @@ import {
   PrismaBadgeConfigRepository,
   PrismaCrawledRepoRepository,
   PrismaDatabaseHealthRepository,
-  PrismaHallOfFameEntryRepository,
   PrismaKeystrokeLogRepository,
   PrismaLanguageRepository,
   PrismaMemoRepository,
@@ -109,7 +105,6 @@ const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(prisma
 const userLanguageBestRepository = new PrismaUserLanguageBestRepository(prisma)
 const monthlyRankingSnapshotRepository = new PrismaMonthlyRankingSnapshotRepository(prisma)
 const badgeConfigRepository = new PrismaBadgeConfigRepository(prisma)
-const hallOfFameEntryRepository = new PrismaHallOfFameEntryRepository(prisma)
 const rewardRepository = new PrismaRewardRepository(prisma)
 const replayRepository = new PrismaReplayRepository(prisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(redis)
@@ -272,18 +267,8 @@ const badgeConfigUpdateController = new BadgeConfigUpdateController(badgeConfigR
  * Hall of Fame Controller のインスタンス化
  */
 const hallOfFameListController = new HallOfFameListController(
-  hallOfFameEntryRepository,
   languageRepository,
   userLanguageBestRepository,
-)
-const hallOfFameCommentCreateController = new HallOfFameCommentCreateController(
-  hallOfFameEntryRepository,
-  languageRepository,
-  userLanguageBestRepository,
-)
-const hallOfFameCommentUpdateController = new HallOfFameCommentUpdateController(
-  hallOfFameEntryRepository,
-  languageRepository,
 )
 
 /**
@@ -301,7 +286,6 @@ const rewardsListMeController = new RewardsListMeController(rewardRepository)
  * Replay Controller のインスタンス化
  */
 const replayGetController = new ReplayGetController(keystrokeLogRepository, replayRepository)
-const replayFeaturedController = new ReplayFeaturedController(replayRepository)
 
 const app = express()
 
@@ -368,8 +352,6 @@ app.use(
 app.use(
   "/api/hall-of-fame",
   hallOfFameRouter({
-    commentCreate: hallOfFameCommentCreateController,
-    commentUpdate: hallOfFameCommentUpdateController,
     list: hallOfFameListController,
   })
 )
@@ -424,7 +406,6 @@ app.use(
 app.use(
   "/api/replays",
   replayRouter({
-    featured: replayFeaturedController,
     get: replayGetController,
   })
 )

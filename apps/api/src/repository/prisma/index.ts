@@ -1,7 +1,6 @@
 export * from "./auth-account-repository"
 export * from "./badge-config-repository"
 export * from "./crawled-repo-repository"
-export * from "./hall-of-fame-entry-repository"
 export * from "./healthcheck-repository"
 export * from "./keystroke-log-repository"
 export * from "./language-repository"

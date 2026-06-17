@@ -595,7 +595,7 @@ export type $AuthAccountPayload<ExtArgs extends runtime.Types.Extensions.Interna
     id: number
     userId: number
     /**
-     * "google" | "github" | "dev"
+     * "github" | "dev"
      */
     provider: string
     /**

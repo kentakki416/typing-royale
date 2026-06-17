@@ -44,29 +44,6 @@ export type ReplaySource = {
 }
 
 /**
- * 注目リプレイ 1 件
- *
- * `hall_of_fame_entries` の comment 付きエントリと、リンク先 PlaySession / User の display 情報
- */
-export type FeaturedReplayRow = {
-    comment: string
-    commentSubmittedAt: Date
-    language: { slug: string }
-    playSession: {
-        accuracy: number
-        id: number
-        score: number
-        typedChars: number
-    }
-    user: {
-        avatarUrl: string | null
-        currentGrade: string | null
-        displayName: string | null
-        id: number
-    }
-}
-
-/**
  * リプレイ閲覧用リポジトリ
  *
  * play_sessions + player + play_session_problems + crawled_repos + language を
@@ -74,7 +51,6 @@ export type FeaturedReplayRow = {
  */
 export interface ReplayRepository {
     findById(playSessionId: number): Promise<ReplaySource | null>
-    findFeatured(input: { language?: string; limit: number }): Promise<FeaturedReplayRow[]>
 }
 
 /**
@@ -153,52 +129,5 @@ export class PrismaReplayRepository implements ReplayRepository {
         id: row.user.id,
       },
     }
-  }
-
-  async findFeatured(input: { language?: string; limit: number }): Promise<FeaturedReplayRow[]> {
-    const rows = await this._prisma.hallOfFameEntry.findMany({
-      include: {
-        language: { select: { slug: true } },
-        playSession: {
-          select: { accuracy: true, id: true, score: true, typedChars: true },
-        },
-        user: {
-          include: { lifetimeStats: { select: { currentGrade: true } } },
-        },
-      },
-      orderBy: { commentSubmittedAt: "desc" },
-      take: input.limit,
-      where: {
-        comment: { not: null },
-        commentSubmittedAt: { not: null },
-        language: input.language ? { slug: input.language } : undefined,
-        user: { canPublicRanking: true },
-      },
-    })
-
-    return rows.flatMap((row) => {
-      /**
-       * where 条件で comment / commentSubmittedAt の non-null は保証されているが、
-       * TypeScript の型推論は narrowing しないため明示チェックで絞る
-       */
-      if (row.comment === null || row.commentSubmittedAt === null) return []
-      return [{
-        comment: row.comment,
-        commentSubmittedAt: row.commentSubmittedAt,
-        language: { slug: row.language.slug },
-        playSession: {
-          accuracy: row.playSession.accuracy,
-          id: row.playSession.id,
-          score: row.playSession.score,
-          typedChars: row.playSession.typedChars,
-        },
-        user: {
-          avatarUrl: row.user.avatarUrl,
-          currentGrade: row.user.lifetimeStats?.currentGrade ?? null,
-          displayName: row.user.displayName,
-          id: row.user.id,
-        },
-      }]
-    })
   }
 }

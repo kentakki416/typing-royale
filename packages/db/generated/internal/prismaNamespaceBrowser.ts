@@ -66,7 +66,6 @@ export const ModelName = {
   UserLanguageBest: 'UserLanguageBest',
   MonthlyRankingSnapshot: 'MonthlyRankingSnapshot',
   Reward: 'Reward',
-  HallOfFameEntry: 'HallOfFameEntry',
   BadgeConfig: 'BadgeConfig'
 } as const
 
@@ -319,20 +318,6 @@ export const RewardScalarFieldEnum = {
 } as const
 
 export type RewardScalarFieldEnum = (typeof RewardScalarFieldEnum)[keyof typeof RewardScalarFieldEnum]
-
-
-export const HallOfFameEntryScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  languageId: 'languageId',
-  bestPlaySessionId: 'bestPlaySessionId',
-  comment: 'comment',
-  commentSubmittedAt: 'commentSubmittedAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type HallOfFameEntryScalarFieldEnum = (typeof HallOfFameEntryScalarFieldEnum)[keyof typeof HallOfFameEntryScalarFieldEnum]
 
 
 export const BadgeConfigScalarFieldEnum = {

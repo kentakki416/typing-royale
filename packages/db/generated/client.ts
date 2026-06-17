@@ -115,11 +115,6 @@ export type MonthlyRankingSnapshot = Prisma.MonthlyRankingSnapshotModel
  */
 export type Reward = Prisma.RewardModel
 /**
- * Model HallOfFameEntry
- * 
- */
-export type HallOfFameEntry = Prisma.HallOfFameEntryModel
-/**
  * Model BadgeConfig
  * 
  */

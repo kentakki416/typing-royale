@@ -95,7 +95,6 @@ export default async function HallOfFamePage({
                       <th style={{ width: "48px" }}>順位</th>
                       <th>プレイヤー</th>
                       <th className="numeric">ベスト</th>
-                      <th>コメント</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -114,13 +113,6 @@ export default async function HallOfFamePage({
                           </div>
                         </td>
                         <td className="numeric"><strong>{e.score.toLocaleString()}</strong></td>
-                        <td>
-                          {e.comment === null ? (
-                            <span className="text-muted text-sm">（コメントなし）</span>
-                          ) : (
-                            <span>{e.comment}</span>
-                          )}
-                        </td>
                         <td>
                           <Link
                             className="badge accent"

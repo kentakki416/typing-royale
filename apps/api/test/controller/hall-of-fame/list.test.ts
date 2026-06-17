@@ -2,7 +2,6 @@ import request from "supertest"
 
 import { HallOfFameListController } from "../../../src/controller/hall-of-fame/list"
 import {
-  PrismaHallOfFameEntryRepository,
   PrismaLanguageRepository,
   PrismaUserLanguageBestRepository,
 } from "../../../src/repository/prisma"
@@ -14,7 +13,6 @@ import {
   testPrisma,
 } from "../setup"
 
-const hallOfFameEntryRepository = new PrismaHallOfFameEntryRepository(testPrisma)
 const languageRepository = new PrismaLanguageRepository(testPrisma)
 const userLanguageBestRepository = new PrismaUserLanguageBestRepository(testPrisma)
 
@@ -23,7 +21,6 @@ app.use(
   "/api/hall-of-fame",
   hallOfFameRouter({
     list: new HallOfFameListController(
-      hallOfFameEntryRepository,
       languageRepository,
       userLanguageBestRepository,
     ),
@@ -43,8 +40,8 @@ afterAll(async () => {
 /**
  * language + 任意人数の user + crawled_repo + play_session + user_language_best を seed
  */
-const seedRankingWithComments = async (
-  entries: Array<{ comment?: string; displayName: string; score: number }>,
+const seedRanking = async (
+  entries: Array<{ displayName: string; score: number }>,
 ) => {
   const language = await testPrisma.language.create({
     data: { name: "TypeScript", slug: "typescript" },
@@ -103,42 +100,30 @@ const seedRankingWithComments = async (
         userId: user.id,
       },
     })
-    if (e.comment !== undefined) {
-      await testPrisma.hallOfFameEntry.create({
-        data: {
-          bestPlaySessionId: session.id,
-          comment: e.comment,
-          commentSubmittedAt: new Date(),
-          languageId: language.id,
-          userId: user.id,
-        },
-      })
-    }
   }
   return { language, repo }
 }
 
 describe("GET /api/hall-of-fame", () => {
   describe("正常系", () => {
-    it("TOP 10 + コメントを rank 順で返す", async () => {
-      await seedRankingWithComments([
-        { comment: "1 位の感想", displayName: "u1", score: 800 },
+    it("TOP 10 を rank 順で返す", async () => {
+      await seedRanking([
+        { displayName: "u1", score: 800 },
         { displayName: "u2", score: 600 },
-        { comment: "3 位コメント", displayName: "u3", score: 400 },
+        { displayName: "u3", score: 400 },
       ])
 
       const res = await request(app).get("/api/hall-of-fame").query({ language: "typescript" })
 
       expect(res.status).toBe(200)
       expect(res.body.language).toBe("typescript")
-      expect(res.body.entries.map((e: { rank: number; score: number; comment: string | null }) => ({
-        comment: e.comment,
+      expect(res.body.entries.map((e: { rank: number; score: number }) => ({
         rank: e.rank,
         score: e.score,
       }))).toEqual([
-        { comment: "1 位の感想", rank: 1, score: 800 },
-        { comment: null, rank: 2, score: 600 },
-        { comment: "3 位コメント", rank: 3, score: 400 },
+        { rank: 1, score: 800 },
+        { rank: 2, score: 600 },
+        { rank: 3, score: 400 },
       ])
     })
 
