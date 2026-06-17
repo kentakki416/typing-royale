@@ -1,6 +1,7 @@
 import { CardStorage } from "../../../src/lib/card-storage"
 import {
   KeystrokeLogRepository,
+  MonthlyRankingSnapshotRepository,
   MyLanguageBest,
   PlaySessionProblemRepository,
   PlaySessionRepository,
@@ -10,6 +11,7 @@ import {
   TransactionRunner,
   UpsertIfBestInput,
   UpsertIfBestResult,
+  UpsertMonthlySnapshotInput,
   UpsertOnFinishResult,
   UserLanguageBestRepository,
   UserLifetimeStatsRepository,
@@ -31,6 +33,10 @@ const mockFindMineBest = vi.fn<(_0: number, _1: number) => Promise<MyLanguageBes
 const mockCountHigherRanked = vi.fn<(_0: number, _1: MyLanguageBest) => Promise<number>>()
 const mockFindTenthScore = vi.fn<(_0: number) => Promise<number | null>>()
 const mockCountRankableByLanguage = vi.fn<(_0: number) => Promise<number>>()
+const mockMonthlyCountByLanguage = vi.fn<(_0: string, _1: number) => Promise<number>>()
+const mockMonthlyFindBoundaryScore = vi.fn<(_0: string, _1: number, _2: number) => Promise<number | null>>()
+const mockMonthlyUpsertForUser = vi.fn<(_0: UpsertMonthlySnapshotInput, _1?: TransactionContext) => Promise<void>>()
+const mockMonthlyDeleteLowestExcluding = vi.fn<(_0: string, _1: number, _2: number, _3?: TransactionContext) => Promise<void>>()
 const mockTxRun = vi.fn<<T>(fn: (tx: TransactionContext) => Promise<T>) => Promise<T>>()
 
 const mockPlaySessionStateRepository: PlaySessionStateRepository = {
@@ -59,6 +65,14 @@ const mockKeystrokeLogRepository: KeystrokeLogRepository = {
 const mockUserLifetimeStatsRepository: UserLifetimeStatsRepository = {
   findByUserId: vi.fn(),
   upsertOnFinish: mockUpsertOnFinish,
+}
+
+const mockMonthlyRankingSnapshotRepository: MonthlyRankingSnapshotRepository = {
+  countByLanguage: mockMonthlyCountByLanguage,
+  deleteLowestExcluding: mockMonthlyDeleteLowestExcluding,
+  findBoundaryScore: mockMonthlyFindBoundaryScore,
+  findTopByLanguage: vi.fn(),
+  upsertForUser: mockMonthlyUpsertForUser,
 }
 
 const mockUserLanguageBestRepository: UserLanguageBestRepository = {
@@ -116,6 +130,7 @@ const buildState = (overrides?: Partial<PlaySessionState>): PlaySessionState => 
 const buildRepoCollection = () => ({
   cardStorage: mockCardStorage,
   keystrokeLogRepository: mockKeystrokeLogRepository,
+  monthlyRankingSnapshotRepository: mockMonthlyRankingSnapshotRepository,
   playSessionProblemRepository: mockPlaySessionProblemRepository,
   playSessionRepository: mockPlaySessionRepository,
   playSessionStateRepository: mockPlaySessionStateRepository,
@@ -149,6 +164,14 @@ describe("finishSession", () => {
     mockCountHigherRanked.mockResolvedValue(0)
     mockFindTenthScore.mockResolvedValue(null)
     mockCountRankableByLanguage.mockResolvedValue(0)
+    /**
+     * monthly snapshot は v2 で /finish 同期 UPSERT になった。デフォルトは空状態
+     * (件数 0 / boundary null) で、入賞時に upsert が走り cap 超過は無し
+     */
+    mockMonthlyCountByLanguage.mockResolvedValue(0)
+    mockMonthlyFindBoundaryScore.mockResolvedValue(null)
+    mockMonthlyUpsertForUser.mockResolvedValue(undefined)
+    mockMonthlyDeleteLowestExcluding.mockResolvedValue(undefined)
   })
 
   describe("正常系", () => {

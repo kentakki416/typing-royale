@@ -119,6 +119,13 @@ export const finishPlaySessionResponseSchema = z.object({
     from: finishGradeSchema,
     to: finishGradeSchema,
   }).nullable(),
+  /**
+   * 月間 TOP 10 の boundary score（= 当月 cap 内の最低 score、自分の upsert 反映後の値）。
+   * 当月 snapshot が 10 件未満なら null（= 誰でも入賞判定対象）。
+   * フロント側で `result.score >= monthly_top_ten_boundary_score || === null` で月間入賞判定する。
+   * monthly-ranking v2 / result-top-ten-popup spec を参照
+   */
+  monthly_top_ten_boundary_score: z.number().int().nonnegative().nullable(),
   new_rank: z.number().int().min(1).nullable(),
   /**
    * /finish 時点での当該言語のランクイン総人数（ZSCORE と同時に取れるので

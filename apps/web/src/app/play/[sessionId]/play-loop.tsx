@@ -149,6 +149,8 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
             best_score_updated: false,
             grade_up: null,
             mistype_stats: guestRes.mistype_stats,
+            /** ゲストはランキング登録対象外なので月間 boundary も常に null */
+            monthly_top_ten_boundary_score: null,
             new_rank: guestRes.new_rank,
             persisted: false,
             problems_completed: guestRes.problems_completed,

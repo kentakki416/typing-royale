@@ -9,6 +9,7 @@ import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
 import {
   KeystrokeLogRepository,
+  MonthlyRankingSnapshotRepository,
   PlaySessionProblemRepository,
   PlaySessionRepository,
   ProblemRepository,
@@ -34,6 +35,7 @@ export class PlaySessionFinishController {
   constructor(
         private cardStorage: CardStorage,
         private keystrokeLogRepository: KeystrokeLogRepository,
+        private monthlyRankingSnapshotRepository: MonthlyRankingSnapshotRepository,
         private playSessionProblemRepository: PlaySessionProblemRepository,
         private playSessionRepository: PlaySessionRepository,
         private playSessionStateRepository: PlaySessionStateRepository,
@@ -70,6 +72,7 @@ export class PlaySessionFinishController {
       {
         cardStorage: this.cardStorage,
         keystrokeLogRepository: this.keystrokeLogRepository,
+        monthlyRankingSnapshotRepository: this.monthlyRankingSnapshotRepository,
         playSessionProblemRepository: this.playSessionProblemRepository,
         playSessionRepository: this.playSessionRepository,
         playSessionStateRepository: this.playSessionStateRepository,
@@ -104,6 +107,7 @@ export class PlaySessionFinishController {
           },
         },
       mistype_stats: result.value.mistypeStats,
+      monthly_top_ten_boundary_score: result.value.monthlyTopTenBoundaryScore,
       new_rank: result.value.newRank,
       persisted: result.value.persisted,
       problems_completed: result.value.problemsCompleted,
