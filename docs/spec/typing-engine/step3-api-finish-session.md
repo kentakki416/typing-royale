@@ -65,10 +65,10 @@
 | `typed_chars` | number | 0..1500 | 120 秒で正しく打鍵できた累計文字数 |
 | `accuracy` | number | 0.0..1.0 | `correctKeystrokes / totalKeystrokes` |
 | `keystroke_logs` | array | 最大 2000 要素 / 生 JSON 100KB 以下 | 各キー入力イベント |
-| `keystroke_logs[].t` | number | >= 0 | セッション開始からの経過 ms（`performance.now()` 起点） |
-| `keystroke_logs[].p` | number | 0..19 | 何問目を打っていたか（`orderIndex`） |
-| `keystroke_logs[].ch` | string | 1..20 文字 | 入力された文字（または "Enter"/"Backspace" 等の特殊キー名） |
-| `keystroke_logs[].ok` | boolean | — | その時点で期待文字と一致したか |
+| `keystroke_logs[].elapsed_ms` | number | >= 0 | セッション開始からの経過 ms（`performance.now()` 起点）。combo-time-bonus 連携で許容上限超過時は 400 で reject（cheat 検知） |
+| `keystroke_logs[].problem_index` | number | 0..19 | 何問目を打っていたか（`order_index`） |
+| `keystroke_logs[].input_char` | string | 1..20 文字 | 入力された文字（または "Enter"/"Backspace" 等の特殊キー名） |
+| `keystroke_logs[].is_correct` | boolean | — | クライアント時点での期待文字との一致フラグ（サーバー側で `input_char === expected` を再判定するため信用しない） |
 
 > `score` はクライアントから受け取らない。送られても無視してサーバーで再計算する。
 
@@ -84,7 +84,13 @@
   "problems_played": 5,
   "problems_completed": 3,
   "mistype_stats": { "l": 2, ";": 1, "{": 1 },
-  "persisted": true
+  "persisted": true,
+  "best_score_updated": true,
+  "grade_up": false,
+  "new_rank": 43,
+  "top_ten_boundary_score": 580,
+  "total_ranked_players": 1234,
+  "monthly_top_ten_boundary_score": 320
 }
 ```
 
@@ -93,10 +99,16 @@
 | `score` | number (int) | **サーバー計算値**：`floor(typed_chars × accuracy)` |
 | `typed_chars` | number | 受け取った値をそのまま返す |
 | `accuracy` | number | 受け取った値をそのまま返す |
-| `problems_played` | number | keystroke_logs の `p` ユニーク数 |
-| `problems_completed` | number | 各問題の codeBlock 末尾までを `isCorrect=true` で踏みきった問題数 |
+| `problems_played` | number | `new Set(keystroke_logs.map(e => e.problem_index)).size`（出てきた問題のユニーク数） |
+| `problems_completed` | number | 各問題の codeBlock 末尾までを `input_char === expected` で踏みきった問題数 |
 | `mistype_stats` | object | サーバー集計のニガテ文字マップ（正解期待文字 → カウント） |
-| `persisted` | boolean | 認証済みプレイなら true。ゲスト対応時 false あり（Phase 2 以降） |
+| `persisted` | boolean | 認証済みプレイなら true。ゲスト経路は false |
+| `best_score_updated` | boolean | 今回のスコアで `user_language_best` が更新されたか |
+| `grade_up` | boolean | 今回のスコアで `current_grade` が上昇したか |
+| `new_rank` | number \| null | `user_language_best` リアルタイム集計で算出した全期間順位（ランキング対象外なら null） |
+| `top_ten_boundary_score` | number \| null | 全期間ランキング 10 位のスコア（TOP 10 入り判定 UI 用） |
+| `total_ranked_players` | number | ランキング登録対象プレイヤー総数 |
+| `monthly_top_ten_boundary_score` | number \| null | 月間ランキング 10 位のスコア |
 
 ### エラー
 
@@ -186,9 +198,9 @@ sequenceDiagram
 - **スコア計算はサーバー権威**。クライアントから受け取った `score` は一切信用しない（送られても無視）。`score = floor(typedChars * accuracy)` で計算する。`floor` 採用理由：DB は `Int`、`typedChars × accuracy` は小数になり得るため、最終的に整数化が必要。`round` ではなく `floor` を選ぶのは「ユーザーに有利になる丸めを排除」のため
 - **物理限界チェック**：`typedChars > 1500` または `accuracy > 1.0` または `accuracy < 0.0` は HTTP 400 で拒否し DB に書かない。`typedChars < 0` も拒否
 - **DB 書き込みは Prisma transaction で 4 テーブルをアトミックに**。途中失敗で部分書き込みになるとマイページの累計値がずれるため。`PrismaTransactionRunner`（既存）を Service 経由で使う
-- **`mistypeStats` はサーバーで keystrokeLog から集計**。クライアント送信値は信用しない。`isCorrect=false` のエントリについて「**そのとき期待されていた正解文字**（= 出題シーケンスから引ける）」をキーに 1 加算する。誤入力された文字（`ch`）ではなく **正解文字** で集計する（仕様 [`./README.md#誤打鍵集計ニガテ文字`](./README.md#誤打鍵集計ニガテ文字) より）
-- **`problemsPlayed` / `problemsCompleted` はキーストロークログから算出**。`problemsPlayed = max(p) + 1`、`problemsCompleted` は「各問題の最終 char が正解 `isCorrect=true` で打たれた回数」で算出する
-- **`play_session_problems` の `charsTyped` / `completed` はキーストロークログから問題別に集計**。完走判定は「その問題の `codeBlock` 末尾文字までを正解 `isCorrect=true` で踏み終えたか」
+- **`mistypeStats` はサーバーで keystrokeLog から集計**。クライアントの `is_correct` は信用せず、**サーバー側で `input_char === expected` を再判定** する（cheat 防止）。再判定で false になったエントリについて「**そのとき期待されていた正解文字**（= 出題シーケンスから引ける）」をキーに 1 加算する。誤入力された文字（`input_char`）ではなく **正解文字** で集計する（仕様 [`./README.md#誤打鍵集計ニガテ文字`](./README.md#誤打鍵集計ニガテ文字) より）
+- **`problemsPlayed` / `problemsCompleted` はキーストロークログから算出**。`problemsPlayed = new Set(keystrokeLogs.map((e) => e.problemIndex)).size`（ログに登場した問題のユニーク数）、`problemsCompleted` は「各問題の `codeBlock` 末尾までサーバー再判定で踏みきった問題数」
+- **`play_session_problems` の `charsTyped` / `completed` はキーストロークログから問題別に集計**。完走判定は「その問題の `codeBlock` 末尾文字までを `input_char === expected` で踏み終えたか」（サーバー再判定）
 - **`user_lifetime_stats` は upsert**。初回プレイで row が無い場合は作成、ある場合は加算。`bestScore` は max、`bestScoreByLanguage` は JSON で言語別の max
 - **`currentGrade` / `currentGradeReachedAt` の更新は step3 では実装しない**（Phase 4 の score-ranking 機能で実装）。`bestScore` 更新だけ行い、グレード判定は将来 step で追加
 - **`keystroke_logs.compressedLog` は gzip 圧縮**。Node 標準 `zlib.gzipSync(JSON.stringify(log))` を使う。バイト列をそのまま `bytea` カラムに突っ込む
@@ -248,7 +260,7 @@ export type KeystrokeEntry = {
   elapsedMs: number
 }
 
-export type KeystrokeLogs = KeystrokeLogs
+export type KeystrokeLogs = KeystrokeEntry[]
 
 export type MistypeStats = Record<string, number>
 
@@ -264,7 +276,19 @@ export type FinishResult = {
 }
 ```
 
-### `apps/api/src/repository/prisma/play-session-repository.ts`（新規）
+### Repository 構成（TransactionRunner + 単一責務 Repository 5 個）
+
+`/finish` 系の DB 書き込みは **責務分離** されており、Service が `TransactionRunner` で transaction context を確保したうえで、以下 5 つの単一責務 Repository を順に呼ぶ：
+
+| Repository | メソッド | 担当テーブル |
+|---|---|---|
+| `PlaySessionRepository` | `create(tx, input)` | `play_sessions`（INSERT × 1） |
+| `PlaySessionProblemRepository` | `createMany(tx, input)` | `play_session_problems`（INSERT × 20） |
+| `KeystrokeLogRepository` | `create(tx, input)` | `keystroke_logs`（gzip 済み bytea） |
+| `UserLifetimeStatsRepository` | `upsertOnFinish(tx, input)` | `user_lifetime_stats`（累計加算 + best 更新） |
+| `UserLanguageBestRepository` | `upsertIfBest(tx, input)` | `user_language_best`（言語別ベストの正本。ランキング順位はこのテーブルをリアルタイム集計） |
+
+設計詳細・型定義のサンプルは以下の通り（旧版の `PlaySessionRepository.createWithChildrenAndUpdateStats` を残しておくが、現行実装は上記 5 Repository に分かれている点に注意）：
 
 ```typescript
 import { PrismaClient } from "@repo/db"
@@ -276,6 +300,7 @@ export type CreatePlaySessionInput = {
   crawledRepoId: number
   ghostSessionId: number | null
   languageId: number
+  languageSlug: string
   mode: "solo" | "challenge_gods"
   mistypeStats: MistypeStats
   playedAt: Date
@@ -293,10 +318,11 @@ export type CreatePlaySessionProblemInput = {
   problemId: number
 }
 
+/** 旧版インターフェース（参考）。現行実装は単一責務 5 Repository に分かれている */
 export interface PlaySessionRepository {
   /**
    * play_sessions + play_session_problems + keystroke_logs を 1 transaction で作成
-   * user_lifetime_stats の upsert もこの中で実行する
+   * user_lifetime_stats の upsert もこの中で実行する（旧版）
    */
   createWithChildrenAndUpdateStats(input: {
     keystrokeLog: KeystrokeLogs
@@ -369,10 +395,10 @@ export class PrismaPlaySessionRepository implements PlaySessionRepository {
   ): Promise<void> {
     const existing = await tx.userLifetimeStats.findUnique({ where: { userId: s.userId } })
 
-    /** languageSlug は LanguageRepository から引きたいが、本 transaction では languageId しか持たない。
-     *  bestScoreByLanguage のキーは languageId の文字列にする（"1", "2"）。
-     *  リザルト画面表示で言語名が欲しい場合は別途 join で取る方針 */
-    const langKey = String(s.languageId)
+    /** bestScoreByLanguage のキーは **languageSlug**（"typescript" / "javascript"）にする。
+     *  Service 層で LanguageRepository から slug を引いてから本 Repository に渡す方針。
+     *  数値 ID をキーにすると Web 側で言語表示する際に毎回 join が必要になり面倒なため */
+    const langKey = s.languageSlug
 
     if (!existing) {
       await tx.userLifetimeStats.create({

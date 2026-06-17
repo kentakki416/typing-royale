@@ -39,9 +39,9 @@ packages/redis/
     "ioredis": "^5.10.0"
   },
   "devDependencies": {
+    "@repo/eslint-config": "workspace:^",
+    "@repo/typescript-config": "workspace:^",
     "@types/node": "^24.10.1",
-    "@typescript-eslint/eslint-plugin": "^8.46.4",
-    "@typescript-eslint/parser": "^8.46.4",
     "eslint": "^9.39.1",
     "typescript": "^5.9.3"
   }
@@ -101,7 +101,7 @@ export const createRedisClient = (params: CreateRedisClientOptions = {}): Redis 
 
 #### URL ベース接続を優先する理由
 
-既存 `apps/api/src/client/redis.ts` は `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` / `REDIS_DB` の 4 つの env を個別に読んでいるが、`@repo/config` の `baseEnvSchema` では `REDIS_URL` を 1 本で扱う設計を推奨する（cron/worker でも env を増やさず済むため）。後方互換として個別 env も読めるようにしておく。
+既存 `apps/api/src/client/redis.ts` は `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` / `REDIS_DB` の 4 つの env を個別に読んでいるが、各 app の `src/env.ts` の Zod スキーマでは `REDIS_URL` を 1 本で扱う設計を推奨する（cron / worker でも env を増やさず済むため）。後方互換として個別 env も `@repo/redis` 側で読めるようにしておく。
 
 ### 4. `packages/redis/src/index.ts`
 
@@ -143,6 +143,8 @@ step1〜4 と同様の構成。
 
 ### 7. `apps/api` 側の互換 wrapper
 
+> **現在の状態**: step6 完了済みのため、`apps/api/src/client/redis.ts` は **既に削除されている**。step5 単独移行時は以下の wrapper を一時的に置いて互換維持していた（履歴記録）。
+
 `apps/api/src/client/redis.ts` を以下に差し替える。`@repo/redis` は factory のみ提供なので、apps/api 内部で **暫定的に singleton を保持する** wrapper にして既存 import を壊さない。step6 でこの wrapper 自体を削除し、`src/index.ts` での DI assembly に置き換える。
 
 ```typescript
@@ -171,7 +173,6 @@ export const redis = createRedisClient()
    "dependencies": {
      "@repo/db": "workspace:^",
      "@repo/api-schema": "workspace:^",
-     "@repo/config": "workspace:^",
      "@repo/errors": "workspace:^",
      "@repo/logger": "workspace:^",
 +    "@repo/redis": "workspace:^",
@@ -186,24 +187,27 @@ export const redis = createRedisClient()
 
 → つまり step5 では `@repo/redis` を追加するだけで `ioredis` は残す。最終削除は step6。
 
-### 10. `@repo/config` の baseEnvSchema 確認
+### 10. 各 app の `src/env.ts` に `REDIS_URL` を追加
 
-step4 で定義した `baseEnvSchema` に `REDIS_URL` を追加する（任意項目）：
+> 旧版（`@repo/config` 利用時）は `baseEnvSchema` に `REDIS_URL` を追加する手順だったが、**`@repo/config` 撤去後（2026-06-04）の現方針では**、各 app の `src/env.ts` に直接書く。
+
+`apps/api/src/env.ts` のインライン Zod スキーマに `REDIS_URL` を追加する（API では必須化）。
 
 ```diff
- export const baseEnvSchema = z.object({
+ const envSchema = z.object({
    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
    DATABASE_URL: z.string().url(),
-   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
-   LOGGER_TYPE: z.enum(["pino", "winston", "console", "silent"]).default("pino"),
 +  /**
-+   * Redis 接続 URL（省略時は @repo/redis が REDIS_HOST/PORT/PASSWORD/DB から組み立てる）
++   * Redis 接続 URL。省略時は @repo/redis が REDIS_HOST/PORT/PASSWORD/DB から組み立てる。
++   * API では Redis が常に必要なので必須化。cron など Redis を使わない app では .optional() でよい。
 +   */
-+  REDIS_URL: z.string().url().optional(),
++  REDIS_URL: z.string().url(),
+   PORT: z.coerce.number().default(8080),
+   JWT_SECRET: z.string().min(32),
  })
 ```
 
-`apps/api/src/env.ts` の `apiEnvSchema` で `REDIS_URL: z.string().url()` を **必須化** していれば、API では Redis が常に必要であることを型レベルで担保できる（base では optional、api では required にする運用）。
+新規 app（cron 等）でも `src/env.ts` に同じく `REDIS_URL` を `.optional()` か必須かで使い分ける。共通の `baseEnvSchema` は介さない。
 
 ## 動作確認
 

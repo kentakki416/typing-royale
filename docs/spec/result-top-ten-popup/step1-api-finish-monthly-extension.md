@@ -33,7 +33,7 @@ cd packages/schema && pnpm build
 ```ts
 export interface MonthlyRankingSnapshotRepository {
   findTopByLanguage: ...  // 既存
-  findBoundaryScore: (yearMonth: string, languageId: number, capSize: number) => Promise<number | null>
+  findBoundaryScore: (yearMonth: string, languageId: number, cap: number) => Promise<number | null>
   upsertForUser: (input: { yearMonth, languageId, userId, score, accuracy, playedAt }, tx?: TransactionContext) => Promise<void>
   deleteLowestExcluding: (yearMonth, languageId, excludeUserId, tx?: TransactionContext) => Promise<void>
   countByLanguage: (yearMonth, languageId) => Promise<number>
@@ -43,14 +43,14 @@ export interface MonthlyRankingSnapshotRepository {
 実装の要点:
 
 ```ts
-findBoundaryScore = async (yearMonth, languageId, capSize) => {
+findBoundaryScore = async (yearMonth, languageId, cap) => {
   const rows = await this.prisma.monthlyRankingSnapshot.findMany({
     select: { score: true },
     where: { yearMonth, languageId },
     orderBy: [{ score: "desc" }, { accuracy: "desc" }, { playedAt: "asc" }],
-    take: capSize,
+    take: cap,
   })
-  if (rows.length < capSize) return null
+  if (rows.length < cap) return null
   return rows[rows.length - 1].score
 }
 
@@ -93,35 +93,41 @@ deleteLowestExcluding = async (yearMonth, languageId, excludeUserId, tx) => {
 `finishSession` の既存集計フローに月間 snapshot 同期と boundary 取得を追加:
 
 ```ts
+/** 月間 TOP 10 の cap (実装側で定数として export しておく) */
+const MONTHLY_TOP_TEN_CAP = 10
+
 // 既存 transaction で 5 テーブル書き込み済みの直後 ...
 const topTenBoundaryScore = await repo.userLanguageBestRepository.findTenthScore(state.languageId)
 
-// 新規: 月間 snapshot 同期 UPSERT + boundary 算出
-const yearMonth = currentYearMonthJst()  // "YYYY-MM" (JST)
-const myMonthlyBestScore = ... // 当月内の自分のベストか今回のスコア (= 今回が上書きするなら今回値)
+/**
+ * 新規: 月間 snapshot 同期 UPSERT + boundary 算出
+ * 今回のセッションのスコアで判定する。upsert の update 句で過去ベストは今回値で上書きされる設計のため、
+ * Service 側で「過去ベストと今回スコアの max を取る」処理は不要。
+ */
+const yearMonth = currentYearMonthJst(playedAt)  // "YYYY-MM" (JST)
 
 const beforeCount = await repo.monthlyRankingSnapshotRepository.countByLanguage(yearMonth, state.languageId)
-const beforeBoundary = beforeCount < 10
+const beforeBoundary = beforeCount < MONTHLY_TOP_TEN_CAP
   ? null
-  : await repo.monthlyRankingSnapshotRepository.findBoundaryScore(yearMonth, state.languageId, 10)
+  : await repo.monthlyRankingSnapshotRepository.findBoundaryScore(yearMonth, state.languageId, MONTHLY_TOP_TEN_CAP)
 
-const isMonthlyTopTenEntry = beforeCount < 10 || myMonthlyBestScore >= (beforeBoundary ?? 0)
+const isMonthlyTopTenEntry = beforeCount < MONTHLY_TOP_TEN_CAP || score >= (beforeBoundary ?? 0)
 
 if (isMonthlyTopTenEntry) {
   await repo.monthlyRankingSnapshotRepository.upsertForUser({
     yearMonth, languageId: state.languageId, userId: state.userId,
-    score: myMonthlyBestScore, accuracy, playedAt,
+    score, accuracy, playedAt,
   })
-  /** TOP 10 cap 維持: 11 件以上になっていれば自分以外の最低スコア行を delete */
+  /** TOP 10 cap 維持: cap 件超になっていれば自分以外の最低スコア行を delete */
   const afterCount = await repo.monthlyRankingSnapshotRepository.countByLanguage(yearMonth, state.languageId)
-  if (afterCount > 10) {
+  if (afterCount > MONTHLY_TOP_TEN_CAP) {
     await repo.monthlyRankingSnapshotRepository.deleteLowestExcluding(yearMonth, state.languageId, state.userId)
   }
 }
 
 /** レスポンスには「現在の」boundary を返す (自分の upsert 反映後の値) */
 const monthlyTopTenBoundaryScore = await repo.monthlyRankingSnapshotRepository.findBoundaryScore(
-  yearMonth, state.languageId, 10,
+  yearMonth, state.languageId, MONTHLY_TOP_TEN_CAP,
 )
 
 return ok({

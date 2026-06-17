@@ -21,14 +21,16 @@
 
 | Route | コンポーネント | 概要 |
 |---|---|---|
-| `/ranking` | Server Component + 言語タブ用 Client Component | 言語別 TOP 10 + 自分の状況 |
+| `/ranking` | Server Component + 言語タブ用 Client Component | 言語別の **月間ランキング**（`GetMonthlyRankingsResponse`）+ 自分の状況 |
 | `/ranking?language=javascript` | 同上 | JavaScript タブの SSR 専用 URL |
+
+> `/ranking` ページは **月間ランキング** を表示する。全期間 TOP 10 の表示は `/hall-of-fame` に集約されている。
 
 ### 呼び出す API
 
 | メソッド / パス | 呼び出すタイミング | 経路 | 認証 |
 |---|---|---|---|
-| `GET /api/rankings?language=...` | ページ表示時 | Server Component → `apiClient.get()` → Express | 不要 |
+| `GET /api/rankings/monthly?language=...` | ページ表示時 | Server Component → `apiClient.get()` → Express | 不要 |
 | `GET /api/rankings/me?language=...` | ログイン時のみ、サイドバー描画用 | Server Component（cookie 経由）→ Express | 必須（cookie 自動転送） |
 
 ## 参考モック
@@ -261,22 +263,22 @@ export default async function RankingPage({
 ```typescript
 import Link from "next/link"
 
-import type { GetRankingsResponse } from "@repo/api-schema"
+import type { GetMonthlyRankingsResponse } from "@repo/api-schema"
 
 import { gradeBadgeClass } from "@/libs/grade"
 
-type Entry = GetRankingsResponse["entries"][number]
+type Entry = GetMonthlyRankingsResponse["entries"][number]
 
 type Props = {
     entries: Entry[]
     /**
-     * 自分のエントリを見分けるための bestPlaySessionId（未ログイン or 圏外なら null）
+     * 自分のエントリを見分けるための userId（未ログイン or 圏外なら null）
      */
     meUserId: number | null
 }
 
 /**
- * mock: ranking.html のテーブル構造を踏襲
+ * mock: ranking.html のテーブル構造を踏襲（月間ランキング 5 列構成: 順位 / プレイヤー / グレード / スコア / 正確率）
  */
 export function RankingTable({ entries, meUserId }: Props) {
   if (entries.length === 0) return null
@@ -289,10 +291,8 @@ export function RankingTable({ entries, meUserId }: Props) {
             <th style={{ width: "48px" }}>順位</th>
             <th>プレイヤー</th>
             <th>グレード</th>
-            <th className="numeric">ベスト</th>
-            <th className="numeric">文字数</th>
+            <th className="numeric">スコア</th>
             <th className="numeric">正確率</th>
-            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -305,7 +305,7 @@ export function RankingTable({ entries, meUserId }: Props) {
                 <div className="player-cell">
                   <Avatar entry={e} />
                   <Link href={`/players/${e.user.id}`}>
-                    <strong>@{e.user.display_name}</strong>
+                    <strong>@{e.user.github_username ?? `user${e.user.id}`}</strong>
                   </Link>
                 </div>
               </td>
@@ -318,11 +318,7 @@ export function RankingTable({ entries, meUserId }: Props) {
                 </span>
               </td>
               <td className="numeric"><strong>{e.score.toLocaleString()}</strong></td>
-              <td className="numeric">{e.typed_chars.toLocaleString()}</td>
               <td className="numeric">{(e.accuracy * 100).toFixed(1)}%</td>
-              <td>
-                <span className="badge text-muted" title="リプレイは Phase 5+ で実装">▶</span>
-              </td>
             </tr>
           ))}
         </tbody>
@@ -339,10 +335,11 @@ const rankMedalClass = (rank: number): string => {
 }
 
 const Avatar = ({ entry }: { entry: Entry }) => {
-  const initials = entry.user.display_name.slice(0, 2).toUpperCase()
+  const name = entry.user.github_username ?? `user${entry.user.id}`
+  const initials = name.slice(0, 2).toUpperCase()
   return entry.user.avatar_url === null
     ? <span className="avatar sm">{initials}</span>
-    : <img className="avatar sm" src={entry.user.avatar_url} alt={entry.user.display_name} />
+    : <img className="avatar sm" src={entry.user.avatar_url} alt={name} />
 }
 
 const gradeLevel = (slug: string): number => {

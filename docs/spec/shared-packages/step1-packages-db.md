@@ -11,12 +11,12 @@ packages/db/
 ├── package.json
 ├── tsconfig.json
 ├── eslint.config.js
-├── .gitignore
 ├── prisma/
-│   ├── schema.prisma            # apps/api/src/prisma/schema.prisma を移動
-│   ├── prisma.config.ts         # apps/api/src/prisma/prisma.config.ts を移動
-│   ├── seed.ts                  # apps/api/src/prisma/seed.ts を移動（dev users 含む全 seed）
-│   └── migrations/              # apps/api/src/prisma/migrations/ を全移動
+│   ├── schema.prisma                # apps/api/src/prisma/schema.prisma を移動
+│   ├── prisma.config.ts             # apps/api/src/prisma/prisma.config.ts を移動
+│   ├── seed.ts                      # apps/api/src/prisma/seed.ts を移動（dev users + Language マスタ + ranking fixture 呼び出し）
+│   ├── seed-ranking-fixtures.ts     # ローカル動作確認用のランキング fixture
+│   └── migrations/                  # apps/api/src/prisma/migrations/ を全移動
 ├── src/
 │   ├── client.ts                # createPrismaClient factory + 接続文字列ヘルパ
 │   └── index.ts
@@ -29,8 +29,8 @@ packages/db/
 {
   "name": "@repo/db",
   "version": "1.0.0",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
   "sideEffects": false,
   "scripts": {
     "build": "tsc",
@@ -43,18 +43,17 @@ packages/db/
     "db:seed": "prisma db seed --config=prisma/prisma.config.ts",
     "db:studio": "prisma studio --config=prisma/prisma.config.ts",
     "lint": "eslint 'src/**/*.ts'",
-    "lint:fix": "eslint 'src/**/*.ts' --fix",
-    "postinstall": "prisma generate --config=prisma/prisma.config.ts"
+    "lint:fix": "eslint 'src/**/*.ts' --fix"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.2.0",
-    "@prisma/extension-read-replicas": "^1.0.0"
+    "@prisma/extension-read-replicas": "^0.5.0"
   },
   "devDependencies": {
+    "@repo/eslint-config": "workspace:^",
+    "@repo/typescript-config": "workspace:^",
     "@types/node": "^24.10.1",
-    "@typescript-eslint/eslint-plugin": "^8.46.4",
-    "@typescript-eslint/parser": "^8.46.4",
     "eslint": "^9.39.1",
     "prisma": "^7.2.0",
     "tsx": "^4.21.0",
@@ -62,6 +61,10 @@ packages/db/
   }
 }
 ```
+
+`main` / `types` は `dist/src/...` を指す（`tsconfig.json` の `rootDir: "."` + `include: ["src/**/*", "generated/**/*"]` の結果、`src/` 配下も `dist/src/...` 配下に出力されるため）。
+
+`postinstall` フックは置かない（generated client は turbo の `@repo/db#db:generate` タスクで build 時に生成されるため）。
 
 ### 3. `packages/db/prisma/schema.prisma`
 
@@ -81,15 +84,19 @@ packages/db/
 ### 4. `packages/db/prisma/prisma.config.ts`
 
 ```typescript
-import { defineConfig, env } from "prisma/config"
+import { defineConfig } from "prisma/config"
+
+const DEFAULT_URL = "postgresql://postgres:password@localhost:5432/typing_royale_dev"
 
 /**
  * DB_NAME 環境変数が設定されている場合、DATABASE_URL のDB名部分を置き換える
- * テスト実行時に DB_NAME=project-template_test を指定することで、
+ * テスト実行時に DB_NAME=typing_royale_test を指定することで、
  * テスト用DBにマイグレーションを適用できる
+ *
+ * DATABASE_URL が未設定の場合はローカルのデフォルトを使う（prisma generate 時など）
  */
 const getDatasourceUrl = (): string => {
-  const baseUrl = env("DATABASE_URL")
+  const baseUrl = process.env.DATABASE_URL ?? DEFAULT_URL
   const dbName = process.env.DB_NAME
   if (!dbName) return baseUrl
   return baseUrl.replace(/\/[^/?]+(\?|$)/, `/${dbName}$1`)
@@ -107,9 +114,15 @@ export default defineConfig({
 })
 ```
 
+`env()` ヘルパは使わず `process.env.DATABASE_URL ?? DEFAULT_URL` のフォールバック付きにする。`prisma generate` などの CLI から呼ばれる経路では env が未読の状態で評価されるため、必ず DEFAULT_URL を返せる形にしておく。
+
 ### 5. `packages/db/prisma/seed.ts`
 
-既存の `apps/api/src/prisma/seed.ts` をそのまま移設する。**seed は全 app 共通**（dev users / Memo サンプル等を一元管理）で、本番マスターデータは管理画面経由で投入する方針なのでこれで十分。
+既存の `apps/api/src/prisma/seed.ts` を移設する。**seed は全 app 共通**で、本番マスターデータは管理画面経由で投入する方針。本プロジェクトの seed は以下を投入する：
+
+- **言語マスタ (`Language`)**：production 含めて全環境で upsert（クローラ `apps/cron` が `slug` を Search API の `language:` フィルタに渡すため）
+- **dev users (`User` + `AuthAccount(provider="dev")`)**：dev / test 環境のみ
+- **ランキング fixture (`seedRankingFixtures`)**：dev / test 環境のみ（ローカル動作確認用に別ファイル `seed-ranking-fixtures.ts` から呼ぶ）
 
 `@repo/db` 本体は factory のみを提供するが、`seed.ts` 自体は CLI スクリプトなので **`createPrismaClient` を 1 回呼んで 1 接続だけ使う**形にする。
 
@@ -117,32 +130,31 @@ export default defineConfig({
 /* eslint-disable no-console */
 import { createPrismaClient } from "../src/client"
 
+import { seedRankingFixtures } from "./seed-ranking-fixtures"
+
 const prisma = createPrismaClient()
 
 /**
  * dev-login で使う開発用ユーザー
- *
- * `/api/auth/dev-login` および web の sign-in 画面の「Login as alice/bob」
- * ボタン経由でログインできる。production 環境では seed 自体スキップする。
+ * githubUsername で識別する（typing-royale は GitHub OAuth ベース）。
  */
 type DevUserSeed = {
+  githubUsername: string
   email: string
-  name: string
 }
 
 const devUsers: DevUserSeed[] = [
-  { email: "alice@dev.local", name: "Alice (dev)" },
-  { email: "bob@dev.local", name: "Bob (dev)" },
+  { githubUsername: "alice", email: "alice@dev.local" },
+  { githubUsername: "bob", email: "bob@dev.local" },
 ]
 
 const seedDevUsers = async () => {
   for (const devUser of devUsers) {
     const user = await prisma.user.upsert({
-      create: { email: devUser.email, name: devUser.name },
-      update: { name: devUser.name },
+      create: { githubUsername: devUser.githubUsername, email: devUser.email },
+      update: { githubUsername: devUser.githubUsername },
       where: { email: devUser.email },
     })
-
     await prisma.authAccount.upsert({
       create: {
         provider: "dev",
@@ -151,22 +163,40 @@ const seedDevUsers = async () => {
       },
       update: {},
       where: {
-        provider_providerAccountId: {
-          provider: "dev",
-          providerAccountId: devUser.email,
-        },
+        provider_providerAccountId: { provider: "dev", providerAccountId: devUser.email },
       },
     })
     console.log(`Seeded dev user: ${devUser.email} (id=${user.id})`)
   }
 }
 
+type LanguageSeed = { name: string, slug: string }
+
+const languages: LanguageSeed[] = [
+  { name: "TypeScript", slug: "typescript" },
+  { name: "JavaScript", slug: "javascript" },
+]
+
+const seedLanguages = async () => {
+  for (const lang of languages) {
+    await prisma.language.upsert({
+      create: { name: lang.name, slug: lang.slug },
+      update: { name: lang.name },
+      where: { slug: lang.slug },
+    })
+    console.log(`Seeded language: ${lang.slug}`)
+  }
+}
+
 const main = async () => {
+  /** languages は production でも投入（クローラの動作に必要） */
+  await seedLanguages()
   if (process.env.NODE_ENV === "production") {
-    console.log("Skip seeding: NODE_ENV=production")
+    console.log("Skip dev users seeding: NODE_ENV=production")
     return
   }
   await seedDevUsers()
+  await seedRankingFixtures(prisma)
   console.log("Seed completed (PostgreSQL)")
 }
 
@@ -184,8 +214,9 @@ main()
 
 - `import { createPrismaClient } from "../src/client"` で `@repo/db` 自身の factory を相対 import 経由で使う（workspace 依存を自分自身に向けるのを避ける）
 - スクリプトトップで `const prisma = createPrismaClient()` を 1 回だけ呼ぶ
-- 新しい dev データ（サンプル Memo / カテゴリ等）を追加したくなったら、この `seed.ts` 内に `seedSampleMemos()` のような関数を増やして `main()` から呼ぶだけ
-- `NODE_ENV === "production"` ガードを seed.ts 自身に持たせる（CLI から間違って本番 DB に向けて叩いても落ちる）
+- 言語マスタは production でも必要、dev users / ranking fixture は dev / test のみという二段ガードを `main()` 内に持たせる
+- `NODE_ENV === "production"` ガードで本番 DB への誤投入を防ぐ
+- `seed-ranking-fixtures.ts` はローカルの「ランキング表示確認」用の fixture を別ファイル化したもの（seed.ts 本体を短く保つ）
 
 ### 6. `packages/db/src/client.ts`
 
@@ -197,11 +228,11 @@ import { readReplicas } from "@prisma/extension-read-replicas"
 
 import { PrismaClient } from "../generated/client"
 
-const DEFAULT_URL = "postgresql://postgres:password@localhost:5432/project-template_dev"
+const DEFAULT_URL = "postgresql://postgres:password@localhost:5432/typing_royale_dev"
 
 /**
  * DATABASE_URL を取得しつつ、DB_NAME が指定されていれば DB 名部分を上書きする
- * テスト実行時の DB 切り替え（DB_NAME=project-template_test）に対応
+ * テスト実行時の DB 切り替え（DB_NAME=typing_royale_test）に対応
  */
 const buildConnectionString = (): string => {
   const baseUrl = process.env.DATABASE_URL ?? DEFAULT_URL
@@ -264,46 +295,38 @@ export * from "../generated/client"
 
 ```json
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
-    "module": "commonjs",
-    "moduleResolution": "node",
     "outDir": "./dist",
-    "rootDir": "./src",
-    "declaration": true,
-    "composite": true
+    "rootDir": "."
   },
-  "include": ["src/**/*.ts", "generated/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "generated/**/*"],
+  "exclude": ["node_modules", "dist", "prisma"]
 }
 ```
 
-`generated/` を `include` に入れることで、re-export した Prisma の型が `dist` にも出力される。
+- `extends` は workspace 内の `@repo/typescript-config/base.json` を使う（composite / declaration / module 設定は base に集約）
+- `rootDir: "."` にすることで `src/` と `generated/` の両方を含めて出力できる（結果として `dist/src/index.js`, `dist/generated/...` が生成される）
+- `prisma/` は CLI 用設定 + seed スクリプトなのでビルド対象外
 
-### 9. `packages/db/.gitignore`
+### 9. `packages/db/eslint.config.js`
 
-```
-dist/
-generated/
-node_modules/
-```
-
-### 10. `packages/db/eslint.config.js`
-
-`packages/schema/eslint.config.js` をコピーし、`generated/` を ignore に追加。
+`generated/` (prisma generate の出力) と `prisma/` (CLI 用設定) を lint 対象外にする。**generated は tracked** にしているため `.gitignore` への登録は不要（new clone でも generated 済み状態で動かしたいケース、CI でも generate が走るが念のため tracked を維持する選択）。
 
 ```javascript
-import baseConfig from "../../eslint.config.js"
+const baseConfig = require("@repo/eslint-config")
 
-export default [
+module.exports = [
   ...baseConfig,
   {
-    ignores: ["dist/**", "generated/**", "node_modules/**"],
+    ignores: ["generated/**", "prisma/**"],
   },
 ]
 ```
 
 ### 11. `apps/api` 側の互換 wrapper
+
+> **現在の状態**: step6 完了済みのため、`apps/api/src/prisma/prisma.client.ts` の wrapper は **既に削除されている**。`apps/api/src/prisma/` ディレクトリ自体が存在しない。step1 単独移行時は以下の wrapper を一時的に置いて互換維持していた（履歴記録）。
 
 `apps/api/src/prisma/prisma.client.ts` を以下に差し替える。`@repo/db` は factory のみ提供なので、apps/api 内部で **暫定的に singleton を保持する** wrapper にして既存 import を壊さない。step6 でこの wrapper 自体を削除し、`src/index.ts` での DI assembly に置き換える。
 
@@ -318,7 +341,7 @@ import { createPrismaClient } from "@repo/db"
 export const prisma = createPrismaClient()
 ```
 
-`apps/api/src/prisma/schema.prisma` / `migrations/` / `prisma.config.ts` / `seed.ts` / `generated/` は **物理的に packages/db へ移動**。`apps/api/src/prisma/` は `prisma.client.ts` のみ残る wrapper ディレクトリになる。
+`apps/api/src/prisma/schema.prisma` / `migrations/` / `prisma.config.ts` / `seed.ts` / `generated/` は **物理的に packages/db へ移動**。step1 完了時点では `apps/api/src/prisma/` は `prisma.client.ts` のみ残る wrapper ディレクトリ、step6 完了時点では `apps/api/src/prisma/` 自体が削除済み。
 
 ### 12. `apps/api/package.json` の修正
 

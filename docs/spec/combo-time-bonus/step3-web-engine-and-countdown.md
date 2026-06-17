@@ -10,7 +10,7 @@
 
 ```typescript
 type Options = {
-  initialDurationMs: number  // 旧 durationMs から rename
+  durationMs: number
   onTimeUp: () => void
   onTierMilestone?: (kind: MilestoneKind) => void
 }
@@ -20,23 +20,20 @@ type Result = {
   startAtRef: React.MutableRefObject<number>
   /** combo ボーナスで残り時間を動的延長するため */
   extendDuration: (extraMs: number) => void
-  /** 現在のセッション全長（= initialDurationMs + 累積延長分）。HUD 表示用に return */
-  totalDurationMs: number
 }
 
-export function useCountdown({ initialDurationMs, onTimeUp, onTierMilestone }: Options): Result {
-  const [remainingMs, setRemainingMs] = useState(initialDurationMs)
-  const [totalDurationMs, setTotalDurationMs] = useState(initialDurationMs)
-  const durationMsRef = useRef(initialDurationMs)
+export function useCountdown({ durationMs, onTimeUp, onTierMilestone }: Options): Result {
+  const durationMsRef = useRef(durationMs)
 
   /** ... 既存 startAtRef / fired30Ref / fired10Ref などはそのまま ... */
 
   const extendDuration = (extraMs: number) => {
     durationMsRef.current += extraMs
-    setTotalDurationMs(durationMsRef.current)
-    /** 残り 10s / 30s urgent 演出のフラグもリセットして、再判定させる */
-    if (remainingMs + extraMs > 30_000) fired30Ref.current = false
-    if (remainingMs + extraMs > 10_000) fired10Ref.current = false
+    /** 延長後の残り時間で urgent gate（10s / 30s）を再判定する */
+    const now = performance.now()
+    const newRemaining = Math.max(0, durationMsRef.current - (now - startAtRef.current))
+    if (newRemaining > 30_000) fired30Ref.current = false
+    if (newRemaining > 10_000) fired10Ref.current = false
   }
 
   /** rAF tick 内では durationMsRef.current を使う */
@@ -50,7 +47,7 @@ export function useCountdown({ initialDurationMs, onTimeUp, onTierMilestone }: O
     /** ... */
   }, [])
 
-  return { remainingMs, startAtRef, extendDuration, totalDurationMs }
+  return { remainingMs, startAtRef, extendDuration }
 }
 ```
 
@@ -117,7 +114,7 @@ export function PlayLoop(props: Props) {
   const popupIdRef = useRef(0)
 
   const { remainingMs, startAtRef, extendDuration } = useCountdown({
-    initialDurationMs: SESSION_DURATION_MS,
+    durationMs: SESSION_DURATION_MS,
     onTimeUp: () => void finish(),
     onTierMilestone: (kind) => { /* ... 既存 ... */ },
   })
@@ -235,7 +232,7 @@ export function PlayLoop(props: Props) {
 
 ### 5. `playTimeBonus` 効果音を追加
 
-`apps/web/src/libs/sound-fx.ts` に [step1](./step1-shared-detect-bonuses.md) の README に書いた `playTimeBonus` を追加（上昇 chime、G5→C6→E6 の arpeggio）。
+`apps/web/src/libs/sound-fx.ts` に [step1](./step1-shared-detect-bonuses.md) の README に書いた `playTimeBonus` を追加（上昇 chime、G5→C6→E6 の arpeggio、note 間隔 0.07s）。
 
 ## 動作確認
 
@@ -243,10 +240,10 @@ export function PlayLoop(props: Props) {
 
 1. dev サーバーで `/play/[sessionId]` を開く
 2. ブラウザ console から `dispatchEvent` でひたすら正解打鍵を送る
-3. combo 20 で `+1s` ポップアップが残り時間左に出る + HUD が gold グロー + 効果音
-4. combo 40 で `+2s`、60 で `+3s` が同様に発火
-5. combo 80 / 100 / 120 でも `+3s` が発火し、残り時間が動的に増える
-6. 一度 miss して combo 0 → 再度 combo 20 まで戻したとき、ポップアップは **出ない**（1 セッション 1 回ルール）
+3. combo 30 で `+1s` ポップアップが残り時間左に出る + HUD が gold グロー + 効果音
+4. combo 60 で `+2s`、90 で `+3s` が同様に発火
+5. combo 120 / 150 / 180 でも `+3s` が発火し、残り時間が動的に増える
+6. 一度 miss して combo 0 → 再度 combo 30 まで戻したとき、ポップアップは **出ない**（1 セッション 1 回ルール）
 
 ### 残り時間の動的延長確認
 

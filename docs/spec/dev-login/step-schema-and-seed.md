@@ -1,6 +1,6 @@
 # step: schema 追加と dev ユーザー seed
 
-`packages/schema` に dev-login の API 契約を追加し、`apps/api/src/prisma/seed.ts` で dev ユーザー（alice / bob）を upsert する。
+`packages/schema` に dev-login の API 契約を追加し、`packages/db/prisma/seed.ts` で dev ユーザー（alice / bob）を upsert する。
 
 ## 対応内容
 
@@ -21,32 +21,28 @@ export type AuthDevLoginRequest = z.infer<typeof authDevLoginRequestSchema>
 export const authDevLoginResponseSchema = z.object({
   access_token: z.string(),
   refresh_token: z.string(),
-  user: z.object({
-    avatar_url: z.string().nullable(),
-    email: z.string().nullable(),
-    id: z.number(),
-    name: z.string().nullable(),
-    created_at: z.string(),
-  }),
+  user: authUserSchema,
 })
 export type AuthDevLoginResponse = z.infer<typeof authDevLoginResponseSchema>
 ```
 
-### `apps/api/src/prisma/seed.ts`
+`user` は `authGithubResponseSchema` と共有している `authUserSchema` を再利用する。フィールドは `{ avatar_url, can_public_ranking, created_at, email, github_username, id }` の 6 項目で、User モデルから廃止された `name` は持たない（表示名は `github_username` を使う）。
+
+### `packages/db/prisma/seed.ts`
 
 `NODE_ENV === "production"` ではスキップ。`User` と `AuthAccount(provider: "dev")` を upsert する。
 
 ```typescript
 const devUsers = [
-  { email: "alice@dev.local", name: "Alice (dev)" },
-  { email: "bob@dev.local",   name: "Bob (dev)" },
+  { email: "alice@dev.local", githubUsername: "alice" },
+  { email: "bob@dev.local",   githubUsername: "bob" },
 ]
 
 if (process.env.NODE_ENV === "production") return
-for (const { email, name } of devUsers) {
+for (const { email, githubUsername } of devUsers) {
   const user = await prisma.user.upsert({
-    create: { email, name },
-    update: { name },
+    create: { email, githubUsername },
+    update: { githubUsername },
     where: { email },
   })
   await prisma.authAccount.upsert({

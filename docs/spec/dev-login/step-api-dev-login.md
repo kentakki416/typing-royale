@@ -6,7 +6,7 @@
 
 ### `apps/api/src/service/auth-service.ts`
 
-`loginAsDevUser` を追加。Google 認証と同じ Token 生成ロジック / Redis 保存ロジックを使う。
+`loginAsDevUser` を追加。GitHub 認証と同じ Token 生成ロジック / Redis 保存ロジックを使う。
 
 ```typescript
 export const loginAsDevUser = async (
@@ -43,19 +43,34 @@ export class AuthDevLoginController {
     if (process.env.NODE_ENV === "production") {
       return res.status(404).json({ error: "Not Found", status_code: 404 })
     }
-    const { email } = authDevLoginRequestSchema.parse(req.body)
+    const { email } = parseRequest(authDevLoginRequestSchema, req.body)
     const result = await service.auth.loginAsDevUser(
       { email },
       { refreshTokenRepository: this.refreshTokenRepository, userRepository: this.userRepository },
       { generateAccessToken, generateRefreshToken },
     )
     if (!result.ok) {
-      return res.status(result.error.statusCode).json({ error: result.error.message, status_code: result.error.statusCode })
+      return sendError(req, res, result.error)
     }
-    /** authDevLoginResponseSchema.parse で整形して 200 */
+    const { accessToken, refreshToken, user } = result.value
+    const response = parseResponse(authDevLoginResponseSchema, {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      user: {
+        avatar_url: user.avatarUrl,
+        can_public_ranking: user.canPublicRanking,
+        created_at: user.createdAt.toISOString(),
+        email: user.email,
+        github_username: user.githubUsername,
+        id: user.id,
+      },
+    })
+    return res.status(200).json(response)
   }
 }
 ```
+
+返却 user は `authUserSchema`（`authGithubResponseSchema` と共有）を再利用しており、フィールドは `{ avatar_url, can_public_ranking, created_at, email, github_username, id }` の 6 項目。User モデルから廃止された `name` は持たない（表示名は `github_username` を使う）。
 
 ### `apps/api/src/const/index.ts`
 
@@ -67,7 +82,7 @@ const DEV_ONLY_PUBLIC_PATHS = process.env.NODE_ENV !== "production"
   : []
 
 export const PUBLIC_PATHS: readonly string[] = [
-  "/api/auth/google",
+  "/api/auth/github",
   "/api/auth/refresh",
   "/api/health",
   "/api/memo",
@@ -90,7 +105,7 @@ const authDevLoginController = process.env.NODE_ENV !== "production"
 
 app.use("/api/auth", authRouter({
   devLogin: authDevLoginController,
-  google: authGoogleController,
+  github: authGithubController,
   ...
 }))
 ```

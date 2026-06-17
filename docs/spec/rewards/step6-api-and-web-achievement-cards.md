@@ -91,8 +91,8 @@ Body:
 
 | フィールド | 型 | 必須 | 制約 | 説明 |
 |---|---|---|---|---|
-| `type` | string | yes | `grade_up` / `card` | カード種別 |
-| `payload` | object | yes | `type` ごとに別 schema | grade_up なら `{ grade_slug }`、card なら `{ milestone_label }` |
+| `type` | string | yes | `grade_up` のみ MVP 対応（`card` 型は MVP では未対応、リクエストすると 400） | カード種別 |
+| `payload` | object | yes | `type` ごとに別 schema | grade_up なら `{ grade_slug }` |
 
 サーバー側で「自分が当該条件を満たしているか」を検証（`grade_up: senior` なら `user_lifetime_stats.bestScore >= 400` 等）。
 
@@ -225,6 +225,8 @@ if (gradeUp !== null) {
 }
 ```
 
+> **注記**：生成失敗時（satori / resvg / Storage 例外）は warn ログのみで `/finish` は成功扱いとする。`rewards` 行は `assetUrl=null` で残り、マイページ特典タブでは「生成中」もしくは非表示扱いになる。`/finish` 自体は冪等性とユーザー体験のために失敗しない。
+
 レイテンシ：satori + resvg は数十 ms〜数百 ms 程度なので `/finish` 全体のレイテンシ増は許容範囲。気になるなら `setImmediate` で fire-and-forget にできる（その場合は `rewards` 行作成のみ tx 内 → PNG 生成は背景処理）。
 
 > MVP では同期実行で十分。本格運用で問題になったら `BullMQ` 等のキュー化を検討。
@@ -237,8 +239,6 @@ if (gradeUp !== null) {
 export interface CardStorage {
     /** PNG を保存して URL を返す */
     save(filename: string, buffer: Buffer): Promise<string>
-    /** 削除（アカウント削除時に使う） */
-    delete(filename: string): Promise<void>
 }
 
 export class LocalCardStorage implements CardStorage {
@@ -249,9 +249,10 @@ export class LocalCardStorage implements CardStorage {
       await fs.writeFile(`${this.baseDir}/${filename}`, buffer)
       return `${this.publicUrlPrefix}/${filename}`
     }
-    /** ... */
 }
 ```
+
+> 削除動線はアカウント削除フローから直接 fs を叩く方針に変更されたため、`Storage.delete` は持たない（現実装シグネチャに合わせた）。
 
 Express の `app.use("/cache/rewards", express.static(localCacheDir))` で配信。
 

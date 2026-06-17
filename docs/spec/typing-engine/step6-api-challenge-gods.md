@@ -34,12 +34,12 @@ step2 の `/solo` と **多くを共有**：Redis ステート構造・PlaySessi
 
 | 依存先 | 何を使うか | 本 step での扱い |
 |---|---|---|
-| **score-ranking 機能** | `ranking_snapshots`（言語別オールタイムトップ 10） | **必須前提**：このテーブルが空 / 未実装の場合は 409 Conflict |
+| **score-ranking 機能** | 言語別オールタイムトップ 10（`user_language_best` のリアルタイム集計で代替。`ranking_snapshots` テーブルは存在しない） | `user_language_best` から `PrismaRankingSnapshotRepository`（クラス名は据え置き）が言語別 ORDER BY で抽出する。候補 0 件なら 409 Conflict |
 | **step3** | `keystroke_logs.compressedLog`（gzip 解凍してクライアントに渡す） | 神の過去セッションの ID から JOIN で取得 |
 | **step2** | `PlaySessionStateRepository` / `mode` / `ghostSessionId` の Redis ステート構造 | そのまま流用（`mode="challenge_gods"` を入れる差分のみ） |
 | **ghost-battle 機能** | キーストロークログのデータ構造定義 | レスポンス契約として参照 |
 
-> `ranking_snapshots` の実装が score-ranking 機能の step で完了するまで、本 step は **設計のみ確定 / 実装は score-ranking 完了後に着手** の段階にする。Web 側（step4 のボタン）は disabled のまま運用する。
+> `user_language_best` テーブルへの書き込みは `/finish` 経由で行われるため、本 step 単体としては `PrismaRankingSnapshotRepository` がそこから直接 ORDER BY で読み出せば良い。Web 側（step4 のボタン）はデフォルトで有効化済み。
 
 ## リクエスト
 
@@ -75,7 +75,7 @@ step2 の `/solo` と **多くを共有**：Redis ステート構造・PlaySessi
   },
   "ghost_session_id": 8842,
   "ghost_user_display": {
-    "display_name": "kenta",
+    "github_username": "kenta-fujimori",
     "avatar_url": "https://...",
     "grade": "Principal Engineer",
     "best_score": 942
@@ -152,7 +152,7 @@ sequenceDiagram
 
     Svc->>Svc: sessionId = randomUUID()<br/>state = { mode: "challenge_gods", ghostSessionId, problemIds, crawledRepoId }
     Svc->>Redis: SET play_session:{sessionId} TTL=300
-    Svc-->>Ctrl: ok({ sessionId, problems, repoInfo, ghostSessionId, ghostUserDisplay, ghostKeystrokeLog })
+    Svc-->>Ctrl: ok({ sessionId, problems, repoInfo, ghostSessionId, ghostUserDisplay, ghostKeystrokeLogs })
     Ctrl-->>C: 200
 ```
 
@@ -175,9 +175,9 @@ sequenceDiagram
 
 | 観点 | 仕様 |
 |---|---|
-| 候補集合 | `ranking_snapshots` の **言語別オールタイムトップ 10**（[`../score-ranking/README.md`](../score-ranking/README.md)） |
-| 候補から除外 | `publicRanking=false` のユーザー（そもそも snapshot に入らないのでフィルタ不要） |
-| 候補から除外 | 自分自身（神々と自分が同じ問題セットを打つのは体験を損なうため、`ranking_snapshots.user_id !== req.userId` で外す） |
+| 候補集合 | `user_language_best` を ORDER BY score DESC LIMIT 10 で集計した **言語別オールタイムトップ 10**（[`../score-ranking/README.md`](../score-ranking/README.md)） |
+| 候補から除外 | `publicRanking=false` のユーザー（そもそも `user_language_best` 集計対象外なのでフィルタ不要） |
+| 候補から除外 | 自分自身（神々と自分が同じ問題セットを打つのは体験を損なうため、`user_language_best.user_id !== req.userId` で外す） |
 | 抽選 | `Math.floor(Math.random() * candidates.length)` で 1 人 |
 | ベストセッション特定 | そのユーザーの `play_sessions` のうち **`languageId` 一致 + `score` 最大の 1 件** を `ghostSessionId` に採用 |
 | keystroke log 欠落時 | 候補リストから当該ユーザーを外して再抽選（最大 candidates.length 回） |
@@ -209,12 +209,12 @@ step2 の構造をそのまま使う。差分は `mode` と `ghostSessionId` の
 const ghostUserDisplaySchema = z.object({
   avatar_url: z.string().url().nullable(),
   best_score: z.number().int().nonnegative(),
-  display_name: z.string(),
+  github_username: z.string().nullable(),
   grade: z.string(),
 })
 
 const keystrokeEntrySchema = z.object({  /** step3 で定義済みなら共有 */
-  input_char: z.string(),
+  input_char: z.string().min(1).max(20),
   is_correct: z.boolean(),
   problem_index: z.number().int().nonnegative().max(19),
   elapsed_ms: z.number().nonnegative(),
@@ -236,7 +236,7 @@ export const startChallengeGodsResponseSchema = z.object({
 
 ### `apps/api/src/repository/prisma/ranking-snapshot-repository.ts`（新規）
 
-> score-ranking 機能の step で実装される予定だが、本 step の Service が必要とする read-only interface を **先に定義** して、score-ranking 実装が完了するまでは「常に空配列を返すスタブ」を使う。
+`ranking_snapshots` テーブルは存在しないため、`PrismaRankingSnapshotRepository` は `user_language_best` を **リアルタイムで ORDER BY 集計** して言語別オールタイムトップ N を返す（スタブではなく実装で確定）。クラス名は歴史的経緯で `RankingSnapshot` のまま据え置く。
 
 ```typescript
 import { PrismaClient } from "@repo/db"
@@ -248,22 +248,45 @@ export type RankingTopEntry = {
   userDisplay: {
     avatarUrl: string | null
     currentGrade: string
-    displayName: string
+    githubUsername: string | null
   }
 }
 
 export interface RankingSnapshotRepository {
   /**
    * 言語別オールタイムトップ N を返す（score 降順）
-   * MVP では N=10
+   * MVP では N=10。`user_language_best` を JOIN して引く
    */
   getTopByLanguage(languageId: number, limit: number): Promise<RankingTopEntry[]>
 }
 
-/** score-ranking 完成までの暫定スタブ。常に空を返す → 本 API は 409 を返す */
-export class StubRankingSnapshotRepository implements RankingSnapshotRepository {
-  async getTopByLanguage(): Promise<RankingTopEntry[]> {
-    return []
+export class PrismaRankingSnapshotRepository implements RankingSnapshotRepository {
+  private _prisma: PrismaClient
+
+  constructor(prisma: PrismaClient) {
+    this._prisma = prisma
+  }
+
+  async getTopByLanguage(languageId: number, limit: number): Promise<RankingTopEntry[]> {
+    const rows = await this._prisma.userLanguageBest.findMany({
+      include: {
+        user: { select: { avatarUrl: true, githubUsername: true } },
+        userLifetimeStats: { select: { currentGrade: true } },
+      },
+      orderBy: { bestScore: "desc" },
+      take: limit,
+      where: { languageId },
+    })
+    return rows.map((r) => ({
+      bestPlaySessionId: r.bestPlaySessionId,
+      bestScore: r.bestScore,
+      userDisplay: {
+        avatarUrl: r.user.avatarUrl,
+        currentGrade: r.userLifetimeStats?.currentGrade ?? "Intern",
+        githubUsername: r.user.githubUsername,
+      },
+      userId: r.userId,
+    }))
   }
 }
 ```
@@ -349,18 +372,12 @@ export const createChallengeGodsSession = async (
     return err(conflictError("No ghost candidates available"))
   }
 
-  /** 3. ランダム抽選 + keystroke log 取得（欠落時は次を試す） */
-  let ghost: { entry: RankingTopEntry; ghostSession: NonNullable<Awaited<ReturnType<typeof repo.playSessionRepository.findGhostSourceById>>>; keystrokeLog: KeystrokeLogs } | null = null
-  const pool = [...candidates]
-  while (pool.length > 0 && ghost === null) {
-    const i = Math.floor(Math.random() * pool.length)
-    const [picked] = pool.splice(i, 1)
-    const ghostSession = await repo.playSessionRepository.findGhostSourceById(picked.bestPlaySessionId)
-    if (!ghostSession) continue
-    const keystrokeLog = await repo.keystrokeLogRepository.findByPlaySessionId(picked.bestPlaySessionId)
-    if (!keystrokeLog) continue
-    ghost = { entry: picked, ghostSession, keystrokeLog }
-  }
+  /** 3. ランダム抽選 + keystroke log 取得（欠落時は次を試す）
+   *     抽選ロジックは pickChallengeGodsPlaySet ヘルパに切り出してテスタブルにする */
+  const ghost = await pickChallengeGodsPlaySet(candidates, {
+    keystrokeLogRepository: repo.keystrokeLogRepository,
+    playSessionRepository: repo.playSessionRepository,
+  })
   if (ghost === null) {
     return err(conflictError("No usable ghost sessions"))
   }
@@ -393,12 +410,12 @@ export const createChallengeGodsSession = async (
   await repo.playSessionStateRepository.save(sessionId, state, PLAY_SESSION_TTL_SECONDS)
 
   return ok({
-    ghostKeystrokeLog: ghost.keystrokeLog,
+    ghostKeystrokeLogs: ghost.keystrokeLogs,
     ghostSessionId: ghost.ghostSession.id,
     ghostUserDisplay: {
       avatarUrl: ghost.entry.userDisplay.avatarUrl,
       bestScore: ghost.entry.bestScore,
-      displayName: ghost.entry.userDisplay.displayName,
+      githubUsername: ghost.entry.userDisplay.githubUsername,
       grade: ghost.entry.userDisplay.currentGrade,
     },
     problems: orderedProblems,
@@ -409,6 +426,8 @@ export const createChallengeGodsSession = async (
 ```
 
 > 必要な import / 型定義（`RankingTopEntry`, `ChallengeGodsOutput`）は適宜追加。`ProblemRepository.findManyByIds` は **step3 で `codeBlock` のみ select する形に最小化**しているため、本 step の用途に合わせて `select` を拡張する：`{ id, codeBlock, functionName, charCount, lineCount, sourceUrl }`。step3 側のテストは select 拡張で壊れないこと（拡張するだけのため）。
+>
+> 戻り値のキーは **複数形** `ghostKeystrokeLogs`（実装に合わせる）。`pickChallengeGodsPlaySet(candidates, repos)` は「候補プールからランダム抽選 → セッション / log 取得 → 欠落時は次を試す」までを再利用可能なヘルパとして切り出したもの。
 
 ### `apps/api/src/controller/play-session/start-challenge-gods.ts`（新規）
 
@@ -433,8 +452,8 @@ if (controllers.startChallengeGods) {
 
 ```typescript
 const keystrokeLogRepository = new PrismaKeystrokeLogRepository(prisma)
-/** score-ranking 完成までは Stub。Phase 4 で PrismaRankingSnapshotRepository に差し替え */
-const rankingSnapshotRepository: RankingSnapshotRepository = new StubRankingSnapshotRepository()
+/** `user_language_best` をリアルタイム ORDER BY 集計で読む実装 */
+const rankingSnapshotRepository: RankingSnapshotRepository = new PrismaRankingSnapshotRepository(prisma)
 
 const playSessionStartChallengeGodsController = new PlaySessionStartChallengeGodsController(
   crawledRepoRepository,
@@ -455,17 +474,20 @@ app.use("/api/play-sessions", playSessionRouter({
 
 ### `apps/web/src/app/actions.ts` の改修
 
-step4 の Server Action 内で `mode === "challenge_gods"` 分岐を実装。
+step4 の Server Action 内で `mode === "challenge_gods"` 分岐を実装。**ログイン / ゲストで叩く endpoint を分岐**する：
 
 ```typescript
 if (mode === "challenge_gods") {
+  const endpoint = isLoggedIn
+    ? "/api/play-sessions/challenge-gods"
+    : "/api/play-sessions/guest/challenge-gods"
   try {
     const res = await apiClient.post<StartChallengeGodsResponse>(
-      "/api/play-sessions/challenge-gods",
+      endpoint,
       { language_id: languageId },
     )
     return {
-      ghostKeystrokeLog: res.ghost_keystroke_logs,
+      ghostKeystrokeLogs: res.ghost_keystroke_logs,
       ghostSessionId: res.ghost_session_id,
       ghostUserDisplay: res.ghost_user_display,
       problems: res.problems,
@@ -481,7 +503,7 @@ if (mode === "challenge_gods") {
 
 ### `apps/web/src/app/play/[sessionId]/play-screen.tsx` の改修
 
-`sessionStorage` のキャッシュに `ghostKeystrokeLog` / `ghostSessionId` / `ghostUserDisplay` を含める。プレイ画面（`PlayLoop`）にも併走 UI 用 props を追加。本 step では併走 UI 自体は ghost-battle 機能の step で実装するため、**ヘッダーに「神：xxx 文字」を表示するだけの最小実装**にとどめる。
+`sessionStorage` のキャッシュに `ghostKeystrokeLogs` / `ghostSessionId` / `ghostUserDisplay` を含める。プレイ画面（`PlayLoop`）にも併走 UI 用 props を追加。ghost-battle spec の完成度に揃え、**HUD（残時間 / 自分 vs 神の打鍵数差）+ race bar（プログレスバー）+ ghost sidebar（神情報パネル）+ ghost-result-modal（結果モーダル）** を本 step で実装する（最小実装に留めない）。
 
 ## 動作確認
 
@@ -493,11 +515,11 @@ if (mode === "challenge_gods") {
 | 自分自身が含まれる候補は除外される | candidates 1 件のみ・それが自分の場合は 409 |
 | 神セッションが欠落（PlaySession 削除）→ 次の候補にスキップ | 全候補欠落で 409 |
 | keystroke log の gunzip 失敗（破損データ）→ 次の候補にスキップ | 同上 |
-| `ranking_snapshots` 空（Stub）の場合、即 409 | クライアントはボタン無効化動作 |
+| `user_language_best` 空（リリース直後等）の場合、即 409 | クライアントはボタン無効化動作 |
 
 ### Controller インテグレーションテスト
 
-実 DB + Redis。事前に `users` / `languages` / `crawled_repos` / `problems` を seed → `play_sessions` と `keystroke_logs`（gzip 圧縮済み）を仕込む → モック化した `RankingSnapshotRepository` を Controller に DI して 200 のフローを通す。Stub から実装に切り替わる前は **本テストはスキップ可**（`describe.skip` で明示）。
+実 DB + Redis。事前に `users` / `languages` / `crawled_repos` / `problems` を seed → `play_sessions` と `keystroke_logs`（gzip 圧縮済み）と `user_language_best` を仕込む → `PrismaRankingSnapshotRepository` が自然に候補を返すフローで 200 を通す。
 
 ### 手動 curl
 
@@ -508,7 +530,7 @@ curl -X POST http://localhost:8080/api/play-sessions/challenge-gods \
   -H "Content-Type: application/json" \
   -d '{"language_id":1}' | jq .
 
-/** ranking_snapshots 未整備時：HTTP 409 */
+/** user_language_best が空（リリース直後等）：HTTP 409 */
 ```
 
 ### Lint / Build / Test
@@ -520,5 +542,5 @@ pnpm lint && pnpm build && cd apps/api && pnpm test
 ## 次の機能・step での利用
 
 - **ghost-battle 機能の step**: プレイ画面のゴースト併走 UI 本実装（横並び累計文字数 / 差分バー / 神のサマリ）。本 step でレスポンスに同梱した `ghost_keystroke_logs` を `requestAnimationFrame` で再生して「神の現在文字数」を計算する
-- **score-ranking 機能の step**: `StubRankingSnapshotRepository` を `PrismaRankingSnapshotRepository` に差し替え、`ranking_snapshots` テーブルからの実取得に切り替える。本 step で Service / Controller / Web 連携は完成しているため、差し替えだけで「神々に挑戦」が即時有効化される
+- **score-ranking 機能の step**: `PrismaRankingSnapshotRepository` は `user_language_best` のリアルタイム集計で既に動作するため、追加差し替えは不要。score-ranking spec 側でランキング表示・グレード判定・各種境界スコア計算の API を整える際、本 step の Repository を再利用する
 - **typing-engine 完成判定**: 本 step 完了で「typing-engine の API/UI 一連」は実装完了。残るは外部機能（score-ranking / ghost-battle）の連携待ち

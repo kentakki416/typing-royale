@@ -49,14 +49,14 @@ const DEV_ONLY_PUBLIC_PATHS = process.env.NODE_ENV !== "production"
 
 const PUBLIC_PATHS = [
   "/sign-in",
-  "/api/auth/callback/google",
+  "/api/auth/callback/github",
   ...DEV_ONLY_PUBLIC_PATHS,
 ]
 ```
 
 ### `apps/web/src/app/sign-in/page.tsx`
 
-`NODE_ENV !== "production"` のときだけ dev login ボタンを表示する（次の Google ボタンと並べる）。
+`NODE_ENV !== "production"` のときだけ dev login ボタンを表示する（GitHub ボタンと並べる）。Dev Login セクションは `NODE_ENV !== "production"` のみで表示する。
 
 ```tsx
 const isProduction = process.env.NODE_ENV === "production"
@@ -79,7 +79,7 @@ const DEV_LOGIN_USERS = ["alice", "bob"] as const
 ## 動作確認
 
 ```bash
-# 事前に seed
+# 事前に seed（seed 実体は packages/db/prisma/seed.ts）
 pnpm --filter api db:seed
 
 # Web + API 起動

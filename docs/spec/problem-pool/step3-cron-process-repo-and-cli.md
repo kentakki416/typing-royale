@@ -251,6 +251,8 @@ import type {
 
 const MIN_ELIGIBLE = 30
 const SAMPLE_CAP = 100
+/** ファイルレベルのランダムサンプリング上限。巨大 repo の AST 走査コストを抑える */
+const MAX_FETCH_FILES = 300
 const ALLOWED_LICENSES = new Set(["MIT", "Apache-2.0", "BSD-3-Clause", "ISC"])
 
 export type ProcessRepoTarget = {
@@ -261,7 +263,14 @@ export type ProcessRepoTarget = {
 
 export type ProcessRepoResult =
   | { adopted: true; candidatesCount: number; problemsAdded: number; storedCount: number }
-  | { adopted: false; candidatesCount: number; reason: "license_not_allowed" | "too_few_problems" }
+  | { adopted: false; candidatesCount: number; reason: "fetch_timeout" | "license_not_allowed" | "too_few_problems" }
+
+/**
+ * `reason: "fetch_timeout"` は **巨大 repo（例: vscode 級）** で `listSourceFiles` の tree 取得が
+ * `GITHUB_FETCH_TIMEOUT_MS` を超えてハングした場合のフォールバック分岐。
+ * `GithubFetchTimeoutError` を catch して `disabled=true` / `disabledReason="fetch_timeout"` で
+ * `crawled_repos` に記録し、次回以降のクロール対象から外す（再試行しない）。
+ */
 
 export type ProcessRepoDeps = {
   crawledRepoRepository: CrawledRepoRepository
@@ -285,8 +294,13 @@ export const processRepo = async (
     return { adopted: false, candidatesCount: 0, reason: "license_not_allowed" }
   }
 
-  // 3. ファイル一覧取得
-  const files = await deps.github.listSourceFiles(target.owner, target.name, meta.commitSha)
+  // 3. ファイル一覧取得 + ファイルレベルのランダムサンプリング（pre-sampling）
+  //    巨大 repo（数千ファイル）で AST 走査 + raw 取得のコストが線形に膨らむため、
+  //    AST に通すファイル数を MAX_FETCH_FILES=300 件にランダム間引きする。
+  //    関数の採用候補は MIN_ELIGIBLE=30 件 / SAMPLE_CAP=100 件で十分なため、
+  //    全ファイルを走査する必要はない。
+  const allFiles = await deps.github.listSourceFiles(target.owner, target.name, meta.commitSha)
+  const files = allFiles.length > MAX_FETCH_FILES ? shuffle(allFiles).slice(0, MAX_FETCH_FILES) : allFiles
 
   // 4. 各ファイルから採用候補を抽出（repo 内重複は Map で事前 dedupe）
   const candidateMap = new Map<string, CreateProblemInput>()
@@ -488,7 +502,7 @@ export const licenseRecheck = async (deps: LicenseRecheckDeps): Promise<LicenseR
 
 **言語ごとに 1 ファイル** で task を実装する。Phase 2 ローンチ時点では `crawler-run-typescript.ts` のみ。`LANGUAGE_SLUG = "typescript"` と `RUN_TYPE = "crawler_typescript"` を冒頭でハードコードし、`languageRepository.findBySlug(LANGUAGE_SLUG)` で言語を引いてから 1 言語ぶんのループを回す。
 
-run-tracker のような共通ラッパは作らず、`markStaleAsFailed` → `start` → 本処理 → `succeed/fail` を task に直接書く（ラッパで切ると body が巨大なクロージャになって可読性が下がるため）。`fail()` は nested try/catch で保護し、`fail` 自体が失敗しても元エラーを必ず rethrow する。task 全体の logger.error は `void main().catch(...)` の top-level に集約し、main 関数の最外は `try / finally` のみ（catch なし）にしてネストを浅くする。graceful shutdown は `runtime/graceful-shutdown.ts` の `setupGracefulShutdown(prisma)` を呼ぶだけ。
+**`runtime/run-as-crawler-job.ts` 共通ラッパに集約する設計に変更**。task は `runAsCrawlerJob({ exec, runType, taskName })` パターンで、`markStaleAsFailed` → `start` → 本処理（`exec`）→ `succeed/fail` の定型処理 + graceful shutdown + Prisma client の生成・破棄 + top-level catch + `process.exit` までをラッパに寄せる。task ファイルは `exec` の中身（DI 組み立て + ループ）と冒頭の `LANGUAGE_SLUG` / `RUN_TYPE` ハードコードのみに集中する。`fail()` は nested try/catch で保護し、`fail` 自体が失敗しても元エラーを必ず rethrow する。
 
 service の DI は `repo: { ...Repository }` と `client: { ...Client }` を別オブジェクトで渡すパターンに統一する（`pickNextRepo` / `processRepo` / `licenseRecheck` すべて同形）。
 

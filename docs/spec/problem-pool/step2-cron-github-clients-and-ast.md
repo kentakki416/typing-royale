@@ -36,6 +36,8 @@ const cronEnvSchema = z
     CRAWLER_PUSHED_AFTER: z.string().optional(),
     CRAWLER_REPOS_PER_RUN: z.coerce.number().int().positive().default(1),
     DATABASE_URL: z.string().url().optional(),
+    /** GitHub API 1 リクエストあたりのタイムアウト（ms）。AbortController で fetch を打ち切る。デフォルト 300 秒。 */
+    GITHUB_FETCH_TIMEOUT_MS: z.coerce.number().int().positive().default(300_000),
     GITHUB_PAT: z.string().default(""),
     LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
     LOGGER_TYPE: z.enum(["pino", "winston", "console", "silent"]).default("pino"),
@@ -140,7 +142,27 @@ export const retryWithBackoff = async <T>(
 }
 ```
 
-### `apps/cron/src/client/github/search.ts`
+### `apps/cron/src/client/github/client.ts`（`GithubClient` クラスに集約）
+
+実装は **`client.ts` に `GithubClient` class 1 つに集約** する設計に変更（以下に列挙する `search` / `getRepoMeta` / `listSourceFiles` / `getRawContent` は同クラスのメソッド）。`search.ts` / `repos.ts` / `tree.ts` / `raw.ts` の独立ファイル分割は採用しない（rate-limit ハンドリングと `fetch` ラッパを 4 ファイルに分散させる旨味が薄いため）。
+
+```typescript
+export class GithubClient {
+  constructor(opts: {
+    pat: string
+    targetExtensions: RegExp /** 言語ごとに task から渡す: ts は /\.(ts|tsx)$/、js は /\.(js|jsx)$/ */
+    fetchTimeoutMs?: number /** 1 リクエストあたりのタイムアウト（デフォルト 300 秒） */
+  })
+  searchRepos(language: string, page: number, options?: ...): Promise<GithubSearchResult>
+  getRepoMeta(owner: string, repo: string): Promise<GithubRepoMeta>
+  listSourceFiles(owner: string, repo: string, commitSha: string): Promise<GithubTreeEntry[]>
+  getRawContent(owner: string, repo: string, commitSha: string, path: string): Promise<string>
+}
+```
+
+以下のメソッドごとの責務・サンプル実装は **同 class 内のメソッド** として読み替える。
+
+### `searchRepos` メソッド
 
 ```typescript
 import { env } from "../../env"
@@ -209,9 +231,22 @@ export class GithubApiError extends Error {
     super(`GitHub API error: ${statusCode}`)
   }
 }
+
+/**
+ * `GithubFetchTimeoutError`：AbortController による fetch 自体のタイムアウトを表す独立クラス。
+ * `GithubApiError`（HTTP レスポンスを受け取った後の 4xx/5xx）とは区別され、
+ * `retryWithBackoff` の `shouldRetry` 判定で **リトライ対象外** として扱う
+ * （巨大 repo の tree 取得や raw 取得が長時間ハングしたケースを task レベルで
+ * `fetch_timeout` 扱いの disabled に倒すため）。
+ */
+export class GithubFetchTimeoutError extends Error {
+  constructor(public url: string, public timeoutMs: number) {
+    super(`GitHub fetch timeout after ${timeoutMs}ms: ${url}`)
+  }
+}
 ```
 
-### `apps/cron/src/client/github/repos.ts`
+### `getRepoMeta` メソッド
 
 ```typescript
 import { env } from "../../env"
@@ -257,7 +292,7 @@ const getCommitSha = async (owner: string, repo: string, branch: string): Promis
 }
 ```
 
-### `apps/cron/src/client/github/tree.ts`
+### `listSourceFiles` メソッド
 
 **重要**: テストファイル・テストディレクトリは AST パース前に **ファイル単位で除外** する。テスト系コードは関数名（`test` / `it` / `describe` 等）が `checkAdoption` で除外される可能性が高いため、AST パースまで走らせる時間が無駄になる。
 
@@ -292,9 +327,17 @@ const EXCLUDED_PATTERNS = [
   /** ノイズ（実装ロジックではない） */
   /\.stories\.[jt]sx?$/,           // Storybook
   /\.fixtures?\./,                 // フィクスチャ
+
+  /** データ / 静的アセットディレクトリ（ロジックではない） */
+  /^(data|images|public)\//,       // ルート直下
+  /\/(data|images|public)\//,      // 深い位置
 ]
 
-const TARGET_EXTENSIONS = /\.(ts|tsx|js|jsx)$/
+/**
+ * `targetExtensions` は **`GithubClient` のコンストラクタ引数として task 側から渡す** 設計に変更。
+ * TypeScript task では `/\.(ts|tsx)$/` を、JavaScript task では `/\.(js|jsx)$/` を渡すことで、
+ * tree フィルタを言語ごとに切り替えられる。`tree.ts` 側はモジュール定数として持たない。
+ */
 
 export const listSourceFiles = async (
   owner: string,
@@ -326,7 +369,7 @@ export const listSourceFiles = async (
 
 「ファイル単位の除外」は AST 段階・DB 段階の除外より圧倒的に効率が良い（ダウンロード自体しない）ため、ここでなるべく漏らさず弾く。
 
-### `apps/cron/src/client/github/raw.ts`
+### `getRawContent` メソッド
 
 ```typescript
 export const getRawContent = async (
@@ -391,10 +434,11 @@ const tryExtract = (node: ts.Node, sf: ts.SourceFile): ExtractedFunction | null 
       return build(init, sf, node.name.text)
     }
   }
-  /** 4. オブジェクトリテラルのプロパティアロー関数 { foo: () => {} }（README で採用対象に含む） */
-  if (ts.isPropertyAssignment(node) && ts.isArrowFunction(node.initializer)) {
-    return build(node.initializer, sf, node.name.getText(sf))
-  }
+  /**
+   * 実装は **上記 3 種のみ** をサポートする（オブジェクトリテラルのプロパティアロー関数
+   * `{ foo: () => {} }` は MVP では抽出対象外。識別子の取り回しと object literal 内の
+   * 命名規約のばらつきを避けるため）。
+   */
   return null
 }
 
@@ -496,11 +540,11 @@ export const checkAdoption = (functionName: string, codeStripped: string): Adopt
   const trimmed = codeStripped.trim()
   if (trimmed.length === 0) return { adopted: false, reason: "empty_after_strip" }
   const charCount = trimmed.length
-  if (charCount < 100 || charCount > 400) {
+  if (charCount < 200 || charCount > 700) {
     return { adopted: false, reason: "char_count_out_of_range" }
   }
   const lines = trimmed.split("\n")
-  if (lines.length < 5 || lines.length > 25) {
+  if (lines.length < 8 || lines.length > 40) {
     return { adopted: false, reason: "line_count_out_of_range" }
   }
   if (lines.some((l) => l.length > 120)) {

@@ -1,8 +1,8 @@
 # shared-packages
 
 > ⚠️ **`@repo/config` は撤去済み（2026-06-04）**。
-> env 検証は各 app の `src/env.ts` に Zod スキーマ + `safeParse → process.exit(1)` を**インラインで**定義する方針に変更。理由・経緯はこのファイル末尾、または PR の議論を参照。
-> 以下の文中で `@repo/config` / `baseEnvSchema` / `loadEnv` に言及している箇所は **歴史的記述** として残しているのみで、現在の正解ではない。step4 (`step4-packages-config.md`) も同様。
+> env 検証は各 app の `src/env.ts` に Zod スキーマ + `safeParse → process.exit(1)` を**インラインで**定義する方針に変更。詳細は本文 [env 検証方針（旧 `@repo/config` 廃止後）](#env-検証方針旧-repoconfig-廃止後) を参照。
+> 残った `@repo/config` への言及は **撤去前の歴史的経緯** を説明する文脈に限定している。step4 (`step4-packages-config.md`) は **アーカイブ** 扱い。
 
 このテンプレートが想定するユースケース（api / cron / worker / batch などの複数 server-side アプリ）で共通利用される基盤コードを `packages/` 配下に切り出し、新規 server-side app をテンプレートからスピンアップした時にゼロから書き直さずに済む状態にする。
 
@@ -29,7 +29,6 @@
   - [`@repo/db` の仕様](#repodb-の仕様)
   - [`@repo/logger` の仕様](#repologger-の仕様)
   - [`@repo/errors` の仕様](#repoerrors-の仕様)
-  - [`@repo/config` の仕様](#repoconfig-の仕様)
   - [`@repo/redis` の仕様](#reporedis-の仕様)
   - [テンプレート利用フロー](#テンプレート利用フロー)
 - [設計](#設計)
@@ -38,7 +37,6 @@
   - [`@repo/db` の設計](#repodb-の設計)
   - [`@repo/logger` の設計](#repologger-の設計)
   - [`@repo/errors` の設計](#repoerrors-の設計)
-  - [`@repo/config` の設計](#repoconfig-の設計)
   - [`@repo/redis` の設計](#reporedis-の設計)
   - [ビルド順序と Turborepo タスク](#ビルド順序と-turborepo-タスク)
   - [段階移行戦略](#段階移行戦略)
@@ -60,38 +58,36 @@ flowchart LR
         DB["@repo/db<br/>Prisma schema + client"]
         LOG["@repo/logger<br/>ILogger + factory"]
         ERR["@repo/errors<br/>Result&lt;T&gt; + ApiError"]
-        CFG["@repo/config<br/>env schema (Zod)"]
         RDS["@repo/redis<br/>ioredis client"]
         SCH["@repo/api-schema<br/>(既存)"]
     end
 
     subgraph apps
         API[apps/api]
-        CRON["apps/cron<br/>(将来)"]
+        CRON[apps/cron]
         WORKER["apps/worker<br/>(将来)"]
     end
 
     API --> DB
     API --> LOG
     API --> ERR
-    API --> CFG
     API --> RDS
     API --> SCH
 
-    CRON -.-> DB
-    CRON -.-> LOG
-    CRON -.-> ERR
-    CRON -.-> CFG
-    CRON -.-> RDS
+    CRON --> DB
+    CRON --> LOG
+    CRON --> ERR
+    CRON --> RDS
 
     WORKER -.-> DB
     WORKER -.-> LOG
     WORKER -.-> ERR
-    WORKER -.-> CFG
     WORKER -.-> RDS
 ```
 
-`@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/config` / `@repo/redis` はすべて **Node 専用** パッケージ。`apps/web` / `apps/admin` / `apps/mobile` などのクライアント側からは原則 import しない（フロント用の logger / error は別途必要になった時点で `@repo/logger-client` 等として切り出す方針）。
+`@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/redis` はすべて **Node 専用** パッケージ。`apps/web` / `apps/admin` / `apps/mobile` などのクライアント側からは原則 import しない（フロント用の logger / error は別途必要になった時点で `@repo/logger-client` 等として切り出す方針）。
+
+各 app の env 検証は、専用パッケージを置かず **app ごとの `src/env.ts` に Zod スキーマと `safeParse → process.exit(1)` をインラインで定義する**方針（旧 `@repo/config` は撤去済み）。理由は各 app の env が読み込み元 (`process.env`) を 1 箇所に集約しつつ、shared package を介さず自己完結で読めるため。
 
 ### `@repo/db` の仕様
 
@@ -126,13 +122,6 @@ flowchart LR
 - DB 障害などの想定外エラーは **throw** が原則で、`Result` には乗せない（既存ルールを維持）
 - cron / worker でも同じ `Result<T>` を使うことで、Service 層のコードを app 横断で再利用しやすくする
 
-### `@repo/config` の仕様
-
-- 各 app が起動時に `loadEnv(schema)` を呼ぶことで、`process.env` を Zod スキーマで検証し型付きオブジェクトとして取得できる
-- 共通環境変数（`NODE_ENV` / `DATABASE_URL` / `DATABASE_REPLICA_URL`（任意）/ `LOG_LEVEL` / `LOGGER_TYPE`）のスキーマ片を `@repo/config` から提供し、各 app は app 固有の env と合成してスキーマを定義する
-- 検証失敗時はプロセス起動時点で例外を投げて停止する（実行時の `undefined` 参照を防ぐ）
-- `dotenvx` による暗号化 `.env.local` の読み込みは各 app の `package.json` に残す（このパッケージは「読み込み済みの `process.env` を検証する」責務だけを持つ）
-
 ### `@repo/redis` の仕様
 
 - ioredis の **factory `createRedisClient({ url?, options? })` のみを提供** する。`packages/redis` 側に singleton を持たない（`@repo/db` と同じ方針）
@@ -156,19 +145,35 @@ flowchart LR
        "@repo/db": "workspace:^",
        "@repo/logger": "workspace:^",
        "@repo/errors": "workspace:^",
-       "@repo/config": "workspace:^",
        "@repo/redis": "workspace:^"
      }
    }
    ```
-2. `src/index.ts` で env を検証してインフラを起動（接続を持つ client は **factory で 1 回作って使い回す**）
+2. `src/env.ts` に Zod スキーマと `safeParse → process.exit(1)` をインラインで定義（`@repo/config` のような共通パッケージは介さない）
    ```typescript
-   import { loadEnv, baseEnvSchema } from "@repo/config"
+   import { z } from "zod"
+
+   const envSchema = z.object({
+     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+     DATABASE_URL: z.string().url(),
+     REDIS_URL: z.string().url().optional(),
+   })
+
+   const parsed = envSchema.safeParse(process.env)
+   if (!parsed.success) {
+     console.error("Invalid environment variables:", parsed.error.format())
+     process.exit(1)
+   }
+   export const env = parsed.data
+   ```
+3. `src/index.ts` でインフラ client を起動（接続を持つ client は **factory で 1 回作って使い回す**）
+   ```typescript
    import { createPrismaClient } from "@repo/db"
    import { logger } from "@repo/logger"
    import { createRedisClient } from "@repo/redis"
 
-   const env = loadEnv(baseEnvSchema)
+   import { env } from "./env"
+
    const prisma = createPrismaClient()
    const redis = createRedisClient()
 
@@ -181,7 +186,7 @@ flowchart LR
    await prisma.$disconnect()
    await redis.quit()
    ```
-3. Repository / Service は既存パターン（`Result<T>` + `repo: { ... }`）を踏襲し、`prisma` / `redis` は Repository コンストラクタに DI で渡す
+4. Repository / Service は既存パターン（`Result<T>` + `repo: { ... }`）を踏襲し、`prisma` / `redis` は Repository コンストラクタに DI で渡す
 
 ---
 
@@ -194,7 +199,7 @@ flowchart LR
 | **責務最小化** | 各パッケージは「共通 1 機能」に絞る。Repository や Service の orchestration は packages に置かない（詳細は次節 [Repository / Service の共通化方針](#repository--service-の共通化方針)） |
 | **依存方向** | `@repo/errors` は他 packages に依存しない。`@repo/logger` は `@repo/errors` のみ任意依存可。`@repo/db` は `@repo/errors` / `@repo/logger` のいずれにも依存しない（型レベルで切り離す） |
 | **Node 専用** | すべて Node 専用。Next.js / Expo の client bundle に混入させない |
-| **環境変数の読み込み** | `process.env` を直接読むのは `@repo/config` だけ。他パッケージは引数で受け取る（テスタビリティ確保） |
+| **環境変数の読み込み** | env 検証は各 app の `src/env.ts` にインライン定義。共通パッケージ側では原則 `process.env` を直接読まず、引数で受け取る（テスタビリティ確保）。例外として `@repo/db` の接続文字列ヘルパや `@repo/redis` の URL フォールバックは Prisma CLI からも呼ばれるため `process.env` を直接参照する |
 | **接続を持つものは factory のみ** | `@repo/db` / `@repo/redis` は **factory のみ** を export し、singleton を持たない。client の生成・破棄は app 側 (`src/index.ts`) の責務。logger / errors / config のように接続を持たないものは singleton / 純関数で OK |
 | **副作用** | `package.json` に `"sideEffects": false` を付ける。tree-shaking 可能にする |
 
@@ -318,14 +323,15 @@ packages/db/
 ├── tsconfig.json
 ├── eslint.config.js
 ├── prisma/
-│   ├── schema.prisma          # apps/api/src/prisma/schema.prisma を移設
-│   ├── migrations/            # apps/api/src/prisma/migrations/ を移設
-│   ├── prisma.config.ts       # apps/api/src/prisma/prisma.config.ts を移設
-│   └── seed.ts                # apps/api/src/prisma/seed.ts を移設（dev users 含む全 seed）
+│   ├── schema.prisma                # apps/api/src/prisma/schema.prisma を移設
+│   ├── migrations/                  # apps/api/src/prisma/migrations/ を移設
+│   ├── prisma.config.ts             # apps/api/src/prisma/prisma.config.ts を移設
+│   ├── seed.ts                      # dev users / 言語マスタを upsert
+│   └── seed-ranking-fixtures.ts     # ローカル動作確認用のランキング fixture
 ├── src/
 │   ├── client.ts              # createPrismaClient factory + 接続文字列ヘルパ (DB_NAME 上書き含む)
 │   └── index.ts               # client + generated 型の re-export
-└── generated/                 # prisma generate の出力先（gitignore）
+└── generated/                 # prisma generate の出力先（tracked）
 ```
 
 #### Prisma クライアントの提供形態
@@ -357,13 +363,19 @@ export type CreatePrismaClientOptions = {
  * read replica が設定されていれば @prisma/extension-read-replicas で自動振り分け：
  *   - findMany / findUnique / count / aggregate などの read → replica
  *   - create / update / delete / $transaction / $executeRaw → primary
- * 強整合性が必要な read は prisma.$primary().user.findUnique(...) で primary 強制
+ * 強整合性が必要な read は (prisma as any).$primary().user.findUnique(...) で primary 強制
+ *
+ * 戻り値は PrismaClient 型に揃えている（extension の戻り値は別型になるため、
+ * Repository コンストラクタの互換性確保のためにキャストしている）。
  */
-export const createPrismaClient = (options: CreatePrismaClientOptions = {}) => {
+export const createPrismaClient = (options: CreatePrismaClientOptions = {}): PrismaClient => {
   const adapter = new PrismaPg(options.url ?? buildConnectionString())
   const base = new PrismaClient({ adapter })
   const replicaUrl = options.replicaUrl ?? process.env.DATABASE_REPLICA_URL
-  return replicaUrl ? base.$extends(readReplicas({ url: replicaUrl })) : base
+  if (!replicaUrl) return base
+  const replicaAdapter = new PrismaPg(replicaUrl)
+  const replica = new PrismaClient({ adapter: replicaAdapter })
+  return base.$extends(readReplicas({ replicas: [replica] })) as unknown as PrismaClient
 }
 ```
 
@@ -417,7 +429,7 @@ Repository 層の規約：
 #### connection-string.ts
 
 ```typescript
-const DEFAULT_URL = "postgresql://postgres:password@localhost:5432/project-template_dev"
+const DEFAULT_URL = "postgresql://postgres:password@localhost:5432/typing_royale_dev"
 
 export const buildConnectionString = (): string => {
   const baseUrl = process.env.DATABASE_URL ?? DEFAULT_URL
@@ -427,7 +439,7 @@ export const buildConnectionString = (): string => {
 }
 ```
 
-`@repo/config` 経由ではなく `process.env` を直接読む（理由：Prisma CLI 起動時など、app の `loadEnv` を経由しない経路でも使われるため）。
+env 検証パッケージ経由ではなく `process.env` を直接読む（理由：Prisma CLI 起動時など、app の env 検証を経由しない経路でも使われるため）。
 
 #### マイグレーション / generate / seed のコマンド
 
@@ -442,13 +454,12 @@ export const buildConnectionString = (): string => {
     "db:migrate:deploy": "prisma migrate deploy --config=prisma/prisma.config.ts",
     "db:push": "prisma db push --config=prisma/prisma.config.ts",
     "db:seed": "prisma db seed --config=prisma/prisma.config.ts",
-    "db:studio": "prisma studio --config=prisma/prisma.config.ts",
-    "postinstall": "prisma generate --config=prisma/prisma.config.ts"
+    "db:studio": "prisma studio --config=prisma/prisma.config.ts"
   }
 }
 ```
 
-`postinstall` を入れて、新規 clone / CI install 時に generated client が必ず生成される状態を担保する。
+generated client は turbo の `@repo/db#db:generate` タスク（build の `dependsOn`）で生成されるため、`postinstall` フックは置かない（CI / clone 直後でも `pnpm build` の依存解決で自動的に走る）。
 
 `dotenvx` による env 復号化は **各 app の package.json で wrapper を書いて呼ぶ** 設計にする：
 
@@ -457,7 +468,7 @@ export const buildConnectionString = (): string => {
 {
   "scripts": {
     "db:migrate": "dotenvx run -f .env.local -- pnpm --filter @repo/db db:migrate",
-    "db:seed": "DB_NAME=project-template_dev dotenvx run -f .env.local -- pnpm --filter @repo/db db:seed"
+    "db:seed": "DB_NAME=typing_royale_dev dotenvx run -f .env.local -- pnpm --filter @repo/db db:seed"
   }
 }
 ```
@@ -494,7 +505,7 @@ packages/logger/
 ファイル構成は既存 `apps/api/src/log/` をほぼそのまま移設する。差分は以下：
 
 - `LOGGER_TYPE` 定数は `apps/api/src/const` から `packages/logger/src/const.ts` に移設
-- `LoggerFactory.getLogger()` の `process.env.LOGGER_TYPE` 読み込みは `@repo/config` の `baseEnvSchema` で検証済みの値を渡す形に変更（将来オプション、移行直後は `process.env` 読みのまま）
+- `LoggerFactory.getLogger()` は `process.env.LOGGER_TYPE` を直接読む（無ければ `pino` にフォールバック）。各 app の `src/env.ts` で `LOGGER_TYPE` を検証する責務は app 側に持たせる
 - Express への依存は **元から無いはず** なので変更不要
 
 #### context.ts と AsyncLocalStorage
@@ -513,7 +524,7 @@ export type LogContext = {
 export const logContext = new AsyncLocalStorage<LogContext>()
 ```
 
-cron / worker では `logContext.run({ jobId }, async () => { /* ... */ })` のように job ごとのコンテキストを設定可能。
+cron / worker では `logContext.run({ requestId: jobId }, async () => { /* ... */ })` のように、`requestId` フィールドに job 識別子を入れて使う（`LogContext` の型は `{ requestId?: string, userId?: number | string }` で job 専用フィールドは持たない）。
 
 ### `@repo/errors` の設計
 
@@ -583,71 +594,43 @@ export const conflictError = (message: string): ApiError => ({
 
 利用側は `import { Result, ok, err, notFoundError } from "@repo/errors"` のみで完結。
 
-### `@repo/config` の設計
+### env 検証方針（旧 `@repo/config` 廃止後）
 
-```
-packages/config/
-├── package.json
-├── tsconfig.json
-├── eslint.config.js
-└── src/
-    ├── base-schema.ts          # 共通 env スキーマ片
-    ├── load-env.ts             # loadEnv 関数
-    └── index.ts
-```
+歴史的経緯：当初は `@repo/config` パッケージで `baseEnvSchema` + `loadEnv()` を提供する設計だったが、2026-06-04 に **撤去** された。理由は以下：
 
-#### base-schema.ts
+- shared package を介すと「base + extend で組み立てる二段構え」になり、app の env スキーマを 1 ファイルで読みづらい
+- DB / Redis / Logger の各 shared package が読む env は実体としては app の `process.env` であり、shared package で型を共有してもランタイムの参照経路は別になる
+- 1 app = 1 env スキーマで完結する方が、デプロイユニットと env の対応が明示的
 
-すべての server-side app が共通で必要とする env 変数のスキーマ片を定義する。
-
-```typescript
-import { z } from "zod"
-
-export const baseEnvSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  DATABASE_URL: z.string().url(),
-  LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
-  LOGGER_TYPE: z.enum(["pino", "winston", "console", "silent"]).default("pino"),
-})
-
-export type BaseEnv = z.infer<typeof baseEnvSchema>
-```
-
-各 app は base に app 固有の env を `.extend()` で重ねる。
+現在の方針：各 app の `src/env.ts` に **Zod スキーマと `safeParse → process.exit(1)` をインライン** で定義する。
 
 ```typescript
 // apps/api/src/env.ts
-import { baseEnvSchema, loadEnv } from "@repo/config"
 import { z } from "zod"
 
-const apiEnvSchema = baseEnvSchema.extend({
+const envSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  DATABASE_URL: z.string().url(),
+  REDIS_URL: z.string().url().optional(),
   PORT: z.coerce.number().default(8080),
   JWT_SECRET: z.string().min(32),
-  GOOGLE_CLIENT_ID: z.string(),
-  GOOGLE_CLIENT_SECRET: z.string(),
-  REDIS_URL: z.string().url(),
+  GITHUB_CLIENT_ID: z.string(),
+  GITHUB_CLIENT_SECRET: z.string(),
 })
 
-export const env = loadEnv(apiEnvSchema)
-```
-
-#### load-env.ts
-
-```typescript
-import type { ZodSchema, z as zType } from "zod"
-
-export const loadEnv = <T extends ZodSchema>(schema: T): zType.infer<T> => {
-  const result = schema.safeParse(process.env)
-  if (!result.success) {
-    console.error("❌ Invalid environment variables:")
-    console.error(result.error.format())
-    process.exit(1)
-  }
-  return result.data
+const parsed = envSchema.safeParse(process.env)
+if (!parsed.success) {
+  console.error("Invalid environment variables:", parsed.error.format())
+  process.exit(1)
 }
+export const env = parsed.data
 ```
 
 検証失敗時は **`process.exit(1)` でプロセスを即落とす**。env が壊れた状態で server が起動して実行時エラーになるよりは、起動時点で落として CI / 開発者に明示的に通知する方が安全。
+
+`dotenvx` による暗号化 `.env.local` の読み込みは各 app の `package.json` の wrapper script で行う（`src/env.ts` は読み込み済みの `process.env` を検証するだけ）。
+
+詳細は `step4-packages-config.md`（アーカイブ）の冒頭注記を参照。
 
 ### `@repo/redis` の設計
 
@@ -738,7 +721,7 @@ subscriber.on("message", (channel, message) => { /* ... */ })
 1. `REDIS_URL` が設定されていればそれを最優先
 2. 無ければ既存の 4 つの個別 env から組み立て（後方互換）
 
-新規 app では `REDIS_URL` 一本に統一する方針を `@repo/config` の `baseEnvSchema` で示唆する。
+新規 app では `REDIS_URL` 一本に統一する方針を各 app の `src/env.ts` の Zod スキーマで示唆する（`REDIS_HOST` / `REDIS_PORT` などは MVP 後の互換目的でのみ残す）。
 
 ### ビルド順序と Turborepo タスク
 
@@ -754,7 +737,7 @@ subscriber.on("message", (channel, message) => { /* ... */ })
       "outputs": ["generated/**"]
     },
     "build": {
-      "dependsOn": ["^build", "^db:generate"],
+      "dependsOn": ["^build", "@repo/db#db:generate"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**", "generated/**"]
     }
   }
@@ -772,7 +755,7 @@ apps/api のコードと既存 spec / テストを壊さないよう、以下の
 | step1 | `packages/db` 新設 + Prisma schema/migrations/seed 移設。`packages/db` は **factory のみ export**。既存 `apps/api/src/prisma/prisma.client.ts` は **内部 singleton を持つ wrapper** に差し替えて互換維持 | api の既存 import (`import { prisma } from "../prisma/prisma.client"`) は wrapper 経由で動き続ける |
 | step2 | `packages/logger` 新設 + 既存 log/ 移設 | api からは `@repo/logger` の `logger` を import 可能。既存 `apps/api/src/log/` は wrapper で互換維持 |
 | step3 | `packages/errors` 新設 + Result 型移設 | api からは `@repo/errors` の `Result` を import 可能。既存 `apps/api/src/types/result.ts` は wrapper |
-| step4 | `packages/config` 新設 + env スキーマ定義 | apps/api/src/env.ts を新設し、起動時 `loadEnv()` 呼び出しを追加 |
+| step4 | （廃止）当初は `packages/config` を新設する step だったが、`@repo/config` 撤去（2026-06-04）に伴い無効化。`apps/api/src/env.ts` に Zod スキーマ + `safeParse → process.exit(1)` をインラインで定義する方式へ。詳細は `step4-packages-config.md` のアーカイブ冒頭注記 | apps/api/src/env.ts が自己完結で env を検証 |
 | step5 | `packages/redis` 新設 + 既存 client/redis.ts 移設。**factory のみ export**。`apps/api/src/client/redis.ts` は内部 singleton を持つ wrapper に差し替え | api の既存 import (`import { redis } from "./client/redis"`) は wrapper 経由で動き続ける |
 | step6 | `apps/api/src/index.ts` を **factory ベースの DI assembly** に書き換え + 全 import を `@repo/*` に置換 + 旧 wrapper / 旧ファイル削除 + テスト setup を factory ベースに更新 | apps/api 内部の singleton 完全消滅。client の生成・破棄が `src/index.ts` に集約される |
 
@@ -801,7 +784,7 @@ apps/api のコードと既存 spec / テストを壊さないよう、以下の
 
 DB 設計の変更はなし。既存の `schema.prisma` をそのまま `packages/db/prisma/schema.prisma` に移設する。
 
-参考までに、移設対象の現行スキーマ：
+参考までに、本 spec の初期設計時点のサンプルスキーマ（User / AuthAccount / Memo の 3 テーブル）：
 
 ```mermaid
 erDiagram
@@ -819,8 +802,6 @@ erDiagram
         int userId FK
         string provider
         string providerAccountId
-        string accessToken
-        string refreshToken
         datetime createdAt
         datetime updatedAt
     }
@@ -833,6 +814,8 @@ erDiagram
     }
 ```
 
+> 注：上記は **本 spec の初期設計時点のサンプル**であり、現行 typing-royale の本番スキーマは PlaySession / Problem / CrawledRepo / Reward / BadgeConfig / Language / UserLifetimeStats / UserLanguageBest / MonthlyRankingSnapshot / RankingSnapshot 等を含む大規模なものに拡張されている。本 spec のスコープは「Prisma 関連を packages/db に移設する」であり、スキーマの詳細は範囲外。最新のスキーマ全体は [`packages/db/prisma/schema.prisma`](../../../packages/db/prisma/schema.prisma) を直接参照。
+
 ## フロー図
 
 ### 移行後の app 起動シーケンス（例：apps/api）
@@ -841,16 +824,16 @@ erDiagram
 sequenceDiagram
     autonumber
     participant Boot as apps/api/src/index.ts
-    participant CFG as "@repo/config"
+    participant ENV as ./env (inline zod)
     participant LOG as "@repo/logger"
     participant DB as "@repo/db"
     participant RDS as "@repo/redis"
     participant Repo as Repositories
     participant EXP as Express
 
-    Boot->>CFG: loadEnv(apiEnvSchema)
-    CFG->>CFG: zod parse(process.env)
-    CFG-->>Boot: env (型付き)
+    Boot->>ENV: import { env }
+    ENV->>ENV: zod safeParse(process.env)<br/>失敗時 process.exit(1)
+    ENV-->>Boot: env (型付き)
     Boot->>LOG: import { logger }
     LOG-->>Boot: logger (singleton)
     Boot->>DB: createPrismaClient()
@@ -871,21 +854,21 @@ sequenceDiagram
 sequenceDiagram
     autonumber
     participant Cron as apps/cron/src/index.ts
-    participant CFG as "@repo/config"
+    participant ENV as ./env (inline zod)
     participant LOG as "@repo/logger"
     participant DB as "@repo/db"
     participant RDS as "@repo/redis"
     participant PG as Postgres
     participant R as Redis
 
-    Cron->>CFG: loadEnv(cronEnvSchema)
-    CFG-->>Cron: env
+    Cron->>ENV: import { env }
+    ENV-->>Cron: env
     Cron->>DB: createPrismaClient()
     DB-->>Cron: prisma
     Cron->>RDS: createRedisClient()
     RDS-->>Cron: redis
     Cron->>LOG: import { logger, logContext }
-    Cron->>LOG: logContext.run({ jobId }, run)
+    Cron->>LOG: logContext.run({ requestId }, run)
     Note over Cron: run()
     Cron->>DB: prisma.user.count()
     DB->>PG: SELECT COUNT(*) FROM users

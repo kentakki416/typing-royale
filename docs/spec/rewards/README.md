@@ -24,8 +24,6 @@
 - [設計](#設計)
   - [動的 SVG バッジの配信戦略](#動的-svg-バッジの配信戦略)
   - [達成カード PNG の生成](#達成カード-png-の生成)
-  - [Hall of Fame コメントの入力タイミング](#hall-of-fame-コメントの入力タイミング)
-  - [Hall of Fame コメントの保護](#hall-of-fame-コメントの保護)
   - [拡散ループの計測](#拡散ループの計測)
   - [MVP 対象外（将来検討）](#mvp-対象外将来検討)
 - [必要な画面](#必要な画面)
@@ -43,7 +41,7 @@
 | --- | --- | --- | --- |
 | **動的 SVG バッジ** | SVG（API がリアルタイム生成） | README に `<img src="https://.../badge/USERNAME.svg">` を貼る | 低（コード生成のみ） |
 | **達成証明カード** | PNG 画像（OG カード風） | 達成時に自動生成、ダウンロード／SNS シェアボタン | 低（`satori` で自動生成） |
-| **Hall of Fame 掲載** | サイト内ページ | 自動掲載＋本人コメント欄 | 低（DB から表示） |
+| **Hall of Fame 掲載** | サイト内ページ | 自動掲載のみ（コメント機能は廃止） | 低（DB から表示） |
 
 3 種いずれも **コードだけで完結** し、デザイナーや 3D アーティストの継続的なコミットを必要としない。
 
@@ -53,7 +51,7 @@
 | --- | --- |
 | 動的 SVG バッジ | ログイン直後から利用可。**現在のグレード**・ベストスコア・全期間ランク・連続日数を自動反映 |
 | 達成カード PNG | **グレードアップ時**（Junior → Mid 等で各 1 枚自動生成）/「累計 10,000 文字」「累計 100,000 文字」「初トップ 10」「7 日連続プレイ」など節目 |
-| Hall of Fame 掲載 | 各言語のオールタイムトップ 10 |
+| Hall of Fame 掲載 | 各言語のオールタイムトップ 10（TS/JS の 2 言語に限定） |
 
 正式な閾値は MVP 直前にデータを見て調整する。
 
@@ -93,7 +91,7 @@ UI 上に **「Coming Soon」** として 5 種を予告する。プレースホ
 - 推奨 HTTP ヘッダ：`Cache-Control: public, max-age=300, stale-while-revalidate=600`
 - GitHub の **Camo CDN を経由** するため、TTL とキャッシュ無効化の制御に制限がある点を考慮。極端な即時反映は期待しない設計に。
 - バッジ生成 API は読み取り専用。書き込みは `badge_configs` 更新時のみ。
-- バッジに表示する項目：`displayItems` で **グレード名・ベストスコア・全期間ランク・連続日数・累計打鍵数** から選択可能。グレード名は最も人気のオプション想定。
+- バッジに表示する項目：`displayItems` で **グレード名・ベストスコア・全期間ランク・連続日数・累計打鍵数・ユーザー名** の 6 種から選択可能。グレード名は最も人気のオプション想定。背景は常に黒固定（テーマ選択は廃止）。
 
 ### 達成カード PNG の生成
 
@@ -101,40 +99,6 @@ UI 上に **「Coming Soon」** として 5 種を予告する。プレースホ
 - 一度生成したら **S3 等のオブジェクトストレージに保存** し、再アクセス時はそのまま返す（再生成しない）。
 - `rewards.assetUrl` に S3 URL を保存。
 - テンプレート：JSX で記述する HTML レイアウト + Tailwind 互換スタイル。グレードごとに色・装飾を分岐。
-
-### Hall of Fame コメントの入力タイミング
-
-**設計思想**：コメントは **感情のピークで取る**。プレイ完了直後のリザルト画面で、トップ 10 入りが見込まれるユーザーに即時コメント入力モーダルを出す。
-
-#### 即時判定とトリガー
-
-- `POST /api/play-sessions/:id/finish` のレスポンスに **`topTenBoundaryScore`**（リアルタイム集計の言語別 10 位スコア）を含める（score-ranking step3 で実装済み）。
-- クライアント側で `myScore > topTenBoundaryScore` ならコメント入力モーダルを表示。
-- score-ranking はリアルタイム集計（`user_language_best` を都度 `ORDER BY score DESC LIMIT 10`）のため、`/finish` 完了時点ですでに順位が確定している。コメントを送れば **即時に公開される**（バッチ待ち無し）。
-
-#### draft の扱い
-
-- 入力されたコメントは `hall_of_fame_entries.comment` に直接保存して即時公開（リアルタイム集計のため draft / 昇格の 2 段階が不要）。
-- 後日ベスト記録が他者に抜かれて圏外（11 位以下）に押し出された場合：行は Hall of Fame 表示から外れる。ただし `hall_of_fame_entries` 行自体は削除せず、再入賞時に元の `comment` を流用できる。
-
-#### 編集
-
-- 入賞中は **マイページ > Hall of Fame コメント** からいつでも編集可能。
-- 編集すると即座に `comment` に反映。
-- 編集履歴は[`Hall of Fame コメントの保護`](#hall-of-fame-コメントの保護)に従い保持。
-
-#### スキップ動線
-
-- リザルト画面のモーダルは **「あとで書く」** で閉じられる。
-- 閉じても入賞は無効化されない。
-- 入賞時にコメント未入力のままだと Hall of Fame ページでの表示は「（コメントなし）」もしくは行ごと省略。
-
-### Hall of Fame コメントの保護
-
-- **NG ワードフィルタ** を導入（`commentDraft` 保存時に一次、`comment` 昇格時に二次の二段チェック）。
-- 長さ制限（例：300 文字）。
-- 編集履歴を保持し、悪意ある書き換えに対応できるようにする。
-- 表示時はサニタイズ（XSS 対策）。
 
 ### 拡散ループの計測
 
@@ -163,11 +127,9 @@ UI 上に **「Coming Soon」** として 5 種を予告する。プレースホ
 | 画面 | 概要 |
 | --- | --- |
 | マイページ > 特典タブ | 獲得済み特典の一覧（SVG バッジ URL コピー、達成カード DL、Hall of Fame リンク）+ **Coming Soon プレースホルダ枠**（3D・Lottie・カード・アート・公式 X 紹介投稿） |
-| 達成通知モーダル | プレイ完了直後に「新しい特典を獲得しました」と表示 |
-| **トップ 10 入りモーダル** | リザルト画面で `myScore > topTenBoundaryScore` のときに即時表示。コメント入力 (300 字, 任意)・「あとで書く」スキップ動線あり |
-| バッジカスタマイズ | バッジに表示する項目（グレード / スコア / ランク / 連続日数 / 言語）を選択 |
-| Hall of Fame | 言語別の歴代トップ 10、本人コメント、リプレイへの導線 |
-| マイページ > Hall of Fame コメント編集 | 入賞中ユーザー向け、`comment` を直接編集（次バッチを待たず公開） |
+| **TopTenAnnouncementModal** | リザルト画面で TOP 10 入り判定時に出す告知モーダル（all-time / monthly の 2 種）。紙吹雪 Lottie 演出のみで入力欄はなし |
+| バッジカスタマイズ | バッジに表示する項目（グレード / スコア / ランク / 連続日数 / 累計打鍵数 / ユーザー名）を選択 |
+| Hall of Fame | 言語別の歴代トップ 10、リプレイへの導線 |
 
 ## 必要な API
 
@@ -177,8 +139,6 @@ UI 上に **「Coming Soon」** として 5 種を予告する。プレースホ
 | POST | `/api/rewards/cards` | 達成カード PNG を生成（or 取得） |
 | GET | `/badge/:username.svg` | 動的 SVG バッジ（クエリで表示項目指定可） |
 | GET | `/api/hall-of-fame` | 言語別 Hall of Fame 取得（リアルタイム集計） |
-| POST | `/api/hall-of-fame/comments` | リザルト画面から送信されるコメント（即時公開、`comment` に直接保存） |
-| PATCH | `/api/hall-of-fame/comments/:entryId` | 入賞中ユーザーがコメントを編集（即時反映） |
 
 3D アイコン生成 API（`POST /api/rewards/3d-icons`）は MVP では作らない。Phase 2 で追加検討。
 
@@ -187,8 +147,7 @@ UI 上に **「Coming Soon」** として 5 種を予告する。プレースホ
 | テーブル | 主要カラム | 説明 |
 | --- | --- | --- |
 | `rewards` | `id`, `userId`, `type(card/grade_up)`, `payload(jsonb)`, `assetUrl(nullable)`, `grantedAt` | 獲得済み特典（達成カード PNG の生成記録）。`type` は MVP では `card` / `grade_up` の 2 種類。将来 `3d` / `lottie` / `trading_card` 等を追加。バッジ / Hall of Fame は別テーブルで管理するため本テーブルに行を作らない |
-| `hall_of_fame_entries` | `id`, `userId`, `languageId`, `bestPlaySessionId`, `comment(nullable)`, `commentSubmittedAt(nullable)`, `createdAt`, `updatedAt` | Hall of Fame コメント。リアルタイム集計のため rank カラムは持たず、表示時に `user_language_best` を `ORDER BY score DESC LIMIT 10` した結果と JOIN して合成する。`@@unique([userId, languageId])` |
-| `badge_configs` | `userId(PK)`, `displayItems(jsonb)`, `theme`, `createdAt`, `updatedAt` | ユーザーごとのバッジ表示設定。`displayItems` は表示要素の slug 配列 (`["grade", "best_score", "rank"]` 等)、`theme` は `"dark" / "light"` |
+| `badge_configs` | `userId(PK)`, `displayItems(jsonb)`, `createdAt`, `updatedAt` | ユーザーごとのバッジ表示設定。`displayItems` は表示要素の slug 配列 (`["grade", "best_score", "rank"]` 等)。背景は常に黒固定（theme カラムは drop 済み） |
 
 ## フロー図
 
@@ -196,16 +155,11 @@ UI 上に **「Coming Soon」** として 5 種を予告する。プレースホ
 flowchart TD
     Play[プレイ完了] --> Finish[POST /api/play-sessions/:id/finish<br/>score-ranking step3 で実装済み]
     Finish -->|grade_up != null| GenGradeCard[達成カード PNG 生成<br/>"You reached Senior Engineer!"<br/>S3 保存]
-    Finish -->|score > top_ten_boundary_score| Top10Modal[リザルト画面で<br/>トップ10入りモーダル表示]
-    Top10Modal -->|送信| SaveComment[POST /api/hall-of-fame/comments<br/>comment に即時保存・公開]
-    Top10Modal -->|あとで書く| Skip[何もしない<br/>マイページから後で編集可能]
+    Finish -->|score > top_ten_boundary_score| Top10Modal[リザルト画面で<br/>TopTenAnnouncementModal 表示<br/>all-time / monthly の 2 種告知]
     GenGradeCard --> Notify[マイページ特典タブに表示＋DL リンク]
 
-    EditPage[マイページ > Hall of Fame コメント編集] --> Patch[PATCH /api/hall-of-fame/comments/:entryId]
-    Patch --> Public[即時反映]
-
     HoFView[Hall of Fame ページ] --> ListAPI[GET /api/hall-of-fame?language=...]
-    ListAPI --> Join[user_language_best を ORDER BY score DESC LIMIT 10<br/>+ hall_of_fame_entries.comment を JOIN]
+    ListAPI --> Aggregate[user_language_best を ORDER BY score DESC LIMIT 10]
 
     User[README に貼ったバッジ閲覧者] --> CDN
     CDN -->|キャッシュヒット| Img[SVG 配信]
