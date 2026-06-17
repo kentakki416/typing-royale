@@ -23,7 +23,7 @@ describe("getUserById", () => {
         avatarUrl: "https://example.com/avatar.jpg",
         canPublicRanking: true,
         createdAt: new Date(),
-        displayName: "Test User",
+        githubUsername: "Test User",
         email: "test@example.com",
         id: 1,
         updatedAt: new Date(),

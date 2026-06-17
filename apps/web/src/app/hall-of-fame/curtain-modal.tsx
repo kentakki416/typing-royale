@@ -6,6 +6,7 @@ import { useEffect } from "react"
 import type { GetHallOfFameResponse } from "@repo/api-schema"
 
 import { CrownSvg } from "@/components/crown-svg"
+import { formatUsername } from "@/libs/format-username"
 
 type Entry = GetHallOfFameResponse["entries"][number]
 
@@ -41,6 +42,7 @@ const slugForRank = (rank: number): RankSlug => {
 export function CurtainModal({ entry, onClose }: Props) {
   const slug = slugForRank(entry.rank)
   const crowned = entry.rank <= 3
+  const username = formatUsername(entry.user)
   const rankLabel = `TS オールタイム #${entry.rank}`
 
   useEffect(() => {
@@ -91,8 +93,8 @@ export function CurtainModal({ entry, onClose }: Props) {
         )}
 
         <div className="text-center">
-          <PlayerAvatar avatarUrl={entry.user.avatar_url} displayName={entry.user.display_name} />
-          <h2 style={{ fontSize: "28px", margin: "16px 0 6px" }}>@{entry.user.display_name}</h2>
+          <PlayerAvatar avatarUrl={entry.user.avatar_url} githubUsername={username} />
+          <h2 style={{ fontSize: "28px", margin: "16px 0 6px" }}>@{username}</h2>
           <div className="flex gap-8" style={{ flexWrap: "wrap", justifyContent: "center" }}>
             <span className={`badge ${slug}`}>{rankLabel}</span>
             <span
@@ -160,15 +162,15 @@ const formatRepoUrl = (url: string | null): string | null => {
   }
 }
 
-const PlayerAvatar = ({ avatarUrl, displayName }: { avatarUrl: string | null; displayName: string }) => {
-  const initials = displayName.slice(0, 2).toUpperCase()
+const PlayerAvatar = ({ avatarUrl, githubUsername }: { avatarUrl: string | null; githubUsername: string }) => {
+  const initials = githubUsername.slice(0, 2).toUpperCase()
   const style = { fontSize: "30px", height: "96px", margin: "0 auto", width: "96px" }
   if (avatarUrl === null) {
     return <span className="avatar lg" style={style}>{initials}</span>
   }
   return (
     /* eslint-disable-next-line @next/next/no-img-element */
-    <img alt={displayName} className="avatar lg" src={avatarUrl} style={style} />
+    <img alt={githubUsername} className="avatar lg" src={avatarUrl} style={style} />
   )
 }
 

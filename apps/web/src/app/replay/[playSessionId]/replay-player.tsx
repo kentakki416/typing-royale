@@ -226,9 +226,9 @@ export function ReplayPlayer({ data }: Props) {
     <>
       <div className="flex-between mb-16">
         <div className="flex-center gap-12">
-          <PlayerAvatar avatarUrl={player.avatar_url} displayName={player.display_name} />
+          <PlayerAvatar avatarUrl={player.avatar_url} githubUsername={player.github_username ?? `user${player.user_id}`} />
           <div>
-            <h1 style={{ marginBottom: 0 }}>{player.display_name} のリプレイ</h1>
+            <h1 style={{ marginBottom: 0 }}>@{player.github_username ?? `user${player.user_id}`} のリプレイ</h1>
             <div className="text-sm text-muted">
               <span className="badge accent" style={{ marginRight: "8px" }}>{LANGUAGE_LABEL[language] ?? language}</span>
               <span>{stats.score.toLocaleString()} pts · {stats.typed_chars.toLocaleString()} 文字 · {(stats.accuracy * 100).toFixed(1)}%</span>
@@ -399,13 +399,13 @@ const formatMs = (sec: number): string => {
   return `${m}:${s}`
 }
 
-const PlayerAvatar = ({ avatarUrl, displayName }: { avatarUrl: string | null; displayName: string }) => {
-  const initials = displayName.slice(0, 2).toUpperCase()
+const PlayerAvatar = ({ avatarUrl, githubUsername }: { avatarUrl: string | null; githubUsername: string }) => {
+  const initials = githubUsername.slice(0, 2).toUpperCase()
   if (avatarUrl === null) {
     return <span className="avatar lg">{initials}</span>
   }
   return (
     /* eslint-disable-next-line @next/next/no-img-element */
-    <img alt={displayName} className="avatar lg" src={avatarUrl} />
+    <img alt={githubUsername} className="avatar lg" src={avatarUrl} />
   )
 }

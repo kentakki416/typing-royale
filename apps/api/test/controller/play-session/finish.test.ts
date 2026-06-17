@@ -564,7 +564,7 @@ describe("POST /api/play-sessions/:id/finish", () => {
             testPrisma.user.create({
               data: {
                 canPublicRanking: true,
-                displayName: `other${i}`,
+                githubUsername: `other${i}`,
                 email: `other${i}@example.com`,
               },
             }),
@@ -627,7 +627,7 @@ describe("POST /api/play-sessions/:id/finish", () => {
             testPrisma.user.create({
               data: {
                 canPublicRanking: true,
-                displayName: `other${i}`,
+                githubUsername: `other${i}`,
                 email: `other${i}@example.com`,
               },
             }),

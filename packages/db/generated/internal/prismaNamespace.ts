@@ -1668,7 +1668,7 @@ export type MemoScalarFieldEnum = (typeof MemoScalarFieldEnum)[keyof typeof Memo
 export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
-  displayName: 'displayName',
+  githubUsername: 'githubUsername',
   avatarUrl: 'avatarUrl',
   canPublicRanking: 'canPublicRanking',
   favoriteRepoUrl: 'favoriteRepoUrl',

@@ -55,7 +55,7 @@ export class RankingMonthlyListController {
           id: e.user.id,
           avatar_url: e.user.avatarUrl,
           current_grade: e.user.currentGrade,
-          display_name: e.user.displayName,
+          github_username: e.user.githubUsername,
         },
       })),
       year_month: result.value.yearMonth,

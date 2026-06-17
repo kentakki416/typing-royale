@@ -56,7 +56,7 @@ describe("player.findById", () => {
         avatarUrl: "https://example.com/a.jpg",
         canPublicRanking: true,
         createdAt: new Date("2026-01-08T00:00:00Z"),
-        displayName: "sakurai_dev",
+        githubUsername: "sakurai_dev",
       })
       mockFindByUserId.mockResolvedValue({
         bestScore: 1490,
@@ -83,7 +83,7 @@ describe("player.findById", () => {
 
       expect(result.ok).toBe(true)
       if (result.ok) {
-        expect(result.value.user.displayName).toBe("sakurai_dev")
+        expect(result.value.user.githubUsername).toBe("sakurai_dev")
         expect(result.value.lifetimeStats.bestScore).toBe(1490)
         expect(result.value.lifetimeStats.currentGrade.slug).toBe("fellow")
         expect(result.value.lifetimeStats.totalTypedChars).toBe(512847)
@@ -98,7 +98,7 @@ describe("player.findById", () => {
         avatarUrl: null,
         canPublicRanking: true,
         createdAt: new Date("2026-06-01T00:00:00Z"),
-        displayName: "newbie",
+        githubUsername: "newbie",
       })
       mockFindByUserId.mockResolvedValue(null)
       mockFindAllByUserId.mockResolvedValue([])
@@ -140,7 +140,7 @@ describe("player.findById", () => {
         avatarUrl: null,
         canPublicRanking: false,
         createdAt: new Date(),
-        displayName: "hidden_user",
+        githubUsername: "hidden_user",
       })
 
       const result = await findById({ userId: 7 }, buildRepoCollection())

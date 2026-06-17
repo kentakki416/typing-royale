@@ -25,7 +25,7 @@ const baseUser: User = {
   avatarUrl: null,
   canPublicRanking: true,
   createdAt: new Date(),
-  displayName: "x",
+  githubUsername: "x",
   email: null,
   id: 7,
   updatedAt: new Date(),

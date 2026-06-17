@@ -38,7 +38,7 @@ export type FindByIdOutput = {
     }
     user: {
         avatarUrl: string | null
-        displayName: string
+        githubUsername: string
         id: number
         joinedAt: Date
     }
@@ -104,7 +104,7 @@ export const findById = async (
     },
     user: {
       avatarUrl: user.avatarUrl,
-      displayName: user.displayName,
+      githubUsername: user.githubUsername,
       id: user.id,
       joinedAt: user.createdAt,
     },

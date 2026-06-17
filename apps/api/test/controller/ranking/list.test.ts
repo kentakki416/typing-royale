@@ -40,7 +40,7 @@ afterAll(async () => {
 const seedRanking = async (entries: Array<{
   accuracy: number
   canPublicRanking?: boolean
-  displayName: string
+  githubUsername: string
   playedAt: Date
   score: number
 }>) => {
@@ -72,7 +72,7 @@ const seedRanking = async (entries: Array<{
     const user = await testPrisma.user.create({
       data: {
         canPublicRanking: e.canPublicRanking ?? true,
-        displayName: e.displayName,
+        githubUsername: e.githubUsername,
         email: `u${i}@example.com`,
       },
     })
@@ -111,9 +111,9 @@ describe("GET /api/rankings", () => {
   describe("正常系", () => {
     it("score 降順で TOP 10 を返し、rank が 1..N で振られる", async () => {
       await seedRanking([
-        { accuracy: 0.95, displayName: "u1", playedAt: new Date("2026-06-01T00:00:00Z"), score: 100 },
-        { accuracy: 0.96, displayName: "u2", playedAt: new Date("2026-06-01T00:00:00Z"), score: 150 },
-        { accuracy: 0.97, displayName: "u3", playedAt: new Date("2026-06-01T00:00:00Z"), score: 200 },
+        { accuracy: 0.95, githubUsername: "u1", playedAt: new Date("2026-06-01T00:00:00Z"), score: 100 },
+        { accuracy: 0.96, githubUsername: "u2", playedAt: new Date("2026-06-01T00:00:00Z"), score: 150 },
+        { accuracy: 0.97, githubUsername: "u3", playedAt: new Date("2026-06-01T00:00:00Z"), score: 200 },
       ])
 
       const res = await request(app).get("/api/rankings").query({ language: "typescript" })
@@ -143,8 +143,8 @@ describe("GET /api/rankings", () => {
 
     it("canPublicRanking=false のユーザーは TOP 10 と total_ranked_players の双方から除外される", async () => {
       await seedRanking([
-        { accuracy: 0.95, displayName: "public", playedAt: new Date("2026-06-01T00:00:00Z"), score: 100 },
-        { accuracy: 0.99, canPublicRanking: false, displayName: "hidden", playedAt: new Date("2026-06-01T00:00:00Z"), score: 999 },
+        { accuracy: 0.95, githubUsername: "public", playedAt: new Date("2026-06-01T00:00:00Z"), score: 100 },
+        { accuracy: 0.99, canPublicRanking: false, githubUsername: "hidden", playedAt: new Date("2026-06-01T00:00:00Z"), score: 999 },
       ])
 
       const res = await request(app).get("/api/rankings").query({ language: "typescript" })
@@ -152,22 +152,22 @@ describe("GET /api/rankings", () => {
       expect(res.status).toBe(200)
       expect(res.body.total_ranked_players).toBe(1)
       expect(res.body.entries).toHaveLength(1)
-      expect(res.body.entries[0].user.display_name).toBe("public")
+      expect(res.body.entries[0].user.github_username).toBe("public")
     })
 
     it("tie-break: 同 score なら accuracy 降順 → playedAt 昇順で並ぶ", async () => {
       await seedRanking([
         /** 同 score / 同 accuracy → 先に達成した方が上位 */
-        { accuracy: 0.95, displayName: "later", playedAt: new Date("2026-06-02T00:00:00Z"), score: 500 },
-        { accuracy: 0.95, displayName: "earlier", playedAt: new Date("2026-06-01T00:00:00Z"), score: 500 },
+        { accuracy: 0.95, githubUsername: "later", playedAt: new Date("2026-06-02T00:00:00Z"), score: 500 },
+        { accuracy: 0.95, githubUsername: "earlier", playedAt: new Date("2026-06-01T00:00:00Z"), score: 500 },
         /** 同 score / 高 accuracy → 1 位 */
-        { accuracy: 0.98, displayName: "high_acc", playedAt: new Date("2026-06-05T00:00:00Z"), score: 500 },
+        { accuracy: 0.98, githubUsername: "high_acc", playedAt: new Date("2026-06-05T00:00:00Z"), score: 500 },
       ])
 
       const res = await request(app).get("/api/rankings").query({ language: "typescript" })
 
       expect(res.status).toBe(200)
-      expect(res.body.entries.map((e: { user: { display_name: string } }) => e.user.display_name)).toEqual([
+      expect(res.body.entries.map((e: { user: { github_username: string } }) => e.user.github_username)).toEqual([
         "high_acc",
         "earlier",
         "later",

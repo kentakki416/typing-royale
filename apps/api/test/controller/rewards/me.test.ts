@@ -78,7 +78,7 @@ describe("GET /api/rewards/me", () => {
     it("他人の reward は返さない", async () => {
       const { token, user } = await createTestUser()
       const other = await testPrisma.user.create({
-        data: { canPublicRanking: true, displayName: "other", email: "o@example.com" },
+        data: { canPublicRanking: true, githubUsername: "other", email: "o@example.com" },
       })
       await testPrisma.reward.create({
         data: {

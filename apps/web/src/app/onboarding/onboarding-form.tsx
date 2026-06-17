@@ -10,37 +10,28 @@ type Props = {
   initialUser: GetUserResponse
 }
 
-const inputStyle = {
-  background: "var(--bg-base)",
-  border: "1px solid var(--border)",
-  borderRadius: "6px",
-  color: "var(--text-primary)",
-  display: "block",
-  fontFamily: "var(--font-sans)",
-  marginTop: "6px",
-  padding: "8px 12px",
-  width: "100%",
-}
-
 export function OnboardingForm({ initialUser }: Props) {
   const [state, formAction, isPending] = useActionState(submitOnboardingAction, {})
 
   return (
     <form action={formAction}>
       <div className="mb-16">
-        <label className="text-sm" htmlFor="display_name">表示名</label>
-        <input
-          defaultValue={initialUser.display_name ?? ""}
-          id="display_name"
-          maxLength={50}
-          minLength={1}
-          name="display_name"
-          required
-          style={inputStyle}
-          type="text"
-        />
+        <div className="text-sm">表示名</div>
+        <div
+          className="text-mono"
+          style={{
+            background: "var(--bg-base)",
+            border: "1px solid var(--border)",
+            borderRadius: "6px",
+            color: "var(--text-muted)",
+            marginTop: "6px",
+            padding: "8px 12px",
+          }}
+        >
+          @{initialUser.github_username ?? `user${initialUser.id}`}
+        </div>
         <p className="text-xs text-muted mt-8">
-          GitHub のユーザー名を初期値にしています。1〜50 文字。
+          GitHub のユーザー名で固定 (編集不可)。ランキング・リプレイでの表示名としても使われます。
         </p>
       </div>
 

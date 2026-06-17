@@ -10,7 +10,7 @@ export type RankingTopEntry = {
     userDisplay: {
         avatarUrl: string | null
         currentGrade: string
-        displayName: string
+        githubUsername: string
     }
     userId: number
 }
@@ -68,7 +68,7 @@ export class PrismaRankingSnapshotRepository implements RankingSnapshotRepositor
       userDisplay: {
         avatarUrl: row.user.avatarUrl,
         currentGrade: row.user.lifetimeStats?.currentGrade ?? "intern",
-        displayName: row.user.displayName ?? `user${row.user.id}`,
+        githubUsername: row.user.githubUsername ?? `user${row.user.id}`,
       },
       userId: row.user.id,
     }))

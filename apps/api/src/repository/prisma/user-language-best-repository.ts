@@ -37,7 +37,7 @@ export type UserLanguageBestWithUser = {
     user: {
         avatarUrl: string | null
         currentGrade: string
-        displayName: string
+        githubUsername: string
         favoriteRepoUrl: string | null
         id: number
     }
@@ -119,7 +119,7 @@ export class PrismaUserLanguageBestRepository implements UserLanguageBestReposit
       user: {
         avatarUrl: row.user.avatarUrl,
         currentGrade: row.user.lifetimeStats?.currentGrade ?? "intern",
-        displayName: row.user.displayName ?? `user${row.user.id}`,
+        githubUsername: row.user.githubUsername ?? `user${row.user.id}`,
         favoriteRepoUrl: row.user.favoriteRepoUrl,
         id: row.user.id,
       },

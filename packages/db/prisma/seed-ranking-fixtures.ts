@@ -27,35 +27,35 @@ const FIXTURE_PROBLEM_AST_HASH = "fixture-ranking-seed-ast-v1"
 
 type FixtureUser = {
   email: string
-  displayName: string
+  githubUsername: string
   favoriteRepoUrl?: string
   lifetimeBest: number
   monthlyCurrent: number
 }
 
 const fixtureUsers: FixtureUser[] = [
-  { displayName: "Charlie (dev)", email: "charlie@dev.local", favoriteRepoUrl: "https://github.com/microsoft/TypeScript", lifetimeBest: 1500, monthlyCurrent: 1400 },
-  { displayName: "Dave (dev)", email: "dave@dev.local", favoriteRepoUrl: "https://github.com/facebook/react", lifetimeBest: 1200, monthlyCurrent: 1100 },
-  { displayName: "Eve (dev)", email: "eve@dev.local", favoriteRepoUrl: "https://github.com/vercel/next.js", lifetimeBest: 1000, monthlyCurrent: 900 },
-  { displayName: "Frank (dev)", email: "frank@dev.local", favoriteRepoUrl: "https://github.com/nodejs/node", lifetimeBest: 800, monthlyCurrent: 700 },
-  { displayName: "Grace (dev)", email: "grace@dev.local", lifetimeBest: 600, monthlyCurrent: 500 },
-  { displayName: "Henry (dev)", email: "henry@dev.local", lifetimeBest: 400, monthlyCurrent: 300 },
-  { displayName: "Ivy (dev)", email: "ivy@dev.local", lifetimeBest: 200, monthlyCurrent: 150 },
-  { displayName: "Jack (dev)", email: "jack@dev.local", lifetimeBest: 100, monthlyCurrent: 80 },
-  { displayName: "Kate (dev)", email: "kate@dev.local", lifetimeBest: 50, monthlyCurrent: 40 },
-  { displayName: "Liam (dev)", email: "liam@dev.local", lifetimeBest: 20, monthlyCurrent: 15 },
+  { githubUsername: "charlie", email: "charlie@dev.local", favoriteRepoUrl: "https://github.com/microsoft/TypeScript", lifetimeBest: 1500, monthlyCurrent: 1400 },
+  { githubUsername: "dave", email: "dave@dev.local", favoriteRepoUrl: "https://github.com/facebook/react", lifetimeBest: 1200, monthlyCurrent: 1100 },
+  { githubUsername: "eve", email: "eve@dev.local", favoriteRepoUrl: "https://github.com/vercel/next.js", lifetimeBest: 1000, monthlyCurrent: 900 },
+  { githubUsername: "frank", email: "frank@dev.local", favoriteRepoUrl: "https://github.com/nodejs/node", lifetimeBest: 800, monthlyCurrent: 700 },
+  { githubUsername: "grace", email: "grace@dev.local", lifetimeBest: 600, monthlyCurrent: 500 },
+  { githubUsername: "henry", email: "henry@dev.local", lifetimeBest: 400, monthlyCurrent: 300 },
+  { githubUsername: "ivy", email: "ivy@dev.local", lifetimeBest: 200, monthlyCurrent: 150 },
+  { githubUsername: "jack", email: "jack@dev.local", lifetimeBest: 100, monthlyCurrent: 80 },
+  { githubUsername: "kate", email: "kate@dev.local", lifetimeBest: 50, monthlyCurrent: 40 },
+  { githubUsername: "liam", email: "liam@dev.local", lifetimeBest: 20, monthlyCurrent: 15 },
 ]
 
 type LastMonthFixtureUser = {
   email: string
-  displayName: string
+  githubUsername: string
   monthlyLast: number
 }
 
 const lastMonthFixtureUsers: LastMonthFixtureUser[] = [
-  { displayName: "Nat (last month)", email: "nat@dev.local", monthlyLast: 2000 },
-  { displayName: "Olive (last month)", email: "olive@dev.local", monthlyLast: 1800 },
-  { displayName: "Pat (last month)", email: "pat@dev.local", monthlyLast: 1700 },
+  { githubUsername: "nat", email: "nat@dev.local", monthlyLast: 2000 },
+  { githubUsername: "olive", email: "olive@dev.local", monthlyLast: 1800 },
+  { githubUsername: "pat", email: "pat@dev.local", monthlyLast: 1700 },
 ]
 
 const formatYearMonthJst = (date: Date): string => {
@@ -141,12 +141,12 @@ export const seedRankingFixtures = async (prisma: PrismaClient): Promise<void> =
     const user = await prisma.user.upsert({
       create: {
         canPublicRanking: true,
-        displayName: f.displayName,
+        githubUsername: f.githubUsername,
         email: f.email,
         favoriteRepoUrl: f.favoriteRepoUrl ?? null,
       },
       update: {
-        displayName: f.displayName,
+        githubUsername: f.githubUsername,
         favoriteRepoUrl: f.favoriteRepoUrl ?? null,
       },
       where: { email: f.email },
@@ -238,8 +238,8 @@ export const seedRankingFixtures = async (prisma: PrismaClient): Promise<void> =
   /** 先月だけ snapshot を持つ users (当月ランキングには出ない) */
   for (const f of lastMonthFixtureUsers) {
     const user = await prisma.user.upsert({
-      create: { canPublicRanking: true, displayName: f.displayName, email: f.email },
-      update: { displayName: f.displayName },
+      create: { canPublicRanking: true, githubUsername: f.githubUsername, email: f.email },
+      update: { githubUsername: f.githubUsername },
       where: { email: f.email },
     })
 

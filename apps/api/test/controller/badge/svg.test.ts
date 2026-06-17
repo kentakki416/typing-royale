@@ -50,7 +50,7 @@ describe("GET /badge/:username.svg", () => {
   describe("正常系", () => {
     it("公開ユーザーの SVG を返し Cache-Control が立つ", async () => {
       await testPrisma.user.create({
-        data: { canPublicRanking: true, displayName: "alice", email: "a@example.com" },
+        data: { canPublicRanking: true, githubUsername: "alice", email: "a@example.com" },
       })
 
       const res = await request(app).get("/badge/alice.svg")
@@ -74,7 +74,7 @@ describe("GET /badge/:username.svg", () => {
 
     it("canPublicRanking=false のユーザーで private SVG を返す", async () => {
       await testPrisma.user.create({
-        data: { canPublicRanking: false, displayName: "hidden", email: "h@example.com" },
+        data: { canPublicRanking: false, githubUsername: "hidden", email: "h@example.com" },
       })
 
       const res = await request(app).get("/badge/hidden.svg")

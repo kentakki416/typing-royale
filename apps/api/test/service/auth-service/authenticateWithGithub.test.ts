@@ -80,7 +80,7 @@ describe("authenticateWithGithub", () => {
         avatarUrl: "https://avatars.githubusercontent.com/u/1?v=4",
         canPublicRanking: true,
         createdAt: new Date(),
-        displayName: "The Octocat",
+        githubUsername: "The Octocat",
         email: null,
         id: 1,
         updatedAt: new Date(),
@@ -122,7 +122,7 @@ describe("authenticateWithGithub", () => {
       expect(mockRefreshTokenSave).toHaveBeenCalledWith("uuid-1", 1, expect.any(Number))
     })
 
-    it("新規ユーザーの場合、name が無ければ login を displayName に採用する", async () => {
+    it("新規ユーザーの場合、name が無ければ login を githubUsername に採用する", async () => {
       const mockGithubUser: GithubUserInfo = {
         avatarUrl: "https://avatars.githubusercontent.com/u/2?v=4",
         id: "67890",
@@ -134,7 +134,7 @@ describe("authenticateWithGithub", () => {
         avatarUrl: "https://avatars.githubusercontent.com/u/2?v=4",
         canPublicRanking: true,
         createdAt: new Date(),
-        displayName: "newoctocat",
+        githubUsername: "newoctocat",
         email: null,
         id: 2,
         updatedAt: new Date(),
@@ -165,7 +165,7 @@ describe("authenticateWithGithub", () => {
       expect(mockUserCreate).toHaveBeenCalledWith(
         {
           avatarUrl: "https://avatars.githubusercontent.com/u/2?v=4",
-          displayName: "newoctocat",
+          githubUsername: "newoctocat",
         },
         undefined,
       )

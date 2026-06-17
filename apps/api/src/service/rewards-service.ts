@@ -70,7 +70,7 @@ export const createCard = async (
 
   /** 表示名 (なければ user{id} fallback) */
   const user = await repo.userRepository.findPublicProfile(input.userId)
-  const displayName = user?.displayName ?? `user${input.userId}`
+  const githubUsername = user?.githubUsername ?? `user${input.userId}`
 
   /** 既存 reward 行が無ければまず空 assetUrl で行を確保 → file 保存 → URL 更新の 2 段階 */
   const placeholder = await repo.rewardRepository.upsert({
@@ -89,7 +89,7 @@ export const createCard = async (
     achievedAt: placeholder.grantedAt,
     gradeName: targetGrade.name,
     gradeSlug: targetGrade.slug,
-    userDisplayName: displayName,
+    userDisplayName: githubUsername,
   })
   void calculated
 

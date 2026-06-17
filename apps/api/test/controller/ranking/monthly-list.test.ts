@@ -61,7 +61,7 @@ const currentYearMonthJst = (): string => {
 const seedMonthlySnapshots = async (
   entries: Array<{
     accuracy: number
-    displayName: string
+    githubUsername: string
     playedAt: Date
     score: number
   }>,
@@ -76,7 +76,7 @@ const seedMonthlySnapshots = async (
     const user = await testPrisma.user.create({
       data: {
         canPublicRanking: true,
-        displayName: e.displayName,
+        githubUsername: e.githubUsername,
         email: `u${i}@example.com`,
       },
     })
@@ -98,8 +98,8 @@ describe("GET /api/rankings/monthly", () => {
   describe("正常系", () => {
     it("rank 順に entries を返し、year_month と限られたフィールドのレスポンスになる", async () => {
       const { yearMonth } = await seedMonthlySnapshots([
-        { accuracy: 0.99, displayName: "alice", playedAt: new Date("2026-06-10T03:00:00Z"), score: 300 },
-        { accuracy: 0.95, displayName: "bob", playedAt: new Date("2026-06-12T03:00:00Z"), score: 250 },
+        { accuracy: 0.99, githubUsername: "alice", playedAt: new Date("2026-06-10T03:00:00Z"), score: 300 },
+        { accuracy: 0.95, githubUsername: "bob", playedAt: new Date("2026-06-12T03:00:00Z"), score: 250 },
       ])
 
       const res = await request(app)
@@ -109,8 +109,8 @@ describe("GET /api/rankings/monthly", () => {
       expect(res.status).toBe(200)
       expect(res.body.year_month).toBe(yearMonth)
       expect(res.body.entries).toHaveLength(2)
-      expect(res.body.entries[0]).toMatchObject({ rank: 1, score: 300, user: { display_name: "alice" } })
-      expect(res.body.entries[1]).toMatchObject({ rank: 2, score: 250, user: { display_name: "bob" } })
+      expect(res.body.entries[0]).toMatchObject({ rank: 1, score: 300, user: { github_username: "alice" } })
+      expect(res.body.entries[1]).toMatchObject({ rank: 2, score: 250, user: { github_username: "bob" } })
     })
 
     it("当月のスナップショットが 0 件なら entries=[] で 200", async () => {
@@ -127,9 +127,9 @@ describe("GET /api/rankings/monthly", () => {
 
     it("limit を指定すると上位 N 件まで返す", async () => {
       await seedMonthlySnapshots([
-        { accuracy: 0.99, displayName: "u1", playedAt: new Date("2026-06-10T03:00:00Z"), score: 300 },
-        { accuracy: 0.98, displayName: "u2", playedAt: new Date("2026-06-10T03:00:00Z"), score: 280 },
-        { accuracy: 0.97, displayName: "u3", playedAt: new Date("2026-06-10T03:00:00Z"), score: 270 },
+        { accuracy: 0.99, githubUsername: "u1", playedAt: new Date("2026-06-10T03:00:00Z"), score: 300 },
+        { accuracy: 0.98, githubUsername: "u2", playedAt: new Date("2026-06-10T03:00:00Z"), score: 280 },
+        { accuracy: 0.97, githubUsername: "u3", playedAt: new Date("2026-06-10T03:00:00Z"), score: 270 },
       ])
 
       const res = await request(app)

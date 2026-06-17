@@ -504,7 +504,7 @@ export type CreateChallengeGodsInput = {
 type GhostUserDisplay = {
     avatarUrl: string | null
     bestScore: number
-    displayName: string
+    githubUsername: string
     grade: string
 }
 
@@ -535,7 +535,7 @@ const formatGhostForResponse = (
   ghostUserDisplay: {
     avatarUrl: ghost.entry.userDisplay.avatarUrl,
     bestScore: ghost.entry.bestScore,
-    displayName: ghost.entry.userDisplay.displayName,
+    githubUsername: ghost.entry.userDisplay.githubUsername,
     grade: ghost.entry.userDisplay.currentGrade,
   },
   problems: orderedProblems,

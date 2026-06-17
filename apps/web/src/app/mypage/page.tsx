@@ -30,7 +30,7 @@ export default async function MyPage() {
     apiClient.get<GetMyRankingResponse>("/api/rankings/me?language=javascript").catch(() => null),
   ])
 
-  const initials = (me.display_name ?? "??").slice(0, 2).toUpperCase()
+  const initials = (me.github_username ?? "??").slice(0, 2).toUpperCase()
   /** グレードは全言語通算で同じなので TS / JS どちらかから取り出す（両方 null なら null）*/
   const grade = tsRanking?.grade ?? jsRanking?.grade ?? null
   const nextGrade = tsRanking?.next_grade ?? jsRanking?.next_grade ?? null
@@ -44,7 +44,7 @@ export default async function MyPage() {
         <div className="flex gap-16 mb-24" style={{ alignItems: "center" }}>
           <span className="avatar lg">{initials}</span>
           <div style={{ flex: 1 }}>
-            <h1 style={{ marginBottom: "4px" }}>{me.display_name ?? "(no name)"}</h1>
+            <h1 style={{ marginBottom: "4px" }}>{me.github_username ?? "(no name)"}</h1>
             <div className="text-muted text-sm mb-8">
               ランキング掲載: <strong style={{ color: me.can_public_ranking ? "var(--success)" : "var(--text-muted)" }}>
                 {me.can_public_ranking ? "ON" : "OFF"}

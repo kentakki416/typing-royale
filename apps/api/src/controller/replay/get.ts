@@ -50,7 +50,7 @@ export class ReplayGetController {
       player: {
         avatar_url: source.user.avatarUrl,
         current_grade: source.user.currentGrade ?? "intern",
-        display_name: source.user.displayName ?? `user${source.user.id}`,
+        github_username: source.user.githubUsername ?? `user${source.user.id}`,
         user_id: source.user.id,
       },
       problems: source.problems.map((p) => ({

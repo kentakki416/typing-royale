@@ -68,14 +68,15 @@ export const authenticateWithGithub = async (
     isNewUser = true
     logger.info("AuthService: Creating new user")
     /**
-     * displayName は GitHub の name フィールドを優先し、未設定なら login（username）にフォールバック。
+     * githubUsername は GitHub login (= username) を常に保存する。 本名 (githubUser.name)
+     * は使わない (表示名はあくまで GitHub username で固定)。
      * email は MVP では収集しないため未保存（spec: github-auth/README.md「メールアドレス収集方針」）。
      */
     user = await repo.transactionRunner.run(async (tx) => {
       const newUser = await repo.userRepository.create(
         {
           avatarUrl: githubUser.avatarUrl ?? undefined,
-          displayName: githubUser.name ?? githubUser.login,
+          githubUsername: githubUser.login,
         },
         tx,
       )

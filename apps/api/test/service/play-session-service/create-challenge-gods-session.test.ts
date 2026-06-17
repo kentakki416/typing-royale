@@ -54,7 +54,7 @@ const buildTopEntry = (userId: number, bestPlaySessionId: number): RankingTopEnt
   userDisplay: {
     avatarUrl: null,
     currentGrade: "Staff Engineer",
-    displayName: `god${userId}`,
+    githubUsername: `god${userId}`,
   },
   userId,
 })
@@ -117,7 +117,7 @@ describe("createChallengeGodsSession", () => {
         expect(result.value.problems[0].orderIndex).toBe(0)
         expect(result.value.problems[19].orderIndex).toBe(19)
         expect(result.value.ghostSessionId).toBe(1000)
-        expect(result.value.ghostUserDisplay.displayName).toBe("god99")
+        expect(result.value.ghostUserDisplay.githubUsername).toBe("god99")
       }
       expect(mockSave).toHaveBeenCalledTimes(1)
       const [, savedState] = mockSave.mock.calls[0]

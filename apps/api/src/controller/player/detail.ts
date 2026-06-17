@@ -71,7 +71,7 @@ export class PlayerDetailController {
       user: {
         id: result.value.user.id,
         avatar_url: result.value.user.avatarUrl,
-        display_name: result.value.user.displayName,
+        github_username: result.value.user.githubUsername,
         joined_at: result.value.user.joinedAt.toISOString(),
       },
     })

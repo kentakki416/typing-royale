@@ -10,19 +10,18 @@ import { TransactionContext } from "./transaction-runner"
 export type CreateUserInput = {
     avatarUrl?: string
     canPublicRanking?: boolean
-    displayName?: string
+    githubUsername?: string
     email?: string
 }
 
 /**
  * ユーザー更新時の入力（部分更新）
  *
- * displayName は空文字を許容しない（呼び出し側で trim 済みの非空文字列を渡す前提）。
+ * githubUsername は空文字を許容しない（呼び出し側で trim 済みの非空文字列を渡す前提）。
  * canPublicRanking は明示的に true/false を切り替えるため optional。
  */
 export type UpdateUserInput = {
     canPublicRanking?: boolean
-    displayName?: string
     /**
      * undefined で変更なし、null で空欄リセット
      */
@@ -37,7 +36,7 @@ export type PublicProfileUser = {
     avatarUrl: string | null
     canPublicRanking: boolean
     createdAt: Date
-    displayName: string
+    githubUsername: string
     id: number
 }
 
@@ -47,7 +46,7 @@ export type PublicProfileUser = {
 export interface UserRepository {
     create(data: CreateUserInput, tx?: TransactionContext): Promise<User>
     delete(id: number): Promise<void>
-    findByDisplayName(displayName: string): Promise<PublicProfileUser | null>
+    findByGithubUsername(githubUsername: string): Promise<PublicProfileUser | null>
     findByEmail(email: string): Promise<User | null>
     findById(id: number): Promise<User | null>
     findPublicProfile(userId: number): Promise<PublicProfileUser | null>
@@ -76,9 +75,9 @@ export class PrismaUserRepository implements UserRepository {
     return this._toDomainUser(prismaUser)
   }
 
-  async findByDisplayName(displayName: string): Promise<PublicProfileUser | null> {
+  async findByGithubUsername(githubUsername: string): Promise<PublicProfileUser | null> {
     /**
-     * displayName は現状 @@unique でない (GitHub username の衝突を将来想定する場合あり)
+     * githubUsername は現状 @@unique でない (GitHub username の衝突を将来想定する場合あり)
      * MVP では最初に hit した 1 件を返す
      */
     const row = await this._prisma.user.findFirst({
@@ -87,16 +86,16 @@ export class PrismaUserRepository implements UserRepository {
         avatarUrl: true,
         canPublicRanking: true,
         createdAt: true,
-        displayName: true,
+        githubUsername: true,
       },
-      where: { displayName },
+      where: { githubUsername },
     })
     if (row === null) return null
     return {
       avatarUrl: row.avatarUrl,
       canPublicRanking: row.canPublicRanking,
       createdAt: row.createdAt,
-      displayName: row.displayName ?? `user${row.id}`,
+      githubUsername: row.githubUsername ?? `user${row.id}`,
       id: row.id,
     }
   }
@@ -108,7 +107,7 @@ export class PrismaUserRepository implements UserRepository {
         avatarUrl: true,
         canPublicRanking: true,
         createdAt: true,
-        displayName: true,
+        githubUsername: true,
       },
       where: { id: userId },
     })
@@ -117,7 +116,7 @@ export class PrismaUserRepository implements UserRepository {
       avatarUrl: row.avatarUrl,
       canPublicRanking: row.canPublicRanking,
       createdAt: row.createdAt,
-      displayName: row.displayName ?? `user${row.id}`,
+      githubUsername: row.githubUsername ?? `user${row.id}`,
       id: row.id,
     }
   }
@@ -128,7 +127,7 @@ export class PrismaUserRepository implements UserRepository {
       data: {
         avatarUrl: data.avatarUrl,
         canPublicRanking: data.canPublicRanking ?? true,
-        displayName: data.displayName,
+        githubUsername: data.githubUsername,
         email: data.email,
       },
     })
@@ -139,7 +138,6 @@ export class PrismaUserRepository implements UserRepository {
     const prismaUser = await this._prisma.user.update({
       data: {
         ...(data.canPublicRanking !== undefined && { canPublicRanking: data.canPublicRanking }),
-        ...(data.displayName !== undefined && { displayName: data.displayName }),
         ...(data.favoriteRepoUrl !== undefined && { favoriteRepoUrl: data.favoriteRepoUrl }),
       },
       where: { id },
@@ -163,7 +161,7 @@ export class PrismaUserRepository implements UserRepository {
       avatarUrl: prismaUser.avatarUrl,
       canPublicRanking: prismaUser.canPublicRanking,
       createdAt: prismaUser.createdAt,
-      displayName: prismaUser.displayName,
+      githubUsername: prismaUser.githubUsername,
       email: prismaUser.email,
       favoriteRepoUrl: prismaUser.favoriteRepoUrl,
       id: prismaUser.id,

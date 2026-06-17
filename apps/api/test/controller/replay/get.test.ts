@@ -34,7 +34,7 @@ afterAll(async () => {
 })
 
 const seedFixture = async (canPublicRanking: boolean, withKeystroke: boolean) => {
-  const { user } = await createTestUser({ canPublicRanking, displayName: "Alice" })
+  const { user } = await createTestUser({ canPublicRanking, githubUsername: "Alice" })
   const language = await testPrisma.language.create({
     data: { name: "TypeScript", slug: "typescript" },
   })
@@ -125,7 +125,7 @@ describe("GET /api/replays/:playSessionId", () => {
         player: {
           avatar_url: "https://example.com/avatar.jpg",
           current_grade: "intern",
-          display_name: "Alice",
+          github_username: "Alice",
           user_id: expect.any(Number),
         },
         problems: [

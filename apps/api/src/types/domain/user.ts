@@ -9,9 +9,10 @@ export type User = {
     canPublicRanking: boolean
     createdAt: Date
     /**
-     * GitHub username 等を初期値に持つ、ユーザー表示用の名前
+     * GitHub OAuth ログイン時に取得した username (login)。 表示は `@<username>` で統一。
+     * dev-login ユーザーや GitHub OAuth 以前のユーザーは null
      */
-    displayName: string | null
+    githubUsername: string | null
     /**
      * dev-login や将来のメール連絡用にオプショナルで保持（MVP の GitHub OAuth では収集しない）
      */

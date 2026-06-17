@@ -61,7 +61,7 @@ export class AuthGithubController {
         avatar_url: user.avatarUrl,
         can_public_ranking: user.canPublicRanking,
         created_at: user.createdAt.toISOString(),
-        display_name: user.displayName,
+        github_username: user.githubUsername,
         email: user.email,
         id: user.id,
       },

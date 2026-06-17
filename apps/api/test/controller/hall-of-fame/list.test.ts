@@ -41,7 +41,7 @@ afterAll(async () => {
  * language + 任意人数の user + crawled_repo + play_session + user_language_best を seed
  */
 const seedRanking = async (
-  entries: Array<{ displayName: string; score: number }>,
+  entries: Array<{ githubUsername: string; score: number }>,
 ) => {
   const language = await testPrisma.language.create({
     data: { name: "TypeScript", slug: "typescript" },
@@ -70,7 +70,7 @@ const seedRanking = async (
     const user = await testPrisma.user.create({
       data: {
         canPublicRanking: true,
-        displayName: e.displayName,
+        githubUsername: e.githubUsername,
         email: `u${i}@example.com`,
       },
     })
@@ -108,9 +108,9 @@ describe("GET /api/hall-of-fame", () => {
   describe("正常系", () => {
     it("TOP 10 を rank 順で返す", async () => {
       await seedRanking([
-        { displayName: "u1", score: 800 },
-        { displayName: "u2", score: 600 },
-        { displayName: "u3", score: 400 },
+        { githubUsername: "u1", score: 800 },
+        { githubUsername: "u2", score: 600 },
+        { githubUsername: "u3", score: 400 },
       ])
 
       const res = await request(app).get("/api/hall-of-fame").query({ language: "typescript" })

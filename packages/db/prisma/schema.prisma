@@ -45,8 +45,9 @@ model User {
   id               Int      @id @default(autoincrement())
   /// dev-login や将来のメール連絡用にオプショナルで保持（MVP の GitHub OAuth では収集しない）
   email            String?  @unique
-  /// GitHub username 等を初期値に持つ、ユーザー表示用の名前
-  displayName      String?  @map("display_name")
+  /// GitHub OAuth ログイン時に取得した username (login)。 表示は `@<username>` で統一。
+  /// dev-login ユーザーや GitHub OAuth 以前のユーザーは null
+  githubUsername   String?  @map("github_username")
   avatarUrl        String?  @map("avatar_url")
   /// false の場合はランキング集計から完全に除外される（順位そのものが計算されない）
   canPublicRanking Boolean  @default(true) @map("can_public_ranking")

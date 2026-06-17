@@ -110,7 +110,7 @@ describe("GET /api/players/:userId", () => {
         data: {
           avatarUrl: "https://example.com/a.jpg",
           canPublicRanking: true,
-          displayName: "sakurai_dev",
+          githubUsername: "sakurai_dev",
           email: "sakurai@example.com",
         },
       })
@@ -160,7 +160,7 @@ describe("GET /api/players/:userId", () => {
         user: {
           id: user.id,
           avatar_url: "https://example.com/a.jpg",
-          display_name: "sakurai_dev",
+          github_username: "sakurai_dev",
           joined_at: expect.any(String),
         },
       })
@@ -168,7 +168,7 @@ describe("GET /api/players/:userId", () => {
 
     it("lifetime_stats / language_bests がまだ無いユーザーでも 200 を返し、Intern + 空配列で埋める", async () => {
       const user = await testPrisma.user.create({
-        data: { canPublicRanking: true, displayName: "newbie", email: "n@example.com" },
+        data: { canPublicRanking: true, githubUsername: "newbie", email: "n@example.com" },
       })
 
       const res = await request(app).get(`/api/players/${user.id}`)
@@ -188,10 +188,10 @@ describe("GET /api/players/:userId", () => {
     it("rank はリアルタイム計算され、他ユーザーが上位にいる場合 2 位以降になる", async () => {
       const { language, repo } = await seedLanguageAndRepo()
       const topUser = await testPrisma.user.create({
-        data: { canPublicRanking: true, displayName: "top", email: "t@example.com" },
+        data: { canPublicRanking: true, githubUsername: "top", email: "t@example.com" },
       })
       const targetUser = await testPrisma.user.create({
-        data: { canPublicRanking: true, displayName: "me", email: "m@example.com" },
+        data: { canPublicRanking: true, githubUsername: "me", email: "m@example.com" },
       })
       await insertBestForUser({
         accuracy: 0.99,
@@ -221,7 +221,7 @@ describe("GET /api/players/:userId", () => {
   describe("異常系", () => {
     it("canPublicRanking=false のユーザーは 404（存在を識別させない）", async () => {
       const user = await testPrisma.user.create({
-        data: { canPublicRanking: false, displayName: "hidden", email: "h@example.com" },
+        data: { canPublicRanking: false, githubUsername: "hidden", email: "h@example.com" },
       })
 
       const res = await request(app).get(`/api/players/${user.id}`)

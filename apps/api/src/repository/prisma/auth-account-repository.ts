@@ -86,7 +86,7 @@ export class PrismaAuthAccountRepository implements AuthAccountRepository {
       avatarUrl: prismaUser.avatarUrl,
       canPublicRanking: prismaUser.canPublicRanking,
       createdAt: prismaUser.createdAt,
-      displayName: prismaUser.displayName,
+      githubUsername: prismaUser.githubUsername,
       email: prismaUser.email,
       favoriteRepoUrl: prismaUser.favoriteRepoUrl,
       id: prismaUser.id,

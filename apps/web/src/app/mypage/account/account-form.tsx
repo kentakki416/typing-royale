@@ -13,7 +13,8 @@ type Props = {
 /**
  * アカウント設定フォーム（Client Component / mock styles 準拠）
  *
- * - 表示名 / ランキング公開設定の更新は useActionState で状態管理
+ * - 表示名は GitHub username 固定で編集不可
+ * - 編集できるのは GitHub リンク / ランキング公開設定の 2 つ
  * - アカウント削除は確認モーダル経由で deleteAccountAction を呼ぶ
  */
 export function AccountForm({ initialUser }: Props) {
@@ -29,27 +30,23 @@ export function AccountForm({ initialUser }: Props) {
 
         <form action={formAction}>
           <div className="mb-16">
-            <label className="text-sm" htmlFor="display_name">表示名</label>
-            <input
-              defaultValue={displayUser.display_name ?? ""}
-              id="display_name"
-              maxLength={50}
-              minLength={1}
-              name="display_name"
+            <div className="text-sm">表示名</div>
+            <div
+              className="text-mono"
               style={{
                 background: "var(--bg-base)",
                 border: "1px solid var(--border)",
                 borderRadius: "6px",
-                color: "var(--text-primary)",
-                display: "block",
-                fontFamily: "var(--font-sans)",
+                color: "var(--text-muted)",
                 marginTop: "6px",
                 padding: "8px 12px",
-                width: "100%",
               }}
-              type="text"
-            />
-            <p className="text-xs text-muted mt-8">1〜50 文字。ランキング・リプレイで表示されます。</p>
+            >
+              @{displayUser.github_username ?? `user${displayUser.id}`}
+            </div>
+            <p className="text-xs text-muted mt-8">
+              GitHub のユーザー名で固定 (編集不可)。ランキング・リプレイでの表示名としても使われます。
+            </p>
           </div>
 
           <div className="mb-16">

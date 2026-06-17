@@ -3,7 +3,7 @@ import { z } from "zod"
 /**
  * 認証フロー（GitHub OAuth）のレスポンスに含める user オブジェクト
  *
- * - display_name: GitHub username 等を初期値に持つ表示名
+ * - github_username: GitHub OAuth ログインで取得した username。 表示は `@<username>`
  * - can_public_ranking: false でランキング集計対象から完全除外（順位そのものを計算しない）
  *
  * GET/PATCH /api/user のスキーマと同形だが、依存方向を user.ts → auth.ts にしないため
@@ -13,8 +13,8 @@ const authUserSchema = z.object({
   avatar_url: z.string().nullable(),
   can_public_ranking: z.boolean(),
   created_at: z.string(),
-  display_name: z.string().nullable(),
   email: z.string().nullable(),
+  github_username: z.string().nullable(),
   id: z.number(),
 })
 

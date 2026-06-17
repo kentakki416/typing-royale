@@ -46,7 +46,7 @@ const replayRepoInfoSchema = z.object({
 const replayPlayerSchema = z.object({
   avatar_url: z.string().url().nullable(),
   current_grade: z.string(),
-  display_name: z.string(),
+  github_username: z.string().nullable(),
   user_id: z.number().int().positive(),
 })
 
