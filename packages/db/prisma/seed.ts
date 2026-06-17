@@ -1,6 +1,8 @@
 /* eslint-disable no-console */
 import { createPrismaClient } from "../src/client"
 
+import { seedRankingFixtures } from "./seed-ranking-fixtures"
+
 const prisma = createPrismaClient()
 
 /**
@@ -88,6 +90,7 @@ const main = async () => {
     return
   }
   await seedDevUsers()
+  await seedRankingFixtures(prisma)
   console.log("Seed completed (PostgreSQL)")
 }
 
