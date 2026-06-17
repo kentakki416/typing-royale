@@ -468,6 +468,13 @@ h3 { font-size: 16px; margin-bottom: 8px; }
   border-color: rgba(255, 213, 74, 0.5);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
+/* White badge variant — Hall of Fame 4-10 位の汎用色 */
+.badge.white {
+  background: linear-gradient(180deg, rgba(229, 234, 243, 0.35) 0%, rgba(170, 179, 191, 0.18) 100%);
+  color: #f0f3f8;
+  border-color: rgba(229, 234, 243, 0.45);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
 
 /**
  * Engineer grade badge — used to show a user's Intern / Junior / Mid /
@@ -1959,6 +1966,19 @@ code.inline {
   --c-flash: rgba(255, 217, 168, 0.85);
   --c-border: rgba(205, 127, 50, 0.45);
   --c-modal-glow: rgba(205, 127, 50, 0.35);
+}
+/**
+ * 4-10 位 (王冠無し) は白色パレット。 同じカーテン演出を金とは別の落ち着いた色味で再生
+ */
+.curtain-stage[data-rank="white"] {
+  --c-light: #ffffff;
+  --c-mid:   #f5f7fb;
+  --c-main:  rgba(229, 234, 243, 0.45);
+  --c-edge:  rgba(229, 234, 243, 0);
+  --c-glow:  rgba(229, 234, 243, 0.85);
+  --c-flash: rgba(245, 247, 251, 0.88);
+  --c-border: rgba(229, 234, 243, 0.45);
+  --c-modal-glow: rgba(229, 234, 243, 0.32);
 }
 
 .curtain {
