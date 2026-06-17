@@ -64,9 +64,18 @@ export function CurtainModal({ entry, onClose }: Props) {
       }}
     >
       <div className="curtain-backdrop" />
-      <div className="curtain curtain-left" />
-      <div className="curtain curtain-right" />
-      <div className="curtain-flash" />
+      {/**
+       * カーテン演出 + フラッシュは TOP 1-3 (= crowned) のみ。
+       * 4 位以下は backdrop fade + modal scale-in だけのシンプルな出現にして
+       * 「神々の祭壇」感を 1-3 だけに残す
+       */}
+      {crowned && (
+        <>
+          <div className="curtain curtain-left" />
+          <div className="curtain curtain-right" />
+          <div className="curtain-flash" />
+        </>
+      )}
 
       <div className="god-modal" onClick={(e) => e.stopPropagation()}>
         <button aria-label="閉じる" className="modal-close" onClick={onClose} type="button">×</button>
