@@ -15,7 +15,7 @@ datasource db {
 model AuthAccount {
   id                Int      @id @default(autoincrement())
   userId            Int      @map("user_id")
-  /// "google" | "github" | "dev"
+  /// "github" | "dev"
   provider          String
   /// プロバイダー側のユーザー ID
   providerAccountId String   @map("provider_account_id")

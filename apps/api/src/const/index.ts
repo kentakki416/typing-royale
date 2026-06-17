@@ -15,7 +15,6 @@ const DEV_ONLY_PUBLIC_PATHS = process.env.NODE_ENV !== "production"
  */
 export const PUBLIC_PATHS: readonly string[] = [
   "/api/auth/github",
-  "/api/auth/google",
   "/api/auth/refresh",
   "/api/crawled-repos",
   "/api/hall-of-fame",

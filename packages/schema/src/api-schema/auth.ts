@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 /**
- * 認証フロー（Google/GitHub OAuth）のレスポンスに含める user オブジェクト
+ * 認証フロー（GitHub OAuth）のレスポンスに含める user オブジェクト
  *
  * - display_name: GitHub username 等を初期値に持つ表示名
  * - can_public_ranking: false でランキング集計対象から完全除外（順位そのものを計算しない）
@@ -17,34 +17,6 @@ const authUserSchema = z.object({
   email: z.string().nullable(),
   id: z.number(),
 })
-
-// ========================================================
-// POST /api/auth/google - Google OAuth 認証コードの検証
-// ========================================================
-
-/**
- * Google OAuth 認証リクエストのスキーマ
- * Next.js 側で取得した Authorization Code と、リダイレクト時に使用した
- * redirect_uri を受け取り、API が token 交換 + UserInfo 取得を行う。
- */
-export const authGoogleRequestSchema = z.object({
-  code: z.string().min(1),
-  redirect_uri: z.string().url(),
-})
-
-export type AuthGoogleRequest = z.infer<typeof authGoogleRequestSchema>
-
-/**
- * Google OAuth 認証レスポンスのスキーマ
- */
-export const authGoogleResponseSchema = z.object({
-  access_token: z.string(),
-  is_new_user: z.boolean(),
-  refresh_token: z.string(),
-  user: authUserSchema,
-})
-
-export type AuthGoogleResponse = z.infer<typeof authGoogleResponseSchema>
 
 // ========================================================
 // POST /api/auth/github - GitHub OAuth 認証コードの検証
@@ -66,7 +38,7 @@ export type AuthGithubRequest = z.infer<typeof authGithubRequestSchema>
 /**
  * GitHub OAuth 認証レスポンスのスキーマ
  *
- * 形は authGoogleResponseSchema と同型（Web 側で同じ setAuthCookies に渡せる）。
+ * Web 側で setAuthCookies に渡してログイン状態を確立する。
  */
 export const authGithubResponseSchema = z.object({
   access_token: z.string(),
@@ -119,7 +91,7 @@ export type AuthDevLoginRequest = z.infer<typeof authDevLoginRequestSchema>
 /**
  * dev-login レスポンスのスキーマ
  *
- * authGoogleResponseSchema と互換にして Web 側で同じ setAuthCookies に渡せるようにする
+ * authGithubResponseSchema と互換にして Web 側で同じ setAuthCookies に渡せるようにする
  * （is_new_user は dev-login では常に false なので含めない）
  */
 export const authDevLoginResponseSchema = z.object({

@@ -6,10 +6,8 @@ import { logger } from "@repo/logger"
 import { createRedisClient } from "@repo/redis"
 
 import { GithubOAuthClient } from "./client/github-oauth"
-import { GoogleOAuthClient } from "./client/google-oauth"
 import { AuthDevLoginController } from "./controller/auth/dev-login"
 import { AuthGithubController } from "./controller/auth/github"
-import { AuthGoogleController } from "./controller/auth/google"
 import { AuthLogoutController } from "./controller/auth/logout"
 import { AuthRefreshController } from "./controller/auth/refresh"
 import { BadgeConfigGetController } from "./controller/badge/config-get"
@@ -130,7 +128,6 @@ const rankingSnapshotRepository = new PrismaRankingSnapshotRepository(prisma)
 /**
  * 外部 SaaS client の DI assembly
  */
-const googleOAuthClient = new GoogleOAuthClient(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET)
 const githubOAuthClient = new GithubOAuthClient(env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET)
 
 /**
@@ -142,13 +139,6 @@ const healthReadinessController = new HealthReadinessController(databaseHealthRe
 /**
  * Auth Controller のインスタンス化
  */
-const authGoogleController = new AuthGoogleController(
-  authAccountRepository,
-  userRepository,
-  refreshTokenRepository,
-  transactionRunner,
-  googleOAuthClient,
-)
 const authGithubController = new AuthGithubController(
   authAccountRepository,
   userRepository,
@@ -355,7 +345,6 @@ app.use(
   authRouter({
     devLogin: authDevLoginController,
     github: authGithubController,
-    google: authGoogleController,
     logout: authLogoutController,
     refresh: authRefreshController,
   })

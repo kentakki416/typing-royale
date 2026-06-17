@@ -17,7 +17,7 @@ import * as service from "../../service"
  * 開発環境専用ログイン API
  *
  * seed で投入済みの dev ユーザー（例: alice@dev.local）の email を受け取り
- * Google OAuth と同じ形の Access/Refresh Token を発行する。
+ * GitHub OAuth と同じ形の Access/Refresh Token を発行する。
  *
  * 多重ガード:
  * 1. index.ts で本番時はインスタンス化しない
