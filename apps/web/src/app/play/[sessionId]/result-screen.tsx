@@ -62,7 +62,14 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
   const [announcementQueue, setAnnouncementQueue] = useState<TopTenAnnouncementKind[]>(() => {
     if (result === null || !result.persisted) return []
     const queue: TopTenAnnouncementKind[] = []
-    if (result.top_ten_boundary_score !== null && result.score > result.top_ten_boundary_score) {
+    /**
+     * 殿堂入り (全期間 TOP 10) 入賞判定:
+     * - boundary===null は user_language_best が 10 件未満 = 誰でも入賞
+     * - findTenthScore は自分の今回ベスト upsert 後の 10 位を返すので、
+     *   自分が 10 位入りの場合 score === boundary が成立。`>=` で判定する
+     */
+    if (result.top_ten_boundary_score === null
+        || result.score >= result.top_ten_boundary_score) {
       queue.push("all-time")
     }
     if (result.monthly_top_ten_boundary_score === null
@@ -119,11 +126,13 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
     .slice(0, 5)
 
   /**
-   * TOP 10 入り判定はランキングへの掲載が前提なので、ゲストには出さない
+   * TOP 10 入り判定はランキングへの掲載が前提なので、ゲストには出さない。
+   * boundary===null (ベスト 10 件未満) も入賞扱い、自分が 10 位入りした
+   * ケース (score === boundary) も含めるため `>=` で比較する
    */
   const isTopTenEntry = !isGuest
-    && result.top_ten_boundary_score !== null
-    && result.score > result.top_ten_boundary_score
+    && (result.top_ten_boundary_score === null
+        || result.score >= result.top_ten_boundary_score)
 
   return (
     <>

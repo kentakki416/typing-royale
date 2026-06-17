@@ -58,6 +58,7 @@ export function TopTenCommentModal({ language, onClose, open }: Props) {
         border: "1px solid var(--gold, #d29922)",
         borderRadius: "8px",
         color: "var(--text-primary)",
+        margin: "auto",
         padding: "24px",
         width: "min(560px, 90vw)",
       }}
