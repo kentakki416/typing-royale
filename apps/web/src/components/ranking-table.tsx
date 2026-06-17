@@ -2,6 +2,8 @@ import Link from "next/link"
 
 import type { GetMonthlyRankingsResponse } from "@repo/api-schema"
 
+import { formatPlayedAtShort } from "@/libs/format-date"
+
 type Entry = GetMonthlyRankingsResponse["entries"][number]
 
 type Props = {
@@ -33,6 +35,7 @@ export function RankingTable({ entries }: Props) {
             <th>グレード</th>
             <th className="numeric">スコア</th>
             <th className="numeric">正確率</th>
+            <th className="numeric">達成日</th>
           </tr>
         </thead>
         <tbody>
@@ -59,6 +62,7 @@ export function RankingTable({ entries }: Props) {
               </td>
               <td className="numeric"><strong>{e.score.toLocaleString()}</strong></td>
               <td className="numeric">{(e.accuracy * 100).toFixed(1)}%</td>
+              <td className="numeric text-muted text-sm">{formatPlayedAtShort(e.played_at)}</td>
             </tr>
           ))}
         </tbody>
