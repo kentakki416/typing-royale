@@ -43,51 +43,49 @@ export function HofCards({ entries }: Props) {
 
   return (
     <>
-      <div className="hof-cards-scroll">
-        <div className="hof-cards-stack">
-          {entries.map((e) => {
-            const slug = slugForRank(e.rank)
-            const crowned = e.rank <= 3
-            return (
-              <div
-                className="hof-card has-crown tappable"
-                data-rank={slug}
-                key={e.best_play_session_id}
-                onClick={() => setOpen(e)}
-                onKeyDown={(ev) => {
-                  if (ev.key === "Enter" || ev.key === " ") {
-                    ev.preventDefault()
-                    setOpen(e)
-                  }
-                }}
-                role="button"
-                tabIndex={0}
-              >
-                {crowned && <CrownWrapper slug={CROWN_META[e.rank as CrownedRank].slug} />}
-                <span className="tap-hint">👆 タップ</span>
-                <div className={`hof-rank ${slug}`}>#{e.rank}</div>
-                <div className="hof-info">
-                  <div className="flex-center gap-12 mb-8">
-                    <PlayerAvatar avatarUrl={e.user.avatar_url} displayName={e.user.display_name} large />
-                    <div>
-                      <h3 style={{ margin: 0 }}>@{e.user.display_name}</h3>
-                      <div className="text-sm text-muted">
-                        {e.score.toLocaleString()} pts · {e.typed_chars.toLocaleString()} 文字 · {(e.accuracy * 100).toFixed(1)}%
-                        {" · "}
-                        <span
-                          className={`badge-grade ${e.user.current_grade}`}
-                          data-level={GRADE_LEVELS[e.user.current_grade] ?? 1}
-                        >
-                          {capitalizeGradeSlug(e.user.current_grade)}
-                        </span>
-                      </div>
+      <div className="hof-cards-stack">
+        {entries.map((e) => {
+          const slug = slugForRank(e.rank)
+          const crowned = e.rank <= 3
+          return (
+            <div
+              className="hof-card has-crown tappable"
+              data-rank={slug}
+              key={e.best_play_session_id}
+              onClick={() => setOpen(e)}
+              onKeyDown={(ev) => {
+                if (ev.key === "Enter" || ev.key === " ") {
+                  ev.preventDefault()
+                  setOpen(e)
+                }
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              {crowned && <CrownWrapper slug={CROWN_META[e.rank as CrownedRank].slug} />}
+              <span className="tap-hint">👆 タップ</span>
+              <div className={`hof-rank ${slug}`}>#{e.rank}</div>
+              <div className="hof-info">
+                <div className="flex-center gap-12 mb-8">
+                  <PlayerAvatar avatarUrl={e.user.avatar_url} displayName={e.user.display_name} large />
+                  <div>
+                    <h3 style={{ margin: 0 }}>@{e.user.display_name}</h3>
+                    <div className="text-sm text-muted">
+                      {e.score.toLocaleString()} pts · {e.typed_chars.toLocaleString()} 文字 · {(e.accuracy * 100).toFixed(1)}%
+                      {" · "}
+                      <span
+                        className={`badge-grade ${e.user.current_grade}`}
+                        data-level={GRADE_LEVELS[e.user.current_grade] ?? 1}
+                      >
+                        {capitalizeGradeSlug(e.user.current_grade)}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
-            )
-          })}
-        </div>
+            </div>
+          )
+        })}
       </div>
 
       {open !== null && (
