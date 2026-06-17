@@ -2078,6 +2078,24 @@ code.inline {
   65%     { transform: translate(-50%, -50%) scale(1); opacity: 1; }
   100%    { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
+/**
+ * 4-10 位 (white パレット) はカーテン演出を持たないため、 modal を
+ * カーテン待ちなしで即 scale-in させる軽量アニメに差し替える
+ */
+.curtain-stage.active[data-rank="white"] .god-modal {
+  animation: god-modal-pop 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.curtain-stage.active[data-rank="white"] .curtain-backdrop {
+  animation: curtain-backdrop-fade-quick 0.28s ease-out forwards;
+}
+@keyframes god-modal-pop {
+  0%   { transform: translate(-50%, -50%) scale(0.86); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
+}
+@keyframes curtain-backdrop-fade-quick {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
 .god-modal .modal-close {
   position: absolute;
   top: 16px;
