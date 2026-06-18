@@ -34,6 +34,7 @@ import { RankingMeController } from "./controller/ranking/me"
 import { RankingMonthlyListController } from "./controller/ranking/monthly-list"
 import { ReplayGetController } from "./controller/replay/get"
 import { RewardsCardCreateController } from "./controller/rewards/cards"
+import { RewardsGenerateController } from "./controller/rewards/generate"
 import { RewardsListMeController } from "./controller/rewards/me"
 import { UserDeleteController } from "./controller/user/delete"
 import { UserGetController } from "./controller/user/get"
@@ -138,8 +139,10 @@ const authGithubController = new AuthGithubController(
   authAccountRepository,
   userRepository,
   refreshTokenRepository,
+  rewardRepository,
   transactionRunner,
   githubOAuthClient,
+  cardStorage,
 )
 const authRefreshController = new AuthRefreshController(refreshTokenRepository)
 const authLogoutController = new AuthLogoutController(refreshTokenRepository)
@@ -180,6 +183,7 @@ const playSessionStartSoloController = new PlaySessionStartSoloController(
 const playSessionFinishController = new PlaySessionFinishController(
   cardStorage,
   keystrokeLogRepository,
+  languageRepository,
   monthlyRankingSnapshotRepository,
   playSessionProblemRepository,
   playSessionRepository,
@@ -281,6 +285,11 @@ const rewardsCardCreateController = new RewardsCardCreateController(
   userRepository,
 )
 const rewardsListMeController = new RewardsListMeController(rewardRepository)
+const rewardsGenerateController = new RewardsGenerateController(
+  rewardRepository,
+  userRepository,
+  cardStorage,
+)
 
 /**
  * Replay Controller のインスタンス化
@@ -359,6 +368,7 @@ app.use(
   "/api/rewards",
   rewardsRouter({
     cards: rewardsCardCreateController,
+    generate: rewardsGenerateController,
     me: rewardsListMeController,
   })
 )

@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { pendingRewardSchema } from "./rewards"
+
 // ========================================================
 // プレイセッション共通スキーマ
 // ========================================================
@@ -133,6 +135,13 @@ export const finishPlaySessionResponseSchema = z.object({
    */
   total_ranked_players: z.number().int().nonnegative(),
   top_ten_boundary_score: z.number().int().nonnegative().nullable(),
+
+  /**
+   * special-badges 用：これから生成されるべき reward の一覧。
+   * クライアントは sessionStorage に保存しホーム遷移後の polling に使う。
+   * 詳細は docs/spec/special-badges/README.md を参照
+   */
+  pending_rewards: z.array(pendingRewardSchema),
 })
 
 export type FinishPlaySessionPathParam = z.infer<typeof finishPlaySessionPathParamSchema>

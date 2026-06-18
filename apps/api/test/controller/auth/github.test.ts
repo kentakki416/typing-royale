@@ -2,8 +2,10 @@ import request from "supertest"
 
 import { GithubUserInfo, IGithubOAuthClient } from "../../../src/client/github-oauth"
 import { AuthGithubController } from "../../../src/controller/auth/github"
+import { LocalCardStorage } from "../../../src/lib/card-storage"
 import { verifyRefreshToken } from "../../../src/lib/jwt"
 import { PrismaAuthAccountRepository } from "../../../src/repository/prisma/auth-account-repository"
+import { PrismaRewardRepository } from "../../../src/repository/prisma/reward-repository"
 import { PrismaTransactionRunner } from "../../../src/repository/prisma/transaction-runner"
 import { PrismaUserRepository } from "../../../src/repository/prisma/user-repository"
 import { IoRedisRefreshTokenRepository } from "../../../src/repository/redis"
@@ -27,6 +29,8 @@ const authAccountRepository = new PrismaAuthAccountRepository(testPrisma)
 const userRepository = new PrismaUserRepository(testPrisma)
 const transactionRunner = new PrismaTransactionRunner(testPrisma)
 const refreshTokenRepository = new IoRedisRefreshTokenRepository(testRedis)
+const rewardRepository = new PrismaRewardRepository(testPrisma)
+const cardStorage = new LocalCardStorage("/tmp/typing-royale-rewards-test-auth", "/cache/rewards")
 
 const app = createTestApp()
 
@@ -34,8 +38,10 @@ const authGithubController = new AuthGithubController(
   authAccountRepository,
   userRepository,
   refreshTokenRepository,
+  rewardRepository,
   transactionRunner,
   mockGithubOAuthClient,
+  cardStorage,
 )
 
 app.use("/api/auth", authRouter({ github: authGithubController }))

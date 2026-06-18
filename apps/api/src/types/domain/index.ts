@@ -14,6 +14,7 @@ export type {
   KeystrokeEntry,
   KeystrokeLogs,
   MistypeStats,
+  PendingReward,
   PlaySessionMode,
   PlaySessionProblem,
   PlaySessionState,

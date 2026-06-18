@@ -1,5 +1,5 @@
 import { promises as fs } from "node:fs"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 
 /**
  * 達成カード PNG を保存するストレージ抽象
@@ -33,8 +33,14 @@ export class LocalCardStorage implements CardStorage {
   }
 
   async save(filename: string, buffer: Buffer): Promise<string> {
-    await fs.mkdir(this._baseDir, { recursive: true })
-    await fs.writeFile(join(this._baseDir, filename), buffer)
+    const fullPath = join(this._baseDir, filename)
+    /**
+     * filename にサブディレクトリ (例: "special-badges/123-hof.png") が含まれる場合、
+     * baseDir だけ mkdir しても親ディレクトリが無く writeFile が ENOENT で失敗する。
+     * filename のディレクトリ階層も含めて mkdir -p する
+     */
+    await fs.mkdir(dirname(fullPath), { recursive: true })
+    await fs.writeFile(fullPath, buffer)
     return `${this._publicUrlPrefix}/${filename}`
   }
 
