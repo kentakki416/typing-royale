@@ -5,6 +5,7 @@ import type { GetMonthlyRankingsResponse } from "@repo/api-schema"
 
 import { CrawledReposSection } from "@/components/crawled-repos-section"
 import { MonthlyTopSection } from "@/components/monthly-top-section"
+import { PendingRewardsPopup } from "@/components/pending-rewards-popup"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
@@ -160,6 +161,9 @@ export default async function HomePage() {
       <div className="footer">
         <a href="#">利用規約</a> · <a href="#">プライバシー</a> · <a href="#">ライセンス一覧</a>
       </div>
+
+      {/* リザルト → ホーム遷移時の pending rewards 通知 (special-badges step5) */}
+      <PendingRewardsPopup />
     </>
   )
 }

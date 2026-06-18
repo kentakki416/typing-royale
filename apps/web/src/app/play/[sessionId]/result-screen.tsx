@@ -103,6 +103,41 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
     void loadMyRanking()
   }, [isGuest, result])
 
+  /**
+   * special-badges (step5): /finish レスポンスに pending_rewards があれば
+   * sessionStorage に保存しつつ、各 reward 用に POST /api/internal/rewards/generate を
+   * fire-and-forget で叩く。生成完了は次のホーム遷移時に PendingRewardsPopup が
+   * polling で検知してポップアップを出す
+   */
+  useEffect(() => {
+    if (result === null || !result.persisted) return
+    const pending = result.pending_rewards
+    if (pending.length === 0) return
+
+    sessionStorage.setItem(
+      "pendingRewards",
+      JSON.stringify({ items: pending, startedAt: Date.now() }),
+    )
+
+    for (const p of pending) {
+      const body = p.type === "hall_of_fame_in"
+        ? { language: p.language, rank: p.rank, type: p.type }
+        : {
+          language: p.language,
+          rank: p.rank,
+          type: p.type,
+          year_month: p.year_month,
+        }
+      void fetch("/api/internal/rewards/generate", {
+        body: JSON.stringify(body),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      }).catch(() => {
+        /** 失敗は自己修復 (auth callback の reconcile) に任せる */
+      })
+    }
+  }, [result])
+
   if (result === null) {
     return (
       <>
