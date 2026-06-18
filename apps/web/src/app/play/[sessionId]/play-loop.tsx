@@ -151,6 +151,8 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
             /** ゲストはランキング登録対象外なので月間 boundary も常に null */
             monthly_top_ten_boundary_score: null,
             new_rank: guestRes.new_rank,
+            /** ゲストは reward 対象外なので常に空 */
+            pending_rewards: [],
             persisted: false,
             problems_completed: guestRes.problems_completed,
             problems_played: guestRes.problems_played,
