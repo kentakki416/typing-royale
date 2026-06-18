@@ -127,9 +127,22 @@ const buildState = (overrides?: Partial<PlaySessionState>): PlaySessionState => 
   ...overrides,
 })
 
+/**
+ * special-badges (step2): pending reward 検出のため languageRepository を必要とする。
+ * 既存ユニットテストは TS/JS 以外の slug でモック (= null) しておくと、
+ * `_toRewardLanguage` で `null` 判定され pending rewards 生成ロジックがスキップされる。
+ * これにより既存テストへの影響を最小化する
+ */
+const mockLanguageRepository = {
+  existsById: vi.fn(),
+  findById: vi.fn().mockResolvedValue(null),
+  findBySlug: vi.fn(),
+}
+
 const buildRepoCollection = () => ({
   cardStorage: mockCardStorage,
   keystrokeLogRepository: mockKeystrokeLogRepository,
+  languageRepository: mockLanguageRepository,
   monthlyRankingSnapshotRepository: mockMonthlyRankingSnapshotRepository,
   playSessionProblemRepository: mockPlaySessionProblemRepository,
   playSessionRepository: mockPlaySessionRepository,
