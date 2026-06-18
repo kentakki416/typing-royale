@@ -1869,6 +1869,7 @@ export const RewardScalarFieldEnum = {
   type: 'type',
   payload: 'payload',
   assetUrl: 'assetUrl',
+  assetSvgUrl: 'assetSvgUrl',
   grantedAt: 'grantedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

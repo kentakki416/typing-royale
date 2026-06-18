@@ -41,6 +41,7 @@ export type RewardMinAggregateOutputType = {
   userId: number | null
   type: string | null
   assetUrl: string | null
+  assetSvgUrl: string | null
   grantedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -51,6 +52,7 @@ export type RewardMaxAggregateOutputType = {
   userId: number | null
   type: string | null
   assetUrl: string | null
+  assetSvgUrl: string | null
   grantedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -62,6 +64,7 @@ export type RewardCountAggregateOutputType = {
   type: number
   payload: number
   assetUrl: number
+  assetSvgUrl: number
   grantedAt: number
   createdAt: number
   updatedAt: number
@@ -84,6 +87,7 @@ export type RewardMinAggregateInputType = {
   userId?: true
   type?: true
   assetUrl?: true
+  assetSvgUrl?: true
   grantedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -94,6 +98,7 @@ export type RewardMaxAggregateInputType = {
   userId?: true
   type?: true
   assetUrl?: true
+  assetSvgUrl?: true
   grantedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -105,6 +110,7 @@ export type RewardCountAggregateInputType = {
   type?: true
   payload?: true
   assetUrl?: true
+  assetSvgUrl?: true
   grantedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -203,6 +209,7 @@ export type RewardGroupByOutputType = {
   type: string
   payload: runtime.JsonValue
   assetUrl: string | null
+  assetSvgUrl: string | null
   grantedAt: Date
   createdAt: Date
   updatedAt: Date
@@ -237,6 +244,7 @@ export type RewardWhereInput = {
   type?: Prisma.StringFilter<"Reward"> | string
   payload?: Prisma.JsonFilter<"Reward">
   assetUrl?: Prisma.StringNullableFilter<"Reward"> | string | null
+  assetSvgUrl?: Prisma.StringNullableFilter<"Reward"> | string | null
   grantedAt?: Prisma.DateTimeFilter<"Reward"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"Reward"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Reward"> | Date | string
@@ -249,6 +257,7 @@ export type RewardOrderByWithRelationInput = {
   type?: Prisma.SortOrder
   payload?: Prisma.SortOrder
   assetUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  assetSvgUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   grantedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -264,6 +273,7 @@ export type RewardWhereUniqueInput = Prisma.AtLeast<{
   type?: Prisma.StringFilter<"Reward"> | string
   payload?: Prisma.JsonFilter<"Reward">
   assetUrl?: Prisma.StringNullableFilter<"Reward"> | string | null
+  assetSvgUrl?: Prisma.StringNullableFilter<"Reward"> | string | null
   grantedAt?: Prisma.DateTimeFilter<"Reward"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"Reward"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Reward"> | Date | string
@@ -276,6 +286,7 @@ export type RewardOrderByWithAggregationInput = {
   type?: Prisma.SortOrder
   payload?: Prisma.SortOrder
   assetUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  assetSvgUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   grantedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -295,6 +306,7 @@ export type RewardScalarWhereWithAggregatesInput = {
   type?: Prisma.StringWithAggregatesFilter<"Reward"> | string
   payload?: Prisma.JsonWithAggregatesFilter<"Reward">
   assetUrl?: Prisma.StringNullableWithAggregatesFilter<"Reward"> | string | null
+  assetSvgUrl?: Prisma.StringNullableWithAggregatesFilter<"Reward"> | string | null
   grantedAt?: Prisma.DateTimeWithAggregatesFilter<"Reward"> | Date | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Reward"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Reward"> | Date | string
@@ -304,6 +316,7 @@ export type RewardCreateInput = {
   type: string
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   assetUrl?: string | null
+  assetSvgUrl?: string | null
   grantedAt: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -316,6 +329,7 @@ export type RewardUncheckedCreateInput = {
   type: string
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   assetUrl?: string | null
+  assetSvgUrl?: string | null
   grantedAt: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -325,6 +339,7 @@ export type RewardUpdateInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   assetUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assetSvgUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   grantedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -337,6 +352,7 @@ export type RewardUncheckedUpdateInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   assetUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assetSvgUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   grantedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -348,6 +364,7 @@ export type RewardCreateManyInput = {
   type: string
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   assetUrl?: string | null
+  assetSvgUrl?: string | null
   grantedAt: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -357,6 +374,7 @@ export type RewardUpdateManyMutationInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   assetUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assetSvgUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   grantedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -368,6 +386,7 @@ export type RewardUncheckedUpdateManyInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   assetUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assetSvgUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   grantedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -389,6 +408,7 @@ export type RewardCountOrderByAggregateInput = {
   type?: Prisma.SortOrder
   payload?: Prisma.SortOrder
   assetUrl?: Prisma.SortOrder
+  assetSvgUrl?: Prisma.SortOrder
   grantedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -404,6 +424,7 @@ export type RewardMaxOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   assetUrl?: Prisma.SortOrder
+  assetSvgUrl?: Prisma.SortOrder
   grantedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -414,6 +435,7 @@ export type RewardMinOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   type?: Prisma.SortOrder
   assetUrl?: Prisma.SortOrder
+  assetSvgUrl?: Prisma.SortOrder
   grantedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -470,6 +492,7 @@ export type RewardCreateWithoutUserInput = {
   type: string
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   assetUrl?: string | null
+  assetSvgUrl?: string | null
   grantedAt: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -480,6 +503,7 @@ export type RewardUncheckedCreateWithoutUserInput = {
   type: string
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   assetUrl?: string | null
+  assetSvgUrl?: string | null
   grantedAt: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -520,6 +544,7 @@ export type RewardScalarWhereInput = {
   type?: Prisma.StringFilter<"Reward"> | string
   payload?: Prisma.JsonFilter<"Reward">
   assetUrl?: Prisma.StringNullableFilter<"Reward"> | string | null
+  assetSvgUrl?: Prisma.StringNullableFilter<"Reward"> | string | null
   grantedAt?: Prisma.DateTimeFilter<"Reward"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"Reward"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Reward"> | Date | string
@@ -530,6 +555,7 @@ export type RewardCreateManyUserInput = {
   type: string
   payload: Prisma.JsonNullValueInput | runtime.InputJsonValue
   assetUrl?: string | null
+  assetSvgUrl?: string | null
   grantedAt: Date | string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -539,6 +565,7 @@ export type RewardUpdateWithoutUserInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   assetUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assetSvgUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   grantedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -549,6 +576,7 @@ export type RewardUncheckedUpdateWithoutUserInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   assetUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assetSvgUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   grantedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -559,6 +587,7 @@ export type RewardUncheckedUpdateManyWithoutUserInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   payload?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   assetUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assetSvgUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   grantedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -572,6 +601,7 @@ export type RewardSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   type?: boolean
   payload?: boolean
   assetUrl?: boolean
+  assetSvgUrl?: boolean
   grantedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -584,6 +614,7 @@ export type RewardSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   type?: boolean
   payload?: boolean
   assetUrl?: boolean
+  assetSvgUrl?: boolean
   grantedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -596,6 +627,7 @@ export type RewardSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   type?: boolean
   payload?: boolean
   assetUrl?: boolean
+  assetSvgUrl?: boolean
   grantedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -608,12 +640,13 @@ export type RewardSelectScalar = {
   type?: boolean
   payload?: boolean
   assetUrl?: boolean
+  assetSvgUrl?: boolean
   grantedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type RewardOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "type" | "payload" | "assetUrl" | "grantedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["reward"]>
+export type RewardOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "type" | "payload" | "assetUrl" | "assetSvgUrl" | "grantedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["reward"]>
 export type RewardInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
@@ -633,17 +666,21 @@ export type $RewardPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     id: number
     userId: number
     /**
-     * "card" / "grade_up"。将来 "3d" / "lottie" / "trading_card" を追加
+     * "grade_up" / "hall_of_fame_in" / "monthly_top_ten"。将来 "3d" / "lottie" / "trading_card" を追加
      */
     type: string
     /**
-     * 例: { "grade_slug": "senior" } / { "milestone_label": "10K_chars" }
+     * type ごとに構造が異なる。grade_up: { grade_slug }、hall_of_fame_in: { language, rank }、monthly_top_ten: { language, year_month, rank }
      */
     payload: runtime.JsonValue
     /**
-     * S3 / ローカルファイル URL。生成失敗時のみ null
+     * PNG の S3 / ローカル URL。pending 中は null
      */
     assetUrl: string | null
+    /**
+     * SVG 文字列 or CDN URL。pending 中は null
+     */
+    assetSvgUrl: string | null
     grantedAt: Date
     createdAt: Date
     updatedAt: Date
@@ -1076,6 +1113,7 @@ export interface RewardFieldRefs {
   readonly type: Prisma.FieldRef<"Reward", 'String'>
   readonly payload: Prisma.FieldRef<"Reward", 'Json'>
   readonly assetUrl: Prisma.FieldRef<"Reward", 'String'>
+  readonly assetSvgUrl: Prisma.FieldRef<"Reward", 'String'>
   readonly grantedAt: Prisma.FieldRef<"Reward", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Reward", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Reward", 'DateTime'>

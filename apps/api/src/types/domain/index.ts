@@ -19,3 +19,14 @@ export type {
   PlaySessionState,
   RepoInfo,
 } from "./play-session"
+
+// Reward
+export type {
+  GradeUpPayload,
+  HallOfFameInPayload,
+  MonthlyTopTenPayload,
+  Reward,
+  RewardLanguage,
+  RewardPayload,
+  RewardType,
+} from "./reward"
