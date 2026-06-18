@@ -36,9 +36,11 @@ import {
   FinishResult,
   KeystrokeLogs,
   MistypeStats,
+  PendingReward,
   PlaySessionProblem,
   PlaySessionState,
   RepoInfo,
+  RewardLanguage,
 } from "../types/domain"
 
 import * as rewardsService from "./rewards-service"
@@ -588,6 +590,7 @@ export const createChallengeGodsSession = async (
 type FinishSessionRepo = {
     cardStorage: CardStorage
     keystrokeLogRepository: KeystrokeLogRepository
+    languageRepository: LanguageRepository
     monthlyRankingSnapshotRepository: MonthlyRankingSnapshotRepository
     playSessionProblemRepository: PlaySessionProblemRepository
     playSessionRepository: PlaySessionRepository
@@ -746,6 +749,57 @@ export const finishSession = async (
   )
 
   /**
+   * special-badges 用 (step2): 殿堂入り / 月間 TOP 10 のランクインを検出し、
+   * rewards テーブルに pending 行を確保する。画像生成はしない (応答性のため)。
+   * クライアントは /finish レスポンスの pending_rewards を見て fire-and-forget で
+   * POST /api/rewards/generate を叩く
+   */
+  const pendingRewards: PendingReward[] = []
+  const language = await repo.languageRepository.findById(state.languageId)
+  const languageSlug = toRewardLanguage(language?.slug)
+  if (languageSlug !== null) {
+    if (newRank !== null && newRank <= 10) {
+      const reward = await ensurePendingHofReward(
+        repo.rewardRepository,
+        state.userId,
+        languageSlug,
+        newRank,
+      )
+      pendingRewards.push({
+        language: languageSlug,
+        rank: newRank,
+        rewardId: reward.id,
+        type: "hall_of_fame_in",
+      })
+    }
+    if (isMonthlyTopTenEntry) {
+      const top = await repo.monthlyRankingSnapshotRepository.findTopByLanguage(
+        yearMonth,
+        state.languageId,
+        MONTHLY_TOP_TEN_CAP,
+      )
+      const idx = top.findIndex((e) => e.user.id === state.userId)
+      if (idx !== -1) {
+        const monthlyRank = idx + 1
+        const reward = await ensurePendingMonthlyReward(
+          repo.rewardRepository,
+          state.userId,
+          languageSlug,
+          yearMonth,
+          monthlyRank,
+        )
+        pendingRewards.push({
+          language: languageSlug,
+          rank: monthlyRank,
+          rewardId: reward.id,
+          type: "monthly_top_ten",
+          yearMonth,
+        })
+      }
+    }
+  }
+
+  /**
    * グレードアップが発生していれば達成カード PNG を自動生成 (rewards step6)
    * 失敗しても /finish 全体は成功扱い: rewards 行は assetUrl=null で残り、
    * マイページから再生成リクエストが可能
@@ -794,6 +848,7 @@ export const finishSession = async (
     mistypeStats,
     monthlyTopTenBoundaryScore,
     newRank,
+    pendingRewards,
     persisted: true,
     problemsCompleted,
     problemsPlayed,
@@ -802,6 +857,71 @@ export const finishSession = async (
     totalRankedPlayers,
     typedChars: input.typedChars,
   })
+}
+
+/**
+ * 言語 slug を special-badges の対象言語 ("typescript" | "javascript") に
+ * narrowing する。MVP では他言語は special-badges 対象外
+ */
+const toRewardLanguage = (slug: string | undefined): RewardLanguage | null => {
+  if (slug === "typescript" || slug === "javascript") return slug
+  return null
+}
+
+/**
+ * 殿堂入りバッジの pending 行を確保する。
+ * - 既存行がなければ INSERT (assets null)
+ * - 既存行があり rank が変わっていれば payload 更新 + assets null 化 (再生成促進)
+ * - 既存行があり rank が同じなら何もしない (idempotent)
+ */
+const ensurePendingHofReward = async (
+  rewardRepository: RewardRepository,
+  userId: number,
+  language: RewardLanguage,
+  rank: number,
+) => {
+  const existing = await rewardRepository.findByKey(userId, { language, type: "hall_of_fame_in" })
+  if (existing !== null && (existing.payload as { rank?: number }).rank === rank) {
+    return existing
+  }
+  return rewardRepository.upsertByKey(
+    userId,
+    { language, type: "hall_of_fame_in" },
+    {
+      assetSvgUrl: null,
+      assetUrl: null,
+      payload: { language, rank },
+    },
+  )
+}
+
+/**
+ * 月間 TOP 10 バッジの pending 行を確保する (HoF と同じロジック)
+ */
+const ensurePendingMonthlyReward = async (
+  rewardRepository: RewardRepository,
+  userId: number,
+  language: RewardLanguage,
+  yearMonth: string,
+  rank: number,
+) => {
+  const existing = await rewardRepository.findByKey(userId, {
+    language,
+    type: "monthly_top_ten",
+    yearMonth,
+  })
+  if (existing !== null && (existing.payload as { rank?: number }).rank === rank) {
+    return existing
+  }
+  return rewardRepository.upsertByKey(
+    userId,
+    { language, type: "monthly_top_ten", yearMonth },
+    {
+      assetSvgUrl: null,
+      assetUrl: null,
+      payload: { language, rank, year_month: yearMonth },
+    },
+  )
 }
 
 // ========================================================

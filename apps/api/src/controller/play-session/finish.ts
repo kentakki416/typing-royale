@@ -9,6 +9,7 @@ import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
 import {
   KeystrokeLogRepository,
+  LanguageRepository,
   MonthlyRankingSnapshotRepository,
   PlaySessionProblemRepository,
   PlaySessionRepository,
@@ -35,6 +36,7 @@ export class PlaySessionFinishController {
   constructor(
         private cardStorage: CardStorage,
         private keystrokeLogRepository: KeystrokeLogRepository,
+        private languageRepository: LanguageRepository,
         private monthlyRankingSnapshotRepository: MonthlyRankingSnapshotRepository,
         private playSessionProblemRepository: PlaySessionProblemRepository,
         private playSessionRepository: PlaySessionRepository,
@@ -72,6 +74,7 @@ export class PlaySessionFinishController {
       {
         cardStorage: this.cardStorage,
         keystrokeLogRepository: this.keystrokeLogRepository,
+        languageRepository: this.languageRepository,
         monthlyRankingSnapshotRepository: this.monthlyRankingSnapshotRepository,
         playSessionProblemRepository: this.playSessionProblemRepository,
         playSessionRepository: this.playSessionRepository,
@@ -109,6 +112,9 @@ export class PlaySessionFinishController {
       mistype_stats: result.value.mistypeStats,
       monthly_top_ten_boundary_score: result.value.monthlyTopTenBoundaryScore,
       new_rank: result.value.newRank,
+      pending_rewards: result.value.pendingRewards.map((p) => p.type === "hall_of_fame_in"
+        ? { language: p.language, rank: p.rank, reward_id: p.rewardId, type: p.type }
+        : { language: p.language, rank: p.rank, reward_id: p.rewardId, type: p.type, year_month: p.yearMonth }),
       persisted: result.value.persisted,
       problems_completed: result.value.problemsCompleted,
       problems_played: result.value.problemsPlayed,

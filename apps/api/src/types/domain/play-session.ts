@@ -119,4 +119,29 @@ export type FinishResult = {
      * /finish 内で同じ Redis/Prisma レイヤから取得して、別 fetch を不要にする
      */
     totalRankedPlayers: number
+
+    /**
+     * special-badges 用 (step2)：これから生成されるべき reward の一覧。
+     * クライアントは sessionStorage に保存しホーム遷移後の polling に使う
+     */
+    pendingRewards: PendingReward[]
 }
+
+/**
+ * /finish 内で検出した「ランクイン済みで未生成」の reward。
+ * 詳細は docs/spec/special-badges/README.md を参照
+ */
+export type PendingReward =
+    | {
+        language: "javascript" | "typescript"
+        rank: number
+        rewardId: number
+        type: "hall_of_fame_in"
+    }
+    | {
+        language: "javascript" | "typescript"
+        rank: number
+        rewardId: number
+        type: "monthly_top_ten"
+        yearMonth: string
+    }

@@ -4,6 +4,7 @@ import { PlaySessionFinishController } from "../../../src/controller/play-sessio
 import { LocalCardStorage } from "../../../src/lib/card-storage"
 import {
   PrismaKeystrokeLogRepository,
+  PrismaLanguageRepository,
   PrismaMonthlyRankingSnapshotRepository,
   PrismaPlaySessionProblemRepository,
   PrismaPlaySessionRepository,
@@ -35,6 +36,7 @@ const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(testPr
 const userLanguageBestRepository = new PrismaUserLanguageBestRepository(testPrisma)
 const userRepository = new PrismaUserRepository(testPrisma)
 const monthlyRankingSnapshotRepository = new PrismaMonthlyRankingSnapshotRepository(testPrisma)
+const languageRepository = new PrismaLanguageRepository(testPrisma)
 const rewardRepository = new PrismaRewardRepository(testPrisma)
 const transactionRunner = new PrismaTransactionRunner(testPrisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(testRedis)
@@ -50,6 +52,7 @@ app.use(
     finish: new PlaySessionFinishController(
       cardStorage,
       keystrokeLogRepository,
+      languageRepository,
       monthlyRankingSnapshotRepository,
       playSessionProblemRepository,
       playSessionRepository,
@@ -171,6 +174,11 @@ describe("POST /api/play-sessions/:id/finish", () => {
         /** monthly snapshot も 1 件しか無いので boundary=null（10 件未満 = 誰でも入賞） */
         monthly_top_ten_boundary_score: null,
         new_rank: 1,
+        /** special-badges: TS で 1 位なので HoF と Monthly の 2 件 pending */
+        pending_rewards: expect.arrayContaining([
+          expect.objectContaining({ rank: 1, type: "hall_of_fame_in" }),
+          expect.objectContaining({ rank: 1, type: "monthly_top_ten" }),
+        ]),
         persisted: true,
         problems_completed: 1,
         problems_played: 1,
@@ -572,7 +580,7 @@ describe("POST /api/play-sessions/:id/finish", () => {
         )
         const yearMonth = currentYearMonth()
         await Promise.all(
-          otherUsers.map((u, i) =>
+          otherUsers.map(async (u, i) =>
             testPrisma.monthlyRankingSnapshot.create({
               data: {
                 accuracy: 0.9,
@@ -635,7 +643,7 @@ describe("POST /api/play-sessions/:id/finish", () => {
         )
         const yearMonth = currentYearMonth()
         await Promise.all(
-          otherUsers.map((u, i) =>
+          otherUsers.map(async (u, i) =>
             testPrisma.monthlyRankingSnapshot.create({
               data: {
                 accuracy: 0.95,
