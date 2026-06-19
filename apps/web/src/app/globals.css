@@ -2592,13 +2592,17 @@ code.inline {
 
 /**
  * TopTenAnnouncementModal の祝福用 scale-in アニメ。
- * dialog 自体に animation を当て、open 時に背面紙吹雪と一緒にふわっと現れる
+ * dialog 自体に animation を当て、open 時に背面紙吹雪と一緒にふわっと現れる。
+ *
+ * リザルト画面表示後にスコアを視認する時間を確保するため、result-screen 側で
+ * 1.6s 遅延 + ここで 0.7s かけてゆっくりフェードイン
  */
 .top-ten-announcement-dialog[open] {
-  animation: top-ten-announcement-pop 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: top-ten-announcement-pop 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes top-ten-announcement-pop {
-  0%   { opacity: 0; transform: scale(0.82); }
-  60%  { opacity: 1; transform: scale(1.02); }
-  100% { opacity: 1; transform: scale(1); }
+  0%   { opacity: 0; transform: scale(0.86) translateY(8px); }
+  30%  { opacity: 0.3; transform: scale(0.92) translateY(4px); }
+  60%  { opacity: 0.85; transform: scale(1.02) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }

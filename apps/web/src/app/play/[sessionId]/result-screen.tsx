@@ -77,6 +77,21 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
   })
 
   /**
+   * TOP 10 入賞ポップアップを少し遅らせて表示する。
+   *
+   * 理由: /finish 完了後にリザルト画面と同時に popup が pop-in すると、
+   * ユーザーがスコアや順位を視認する前にモーダルが覆ってしまい体験が雑に感じる。
+   * リザルト画面のスコア / 祝福 overlay が落ち着いた後 (~1.6s 後) に popup を
+   * フェード + scale-in で表示する
+   */
+  const [popupReady, setPopupReady] = useState(false)
+  useEffect(() => {
+    if (announcementQueue.length === 0) return
+    const timer = setTimeout(() => setPopupReady(true), 1600)
+    return () => clearTimeout(timer)
+  }, [announcementQueue.length])
+
+  /**
    * ゲスト（未ログイン）プレイの判定: /finish の persisted=false がサーバーから返る
    */
   const isGuest = result !== null && !result.persisted
@@ -365,10 +380,14 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
         <CelebrationOverlay onFinished={() => setShowCelebration(false)} />
       )}
 
-      {announcementQueue.length > 0 && (
+      {announcementQueue.length > 0 && popupReady && (
         <TopTenAnnouncementModal
           kind={announcementQueue[0]}
-          onClose={() => setAnnouncementQueue((prev) => prev.slice(1))}
+          onClose={() => {
+            setAnnouncementQueue((prev) => prev.slice(1))
+            /** 次の popup が続く場合は再び遅らせて表示する */
+            setPopupReady(false)
+          }}
           open
         />
       )}
