@@ -53,7 +53,9 @@ export class RewardsCardCreateController {
     }
 
     const response = parseResponse(createRewardCardResponseSchema, {
+      asset_svg_url: result.value.assetSvgUrl,
       asset_url: result.value.assetUrl,
+      generation_status: result.value.generationStatus,
       granted_at: result.value.grantedAt.toISOString(),
       payload: result.value.payload,
       reward_id: result.value.id,

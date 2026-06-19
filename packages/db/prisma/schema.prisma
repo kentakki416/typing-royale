@@ -336,15 +336,19 @@ model MonthlyRankingSnapshot {
 // type=grade_up はグレードアップ達成カード、type=hall_of_fame_in は殿堂入りバッジ、type=monthly_top_ten は月間 TOP 10 バッジ
 // docs/spec/rewards/README.md および docs/spec/special-badges/README.md 参照
 model Reward {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @map("user_id")
-  type        String /// "grade_up" / "hall_of_fame_in" / "monthly_top_ten"。将来 "3d" / "lottie" / "trading_card" を追加
-  payload     Json /// type ごとに構造が異なる。grade_up: { grade_slug }、hall_of_fame_in: { language, rank }、monthly_top_ten: { language, year_month, rank }
-  assetUrl    String?  @map("asset_url") /// PNG の S3 / ローカル URL。pending 中は null
-  assetSvgUrl String?  @map("asset_svg_url") /// SVG 文字列 or CDN URL。pending 中は null
-  grantedAt   DateTime @map("granted_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id               Int      @id @default(autoincrement())
+  userId           Int      @map("user_id")
+  type             String /// "grade_up" / "hall_of_fame_in" / "monthly_top_ten"。将来 "3d" / "lottie" / "trading_card" を追加
+  payload          Json /// type ごとに構造が異なる。grade_up: { grade_slug }、hall_of_fame_in: { language, rank }、monthly_top_ten: { language, year_month, rank }
+  assetUrl         String?  @map("asset_url") /// PNG の S3 / ローカル URL。pending 中は null
+  assetSvgUrl      String?  @map("asset_svg_url") /// SVG 文字列 or CDN URL。pending 中は null
+  /// 画像生成ステータス。"pending" → "processing" → "completed" / "failed"。
+  /// rewards-worker (step3) で apps/worker が遷移を管理する。最終失敗 (BullMQ attempts=3 超過) で "failed"。
+  /// UI は "completed" のみ表示し、"failed" はサイレント (将来再生成 API のため status だけ保存)
+  generationStatus String   @default("pending") @map("generation_status")
+  grantedAt        DateTime @map("granted_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -352,6 +356,7 @@ model Reward {
   /// - rewards_hof_unique: (user_id, type, payload->>'language') WHERE type = 'hall_of_fame_in'
   /// - rewards_monthly_unique: (user_id, type, payload->>'language', payload->>'year_month') WHERE type = 'monthly_top_ten'
   @@index([userId, grantedAt(sort: Desc)]) /// マイページ特典タブの最新順表示
+  @@index([userId, generationStatus, grantedAt(sort: Desc)]) /// step4 のホーム見逃し popup 取得用
   @@map("rewards")
 }
 

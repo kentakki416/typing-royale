@@ -47,6 +47,7 @@ describe("POST /api/rewards/generate", () => {
       expect(res.body).toEqual({
         asset_svg_url: expect.stringContaining("HALL OF FAME"),
         asset_url: expect.any(String),
+        generation_status: "completed",
         granted_at: expect.any(String),
         payload: { language: "typescript", rank: 3 },
         reward_id: expect.any(Number),
