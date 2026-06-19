@@ -1,13 +1,13 @@
 import { badRequestError, err, forbiddenError, notFoundError, ok, Result } from "@repo/errors"
-import { logger } from "@repo/logger"
-
-import { buildHofBadgeSvg } from "../lib/badge-svg-hof"
-import { buildMonthlyBadgeSvg } from "../lib/badge-svg-monthly"
 import {
+  buildHofBadgeSvg,
+  buildMonthlyBadgeSvg,
   renderGradeUpCard,
   renderHallOfFameCard,
   renderMonthlyTopTenCard,
-} from "../lib/card-renderer"
+} from "@repo/generate-image"
+import { logger } from "@repo/logger"
+
 import { CardStorage } from "../lib/card-storage"
 import { calcGrade, GRADES } from "../lib/grade"
 import {

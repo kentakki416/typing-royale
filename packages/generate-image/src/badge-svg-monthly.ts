@@ -1,4 +1,4 @@
-import type { RewardLanguage } from "../types/domain"
+import type { RewardLanguage } from "./types"
 
 /**
  * 月間 TOP 10 バッジの SVG レンダリング（純粋関数）

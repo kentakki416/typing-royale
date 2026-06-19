@@ -1,4 +1,4 @@
-import { buildHofBadgeSvg } from "../../src/lib/badge-svg-hof"
+import { buildHofBadgeSvg } from "@repo/generate-image"
 
 describe("buildHofBadgeSvg", () => {
   describe("正常系", () => {

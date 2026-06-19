@@ -3,7 +3,7 @@ import satori from "satori"
 
 import { logger } from "@repo/logger"
 
-import type { RewardLanguage } from "../types/domain"
+import type { RewardLanguage } from "./types"
 
 /**
  * 達成カード PNG のレンダリング（satori + resvg-js）
