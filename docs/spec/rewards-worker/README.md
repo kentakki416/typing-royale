@@ -209,14 +209,14 @@ apps/worker/
 
 **ポイント**:
 - `WORKER_CONCURRENCY = 1`（仕様確定: 単一プロセス、単一 in-flight ジョブ）
-- `apps/api` から `card-renderer.ts` / `badge-svg-hof.ts` / `badge-svg-monthly.ts` / `card-storage.ts` を **そのまま import するのではなく** 共通利用するため `packages/reward-renderer` (新規) に移動する（後述）
+- `apps/api` から `card-renderer.ts` / `badge-svg-hof.ts` / `badge-svg-monthly.ts` / `card-storage.ts` を **そのまま import するのではなく** 共通利用するため `packages/generate-image` (新規) に移動する（後述）
 
-#### 共通化: packages/reward-renderer (新規)
+#### 共通化: packages/generate-image (新規)
 
 `apps/api` と `apps/worker` の両方が SVG/PNG 生成ロジックを使うため、共通パッケージに切り出す。
 
 ```
-packages/reward-renderer/
+packages/generate-image/
 └── src/
     ├── index.ts
     ├── badge-svg-hof.ts
@@ -305,7 +305,7 @@ stateDiagram-v2
 | `apps/api/src/controller/rewards/generate.ts` | クライアントが叩く必要が無くなる |
 | `POST /api/rewards/generate` ルート登録 | 同上 |
 | `apps/web/src/app/api/internal/rewards/generate/route.ts` | 内部 bridge も不要 |
-| `apps/api/src/service/rewards-service.ts::generateReward` (export) | worker から `packages/reward-renderer` 経由で直接生成するため不要 |
+| `apps/api/src/service/rewards-service.ts::generateReward` (export) | worker から `packages/generate-image` 経由で直接生成するため不要 |
 | `apps/api/src/service/rewards-service.ts::reconcilePendingRewards` | BullMQ のリトライで代替、自己修復ロジック不要 |
 | `apps/api/src/controller/auth/github.ts` の reconcile 呼び出し | 同上 |
 | `apps/web/src/app/play/[sessionId]/result-screen.tsx` の `POST /api/internal/rewards/generate` fire-and-forget | クライアントは何も叩かない |
@@ -438,7 +438,7 @@ sequenceDiagram
 
 | step | スコープ | 主な影響範囲 |
 |---|---|---|
-| **step1** | `packages/queue` (BullMQ 抽象) + `packages/reward-renderer` (SVG/PNG 共通化) | packages のみ |
+| **step1** | `packages/queue` (BullMQ 抽象) + `packages/generate-image` (SVG/PNG 共通化) | packages のみ |
 | **step2** | DB マイグレーション (`generation_status` カラム追加) + 既存行の status バックフィル | packages/db |
 | **step3** | `apps/worker` 新規作成 + `apps/api` の `/finish` を enqueue 方式に refactor + `/api/rewards/generate` 削除 + reconcile 削除 | apps/worker (新規), apps/api, packages/schema |
 | **step4** | apps/web の UI/UX 修正 (リザルト画面 loading 状態 + 完了 SE タイミング + ホーム見逃し popup) | apps/web |

@@ -53,7 +53,7 @@ apps/worker/
     "@repo/logger": "workspace:*",
     "@repo/queue": "workspace:*",
     "@repo/redis": "workspace:*",
-    "@repo/reward-renderer": "workspace:*",
+    "@repo/generate-image": "workspace:*",
     "zod": "..."
   }
 }
@@ -185,7 +185,7 @@ import {
   renderGradeUpCard,
   renderHallOfFameCard,
   renderMonthlyTopTenCard,
-} from "@repo/reward-renderer"
+} from "@repo/generate-image"
 
 import type { RewardRepository } from "../repository/prisma/reward-repository"
 import type { UserRepository } from "../repository/prisma/user-repository"

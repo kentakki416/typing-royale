@@ -1,9 +1,9 @@
-# step1: packages/queue + packages/reward-renderer 新規作成
+# step1: packages/queue + packages/generate-image 新規作成
 
 `apps/api` と `apps/worker` の両方が利用する共通基盤を 2 つの新規パッケージとして整備する。
 
 - `packages/queue`: BullMQ ベースの Job Queue 抽象（producer / consumer の interface 統一）
-- `packages/reward-renderer`: SVG / PNG 生成ロジック（既存 `apps/api/src/lib/badge-svg-*.ts` / `card-renderer.ts` を移動）
+- `packages/generate-image`: SVG / PNG 生成ロジック（既存 `apps/api/src/lib/badge-svg-*.ts` / `card-renderer.ts` を移動）
 
 ## 対応内容
 
@@ -212,14 +212,14 @@ export * from "./jobs"
 export * from "./types"
 ```
 
-### packages/reward-renderer
+### packages/generate-image
 
 `apps/api/src/lib/badge-svg-hof.ts` / `badge-svg-monthly.ts` / `card-renderer.ts` を **そのまま移動**する。
 
 #### ディレクトリ構成
 
 ```
-packages/reward-renderer/
+packages/generate-image/
 ├── package.json
 ├── tsconfig.json
 ├── tsconfig.build.json
@@ -235,7 +235,7 @@ packages/reward-renderer/
 
 ```json
 {
-  "name": "@repo/reward-renderer",
+  "name": "@repo/generate-image",
   "version": "1.0.0",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
@@ -258,8 +258,8 @@ packages/reward-renderer/
 
 #### 移動に伴う import 修正
 
-- `apps/api/src/types/domain/reward.ts` の `RewardLanguage` 型は `packages/reward-renderer` 側でも必要なので、
-    - **option A**: 型をコピーして `packages/reward-renderer/src/types.ts` に置く
+- `apps/api/src/types/domain/reward.ts` の `RewardLanguage` 型は `packages/generate-image` 側でも必要なので、
+    - **option A**: 型をコピーして `packages/generate-image/src/types.ts` に置く
     - **option B**: 型を `@repo/db` 等の共通 package に移して両方から import する
 - 本 step では **A (型コピー)** を採用（重複は技術負債として記録、将来 schema 共通化時にまとめる）
 
@@ -276,9 +276,9 @@ export * from "./card-renderer"
 #### 削除（既存ファイル）
 
 ```
-apps/api/src/lib/badge-svg-hof.ts          → packages/reward-renderer/src/badge-svg-hof.ts に移動
-apps/api/src/lib/badge-svg-monthly.ts      → packages/reward-renderer/src/badge-svg-monthly.ts に移動
-apps/api/src/lib/card-renderer.ts          → packages/reward-renderer/src/card-renderer.ts に移動
+apps/api/src/lib/badge-svg-hof.ts          → packages/generate-image/src/badge-svg-hof.ts に移動
+apps/api/src/lib/badge-svg-monthly.ts      → packages/generate-image/src/badge-svg-monthly.ts に移動
+apps/api/src/lib/card-renderer.ts          → packages/generate-image/src/card-renderer.ts に移動
 ```
 
 #### import 変更
@@ -291,7 +291,7 @@ import { renderGradeUpCard } from "../lib/card-renderer"
 import { buildHofBadgeSvg } from "../lib/badge-svg-hof"
 
 // after
-import { buildHofBadgeSvg, renderGradeUpCard } from "@repo/reward-renderer"
+import { buildHofBadgeSvg, renderGradeUpCard } from "@repo/generate-image"
 ```
 
 #### `apps/api/package.json` 更新
@@ -300,7 +300,7 @@ import { buildHofBadgeSvg, renderGradeUpCard } from "@repo/reward-renderer"
 {
   "dependencies": {
     "@repo/queue": "workspace:*",
-    "@repo/reward-renderer": "workspace:*"
+    "@repo/generate-image": "workspace:*"
   }
 }
 ```
@@ -326,7 +326,7 @@ import { buildHofBadgeSvg, renderGradeUpCard } from "@repo/reward-renderer"
 ```bash
 pnpm install
 pnpm --filter @repo/queue build         # → dist/src/index.js / index.d.ts
-pnpm --filter @repo/reward-renderer build
+pnpm --filter @repo/generate-image build
 pnpm --filter api build                 # 既存 api がエラーなく build できる
 pnpm --filter api test                  # 既存 test がパスする
 pnpm --filter api vitest run test/lib/badge-svg-hof.test.ts  # 既存テストファイル位置は変えても OK
