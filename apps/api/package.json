@@ -27,14 +27,13 @@
     "@repo/api-schema": "workspace:^",
     "@repo/db": "workspace:^",
     "@repo/errors": "workspace:^",
+    "@repo/generate-image": "workspace:^",
     "@repo/logger": "workspace:^",
     "@repo/redis": "workspace:^",
-    "@resvg/resvg-js": "^2.6.2",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "google-auth-library": "^10.5.0",
     "jsonwebtoken": "^9.0.3",
-    "satori": "^0.26.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

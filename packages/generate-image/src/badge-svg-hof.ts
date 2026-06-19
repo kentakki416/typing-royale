@@ -1,4 +1,4 @@
-import type { RewardLanguage } from "../types/domain"
+import type { RewardLanguage } from "./types"
 
 /**
  * Hall of Fame バッジの SVG レンダリング（純粋関数）

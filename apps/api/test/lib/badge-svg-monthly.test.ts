@@ -1,4 +1,4 @@
-import { buildMonthlyBadgeSvg } from "../../src/lib/badge-svg-monthly"
+import { buildMonthlyBadgeSvg } from "@repo/generate-image"
 
 describe("buildMonthlyBadgeSvg", () => {
   describe("正常系", () => {

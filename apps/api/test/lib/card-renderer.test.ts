@@ -1,4 +1,4 @@
-import { renderHallOfFameCard, renderMonthlyTopTenCard } from "../../src/lib/card-renderer"
+import { renderHallOfFameCard, renderMonthlyTopTenCard } from "@repo/generate-image"
 
 /** PNG マジックナンバー (\x89PNG\r\n\x1a\n) で先頭を判定 */
 const isPngBuffer = (buf: Buffer): boolean =>
