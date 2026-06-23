@@ -2,7 +2,7 @@
 # =============================================================================
 # scripts/seed-secrets.sh
 # =============================================================================
-# Application secret (/project-template-<env>/app) に以下を投入する:
+# Application secret (/typing-royale-<env>/app) に以下を投入する:
 #   1. RDS / ElastiCache の接続情報 (terraform output から自動構築)
 #   2. 外部サービスの secret (環境変数から)
 #
@@ -16,11 +16,8 @@
 #   ./scripts/seed-secrets.sh dev
 #
 # 環境変数 (どれも未設定なら skip + warn、後で再実行で OK):
-#   GOOGLE_CLIENT_ID
-#   GOOGLE_CLIENT_SECRET
-#   LIVEKIT_HOST
-#   LIVEKIT_API_KEY
-#   LIVEKIT_API_SECRET
+#   GITHUB_CLIENT_ID
+#   GITHUB_CLIENT_SECRET
 #   FRONTEND_URL
 #
 # direnv (.envrc) で上記を export しておくと毎回入力不要。
@@ -35,7 +32,7 @@ if [ -z "$ENV" ]; then
   exit 1
 fi
 
-SECRET_NAME="/project-template-${ENV}/app"
+SECRET_NAME="/typing-royale-${ENV}/app"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TF_DIR="${REPO_ROOT}/infra/terraform/aws/env/${ENV}"
 
@@ -80,11 +77,8 @@ add_kv() {
 # 2. 外部サービス: 環境変数から
 # ============================================================================
 echo "==> External secrets (from environment variables)"
-add_kv "GOOGLE_CLIENT_ID"       "${GOOGLE_CLIENT_ID:-}"       "env"
-add_kv "GOOGLE_CLIENT_SECRET"   "${GOOGLE_CLIENT_SECRET:-}"   "env"
-add_kv "LIVEKIT_HOST"           "${LIVEKIT_HOST:-}"           "env"
-add_kv "LIVEKIT_API_KEY"        "${LIVEKIT_API_KEY:-}"        "env"
-add_kv "LIVEKIT_API_SECRET"     "${LIVEKIT_API_SECRET:-}"     "env"
+add_kv "GITHUB_CLIENT_ID"       "${GITHUB_CLIENT_ID:-}"       "env"
+add_kv "GITHUB_CLIENT_SECRET"   "${GITHUB_CLIENT_SECRET:-}"   "env"
 add_kv "FRONTEND_URL"           "${FRONTEND_URL:-}"           "env"
 
 # ============================================================================
