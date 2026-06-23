@@ -202,7 +202,7 @@ module "vpc" {
 # アプリケーション機密 (Secrets Manager)
 # =============================================================================
 # - JWT 署名鍵は Terraform 内で random_password 生成し初回投入のみ行う
-# - DATABASE_URL / REDIS_HOST / GOOGLE_* / LIVEKIT_* / FRONTEND_URL は
+# - DATABASE_URL / REDIS_HOST / GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET / FRONTEND_URL は
 #   後続 step で RDS / Redis を作った後、scripts/seed-secrets.sh 等で投入する
 # - recovery_window_in_days = 30: prd は誤削除耐性を最大化
 
@@ -482,8 +482,7 @@ locals {
       "REDIS_HOST", "REDIS_PORT", "REDIS_DB",
       "JWT_ACCESS_SECRET", "JWT_REFRESH_SECRET",
       "JWT_ACCESS_EXPIRATION", "JWT_REFRESH_EXPIRATION",
-      "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET",
-      "LIVEKIT_HOST", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET",
+      "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET",
       "FRONTEND_URL", "NODE_ENV", "PORT",
     ]
   }

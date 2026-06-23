@@ -208,7 +208,7 @@ resource "random_password" "jwt_refresh_secret" {
 # 「箱だけ Terraform で管理 + JWT のみ初回投入」方針:
 # - 初回 apply で JWT (random_password) と基本定数のみ Secrets Manager に書く
 # - 以降は modules/secrets 側の ignore_changes で Terraform は secret_string に触らない
-# - DATABASE_URL / REDIS_HOST / GOOGLE_* / LIVEKIT_* / FRONTEND_URL は scripts/seed-secrets.sh で投入
+# - DATABASE_URL / REDIS_HOST / GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET / FRONTEND_URL は scripts/seed-secrets.sh で投入
 # - JWT を rotate するときは `terraform taint random_password.jwt_xxx` 後、
 #   Secrets Manager Console で JWT_ACCESS_SECRET / JWT_REFRESH_SECRET を新値で上書き
 #
@@ -407,8 +407,7 @@ locals {
       "REDIS_HOST", "REDIS_PORT", "REDIS_DB",
       "JWT_ACCESS_SECRET", "JWT_REFRESH_SECRET",
       "JWT_ACCESS_EXPIRATION", "JWT_REFRESH_EXPIRATION",
-      "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET",
-      "LIVEKIT_HOST", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET",
+      "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET",
       "FRONTEND_URL", "NODE_ENV", "PORT",
     ]
   }
