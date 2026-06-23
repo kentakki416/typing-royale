@@ -34,6 +34,11 @@ export type CreateRewardCardRequest = z.infer<typeof createRewardCardRequestSche
 const rewardEntrySchema = z.object({
   asset_svg_url: z.string().nullable(),
   asset_url: z.string().nullable(),
+  /**
+   * 画像生成ステータス。rewards-worker (step3) で apps/worker が遷移を管理する。
+   * step4 でホーム見逃し popup が "completed" のみ表示するために使う
+   */
+  generation_status: z.enum(["completed", "failed", "pending", "processing"]),
   granted_at: z.string().datetime(),
   payload: z.record(z.string(), z.unknown()),
   reward_id: z.number().int().positive(),

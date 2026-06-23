@@ -1,6 +1,11 @@
 import { PrismaClient ,type Prisma } from "@repo/db"
 
-import type { HallOfFameInPayload, MonthlyTopTenPayload, RewardLanguage } from "../../types/domain"
+import type {
+  HallOfFameInPayload,
+  MonthlyTopTenPayload,
+  RewardGenerationStatus,
+  RewardLanguage,
+} from "../../types/domain"
 
 /**
  * Reward の domain 表現
@@ -12,6 +17,7 @@ export type RewardRow = {
     payload: Record<string, unknown>
     assetUrl: string | null
     assetSvgUrl: string | null
+    generationStatus: RewardGenerationStatus
     grantedAt: Date
 }
 
@@ -53,6 +59,17 @@ export interface RewardRepository {
     findPendingByUserId(userId: number): Promise<RewardRow[]>
     upsert(input: UpsertRewardInput): Promise<RewardRow>
     upsertByKey(userId: number, key: SpecialBadgeKey, asset: UpsertSpecialBadgeAsset): Promise<RewardRow>
+
+    /**
+     * step4 のホーム見逃し popup 用: 直近 N 日かつ generation_status="completed" の reward
+     * を granted_at DESC で返す。worker が完成させたが UI で表示前に閉じてしまったケースの救済
+     */
+    findRecentCompletedByUserId(userId: number, sinceDays: number): Promise<RewardRow[]>
+
+    /**
+     * step3 の worker から呼ぶ: 画像生成のステート遷移 ("processing" / "failed") を保存する
+     */
+    updateGenerationStatus(id: number, status: RewardGenerationStatus): Promise<void>
 }
 
 /**
@@ -131,11 +148,17 @@ export class PrismaRewardRepository implements RewardRepository {
 
   async upsert(input: UpsertRewardInput): Promise<RewardRow> {
     const existing = await this.findOneByUserTypePayload(input.userId, input.type, input.payload)
+    /**
+     * step2 で generation_status カラムを追加。assetUrl が埋まれば completed、
+     * 無ければ pending として書き込む (step3 で worker が processing / failed も扱う)
+     */
+    const status: RewardGenerationStatus = input.assetUrl === null ? "pending" : "completed"
     if (existing === null) {
       const created = await this._prisma.reward.create({
         data: {
           assetSvgUrl: input.assetSvgUrl ?? null,
           assetUrl: input.assetUrl,
+          generationStatus: status,
           grantedAt: input.grantedAt ?? new Date(),
           payload: input.payload as Prisma.InputJsonValue,
           type: input.type,
@@ -151,6 +174,7 @@ export class PrismaRewardRepository implements RewardRepository {
       data: {
         assetSvgUrl: input.assetSvgUrl === undefined ? existing.assetSvgUrl : input.assetSvgUrl,
         assetUrl: input.assetUrl,
+        generationStatus: status,
       },
       where: { id: existing.id },
     })
@@ -167,11 +191,16 @@ export class PrismaRewardRepository implements RewardRepository {
     asset: UpsertSpecialBadgeAsset,
   ): Promise<RewardRow> {
     const existing = await this.findByKey(userId, key)
+    /**
+     * step2: assetUrl が埋まれば completed、無ければ pending
+     */
+    const status: RewardGenerationStatus = asset.assetUrl === null ? "pending" : "completed"
     if (existing === null) {
       const created = await this._prisma.reward.create({
         data: {
           assetSvgUrl: asset.assetSvgUrl,
           assetUrl: asset.assetUrl,
+          generationStatus: status,
           grantedAt: new Date(),
           payload: asset.payload,
           type: key.type,
@@ -184,11 +213,32 @@ export class PrismaRewardRepository implements RewardRepository {
       data: {
         assetSvgUrl: asset.assetSvgUrl,
         assetUrl: asset.assetUrl,
+        generationStatus: status,
         payload: asset.payload,
       },
       where: { id: existing.id },
     })
     return this._toRow(updated)
+  }
+
+  async findRecentCompletedByUserId(userId: number, sinceDays: number): Promise<RewardRow[]> {
+    const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000)
+    const rows = await this._prisma.reward.findMany({
+      orderBy: { grantedAt: "desc" },
+      where: {
+        generationStatus: "completed",
+        grantedAt: { gte: since },
+        userId,
+      },
+    })
+    return rows.map((r) => this._toRow(r))
+  }
+
+  async updateGenerationStatus(id: number, status: RewardGenerationStatus): Promise<void> {
+    await this._prisma.reward.update({
+      data: { generationStatus: status },
+      where: { id },
+    })
   }
 
   private _toRow(row: {
@@ -198,11 +248,13 @@ export class PrismaRewardRepository implements RewardRepository {
         payload: unknown
         assetUrl: string | null
         assetSvgUrl: string | null
+        generationStatus: string
         grantedAt: Date
     }): RewardRow {
     return {
       assetSvgUrl: row.assetSvgUrl,
       assetUrl: row.assetUrl,
+      generationStatus: row.generationStatus as RewardGenerationStatus,
       grantedAt: row.grantedAt,
       id: row.id,
       payload: (row.payload ?? {}) as Record<string, unknown>,

@@ -27,6 +27,7 @@ export type {
   HallOfFameInPayload,
   MonthlyTopTenPayload,
   Reward,
+  RewardGenerationStatus,
   RewardLanguage,
   RewardPayload,
   RewardType,

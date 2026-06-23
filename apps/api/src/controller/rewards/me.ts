@@ -31,6 +31,7 @@ export class RewardsListMeController {
       rewards: rewards.map((r) => ({
         asset_svg_url: r.assetSvgUrl,
         asset_url: r.assetUrl,
+        generation_status: r.generationStatus,
         granted_at: r.grantedAt.toISOString(),
         payload: r.payload,
         reward_id: r.id,

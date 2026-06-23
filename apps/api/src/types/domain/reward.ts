@@ -26,6 +26,15 @@ export type MonthlyTopTenPayload = {
 
 export type RewardPayload = GradeUpPayload | HallOfFameInPayload | MonthlyTopTenPayload
 
+/**
+ * 画像生成ステータス。rewards-worker (step3) で apps/worker が遷移を管理する。
+ * - pending: INSERT 直後
+ * - processing: worker が generateReward 実行中
+ * - completed: SVG/PNG 生成 + storage save 成功
+ * - failed: BullMQ attempts=3 を超えた最終失敗 (UI には表示しない)
+ */
+export type RewardGenerationStatus = "completed" | "failed" | "pending" | "processing"
+
 export type Reward = {
     id: number
     userId: number
@@ -33,6 +42,7 @@ export type Reward = {
     payload: RewardPayload
     assetUrl: string | null
     assetSvgUrl: string | null
+    generationStatus: RewardGenerationStatus
     grantedAt: Date
     createdAt: Date
     updatedAt: Date
