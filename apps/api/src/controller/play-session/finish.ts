@@ -2,8 +2,8 @@ import { Response } from "express"
 
 import { finishPlaySessionPathParamSchema, finishPlaySessionRequestSchema, finishPlaySessionResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
+import type { GenerateRewardJobData, JobQueue } from "@repo/queue"
 
-import { CardStorage } from "../../lib/card-storage"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
@@ -34,7 +34,7 @@ import * as service from "../../service"
  */
 export class PlaySessionFinishController {
   constructor(
-        private cardStorage: CardStorage,
+        private generateRewardQueue: JobQueue<GenerateRewardJobData>,
         private keystrokeLogRepository: KeystrokeLogRepository,
         private languageRepository: LanguageRepository,
         private monthlyRankingSnapshotRepository: MonthlyRankingSnapshotRepository,
@@ -72,7 +72,7 @@ export class PlaySessionFinishController {
     const result = await service.playSession.finishSession(
       { accuracy, keystrokeLogs, sessionId: id, typedChars },
       {
-        cardStorage: this.cardStorage,
+        generateRewardQueue: this.generateRewardQueue,
         keystrokeLogRepository: this.keystrokeLogRepository,
         languageRepository: this.languageRepository,
         monthlyRankingSnapshotRepository: this.monthlyRankingSnapshotRepository,
@@ -112,9 +112,15 @@ export class PlaySessionFinishController {
       mistype_stats: result.value.mistypeStats,
       monthly_top_ten_boundary_score: result.value.monthlyTopTenBoundaryScore,
       new_rank: result.value.newRank,
-      pending_rewards: result.value.pendingRewards.map((p) => p.type === "hall_of_fame_in"
-        ? { language: p.language, rank: p.rank, reward_id: p.rewardId, type: p.type }
-        : { language: p.language, rank: p.rank, reward_id: p.rewardId, type: p.type, year_month: p.yearMonth }),
+      pending_rewards: result.value.pendingRewards.map((p) => {
+        if (p.type === "hall_of_fame_in") {
+          return { language: p.language, rank: p.rank, reward_id: p.rewardId, type: p.type }
+        }
+        if (p.type === "monthly_top_ten") {
+          return { language: p.language, rank: p.rank, reward_id: p.rewardId, type: p.type, year_month: p.yearMonth }
+        }
+        return { grade_slug: p.gradeSlug, reward_id: p.rewardId, type: p.type }
+      }),
       persisted: result.value.persisted,
       problems_completed: result.value.problemsCompleted,
       problems_played: result.value.problemsPlayed,

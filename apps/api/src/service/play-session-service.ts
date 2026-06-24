@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto"
 
 import { badRequestError, conflictError, err, notFoundError, ok, Result } from "@repo/errors"
 import { logger } from "@repo/logger"
+import { buildGenerateRewardJobId, type GenerateRewardJobData, type JobQueue } from "@repo/queue"
 
 import { PLAY_SESSION_TTL_SECONDS, PROBLEMS_PER_SESSION } from "../const"
-import { CardStorage } from "../lib/card-storage"
 import { detectBonuses, totalBonusSec } from "../lib/combo-time-bonus"
 import {
   aggregateMistypeStats,
@@ -42,8 +42,6 @@ import {
   RepoInfo,
   RewardLanguage,
 } from "../types/domain"
-
-import * as rewardsService from "./rewards-service"
 
 // ========================================================
 // 内部 pure helpers
@@ -588,7 +586,7 @@ export const createChallengeGodsSession = async (
 // ========================================================
 
 type FinishSessionRepo = {
-    cardStorage: CardStorage
+    generateRewardQueue: JobQueue<GenerateRewardJobData>
     keystrokeLogRepository: KeystrokeLogRepository
     languageRepository: LanguageRepository
     monthlyRankingSnapshotRepository: MonthlyRankingSnapshotRepository
@@ -749,10 +747,11 @@ export const finishSession = async (
   )
 
   /**
-   * special-badges 用 (step2): 殿堂入り / 月間 TOP 10 のランクインを検出し、
-   * rewards テーブルに pending 行を確保する。画像生成はしない (応答性のため)。
-   * クライアントは /finish レスポンスの pending_rewards を見て fire-and-forget で
-   * POST /api/rewards/generate を叩く
+   * rewards-worker (step3): 殿堂入り / 月間 TOP 10 / グレードアップを検出し、
+   * rewards テーブルに pending 行を確保する。画像生成はここでは行わず、後段で
+   * generate-reward キューに enqueue して apps/worker に委譲する (応答性のため)。
+   * クライアントは /finish レスポンスの pending_rewards を sessionStorage に保存し、
+   * ホーム遷移後の polling に使う
    */
   const pendingRewards: PendingReward[] = []
   const language = await repo.languageRepository.findById(state.languageId)
@@ -800,32 +799,32 @@ export const finishSession = async (
   }
 
   /**
-   * グレードアップが発生していれば達成カード PNG を自動生成 (rewards step6)
-   * 失敗しても /finish 全体は成功扱い: rewards 行は assetUrl=null で残り、
-   * マイページから再生成リクエストが可能
+   * グレードアップが発生していれば達成カードの pending 行を確保する (rewards-worker step3)。
+   * 旧 step6 の同期 PNG 生成 (createCard) は廃止し、HoF / Monthly と同様に worker へ委譲する
    */
   if (gradeUp !== null) {
-    try {
-      await rewardsService.createCard(
-        {
-          payload: { grade_slug: gradeUp.to.slug },
-          type: "grade_up",
-          userId: state.userId,
-        },
-        {
-          cardStorage: repo.cardStorage,
-          rewardRepository: repo.rewardRepository,
-          userLifetimeStatsRepository: repo.userLifetimeStatsRepository,
-          userRepository: repo.userRepository,
-        },
-      )
-    } catch (err) {
-      logger.warn("PlaySessionService: achievement card generation failed", {
-        error: err instanceof Error ? err.message : String(err),
-        gradeSlug: gradeUp.to.slug,
-        userId: state.userId,
-      })
-    }
+    const reward = await ensurePendingGradeUpReward(
+      repo.rewardRepository,
+      state.userId,
+      gradeUp.to.slug,
+    )
+    pendingRewards.push({
+      gradeSlug: gradeUp.to.slug,
+      rewardId: reward.id,
+      type: "grade_up",
+    })
+  }
+
+  /**
+   * 確保した pending 行をすべて generate-reward キューに enqueue する。
+   * jobId は rewardId 単位で決定的なので、二重 enqueue / リロード / リトライに対して安全
+   * (BullMQ が同 jobId を dedupe する)。enqueue 失敗は想定外なので throw に委ねる
+   */
+  for (const pending of pendingRewards) {
+    await repo.generateRewardQueue.enqueue(
+      { rewardId: pending.rewardId },
+      { jobId: buildGenerateRewardJobId(pending.rewardId) },
+    )
   }
 
   logger.info("PlaySessionService: Session finished", {
@@ -893,6 +892,32 @@ const ensurePendingHofReward = async (
       payload: { language, rank },
     },
   )
+}
+
+/**
+ * グレードアップ達成カードの pending 行を確保する。
+ * - 既存行があれば（pending / completed いずれも）そのまま返す（冪等。完成済み asset を壊さない）
+ * - 無ければ assetUrl=null で INSERT する
+ *
+ * grade_up は (userId, type, payload={grade_slug}) で一意。gradeUp は実際のグレード遷移時
+ * のみ発火するため、同じ grade_slug で再生成して既存 asset を上書きする心配はない
+ */
+const ensurePendingGradeUpReward = async (
+  rewardRepository: RewardRepository,
+  userId: number,
+  gradeSlug: string,
+) => {
+  const payload = { grade_slug: gradeSlug }
+  const existing = await rewardRepository.findOneByUserTypePayload(userId, "grade_up", payload)
+  if (existing !== null) {
+    return existing
+  }
+  return rewardRepository.upsert({
+    assetUrl: null,
+    payload,
+    type: "grade_up",
+    userId,
+  })
 }
 
 /**

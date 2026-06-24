@@ -3,6 +3,7 @@ import express from "express"
 
 import { createPrismaClient } from "@repo/db"
 import { logger } from "@repo/logger"
+import { BullMQJobQueue, GENERATE_REWARD_QUEUE_NAME, type GenerateRewardJobData } from "@repo/queue"
 import { createRedisClient } from "@repo/redis"
 
 import { GithubOAuthClient } from "./client/github-oauth"
@@ -34,7 +35,6 @@ import { RankingMeController } from "./controller/ranking/me"
 import { RankingMonthlyListController } from "./controller/ranking/monthly-list"
 import { ReplayGetController } from "./controller/replay/get"
 import { RewardsCardCreateController } from "./controller/rewards/cards"
-import { RewardsGenerateController } from "./controller/rewards/generate"
 import { RewardsListMeController } from "./controller/rewards/me"
 import { UserDeleteController } from "./controller/user/delete"
 import { UserGetController } from "./controller/user/get"
@@ -114,6 +114,18 @@ const playSessionStateRepository = new IoRedisPlaySessionStateRepository(redis)
  * 達成カード PNG ストレージ (MVP: local filesystem)
  */
 const cardStorage = new LocalCardStorage(env.REWARDS_CACHE_DIR, env.REWARDS_PUBLIC_URL_PREFIX)
+
+/**
+ * reward 画像生成ジョブの producer (rewards-worker step3)。
+ * BullMQ Queue は接続を専有して close() で切断するため、アプリ共用の `redis` とは別に
+ * 専用接続を張る (共用接続を BullMQ に渡すと queue.close() でアプリ全体の Redis が落ちる)。
+ * 実際の生成は apps/worker が consume する
+ */
+const generateRewardQueueRedis = createRedisClient()
+const generateRewardQueue = new BullMQJobQueue<GenerateRewardJobData>(
+  generateRewardQueueRedis,
+  GENERATE_REWARD_QUEUE_NAME,
+)
 /**
  * `user_language_best` を source とするリアルタイム集計実装
  * （score-ranking step2 で StubRankingSnapshotRepository から差し替え。
@@ -139,10 +151,8 @@ const authGithubController = new AuthGithubController(
   authAccountRepository,
   userRepository,
   refreshTokenRepository,
-  rewardRepository,
   transactionRunner,
   githubOAuthClient,
-  cardStorage,
 )
 const authRefreshController = new AuthRefreshController(refreshTokenRepository)
 const authLogoutController = new AuthLogoutController(refreshTokenRepository)
@@ -181,7 +191,7 @@ const playSessionStartSoloController = new PlaySessionStartSoloController(
   problemRepository,
 )
 const playSessionFinishController = new PlaySessionFinishController(
-  cardStorage,
+  generateRewardQueue,
   keystrokeLogRepository,
   languageRepository,
   monthlyRankingSnapshotRepository,
@@ -285,11 +295,6 @@ const rewardsCardCreateController = new RewardsCardCreateController(
   userRepository,
 )
 const rewardsListMeController = new RewardsListMeController(rewardRepository)
-const rewardsGenerateController = new RewardsGenerateController(
-  rewardRepository,
-  userRepository,
-  cardStorage,
-)
 
 /**
  * Replay Controller のインスタンス化
@@ -368,7 +373,6 @@ app.use(
   "/api/rewards",
   rewardsRouter({
     cards: rewardsCardCreateController,
-    generate: rewardsGenerateController,
     me: rewardsListMeController,
   })
 )
@@ -454,6 +458,7 @@ const shutdown = async (signal: string): Promise<void> => {
     await Promise.all([
       prisma.$disconnect(),
       redis.quit(),
+      generateRewardQueue.close(),
     ])
     logger.info("Shutdown completed")
     process.exit(0)

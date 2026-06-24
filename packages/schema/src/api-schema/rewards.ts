@@ -115,6 +115,12 @@ export const pendingRewardSchema = z.discriminatedUnion("type", [
     type: z.literal("monthly_top_ten"),
     year_month: z.string().regex(yearMonthRegex),
   }),
+  /** rewards-worker step3: grade_up も worker 生成に統一したので pending_rewards に含める */
+  z.object({
+    grade_slug: z.string().min(1),
+    reward_id: z.number().int().positive(),
+    type: z.literal("grade_up"),
+  }),
 ])
 
 export type PendingReward = z.infer<typeof pendingRewardSchema>

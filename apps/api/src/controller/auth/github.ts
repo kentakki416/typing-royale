@@ -4,13 +4,11 @@ import { authGithubRequestSchema, authGithubResponseSchema } from "@repo/api-sch
 import { logger } from "@repo/logger"
 
 import { IGithubOAuthClient } from "../../client/github-oauth"
-import { CardStorage } from "../../lib/card-storage"
 import { generateAccessToken, generateRefreshToken } from "../../lib/jwt"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { sendError } from "../../lib/send-error"
 import {
   AuthAccountRepository,
-  RewardRepository,
   TransactionRunner,
   UserRepository,
 } from "../../repository/prisma"
@@ -28,10 +26,8 @@ export class AuthGithubController {
     private authAccountRepository: AuthAccountRepository,
     private userRepository: UserRepository,
     private refreshTokenRepository: RefreshTokenRepository,
-    private rewardRepository: RewardRepository,
     private transactionRunner: TransactionRunner,
     private githubOAuthClient: IGithubOAuthClient,
-    private cardStorage: CardStorage,
   ) {}
 
   async execute(req: Request, res: Response) {
@@ -56,21 +52,6 @@ export class AuthGithubController {
     }
 
     const { accessToken, isNewUser, refreshToken, user } = result.value
-
-    /**
-     * special-badges (step2): ログイン直後に未生成 (pending) reward の自己修復を
-     * バックグラウンドで実行する。失敗してもレスポンスには影響させない (catch して warn)
-     */
-    void service.rewards.reconcilePendingRewards(user.id, {
-      cardStorage: this.cardStorage,
-      rewardRepository: this.rewardRepository,
-      userRepository: this.userRepository,
-    }).catch((e) => {
-      logger.warn("AuthGithubController: reconcilePendingRewards failed", {
-        error: e instanceof Error ? e.message : String(e),
-        userId: user.id,
-      })
-    })
 
     const response = parseResponse(authGithubResponseSchema, {
       access_token: accessToken,
