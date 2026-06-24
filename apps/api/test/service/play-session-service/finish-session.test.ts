@@ -1,4 +1,5 @@
-import { CardStorage } from "../../../src/lib/card-storage"
+import type { GenerateRewardJobData, JobQueue } from "@repo/queue"
+
 import {
   KeystrokeLogRepository,
   MonthlyRankingSnapshotRepository,
@@ -109,12 +110,13 @@ const mockRewardRepository: RewardRepository = {
 }
 
 /**
- * gradeUp 時の達成カード生成は試行されるが、CardStorage への実書き込みは不要なので
- * stub の vi.fn() で OK。失敗してもログ警告のみで finish 全体は成功する
+ * rewards-worker step3: pending reward は generate-reward キューに enqueue される。
+ * 同期生成しないので enqueue を観測できれば十分（実際の生成は apps/worker のテストで検証）
  */
-const mockCardStorage: CardStorage = {
-  delete: vi.fn(),
-  save: vi.fn(),
+const mockEnqueue = vi.fn<(_0: GenerateRewardJobData, _1?: unknown) => Promise<void>>()
+const mockGenerateRewardQueue: JobQueue<GenerateRewardJobData> = {
+  close: vi.fn(),
+  enqueue: mockEnqueue,
 }
 
 const buildState = (overrides?: Partial<PlaySessionState>): PlaySessionState => ({
@@ -140,7 +142,7 @@ const mockLanguageRepository = {
 }
 
 const buildRepoCollection = () => ({
-  cardStorage: mockCardStorage,
+  generateRewardQueue: mockGenerateRewardQueue,
   keystrokeLogRepository: mockKeystrokeLogRepository,
   languageRepository: mockLanguageRepository,
   monthlyRankingSnapshotRepository: mockMonthlyRankingSnapshotRepository,
@@ -185,6 +187,21 @@ describe("finishSession", () => {
     mockMonthlyFindBoundaryScore.mockResolvedValue(null)
     mockMonthlyUpsertForUser.mockResolvedValue(undefined)
     mockMonthlyDeleteLowestExcluding.mockResolvedValue(undefined)
+    /**
+     * rewards-worker step3: gradeUp 時に grade_up の pending 行を確保する。
+     * 既存なし (null) → upsert で新規 pending 行を返すデフォルトにしておく
+     */
+    ;(mockRewardRepository.findOneByUserTypePayload as ReturnType<typeof vi.fn>).mockResolvedValue(null)
+    ;(mockRewardRepository.upsert as ReturnType<typeof vi.fn>).mockResolvedValue({
+      assetSvgUrl: null,
+      assetUrl: null,
+      generationStatus: "pending",
+      grantedAt: new Date(),
+      id: 777,
+      payload: { grade_slug: "staff" },
+      type: "grade_up",
+      userId: 42,
+    })
   })
 
   describe("正常系", () => {
@@ -267,7 +284,18 @@ describe("finishSession", () => {
           from: { level: 4, name: "Senior Engineer", slug: "senior" },
           to: { level: 5, name: "Staff Engineer", slug: "staff" },
         })
+        /** grade_up が pending_rewards に積まれる (worker が後段で生成) */
+        expect(result.value.pendingRewards).toContainEqual({
+          gradeSlug: "staff",
+          rewardId: 777,
+          type: "grade_up",
+        })
       }
+      /** rewards-worker step3: 同期生成せず generate-reward キューに enqueue する */
+      expect(mockEnqueue).toHaveBeenCalledWith(
+        { rewardId: 777 },
+        expect.objectContaining({ jobId: expect.any(String) }),
+      )
     })
 
     it("isCorrect=false のキーストロークから正解期待文字単位で mistypeStats が集計される", async () => {

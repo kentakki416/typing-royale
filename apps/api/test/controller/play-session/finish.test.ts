@@ -1,7 +1,8 @@
 import request from "supertest"
 
+import type { GenerateRewardJobData, JobQueue } from "@repo/queue"
+
 import { PlaySessionFinishController } from "../../../src/controller/play-session/finish"
-import { LocalCardStorage } from "../../../src/lib/card-storage"
 import {
   PrismaKeystrokeLogRepository,
   PrismaLanguageRepository,
@@ -41,16 +42,21 @@ const rewardRepository = new PrismaRewardRepository(testPrisma)
 const transactionRunner = new PrismaTransactionRunner(testPrisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(testRedis)
 /**
- * 達成カード PNG ストレージ (test では /tmp 配下)
+ * reward 画像生成キュー。/finish は pending 行を enqueue するだけなので、ここでは
+ * 副作用のない fake を注入する（実際の BullMQ enqueue は packages/queue、生成は
+ * apps/worker のテストで検証する）
  */
-const cardStorage = new LocalCardStorage("/tmp/typing-royale-rewards-test", "/cache/rewards")
+const generateRewardQueue: JobQueue<GenerateRewardJobData> = {
+  close: vi.fn(),
+  enqueue: vi.fn(async () => undefined),
+}
 
 const app = createTestApp()
 app.use(
   "/api/play-sessions",
   playSessionRouter({
     finish: new PlaySessionFinishController(
-      cardStorage,
+      generateRewardQueue,
       keystrokeLogRepository,
       languageRepository,
       monthlyRankingSnapshotRepository,

@@ -29,6 +29,7 @@
     "@repo/errors": "workspace:^",
     "@repo/generate-image": "workspace:^",
     "@repo/logger": "workspace:^",
+    "@repo/queue": "workspace:^",
     "@repo/redis": "workspace:^",
     "cors": "^2.8.5",
     "express": "^5.1.0",

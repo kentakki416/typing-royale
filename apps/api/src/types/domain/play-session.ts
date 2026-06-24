@@ -145,3 +145,8 @@ export type PendingReward =
         type: "monthly_top_ten"
         yearMonth: string
     }
+    | {
+        gradeSlug: string
+        rewardId: number
+        type: "grade_up"
+    }

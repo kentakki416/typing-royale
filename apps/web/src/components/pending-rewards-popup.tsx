@@ -22,8 +22,8 @@ type CompletedReward = GetMyRewardsResponse["rewards"][number]
  * 表示する。詳細: docs/spec/special-badges/step5-web-home-popup.md
  *
  * - リザルト画面 (`result-screen.tsx`) で `/finish` 完了直後に sessionStorage に
- *   `{ items, startedAt }` を保存し、`POST /api/internal/rewards/generate` を
- *   fire-and-forget で叩く設計
+ *   `{ items, startedAt }` を保存する設計。画像生成は `/finish` が enqueue した
+ *   apps/worker が行う (rewards-worker step3 で旧 generate API は廃止)
  * - ホーム遷移後にこのコンポーネントが mount され、polling で完了をキャッチ
  * - 1 分以上経過していたら諦める (古い state を見ない)
  */
