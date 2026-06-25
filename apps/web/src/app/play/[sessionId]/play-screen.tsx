@@ -73,7 +73,13 @@ export function PlayScreen({ sessionId }: { sessionId: string }) {
   }
 
   if (phase === "splash") {
-    return <Splash repoInfo={start.repoInfo} onFinished={() => setPhase("playing")} />
+    return (
+      <Splash
+        ghostUserDisplay={start.ghostUserDisplay ?? null}
+        repoInfo={start.repoInfo}
+        onFinished={() => setPhase("playing")}
+      />
+    )
   }
 
   if (phase === "playing") {
