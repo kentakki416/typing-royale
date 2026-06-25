@@ -53,6 +53,11 @@ type Props = {
    */
   onFinished: (result: FinishPlaySessionResponse | null, ghostSummary: GhostSummary | null) => void
   /**
+   * タイマー 0 の瞬間に呼ぶ。/finish の応答を待たずに即リザルト（集計中表示）へ遷移させる。
+   * 実際の結果は後から onFinished で渡る（rewards-worker step4）
+   */
+  onResultPhaseStart: () => void
+  /**
    * このセッションで実際に出題された problem.id を出題順で並べたもの。
    * ゲスト用 /finish のリクエストボディに転送する
    */
@@ -76,7 +81,7 @@ type FlashKind = "hit" | "miss" | "tier-up" | "urgent"
  * このコンポーネント自身は `finish` (POST /finish を 1 度だけ叩く) + フラッシュ演出の
  * 集約 + HUD / エディタ / 神サイドバーの描画のみを担当する
  */
-export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, onFinished, problemIds, problems, sessionId }: Props) {
+export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, onFinished, onResultPhaseStart, problemIds, problems, sessionId }: Props) {
   /**
    * tier アップ / Miss / 残り 10 秒以下で短時間の演出 class を付与
    */
@@ -105,7 +110,12 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
   const finish = async () => {
     if (finishedRef.current) return
     finishedRef.current = true
-    playFinish()
+
+    /**
+     * タイマー 0 で即リザルト画面（集計中表示）へ。/finish はこの後バックグラウンドで叩き、
+     * 結果到着時に onFinished + 完了 SE を鳴らす（フリーズ感を消す / rewards-worker step4）
+     */
+    onResultPhaseStart()
 
     const accuracy = typingRefs.totalRef.current === 0
       ? 0
@@ -181,6 +191,8 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
         typedChars: ghostRefs.ghostTypedCharsRef.current,
       }
       : null
+    /** 完了 SE は結果到着時に鳴らす（集計中の無音区間を経て「結果が出た」合図にする） */
+    playFinish()
     onFinished(result, ghostSummary)
   }
 

@@ -376,3 +376,23 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
     </>
   )
 }
+
+/**
+ * タイマー 0 直後、/finish の応答が返るまでの「集計中…」placeholder（rewards-worker step4）。
+ *
+ * 旧実装はタイマー 0 で /finish を await してから result phase に遷移していたため、
+ * 応答待ちの間プレイ画面がフリーズしたように見えた。step3 で /finish が数十〜数百 ms で
+ * 返るようになったので、即座にこの placeholder へ遷移して「動いている」感を出す
+ */
+export function ResultScreenLoading() {
+  return (
+    <>
+      <Topbar isAuthed={false} />
+      <div className="container container-narrow mt-24 text-center">
+        <div className="result-loading-spinner" />
+        <div className="text-mono text-muted mt-16">集計中…</div>
+        <p className="text-sm text-muted mt-8">スコアと順位を集計しています</p>
+      </div>
+    </>
+  )
+}

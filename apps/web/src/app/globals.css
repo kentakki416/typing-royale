@@ -2606,3 +2606,20 @@ code.inline {
   60%  { opacity: 0.85; transform: scale(1.02) translateY(0); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
+
+/**
+ * リザルト集計中スピナー（rewards-worker step4 / ResultScreenLoading）
+ */
+.result-loading-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto;
+  border: 4px solid var(--border, #374151);
+  border-top-color: var(--accent, #2563eb);
+  border-radius: 50%;
+  animation: result-loading-spin 0.8s linear infinite;
+}
+
+@keyframes result-loading-spin {
+  to { transform: rotate(360deg); }
+}

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 import { FinishPlaySessionResponse, StartChallengeGodsResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { PlayLoop } from "./play-loop"
-import { ResultScreen } from "./result-screen"
+import { ResultScreen, ResultScreenLoading } from "./result-screen"
 import { Splash } from "./splash"
 import type { GhostSummary } from "./types"
 
@@ -44,6 +44,11 @@ export function PlayScreen({ sessionId }: { sessionId: string }) {
   const [start, setStart] = useState<CachedStart | null>(null)
   const [result, setResult] = useState<FinishPlaySessionResponse | null>(null)
   const [ghostSummary, setGhostSummary] = useState<GhostSummary | null>(null)
+  /**
+   * /finish の応答が返ったか。result phase に入ってから true になるまでは
+   * 「集計中…」placeholder を出す（rewards-worker step4）
+   */
+  const [resultLoaded, setResultLoaded] = useState(false)
 
   useEffect(() => {
     const raw = sessionStorage.getItem(`play:${sessionId}`)
@@ -84,10 +89,19 @@ export function PlayScreen({ sessionId }: { sessionId: string }) {
         onFinished={(r, summary) => {
           setResult(r)
           setGhostSummary(summary)
-          setPhase("result")
+          setResultLoaded(true)
         }}
+        onResultPhaseStart={() => setPhase("result")}
       />
     )
+  }
+
+  /**
+   * result phase に入っても /finish 応答前は集計中表示（ResultScreen は結果確定後に
+   * mount する。announcementQueue 等が mount 時の result を前提にしているため）
+   */
+  if (!resultLoaded) {
+    return <ResultScreenLoading />
   }
 
   return (
