@@ -117,6 +117,7 @@ resource "aws_iam_policy" "ecr_push" {
           aws_ecr_repository.api.arn,
           aws_ecr_repository.worker.arn,
           aws_ecr_repository.migration.arn,
+          aws_ecr_repository.cron.arn,
         ]
       }
     ]

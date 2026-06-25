@@ -38,12 +38,14 @@ env:
   ECR_API_REPO: typing-royale-api-server
   ECR_WORKER_REPO: typing-royale-worker
   ECR_MIGRATION_REPO: typing-royale-migration
+  ECR_CRON_REPO: typing-royale-cron
 
   # ECS リソース (project_name-environment- プレフィックスを持つ)
   ECS_CLUSTER: typing-royale-dev-cluster
   ECS_API_SERVICE: typing-royale-dev-api
   ECS_WORKER_SERVICE: typing-royale-dev-worker
   ECS_MIGRATION_TASK_DEF: typing-royale-dev-migration
+  ECS_CRON_TASK_DEF: typing-royale-dev-cron
 
   # VPC リソース解決用 (Terraform 側 modules/vpc の Name タグと一致)
   ECS_SECURITY_GROUP_NAME: typing-royale-dev-ecs
@@ -95,7 +97,18 @@ jobs:
           IMAGE="${{ steps.ecr.outputs.registry }}/${{ env.ECR_WORKER_REPO }}"
           docker buildx build \
             --platform linux/amd64 \
-            -f apps/matching-worker/Dockerfile \
+            -f apps/worker/Dockerfile \
+            -t "${IMAGE}:${{ steps.meta.outputs.image_tag }}" \
+            --push \
+            .
+
+      # cron image は crawler / batch を EventBridge Scheduler から RunTask する用
+      - name: Build & push cron image
+        run: |
+          IMAGE="${{ steps.ecr.outputs.registry }}/${{ env.ECR_CRON_REPO }}"
+          docker buildx build \
+            --platform linux/amd64 \
+            -f apps/cron/Dockerfile \
             -t "${IMAGE}:${{ steps.meta.outputs.image_tag }}" \
             --push \
             .
@@ -311,3 +324,41 @@ jobs:
           service: ${{ env.ECS_WORKER_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
+
+  # =========================================================================
+  # cron task definition (service なし / EventBridge Scheduler 起動)
+  # =========================================================================
+  # cron は常駐 service を持たず EventBridge Scheduler が RunTask する。
+  # deploy では新 image で task definition の新リビジョンを register するだけでよい。
+  # Scheduler は family ARN (revision なし) を参照するため、登録した最新 ACTIVE
+  # リビジョンを次回発火時に自動で使う (update-service 相当の操作は不要)。
+  deploy-cron:
+    name: Register cron task definition
+    needs: [build, migrate]
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Register cron task definition with new image
+        env:
+          IMAGE: ${{ needs.build.outputs.registry }}/${{ env.ECR_CRON_REPO }}:${{ needs.build.outputs.image_tag }}
+        run: |
+          TASK_DEF_FILE=$(mktemp)
+          aws ecs describe-task-definition \
+            --task-definition "${ECS_CRON_TASK_DEF}" \
+            --query taskDefinition \
+            | jq --arg IMAGE "${IMAGE}" '
+                .containerDefinitions[0].image = $IMAGE
+                | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
+              ' > "${TASK_DEF_FILE}"
+
+          REVISION_ARN=$(aws ecs register-task-definition \
+            --cli-input-json "file://${TASK_DEF_FILE}" \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+
+          echo "Registered cron task definition: ${REVISION_ARN}"
