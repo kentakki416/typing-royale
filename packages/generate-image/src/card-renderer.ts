@@ -3,6 +3,7 @@ import satori from "satori"
 
 import { logger } from "@repo/logger"
 
+import { EMOJI_DATA_URI_BY_CODEPOINT } from "./emoji-assets"
 import type { RewardLanguage } from "./types"
 
 /**
@@ -34,6 +35,34 @@ const loadFont = async (): Promise<ArrayBuffer> => {
   cachedFont = await res.arrayBuffer()
   return cachedFont
 }
+
+/**
+ * satori はデフォルトで絵文字フォントを持たないため、👑 / 🏆 等がそのままだと
+ * 豆腐 (□) になる。`loadAdditionalAsset` で同梱した twemoji の SVG (data URI) を返し
+ * <img> として描画する。CDN 依存を避けてインフラコスト/障害点を増やさないため、
+ * 画像は `emoji-assets.ts` にビルド時同梱する（fetch しない）。
+ * 未登録の絵文字は空文字を返し、絵文字なしで描画を継続する（カード生成自体は失敗させない）。
+ */
+const convertEmojiToCodepoint = (emoji: string): string =>
+  [...emoji]
+    .map((ch) => ch.codePointAt(0)?.toString(16) ?? "")
+    /** twemoji のファイル名は variation selector (FE0F) を含まない */
+    .filter((hex) => hex !== "" && hex !== "fe0f")
+    .join("-")
+
+const getEmojiDataUri = (segment: string): string =>
+  EMOJI_DATA_URI_BY_CODEPOINT[convertEmojiToCodepoint(segment)] ?? ""
+
+/**
+ * 全カード共通の satori オプション（フォント + 絵文字ローダ + カードサイズ）
+ */
+const buildSatoriOptions = (font: ArrayBuffer) => ({
+  fonts: [{ data: font, name: "NotoSansJP", style: "normal" as const, weight: 700 as const }],
+  height: CARD_HEIGHT,
+  loadAdditionalAsset: async (code: string, segment: string): Promise<string> =>
+    Promise.resolve(code === "emoji" ? getEmojiDataUri(segment) : ""),
+  width: CARD_WIDTH,
+})
 
 const GRADE_GRADIENTS: Record<string, { from: string; to: string }> = {
   distinguished: { from: "#a02f6e", to: "#561536" },
@@ -136,18 +165,7 @@ export const renderGradeUpCard = async (input: RenderGradeUpCardInput): Promise<
         },
       },
     } as never,
-    {
-      fonts: [
-        {
-          data: font,
-          name: "NotoSansJP",
-          style: "normal",
-          weight: 700,
-        },
-      ],
-      height: CARD_HEIGHT,
-      width: CARD_WIDTH,
-    },
+    buildSatoriOptions(font),
   )
 
   const resvg = new Resvg(svg, { fitTo: { mode: "width", value: CARD_WIDTH } })
@@ -284,11 +302,7 @@ export const renderHallOfFameCard = async (input: RenderHallOfFameCardInput): Pr
         },
       },
     } as never,
-    {
-      fonts: [{ data: font, name: "NotoSansJP", style: "normal", weight: 700 }],
-      height: CARD_HEIGHT,
-      width: CARD_WIDTH,
-    },
+    buildSatoriOptions(font),
   )
 
   const resvg = new Resvg(svg, { fitTo: { mode: "width", value: CARD_WIDTH } })
@@ -421,11 +435,7 @@ export const renderMonthlyTopTenCard = async (input: RenderMonthlyTopTenCardInpu
         },
       },
     } as never,
-    {
-      fonts: [{ data: font, name: "NotoSansJP", style: "normal", weight: 700 }],
-      height: CARD_HEIGHT,
-      width: CARD_WIDTH,
-    },
+    buildSatoriOptions(font),
   )
 
   const resvg = new Resvg(svg, { fitTo: { mode: "width", value: CARD_WIDTH } })
