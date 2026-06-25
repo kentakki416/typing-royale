@@ -4,6 +4,7 @@ import Link from "next/link"
 import type { GetMonthlyRankingsResponse } from "@repo/api-schema"
 
 import { CrawledReposSection } from "@/components/crawled-repos-section"
+import { MissedRewardsPopup } from "@/components/missed-rewards-popup"
 import { MonthlyTopSection } from "@/components/monthly-top-section"
 import { PendingRewardsPopup } from "@/components/pending-rewards-popup"
 import { Topbar } from "@/components/topbar"
@@ -164,6 +165,8 @@ export default async function HomePage() {
 
       {/* リザルト → ホーム遷移時の pending rewards 通知 (special-badges step5) */}
       <PendingRewardsPopup />
+      {/* タブ閉じ→再訪などで取りこぼした完成済み reward の救済 (rewards-worker step4) */}
+      {isAuthed && <MissedRewardsPopup />}
     </>
   )
 }
