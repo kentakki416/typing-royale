@@ -1,10 +1,14 @@
 "use client"
 
+import { useState } from "react"
+
 import type { GetMyRewardsResponse } from "@repo/api-schema"
 
 export type RewardPreview = GetMyRewardsResponse["rewards"][number]
 
 type Props = {
+    /** Express API の origin。相対 asset_url の前に付けてブラウザから画像を取得する */
+    apiUrl: string
     onClose: () => void
     rewards: RewardPreview[]
 }
@@ -15,8 +19,20 @@ type Props = {
  * `PendingRewardsPopup`（リザルト直後の sessionStorage 起点）と
  * `MissedRewardsPopup`（ホーム再訪時の取りこぼし救済）の両方から使う共通 UI。
  * 詳細: docs/spec/rewards-worker/step4-web-ux-and-missed-popup.md
+ *
+ * 複数 reward を一度に受け取っても **1 件ずつ順番に** 表示する（まとめて並べない）。
+ * 「次へ」で次の reward に進み、最後の 1 件で「閉じる」を押すと onClose を呼ぶ。
  */
-export function RewardPreviewModal({ onClose, rewards }: Props) {
+export function RewardPreviewModal({ apiUrl, onClose, rewards }: Props) {
+  /** PNG が未生成の行（asset_url=null）は表示対象外なので除外する */
+  const displayable = rewards.filter((r) => r.asset_url !== null)
+  const [index, setIndex] = useState(0)
+
+  if (displayable.length === 0) return null
+
+  const current = displayable[index]
+  const isLast = index >= displayable.length - 1
+
   return (
     <div
       aria-modal="true"
@@ -37,8 +53,13 @@ export function RewardPreviewModal({ onClose, rewards }: Props) {
         onClick={(e) => e.stopPropagation()}
         style={{
           background: "#111827",
-          border: "1px solid #374151",
+          /**
+           * TopTenAnnouncementModal と同様、周囲を accent カラーで光らせて
+           * 「特典獲得」の祝福感を出す
+           */
+          border: "1px solid rgba(255, 213, 74, 0.6)",
           borderRadius: 12,
+          boxShadow: "0 0 40px -6px rgba(255, 213, 74, 0.55), 0 0 90px -20px rgba(255, 213, 74, 0.4), 0 24px 80px -32px rgba(0,0,0,0.7)",
           color: "#fff",
           maxHeight: "85vh",
           maxWidth: 720,
@@ -47,16 +68,31 @@ export function RewardPreviewModal({ onClose, rewards }: Props) {
           width: "90%",
         }}
       >
-        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 16 }}>
-          🎉 新しい特典を獲得しました
-        </h2>
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          {rewards.map((r) => <RewardCard key={r.reward_id} reward={r} />)}
+        <div style={{ alignItems: "center", display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700 }}>
+            🎉 新しい特典を獲得しました
+          </h2>
+          {displayable.length > 1 && (
+            <span style={{ color: "#9ca3af", fontSize: 14 }}>
+              {index + 1} / {displayable.length}
+            </span>
+          )}
         </div>
+        {/** key で reward 切り替え時に img / SVG を確実に再マウントする */}
+        <RewardCard apiUrl={apiUrl} key={current.reward_id} reward={current} />
+        <p style={{ color: "#9ca3af", fontSize: 13, marginTop: 16 }}>
+          特典は<strong style={{ color: "#fff" }}>マイページ</strong>からいつでも取得できます。
+        </p>
         <button
-          onClick={onClose}
+          onClick={() => {
+            if (isLast) {
+              onClose()
+            } else {
+              setIndex((i) => i + 1)
+            }
+          }}
           style={{
-            background: "#374151",
+            background: isLast ? "#374151" : "#2563eb",
             border: "none",
             borderRadius: 6,
             color: "#fff",
@@ -66,7 +102,7 @@ export function RewardPreviewModal({ onClose, rewards }: Props) {
           }}
           type="button"
         >
-          閉じる
+          {isLast ? "閉じる" : "次へ →"}
         </button>
       </div>
     </div>
@@ -77,17 +113,24 @@ export function RewardPreviewModal({ onClose, rewards }: Props) {
  * reward 1 件分のプレビュー。PNG は必須、SVG バッジは grade_up のように持たない type も
  * あるため null の場合はスキップする（rewards-worker step3 で grade_up も対象になった）
  */
-function RewardCard({ reward }: { reward: RewardPreview }) {
+function RewardCard({ apiUrl, reward }: { apiUrl: string; reward: RewardPreview }) {
   if (reward.asset_url === null) return null
+  /**
+   * asset_url は相対パス (例: /cache/rewards/..) で保存されるため、ブラウザから取得できるよう
+   * API origin を前置する (既に絶対 URL ならそのまま使う)。mypage/rewards と同じ方針。
+   */
+  const fullAssetUrl = reward.asset_url.startsWith("http")
+    ? reward.asset_url
+    : `${apiUrl}${reward.asset_url}`
   const svg = reward.asset_svg_url
   const svgDataUrl = svg === null
     ? null
     : `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
   return (
-    <article style={{ borderBottom: "1px solid #374151", paddingBottom: 16 }}>
+    <article>
       <img
         alt={`${reward.type} 達成カード`}
-        src={reward.asset_url}
+        src={fullAssetUrl}
         style={{ borderRadius: 8, display: "block", marginBottom: 12, maxWidth: "100%" }}
       />
       {svg !== null && (
@@ -99,7 +142,7 @@ function RewardCard({ reward }: { reward: RewardPreview }) {
       <div style={{ display: "flex", gap: 12 }}>
         <a
           download={`reward-${reward.reward_id}.png`}
-          href={reward.asset_url}
+          href={fullAssetUrl}
           style={{
             background: "#2563eb",
             borderRadius: 6,

@@ -120,10 +120,27 @@ export function TopTenAnnouncementModal({ kind, onClose, open }: Props) {
           {content.title}
         </h2>
         <p
-          className="text-sm mb-24"
+          className="text-sm mb-16"
           style={{ color: "var(--text-secondary)", textAlign: "center" }}
         >
           {content.message}
+        </p>
+        {/**
+         * 達成カードは /finish の enqueue 後に apps/worker が非同期生成するため、
+         * 「準備中なのでホームで待ってほしい」「後からマイページでも取得できる」ことを案内する
+         * (rewards-worker step4 の pending/missed popup と整合)
+         */}
+        <p
+          className="text-sm"
+          style={{ color: content.accent, fontWeight: 700, marginBottom: "6px", textAlign: "center" }}
+        >
+          🎁 特典を準備中です。ホーム画面に戻ってお待ちください。
+        </p>
+        <p
+          className="text-xs mb-24"
+          style={{ color: "var(--text-muted)", textAlign: "center" }}
+        >
+          特典はマイページからいつでも取得できます。
         </p>
         <div className="flex" style={{ justifyContent: "center" }}>
           <button

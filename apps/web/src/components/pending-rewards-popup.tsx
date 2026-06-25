@@ -4,12 +4,19 @@ import { useEffect, useState } from "react"
 
 import type { GetMyRewardsResponse, PendingReward } from "@repo/api-schema"
 
+import { markRewardsSeen } from "@/libs/reward-seen"
+
 import { RewardPreviewModal, type RewardPreview } from "./reward-preview-modal"
 
 const STORAGE_KEY = "pendingRewards"
 const POLL_INTERVAL_MS = 2_000
 const POLL_MAX_ATTEMPTS = 10
 const STORAGE_TTL_MS = 60_000
+
+type Props = {
+    /** Express API の origin。相対 asset_url の前に付けてブラウザから画像を取得する */
+    apiUrl: string
+}
 
 type StoredPendingRewards = {
     items: PendingReward[]
@@ -27,7 +34,7 @@ type StoredPendingRewards = {
  * - ホーム遷移後にこのコンポーネントが mount され、polling で完了をキャッチ
  * - 1 分以上経過していたら諦める (古い state を見ない)
  */
-export function PendingRewardsPopup() {
+export function PendingRewardsPopup({ apiUrl }: Props) {
   const [completed, setCompleted] = useState<RewardPreview[] | null>(null)
 
   useEffect(() => {
@@ -49,6 +56,12 @@ export function PendingRewardsPopup() {
       sessionStorage.removeItem(STORAGE_KEY)
       return
     }
+    /**
+     * これらの reward は Pending 側が表示を担当する。MissedRewardsPopup が同じ home mount で
+     * 同じ reward を二重ポップアップしないよう、ここで seen に確保する（Missed の判定は非同期
+     * fetch 後なので、この同期書き込みが先に効く）
+     */
+    markRewardsSeen(itemIds)
 
     let attempts = 0
     let cancelled = false
@@ -98,6 +111,7 @@ export function PendingRewardsPopup() {
 
   return (
     <RewardPreviewModal
+      apiUrl={apiUrl}
       rewards={completed}
       onClose={() => setCompleted(null)}
     />

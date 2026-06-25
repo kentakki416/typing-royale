@@ -8,6 +8,7 @@ import { MissedRewardsPopup } from "@/components/missed-rewards-popup"
 import { MonthlyTopSection } from "@/components/monthly-top-section"
 import { PendingRewardsPopup } from "@/components/pending-rewards-popup"
 import { Topbar } from "@/components/topbar"
+import { env } from "@/env"
 import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
 
@@ -164,9 +165,9 @@ export default async function HomePage() {
       </div>
 
       {/* リザルト → ホーム遷移時の pending rewards 通知 (special-badges step5) */}
-      <PendingRewardsPopup />
+      <PendingRewardsPopup apiUrl={env.API_URL} />
       {/* タブ閉じ→再訪などで取りこぼした完成済み reward の救済 (rewards-worker step4) */}
-      {isAuthed && <MissedRewardsPopup />}
+      {isAuthed && <MissedRewardsPopup apiUrl={env.API_URL} />}
     </>
   )
 }

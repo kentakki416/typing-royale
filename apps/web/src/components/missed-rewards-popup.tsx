@@ -4,14 +4,13 @@ import { useEffect, useState } from "react"
 
 import type { GetMyRewardsResponse } from "@repo/api-schema"
 
+import { markRewardsSeen, readSeenRewardIds } from "@/libs/reward-seen"
+
 import { RewardPreviewModal, type RewardPreview } from "./reward-preview-modal"
 
-const STORAGE_KEY = "seen-reward-ids"
 /** 7 日以上前の reward は対象外 */
 const RECENT_DAYS = 7
 const RECENT_MS = RECENT_DAYS * 24 * 60 * 60 * 1000
-/** localStorage を膨張させないため直近 N 件だけ保持 */
-const MAX_SEEN_IDS = 100
 
 /**
  * ホーム画面アクセス時に「worker が完了済 / ユーザーが未確認」の reward があれば
@@ -21,7 +20,12 @@ const MAX_SEEN_IDS = 100
  * - `PendingRewardsPopup` がリザルト直後の popup を担当
  * - 本コンポーネントが「タブ閉じ→再訪」「リザルト画面を即離脱」等の取りこぼしを担当
  */
-export function MissedRewardsPopup() {
+type Props = {
+    /** Express API の origin。相対 asset_url の前に付けてブラウザから画像を取得する */
+    apiUrl: string
+}
+
+export function MissedRewardsPopup({ apiUrl }: Props) {
   const [target, setTarget] = useState<RewardPreview | null>(null)
 
   useEffect(() => {
@@ -31,7 +35,7 @@ export function MissedRewardsPopup() {
         if (!res.ok) return
         const data = await res.json() as GetMyRewardsResponse
 
-        const seenIds = readSeenIds()
+        const seenIds = readSeenRewardIds()
         const sinceMs = Date.now() - RECENT_MS
 
         /** completed + 直近 + 未表示 の最初の 1 件 */
@@ -55,30 +59,12 @@ export function MissedRewardsPopup() {
 
   return (
     <RewardPreviewModal
+      apiUrl={apiUrl}
       rewards={[target]}
       onClose={() => {
-        markSeen(target.reward_id)
+        markRewardsSeen([target.reward_id])
         setTarget(null)
       }}
     />
   )
-}
-
-const readSeenIds = (): Set<number> => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw === null) return new Set()
-    const arr = JSON.parse(raw) as unknown
-    if (!Array.isArray(arr)) return new Set()
-    return new Set(arr.filter((n): n is number => typeof n === "number"))
-  } catch {
-    return new Set()
-  }
-}
-
-const markSeen = (rewardId: number): void => {
-  const ids = readSeenIds()
-  ids.add(rewardId)
-  const list = Array.from(ids).slice(-MAX_SEEN_IDS)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
 }
