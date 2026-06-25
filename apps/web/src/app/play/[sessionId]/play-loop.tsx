@@ -164,7 +164,6 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
             /** ゲストは reward 対象外なので常に空 */
             pending_rewards: [],
             persisted: false,
-            problems_completed: guestRes.problems_completed,
             problems_played: guestRes.problems_played,
             score: guestRes.score,
             top_ten_boundary_score: null,
@@ -185,9 +184,6 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
         accuracy: ghostRefs.ghostTotalRef.current === 0
           ? 0
           : ghostRefs.ghostCorrectRef.current / ghostRefs.ghostTotalRef.current,
-        perProblem: ghostRefs.ghostPerProblemRef.current,
-        problemIndex: ghostRefs.ghostProblemIndexRef.current,
-        totalKeystrokes: ghostRefs.ghostTotalRef.current,
         typedChars: ghostRefs.ghostTypedCharsRef.current,
       }
       : null
@@ -249,7 +245,7 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
     problems,
     startAtRef,
   })
-  const { ghostAccuracy, ghostProblemIndex, ghostTypedChars } = ghostState
+  const { ghostAccuracy, ghostCursorPos, ghostProblemIndex, ghostTypedChars } = ghostState
 
   /**
    * body に play-screen クラスを付けることでスクロール抑止＆エディタを画面全高に伸ばす
@@ -281,6 +277,8 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
   const diff = typedChars - ghostTypedChars
   const diffSign = diff > 0 ? "+" : ""
   const diffClass = diff > 0 ? "success" : diff < 0 ? "error" : ""
+
+  const ghostUsername = ghostUserDisplay?.github_username ?? "anonymous"
 
   /**
    * 10 combo マイルストーン (10, 20, 30, ...) に到達するたびに水玉 burst をリセットして
@@ -399,7 +397,14 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
           </div>
         )}
 
-        <div className="row gap-16" style={{ marginTop: "16px" }}>
+        <div
+          className={`row gap-16 ${isChallenge ? "challenge-editors" : ""}`}
+          style={{
+            marginTop: "16px",
+            /** 神々モードは 2 エディタを枠(1280px)超えで広げ、画面中央に揃える */
+            ...(isChallenge ? { alignSelf: "center", maxWidth: "1760px", width: "96vw" } : {}),
+          }}
+        >
           <div className="col">
             <div className="editor-area">
               <div className="combo-banner-wrapper">
@@ -451,33 +456,34 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
               </pre>
             </div>
           </div>
-          {isChallenge && ghostUserDisplay && (
-            <aside className="col-sidebar">
-              <div className="card god-frame">
-                <div className="card-header">
-                  <div className="card-title" style={{ color: "var(--gold-light)" }}>⚡ 今回の神</div>
-                </div>
-                <div className="flex-center gap-12 mb-8">
-                  <span className="avatar">
-                    {(ghostUserDisplay.github_username ?? "??").slice(0, 2).toUpperCase()}
-                  </span>
-                  <div>
-                    <div className="player-name">@{ghostUserDisplay.github_username ?? "anonymous"}</div>
-                    <div className="text-sm text-muted">{ghostUserDisplay.grade}</div>
+          {isChallenge && ghostUserDisplay && (() => {
+            /**
+             * 神のエディタ：自分の右に並べ、神の現在問題のコードと打鍵位置を
+             * ghost プレイバックと同期してリアルタイムに進める
+             */
+            const ghostProblem = problems[ghostProblemIndex]
+            return (
+              <div className="col">
+                <div className="editor-area">
+                  <div className="code-block-source" style={{ color: "var(--gold-light)" }}>
+                    <span>
+                      ⚡ 神 <strong>@{ghostUsername}</strong>
+                      {" · "}問題 {Math.min(ghostProblemIndex + 1, problems.length)} / {problems.length}
+                      {" · "}正確率 {(ghostAccuracy * 100).toFixed(1)}%
+                    </span>
+                    <span className="text-muted">神のベスト: {ghostUserDisplay.best_score} pts</span>
                   </div>
-                </div>
-                <div className="text-mono text-sm" style={{ color: "var(--gold)" }}>
-                  問題 {Math.min(ghostProblemIndex + 1, problems.length)} / {problems.length}
-                </div>
-                <div className="text-mono text-sm text-muted">
-                  正確率 {(ghostAccuracy * 100).toFixed(1)}%
-                </div>
-                <div className="text-mono text-sm text-muted">
-                  神のベスト: {ghostUserDisplay.best_score} pts
+                  <pre className="code-block ghost">
+                    {ghostProblemIndex >= problems.length ? (
+                      <span className="success">神 全問完走</span>
+                    ) : ghostProblem ? (
+                      renderCode(ghostProblem.code_block, ghostCursorPos)
+                    ) : null}
+                  </pre>
                 </div>
               </div>
-            </aside>
-          )}
+            )
+          })()}
         </div>
 
         <div className="play-foot">

@@ -8,12 +8,6 @@ import type { GhostKeystrokeLogs } from "./types"
 
 type Problem = StartSoloPlaySessionResponse["problems"][number]
 
-type PerProblem = {
-  completed: boolean
-  orderIndex: number
-  typedChars: number
-}
-
 type Options = {
   /**
    * `finish` 済みになったら rAF を止めるための共有 ref
@@ -33,13 +27,16 @@ type Options = {
 
 type State = {
   ghostAccuracy: number
+  /**
+   * 神の現在問題内のカーソル位置（code_block のインデックス）。神エディタの描画に使う
+   */
+  ghostCursorPos: number
   ghostProblemIndex: number
   ghostTypedChars: number
 }
 
 type Refs = {
   ghostCorrectRef: React.MutableRefObject<number>
-  ghostPerProblemRef: React.MutableRefObject<PerProblem[]>
   ghostProblemIndexRef: React.MutableRefObject<number>
   ghostTotalRef: React.MutableRefObject<number>
   ghostTypedCharsRef: React.MutableRefObject<number>
@@ -51,10 +48,25 @@ type Result = {
 }
 
 /**
+ * カーソルが改行上にあるとき、改行 + 後続の空白（インデント）をまとめて飛ばした位置を返す。
+ * タイピングエンジン (`use-typing-engine.ts`) の advanceAcrossNewlineAndIndent と同じ規則で、
+ * 神エディタのカーソルを実プレイ時と同じ位置に進める。
+ */
+const skipNewlineAndIndent = (code: string, pos: number): number => {
+  if (code[pos] !== "\n") return pos
+  let p = pos
+  while (p < code.length && (code[p] === " " || code[p] === "\t" || code[p] === "\n")) {
+    p += 1
+  }
+  return p
+}
+
+/**
  * 神々モードの ghost プレイバック。
  *
  * - countdown と同じ `startAtRef` 起点で `elapsedMs` を計算
- * - rAF tick で `ghost_keystroke_logs` を経過時刻順に消費し、累計 / 現在問題 / 正確率を更新
+ * - rAF tick で `ghost_keystroke_logs` を経過時刻順に消費し、累計 / 現在問題 / 正確率 /
+ *   現在問題内のカーソル位置を更新する
  * - `mode !== "challenge_gods"` または `ghostKeystrokeLogs === null` のときは何もしない
  * - `finishedRef.current` が true になったら rAF を止める
  *
@@ -64,6 +76,7 @@ export function useGhostPlayback({ finishedRef, ghostKeystrokeLogs, mode, proble
   const [ghostTypedChars, setGhostTypedChars] = useState(0)
   const [ghostAccuracy, setGhostAccuracy] = useState(0)
   const [ghostProblemIndex, setGhostProblemIndex] = useState(0)
+  const [ghostCursorPos, setGhostCursorPos] = useState(0)
 
   /**
    * ghost log を elapsedMs 順に消費していくカーソル
@@ -75,11 +88,9 @@ export function useGhostPlayback({ finishedRef, ghostKeystrokeLogs, mode, proble
   const ghostTotalRef = useRef(0)
   const ghostProblemIndexRef = useRef(0)
   /**
-   * 各問題の神の完走状況。problemIndex がインクリメントしたタイミングでひとつ前を完走扱いに
+   * 神の現在問題内のカーソル位置（code_block のインデックス）
    */
-  const ghostPerProblemRef = useRef<PerProblem[]>(
-    problems.map((_, i) => ({ completed: false, orderIndex: i, typedChars: 0 })),
-  )
+  const ghostCursorPosRef = useRef(0)
 
   useEffect(() => {
     if (mode !== "challenge_gods") return
@@ -92,20 +103,19 @@ export function useGhostPlayback({ finishedRef, ghostKeystrokeLogs, mode, proble
       while (ghostCursorRef.current < log.length && log[ghostCursorRef.current].elapsed_ms <= elapsed) {
         const entry = log[ghostCursorRef.current]
         ghostTotalRef.current += 1
+        /**
+         * このキーストロークが属する問題に切り替える（次問題に進んだらカーソルを 0 に戻す）
+         */
+        if (entry.problem_index > ghostProblemIndexRef.current) {
+          ghostProblemIndexRef.current = entry.problem_index
+          const nextCode = problems[entry.problem_index]?.code_block ?? ""
+          ghostCursorPosRef.current = skipNewlineAndIndent(nextCode, 0)
+        }
         if (entry.is_correct) {
           ghostCorrectRef.current += 1
           ghostTypedCharsRef.current += 1
-          const slot = ghostPerProblemRef.current[entry.problem_index]
-          if (slot) {
-            slot.typedChars += 1
-          }
-        }
-        if (entry.problem_index > ghostProblemIndexRef.current) {
-          const prev = ghostPerProblemRef.current[ghostProblemIndexRef.current]
-          if (prev) {
-            prev.completed = true
-          }
-          ghostProblemIndexRef.current = entry.problem_index
+          const code = problems[ghostProblemIndexRef.current]?.code_block ?? ""
+          ghostCursorPosRef.current = skipNewlineAndIndent(code, ghostCursorPosRef.current + 1)
         }
         ghostCursorRef.current += 1
         consumed = true
@@ -113,24 +123,25 @@ export function useGhostPlayback({ finishedRef, ghostKeystrokeLogs, mode, proble
       if (consumed) {
         setGhostTypedChars(ghostTypedCharsRef.current)
         setGhostProblemIndex(ghostProblemIndexRef.current)
+        setGhostCursorPos(ghostCursorPosRef.current)
         setGhostAccuracy(ghostTotalRef.current === 0 ? 0 : ghostCorrectRef.current / ghostTotalRef.current)
       }
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [mode, finishedRef, startAtRef])
+  }, [mode, finishedRef, problems, startAtRef])
 
   return {
     refs: {
       ghostCorrectRef,
-      ghostPerProblemRef,
       ghostProblemIndexRef,
       ghostTotalRef,
       ghostTypedCharsRef,
     },
     state: {
       ghostAccuracy,
+      ghostCursorPos,
       ghostProblemIndex,
       ghostTypedChars,
     },

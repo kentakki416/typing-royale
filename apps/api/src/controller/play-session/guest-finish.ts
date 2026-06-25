@@ -55,7 +55,6 @@ export class PlaySessionGuestFinishController {
       accuracy: result.value.accuracy,
       mistype_stats: result.value.mistypeStats,
       new_rank: result.value.newRank,
-      problems_completed: result.value.problemsCompleted,
       problems_played: result.value.problemsPlayed,
       score: result.value.score,
       total_ranked_players: result.value.totalRankedPlayers,

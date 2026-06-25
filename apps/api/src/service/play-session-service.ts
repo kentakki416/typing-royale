@@ -506,6 +506,10 @@ type GhostUserDisplay = {
     bestScore: number
     githubUsername: string
     grade: string
+    /**
+     * 表示中の神セッションがプレイされた日時（「いつのデータか」の表示用）
+     */
+    playedAt: Date
 }
 
 export type CreateChallengeGodsOutput = {
@@ -537,6 +541,7 @@ const formatGhostForResponse = (
     bestScore: ghost.entry.bestScore,
     githubUsername: ghost.entry.userDisplay.githubUsername,
     grade: ghost.entry.userDisplay.currentGrade,
+    playedAt: ghost.session.playedAt,
   },
   problems: orderedProblems,
   repoInfo: ghost.session.crawledRepo,

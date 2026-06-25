@@ -19,7 +19,6 @@ type Props = {
  *
  * - 勝敗ヘッダー: result.score vs ghostUserDisplay.best_score の比較
  * - あなた vs 神カード: スコア / 文字数 / 正確率
- * - 出題シーケンスの達成状況
  * - race-bar: 文字数進捗
  * - ボタン: もう一度神々に挑戦 / 通常プレイへ / リザルトを見る（モーダルを閉じる）
  */
@@ -81,27 +80,6 @@ export function GhostResultModal({ ghostSummary, ghostUserDisplay, problems, res
               </div>
             </div>
           </div>
-        </div>
-
-        <h3 className="mb-8">出題シーケンスの達成状況（神と同じ順）</h3>
-        <div className="text-sm mb-16" style={{ display: "grid", gap: "6px" }}>
-          {problems.map((p, i) => {
-            const youDone = i < result.problems_completed
-            const ghostDone = ghostSummary.perProblem[i]?.completed === true
-              || i < ghostSummary.problemIndex
-            return (
-              <div className="flex-between" key={p.id}>
-                <span>{`${i + 1}. ${p.function_name}`}</span>
-                <span>
-                  <span className={`badge ${youDone ? "success" : "warning"}`}>
-                    あなた:{youDone ? "完走" : "未完走"}
-                  </span>
-                  {" "}
-                  <span className="badge gold">神:{ghostDone ? "完走" : "未完走"}</span>
-                </span>
-              </div>
-            )
-          })}
         </div>
 
         <div className="race">

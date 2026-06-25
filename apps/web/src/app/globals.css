@@ -1463,6 +1463,10 @@ body.play-screen {
   flex: 1 1 auto;
   min-height: 0;
 }
+/**
+ * 神々モード: あなた / 神 の 2 エディタを既存コンテナ幅(1280px)を超えて広げ、画面中央に揃える。
+ * width / align-self は play-loop の inline style で指定する（このクラスは目印）
+ */
 .play-screen > .container > .row > .col {
   display: flex;
   flex-direction: column;

@@ -110,7 +110,6 @@ export const finishPlaySessionResponseSchema = z.object({
   accuracy: z.number(),
   mistype_stats: mistypeStatsSchema,
   persisted: z.boolean(),
-  problems_completed: z.number().int().nonnegative(),
   problems_played: z.number().int().nonnegative(),
   score: z.number().int().nonnegative(),
   typed_chars: z.number().int().nonnegative(),
@@ -160,6 +159,11 @@ const ghostUserDisplaySchema = z.object({
   best_score: z.number().int().nonnegative(),
   github_username: z.string().nullable(),
   grade: z.string(),
+  /**
+   * この神セッション（= 表示中の問題列）が実際にプレイされた日時 (ISO 8601)。
+   * 「誰の・いつのデータか」をプレイ画面に明示するために使う
+   */
+  played_at: z.string().datetime(),
 })
 
 /**
@@ -278,7 +282,6 @@ export const finishGuestPlaySessionResponseSchema = z.object({
   accuracy: z.number(),
   mistype_stats: mistypeStatsSchema,
   new_rank: z.number().int().positive().nullable(),
-  problems_completed: z.number().int().nonnegative(),
   problems_played: z.number().int().nonnegative(),
   score: z.number().int().nonnegative(),
   total_ranked_players: z.number().int().nonnegative(),

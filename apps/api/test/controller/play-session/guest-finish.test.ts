@@ -106,7 +106,6 @@ describe("POST /api/play-sessions/guest/finish", () => {
         accuracy: 1,
         mistype_stats: {},
         new_rank: 1,
-        problems_completed: 1,
         problems_played: 1,
         score: 3,
         total_ranked_players: 0,

@@ -9,8 +9,5 @@ export type GhostUserDisplay = StartChallengeGodsResponse["ghost_user_display"]
  */
 export type GhostSummary = {
   accuracy: number
-  perProblem: { completed: boolean; orderIndex: number; typedChars: number }[]
-  problemIndex: number
-  totalKeystrokes: number
   typedChars: number
 }

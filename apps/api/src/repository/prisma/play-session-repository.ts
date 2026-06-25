@@ -31,6 +31,10 @@ export type GhostSourceSession = {
     id: number
     languageId: number
     /**
+     * 神がこのセッションを実際にプレイした日時（「いつのデータか」の表示に使う）
+     */
+    playedAt: Date
+    /**
      * play_session_problems を orderIndex 昇順に並べた problem_id 配列
      */
     problemIds: number[]
@@ -122,6 +126,7 @@ export class PrismaPlaySessionRepository implements PlaySessionRepository {
       crawledRepoId: row.crawledRepoId,
       id: row.id,
       languageId: row.languageId,
+      playedAt: row.playedAt,
       problemIds: row.problems.map((p) => p.problemId),
     }
   }
