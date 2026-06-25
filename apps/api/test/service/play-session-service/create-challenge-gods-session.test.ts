@@ -64,6 +64,7 @@ const buildGhostSession = (id: number, problemIds: number[]): GhostSourceSession
   crawledRepoId: 17,
   id,
   languageId: 1,
+  playedAt: new Date("2026-06-01T00:00:00.000Z"),
   problemIds,
 })
 

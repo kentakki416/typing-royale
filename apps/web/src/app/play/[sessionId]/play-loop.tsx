@@ -279,6 +279,20 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
   const diffClass = diff > 0 ? "success" : diff < 0 ? "error" : ""
 
   /**
+   * 神々モードで表示している問題列が「誰の・いつのプレイ記録か」を明示するためのラベル。
+   * challenge_gods では出題列は神の過去セッションの再生なので、その出典を画面に出す
+   */
+  const ghostPlayedAtLabel = ghostUserDisplay !== null
+    ? new Date(ghostUserDisplay.played_at).toLocaleDateString("ja-JP", {
+      day: "2-digit",
+      month: "2-digit",
+      timeZone: "Asia/Tokyo",
+      year: "numeric",
+    })
+    : null
+  const ghostUsername = ghostUserDisplay?.github_username ?? "anonymous"
+
+  /**
    * 10 combo マイルストーン (10, 20, 30, ...) に到達するたびに水玉 burst をリセットして
    * 再生する。`comboTier` は 50 で虹 (tier 6) 固定になるが、虹到達後も 10 ごとに
    * 演出を出したいので tier 変化ではなく `Math.floor(combo / 10)` の変化で発火する。
@@ -395,6 +409,22 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
           </div>
         )}
 
+        {isChallenge && ghostUserDisplay && (
+          <div
+            className="card"
+            style={{
+              borderColor: "var(--gold)",
+              color: "var(--gold-light)",
+              marginTop: "16px",
+              padding: "8px 16px",
+              textAlign: "center",
+            }}
+          >
+            ⚡ この出題列は <strong>@{ghostUsername}</strong> が{" "}
+            <strong>{ghostPlayedAtLabel}</strong> にプレイした記録です
+          </div>
+        )}
+
         <div className="row gap-16" style={{ marginTop: "16px" }}>
           <div className="col">
             <div className="editor-area">
@@ -458,7 +488,8 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
                 <div className="editor-area">
                   <div className="code-block-source" style={{ color: "var(--gold-light)" }}>
                     <span>
-                      ⚡ 神 <strong>@{ghostUserDisplay.github_username ?? "anonymous"}</strong>
+                      ⚡ 神 <strong>@{ghostUsername}</strong>
+                      {" ("}{ghostPlayedAtLabel} プレイ{") "}
                       {" · "}問題 {Math.min(ghostProblemIndex + 1, problems.length)} / {problems.length}
                       {" · "}正確率 {(ghostAccuracy * 100).toFixed(1)}%
                     </span>

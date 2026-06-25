@@ -63,6 +63,7 @@ export class PlaySessionGuestStartChallengeGodsController {
         best_score: result.value.ghostUserDisplay.bestScore,
         github_username: result.value.ghostUserDisplay.githubUsername,
         grade: result.value.ghostUserDisplay.grade,
+        played_at: result.value.ghostUserDisplay.playedAt.toISOString(),
       },
       problems: result.value.problems.map((p) => ({
         char_count: p.charCount,

@@ -159,6 +159,11 @@ const ghostUserDisplaySchema = z.object({
   best_score: z.number().int().nonnegative(),
   github_username: z.string().nullable(),
   grade: z.string(),
+  /**
+   * この神セッション（= 表示中の問題列）が実際にプレイされた日時 (ISO 8601)。
+   * 「誰の・いつのデータか」をプレイ画面に明示するために使う
+   */
+  played_at: z.string().datetime(),
 })
 
 /**
