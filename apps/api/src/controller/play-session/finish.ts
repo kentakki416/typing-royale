@@ -122,7 +122,6 @@ export class PlaySessionFinishController {
         return { grade_slug: p.gradeSlug, reward_id: p.rewardId, type: p.type }
       }),
       persisted: result.value.persisted,
-      problems_completed: result.value.problemsCompleted,
       problems_played: result.value.problemsPlayed,
       score: result.value.score,
       top_ten_boundary_score: result.value.topTenBoundaryScore,

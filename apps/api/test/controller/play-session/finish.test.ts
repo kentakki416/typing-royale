@@ -186,7 +186,6 @@ describe("POST /api/play-sessions/:id/finish", () => {
           expect.objectContaining({ rank: 1, type: "monthly_top_ten" }),
         ]),
         persisted: true,
-        problems_completed: 1,
         problems_played: 1,
         score: 3,
         /** ベスト 1 件しか無いので 10 位は null */
