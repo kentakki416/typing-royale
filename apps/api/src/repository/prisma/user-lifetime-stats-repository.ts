@@ -34,6 +34,7 @@ export type UserLifetimeStatsSummary = {
     bestScore: number
     currentGrade: string | null
     currentGradeReachedAt: Date | null
+    lifetimeMistypeStats: MistypeStats
     streakDays: number
     totalSessions: number
     totalTypedChars: bigint
@@ -66,13 +67,18 @@ export class PrismaUserLifetimeStatsRepository implements UserLifetimeStatsRepos
         bestScore: true,
         currentGrade: true,
         currentGradeReachedAt: true,
+        lifetimeMistypeStats: true,
         streakDays: true,
         totalSessions: true,
         totalTypedChars: true,
       },
       where: { userId },
     })
-    return row
+    if (row === null) return null
+    return {
+      ...row,
+      lifetimeMistypeStats: (row.lifetimeMistypeStats ?? {}) as MistypeStats,
+    }
   }
 
   async upsertOnFinish(

@@ -22,9 +22,20 @@ const userSchema = z.object({
 // ========================================================
 
 /**
- * 認証中ユーザー取得のレスポンススキーマ
+ * 苦手文字 1 件（生涯通算の文字ごと誤打数）
  */
-export const getUserResponseSchema = userSchema
+const weakCharSchema = z.object({
+  char: z.string(),
+  count: z.number().int().nonnegative(),
+})
+
+/**
+ * 認証中ユーザー取得のレスポンススキーマ。
+ * マイページのサマリー用に weak_chars（苦手文字 top N、誤打数降順）を含める。
+ */
+export const getUserResponseSchema = userSchema.extend({
+  weak_chars: z.array(weakCharSchema),
+})
 
 export type GetUserResponse = z.infer<typeof getUserResponseSchema>
 

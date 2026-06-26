@@ -65,7 +65,7 @@ export default async function MyPage() {
         </div>
 
         <div className="tabs">
-          <Link className="tab active" href="/mypage">概要</Link>
+          <Link className="tab active" href="/mypage">サマリー</Link>
           <Link className="tab" href="/mypage/rewards">特典</Link>
           <Link className="tab" href="/mypage/badge">バッジ</Link>
           <Link className="tab" href="/mypage/account">設定</Link>
@@ -155,14 +155,65 @@ export default async function MyPage() {
           <aside className="col-sidebar">
             <div className="card mb-16">
               <div className="card-header">
-                <div className="card-title">🏷 README バッジ</div>
+                <div className="card-title">⌨ 苦手文字</div>
               </div>
-              <p className="text-sm text-muted">バッジは Phase 7 (rewards) で本表示します。</p>
-            </div>
-
-            <div className="card mb-16">
-              <div className="card-header"><div className="card-title">🎁 特典</div></div>
-              <p className="text-sm text-muted">特典は Phase 7 で本表示します。</p>
+              {me.weak_chars.length === 0 ? (
+                <p className="text-sm text-muted">
+                  まだ十分なデータがありません。プレイすると誤打した文字が累積して表示されます。
+                </p>
+              ) : (
+                <div style={{ display: "grid", gap: "10px" }}>
+                  {me.weak_chars.map((weak, index) => (
+                    <div
+                      key={weak.char}
+                      className="flex-between"
+                      style={{ alignItems: "center", gap: "10px" }}
+                    >
+                      <span
+                        className="text-mono"
+                        style={{
+                          color: "var(--text-secondary)",
+                          minWidth: "16px",
+                          textAlign: "right",
+                        }}
+                      >
+                        {index + 1}
+                      </span>
+                      <span
+                        className="text-mono"
+                        style={{
+                          background: "var(--bg-base)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "6px",
+                          minWidth: "28px",
+                          padding: "2px 8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {displayChar(weak.char)}
+                      </span>
+                      <div
+                        style={{
+                          background: "var(--bg-base)",
+                          borderRadius: "4px",
+                          flex: 1,
+                          height: "8px",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            background: "var(--error)",
+                            height: "100%",
+                            width: `${(weak.count / me.weak_chars[0].count) * 100}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm text-muted text-mono">{weak.count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </aside>
         </div>
@@ -173,6 +224,16 @@ export default async function MyPage() {
       </div>
     </>
   )
+}
+
+/**
+ * 苦手文字の表示用変換。空白・タブ・改行は見やすい記号に置き換える
+ */
+const displayChar = (char: string): string => {
+  if (char === " ") return "␣"
+  if (char === "\t") return "⇥"
+  if (char === "\n") return "⏎"
+  return char
 }
 
 /**

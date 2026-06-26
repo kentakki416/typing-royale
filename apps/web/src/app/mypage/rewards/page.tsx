@@ -36,7 +36,7 @@ export default async function MyPageRewards() {
         <h1 className="mb-16">獲得した特典</h1>
 
         <div className="tabs">
-          <Link className="tab" href="/mypage">概要</Link>
+          <Link className="tab" href="/mypage">サマリー</Link>
           <Link className="tab active" href="/mypage/rewards">特典</Link>
           <Link className="tab" href="/mypage/badge">バッジ</Link>
           <Link className="tab" href="/mypage/account">設定</Link>

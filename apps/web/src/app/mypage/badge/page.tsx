@@ -32,7 +32,7 @@ export default async function MyPageBadge() {
         <h1 className="mb-16">バッジ設定</h1>
 
         <div className="tabs">
-          <Link className="tab" href="/mypage">概要</Link>
+          <Link className="tab" href="/mypage">サマリー</Link>
           <Link className="tab" href="/mypage/rewards">特典</Link>
           <Link className="tab active" href="/mypage/badge">バッジ</Link>
           <Link className="tab" href="/mypage/account">設定</Link>
