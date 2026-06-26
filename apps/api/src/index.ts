@@ -162,7 +162,7 @@ const authLogoutController = new AuthLogoutController(refreshTokenRepository)
 /**
  * User Controller のインスタンス化（認証中ユーザー自身の取得・更新・削除）
  */
-const userGetController = new UserGetController(userRepository)
+const userGetController = new UserGetController(userRepository, userLifetimeStatsRepository)
 const userUpdateController = new UserUpdateController(userRepository)
 const userDeleteController = new UserDeleteController(userRepository, refreshTokenRepository)
 
