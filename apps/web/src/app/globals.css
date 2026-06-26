@@ -2628,3 +2628,23 @@ code.inline {
 @keyframes result-loading-spin {
   to { transform: rotate(360deg); }
 }
+
+/**
+ * 特典カードの PNG / SVG ラベルと、SVG をカード幅に収める指定。
+ * バッジ SVG は width 固定（360px / viewBox あり）なので、max-width:100% + height:auto で
+ * カードボックスからはみ出さずに縮小させる。
+ */
+.reward-asset-label {
+  margin-top: 12px;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.reward-svg svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}

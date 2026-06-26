@@ -125,23 +125,29 @@ function RewardCard({ apiUrl, reward }: CardProps) {
           画像生成中（しばらく待つか再度開いてください）
         </div>
       ) : (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          alt={label}
-          src={fullAssetUrl}
-          style={{
-            background: "var(--bg-surface-2)",
-            borderRadius: "4px",
-            width: "100%",
-          }}
-        />
+        <>
+          <div className="reward-asset-label">PNG</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt={label}
+            src={fullAssetUrl}
+            style={{
+              background: "var(--bg-surface-2)",
+              borderRadius: "4px",
+              width: "100%",
+            }}
+          />
+        </>
       )}
       {reward.asset_svg_url !== null && (
-        <div
-          aria-label={`${label} SVG プレビュー`}
-          dangerouslySetInnerHTML={{ __html: reward.asset_svg_url }}
-          style={{ marginTop: 12 }}
-        />
+        <>
+          <div className="reward-asset-label">SVG</div>
+          <div
+            aria-label={`${label} SVG プレビュー`}
+            className="reward-svg"
+            dangerouslySetInnerHTML={{ __html: reward.asset_svg_url }}
+          />
+        </>
       )}
       <div className="flex gap-8 mt-8" style={{ flexWrap: "wrap" }}>
         {fullAssetUrl !== null && (
