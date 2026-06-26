@@ -44,8 +44,10 @@ COPY --from=pruner /app/out/full/ ./
 # Step 3: Prisma Client を生成
 RUN pnpm --filter @repo/db db:generate
 
-# Step 4: API をビルド (turbo の dependsOn で packages/* も先にビルドされる)
-RUN pnpm --filter api build
+# Step 4: API をビルド。turbo 経由で実行することで turbo.json の build.dependsOn
+# (^build + @repo/db#db:generate) により packages/* (@repo/*) が先にビルドされる。
+# pnpm --filter api build だと api の tsc しか走らず @repo/* の dist が無く TS2307 になる。
+RUN npx -y turbo@2.6.1 run build --filter=api
 
 # Step 5: 本番用依存のみを /app/deploy に抽出
 # workspace 依存 (@repo/*) は symlink ではなく実体コピーされる
