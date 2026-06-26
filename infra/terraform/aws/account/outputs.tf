@@ -9,7 +9,7 @@ output "ecr_api_repository_url" {
 }
 
 output "ecr_worker_repository_url" {
-  description = "matching-worker の ECR リポジトリ URL"
+  description = "worker (generate-reward) の ECR リポジトリ URL"
   value       = aws_ecr_repository.worker.repository_url
 }
 

@@ -7,7 +7,7 @@
 #   - RDS: Multi-AZ / deletion_protection / final snapshot / backup 30 日
 #   - ElastiCache: 2 ノード / Multi-AZ / Auto Failover / TLS
 #   - ALB: HTTPS 化 (ACM ワイルドカード + Route53 A レコード)、deletion_protection=true
-#   - ECS: Cluster + API (Blue/Green) + matching-worker + migration の 3 workload
+#   - ECS: Cluster + API (Blue/Green) + worker + migration + cron の 4 workload (+ EventBridge Scheduler)
 #
 # TODO (本 PR 範囲外、後続 step / 別 PR で対応):
 #   - NAT Gateway を AZ 冗長化 (現状は modules/vpc が単一 NAT のみサポート)
@@ -540,7 +540,7 @@ module "ecs_api" {
 }
 
 # =============================================================================
-# ECS Workload: matching-worker (BullMQ ジョブ消化、ALB なし、Blue/Green なし)
+# ECS Workload: worker (generate-reward BullMQ ジョブ消化、ALB なし、Blue/Green なし)
 # =============================================================================
 
 module "ecs_worker" {

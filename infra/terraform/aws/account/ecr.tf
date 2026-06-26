@@ -57,7 +57,7 @@ resource "aws_ecr_lifecycle_policy" "api" {
 }
 
 /**
- * matching-worker (BullMQ ジョブ消化用) のコンテナイメージ用 ECR
+ * worker (generate-reward キューの BullMQ ジョブ消化用、reward カード生成) のコンテナイメージ用 ECR
  */
 resource "aws_ecr_repository" "worker" {
   name                 = "${var.project_name}-worker"

@@ -461,7 +461,7 @@ module "ecs_api" {
 }
 
 # =============================================================================
-# ECS Workload: matching-worker (BullMQ ジョブ消化、ALB なし、Blue/Green なし)
+# ECS Workload: worker (generate-reward BullMQ ジョブ消化、ALB なし、Blue/Green なし)
 # =============================================================================
 
 module "ecs_worker" {
