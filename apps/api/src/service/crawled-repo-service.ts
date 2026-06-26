@@ -11,11 +11,13 @@ type ListByLanguageRepo = {
 export type ListByLanguageInput = {
     languageSlug: string
     limit: number
+    offset: number
 }
 
 export type ListByLanguageOutput = {
     entries: CrawledRepoListItem[]
     languageSlug: string
+    total: number
 }
 
 /**
@@ -35,10 +37,14 @@ export const listByLanguage = async (
     return err(notFoundError("Language not found"))
   }
 
-  const entries = await repo.crawledRepoRepository.findActiveByLanguageId(language.id, input.limit)
+  const [entries, total] = await Promise.all([
+    repo.crawledRepoRepository.findActiveByLanguageId(language.id, input.limit, input.offset),
+    repo.crawledRepoRepository.countActiveByLanguageId(language.id),
+  ])
 
   return ok({
     entries,
     languageSlug: input.languageSlug,
+    total,
   })
 }

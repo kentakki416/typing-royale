@@ -23,10 +23,15 @@ export type CrawledRepoListItem = {
  */
 export interface CrawledRepoRepository {
     /**
-     * 指定言語の有効リポジトリを stars 降順で一覧取得。
+     * 指定言語の有効リポジトリ総数。findActiveByLanguageId と同じフィルタ（ページ数算出用）
+     */
+    countActiveByLanguageId(languageId: number): Promise<number>
+
+    /**
+     * 指定言語の有効リポジトリを stars 降順で一覧取得（offset/limit でページング）。
      * disabled=false かつ storedCount>0（実際に出題実績がある）でフィルタ
      */
-    findActiveByLanguageId(languageId: number, limit: number): Promise<CrawledRepoListItem[]>
+    findActiveByLanguageId(languageId: number, limit: number, offset: number): Promise<CrawledRepoListItem[]>
 
     /**
      * 指定言語の eligible（disabled=false）repo から 1 件をランダム選択
@@ -48,7 +53,21 @@ export class PrismaCrawledRepoRepository implements CrawledRepoRepository {
     this._prisma = prisma
   }
 
-  async findActiveByLanguageId(languageId: number, limit: number): Promise<CrawledRepoListItem[]> {
+  async countActiveByLanguageId(languageId: number): Promise<number> {
+    return this._prisma.crawledRepo.count({
+      where: {
+        disabled: false,
+        languageId,
+        storedCount: { gt: 0 },
+      },
+    })
+  }
+
+  async findActiveByLanguageId(
+    languageId: number,
+    limit: number,
+    offset: number,
+  ): Promise<CrawledRepoListItem[]> {
     const rows = await this._prisma.crawledRepo.findMany({
       orderBy: { stars: "desc" },
       select: {
@@ -61,6 +80,7 @@ export class PrismaCrawledRepoRepository implements CrawledRepoRepository {
         storedCount: true,
         topics: true,
       },
+      skip: offset,
       take: limit,
       where: {
         disabled: false,
