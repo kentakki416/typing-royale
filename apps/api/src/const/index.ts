@@ -31,7 +31,6 @@ export const PUBLIC_PATHS: readonly string[] = [
   "/api/players",
   "/api/rankings",
   "/api/replays",
-  "/badge",
   "/cache/rewards",
   ...DEV_ONLY_PUBLIC_PATHS,
 ]
