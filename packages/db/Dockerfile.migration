@@ -1,0 +1,58 @@
+# ==============================================================================
+# Prisma migration 専用イメージ
+# ==============================================================================
+# 本番 API イメージに Prisma CLI / devDependencies を混ぜないため、migration は
+# 独立した最小イメージにする。ECS で `aws ecs run-task` により one-shot 起動され、
+# `prisma migrate deploy` を実行して終了する (Service ではない)。
+#
+# Prisma schema / migrations / config は packages/db (@repo/db) にあるため、
+# turbo prune で @repo/db に必要な workspace だけを抽出する。
+# prisma CLI は @repo/db の devDependency なので --prod にせず全 install する。
+
+# ==============================================================================
+# Stage 1: base - pnpm をインストールしたベースイメージ
+# ==============================================================================
+FROM node:20-slim AS base
+
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+
+# ==============================================================================
+# Stage 2: pruner - @repo/db (Prisma schema/migrations) に必要な workspace を抽出
+# ==============================================================================
+FROM base AS pruner
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY apps ./apps
+COPY packages ./packages
+
+RUN npx -y turbo@2.6.1 prune @repo/db --docker
+
+# ==============================================================================
+# Stage 3: runner - prisma CLI + schema/migrations を持ち migrate deploy を実行
+# ==============================================================================
+FROM base AS runner
+
+# tini: ECS Fargate では docker --init が使えないため軽量 init として必須。
+# openssl: Prisma の query/migration engine が libssl を要求するため必須
+#   (未導入だと "Prisma failed to detect the libssl/openssl version" になる)。
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends tini openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# package.json + lock を先に入れて install (prisma CLI は devDep なので --prod にしない)
+COPY --from=pruner /app/out/json/ ./
+COPY .pnpmfile.cjs ./
+RUN pnpm install --frozen-lockfile
+
+# schema.prisma / migrations / prisma.config.ts を含むソースをコピー
+COPY --from=pruner /app/out/full/ ./
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
+# DATABASE_URL は ECS task definition の secrets で注入される。
+# db:migrate:deploy = `prisma migrate deploy --config=prisma/prisma.config.ts` (packages/db で実行)
+CMD ["pnpm", "--filter", "@repo/db", "db:migrate:deploy"]
