@@ -219,11 +219,59 @@ green が 200 を返すのを確認 → Actions の「Review pending deployments
 
 ## Phase 9: Vercel（フロント）
 
-- `apps/web` を Vercel(Pro) にデプロイ
-- 環境変数に API ベース URL（`https://api.typing-royale.com`）等を設定
-- カスタムドメイン **`typing-royale.com`（apex）** を割当
-  - apex は CNAME 不可。Vercel が案内する **A レコード / ALIAS** を Route 53 hosted zone に追加
-- 本番 URL が確定したら `FRONTEND_URL=https://typing-royale.com` で `seed-secrets.sh prd` を再実行（既に Phase 7 で設定済みなら不要）→ 必要なら api を再デプロイ
+`apps/web`（Next.js）を Vercel(Pro) にデプロイし、apex `typing-royale.com` に接続する。
+
+### 9-1. プロジェクト作成 & ビルド設定（モノレポ）
+
+Vercel → Add New → Project → `typing-royale` を import し、以下を設定:
+
+| 項目 | 値 |
+|---|---|
+| Root Directory | `apps/web` |
+| Framework Preset | Next.js（自動検出） |
+| Install Command | デフォルト（`pnpm install`） |
+| **Build Command（上書き）** | `cd ../.. && pnpm --filter @repo/api-schema build && pnpm --filter web exec next build` |
+
+> ⚠️ **dotenvx の罠**: web の `build` スクリプトは `dotenvx run -f .env.local -- next build`。`.env.local` は gitignore で Vercel に無いため**そのままだとビルドが落ちる**。さらに `next build` は依存 `@repo/api-schema` を自前でビルドしない。
+> → 上の Build Command 上書きで **dotenvx を回避しつつ `@repo/api-schema` を先にビルド**する。
+
+### 9-2. 環境変数（Production スコープ）
+
+| Key | Value | 備考 |
+|---|---|---|
+| `API_URL` | `https://api.typing-royale.com` | サーバ側から Express API を叩く origin |
+| `GITHUB_CLIENT_ID` | 本番 OAuth App の Client ID | API に seed したものと同一 |
+| `NEXT_PUBLIC_APP_URL` | `https://typing-royale.com` | **ビルド時に焼き込まれる**ので初回デプロイ前に必須（default なし）|
+
+> `GITHUB_CLIENT_SECRET` は **web 側に不要**（OAuth コード交換は API 側で実施）。`NODE_ENV=production` は Vercel が自動付与。
+
+### 9-3. カスタムドメイン（apex）と DNS レコード
+
+Vercel → Settings → Domains に `typing-royale.com`（+ 任意で `www.typing-royale.com`）を追加。
+Vercel が「Set the following record」で要求する DNS を **Route53 hosted zone に追加**する:
+
+| 名前 | type | 値 |
+|---|---|---|
+| `typing-royale.com`（apex） | **A** | `76.76.21.21` |
+| `www.typing-royale.com` | **CNAME** | `cname.vercel-dns.com` |
+
+```bash
+ZID=$(aws route53 list-hosted-zones-by-name --dns-name typing-royale.com \
+  --query 'HostedZones[0].Id' --output text | sed 's|/hostedzone/||')
+aws route53 change-resource-record-sets --hosted-zone-id "$ZID" --change-batch '{
+  "Changes": [
+    {"Action":"UPSERT","ResourceRecordSet":{"Name":"typing-royale.com.","Type":"A","TTL":300,"ResourceRecords":[{"Value":"76.76.21.21"}]}},
+    {"Action":"UPSERT","ResourceRecordSet":{"Name":"www.typing-royale.com.","Type":"CNAME","TTL":300,"ResourceRecords":[{"Value":"cname.vercel-dns.com"}]}}
+  ]
+}'
+```
+
+> ⚠️ **「Invalid Configuration」が出る**のは、この DNS レコードを **Route53 にまだ入れていない**だけ（ドメイン追加と DNS 設定は別作業）。上記を入れて伝播すると Vercel が自動で「Valid Configuration」になり、**apex の TLS は Vercel が自動発行**する（ACM の `*.typing-royale.com` は apex を含まないが、apex は Vercel 側が担当）。
+> `api.typing-royale.com`(ALB ALIAS) とは別レコードなので競合しない。Vercel 画面の表示値が上記と違う場合は表示値を優先。
+
+### 9-4. FRONTEND_URL の整合
+
+本番 URL が確定したら `FRONTEND_URL=https://typing-royale.com` で `seed-secrets.sh prd` を再実行（Phase 7 で設定済みなら不要）→ 必要なら api を再デプロイ。
 
 ---
 
