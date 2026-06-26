@@ -577,7 +577,7 @@ module "ecs_worker" {
 # ECS Workload: Prisma migration (one-shot task definition、Service なし)
 # =============================================================================
 # - GHA から `aws ecs run-task --task-definition <family>` で起動する想定
-# - 専用 ECR (typing-royale-migration) + 専用 Dockerfile (apps/api/Dockerfile.migration) を使う
+# - 専用 ECR (typing-royale-migration) + 専用 Dockerfile (packages/db/Dockerfile.migration) を使う
 # - Dockerfile の CMD = `prisma migrate deploy --schema=prisma/schema.prisma` をそのまま使う
 
 module "ecs_migration" {

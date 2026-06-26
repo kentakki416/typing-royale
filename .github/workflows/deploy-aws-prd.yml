@@ -131,7 +131,7 @@ jobs:
           IMAGE="${{ steps.ecr.outputs.registry }}/${{ env.ECR_MIGRATION_REPO }}"
           docker buildx build \
             --platform linux/amd64 \
-            -f apps/api/Dockerfile.migration \
+            -f packages/db/Dockerfile.migration \
             -t "${IMAGE}:${{ steps.meta.outputs.image_tag }}" \
             --push \
             .

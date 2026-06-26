@@ -111,7 +111,7 @@ npx dotenvx run -f apps/api/.env.local -- ./scripts/seed-secrets.sh prd
 
 両方の deploy workflow に migration job が含まれる。手動で起動するのはトラブルシューティングのみ。
 
-ECS Task Definition `typing-royale-<env>-migration` を `aws ecs run-task` で one-shot 起動し、`apps/api/Dockerfile.migration` の `CMD = prisma migrate deploy --schema=prisma/schema.prisma` を実行する。専用 ECR (`typing-royale-migration`) を使うことで Prisma CLI / devDeps が本番 API イメージに混入しない。
+ECS Task Definition `typing-royale-<env>-migration` を `aws ecs run-task` で one-shot 起動し、`packages/db/Dockerfile.migration` の `CMD = pnpm --filter @repo/db db:migrate:deploy`（= `prisma migrate deploy --config=prisma/prisma.config.ts`）を実行する。スキーマは `@repo/db`（packages/db）に集約されているため、migration もそこに置く。専用 ECR (`typing-royale-migration`) を使うことで Prisma CLI / devDeps が本番 API イメージに混入しない。
 
 ```bash
 # トラブルシューティング用の手動起動例（dev）
