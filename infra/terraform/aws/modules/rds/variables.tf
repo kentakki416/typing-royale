@@ -4,9 +4,9 @@ variable "name" {
 }
 
 variable "engine_version" {
-  description = "Postgres エンジンバージョン。AWS RDS でサポート中のバージョンを指定する (廃止 EOL バージョンは create 時に弾かれる)"
+  description = "Postgres エンジンバージョン。メジャーのみ (例: \"16\") を推奨。auto_minor_version_upgrade=true なら AWS が最新マイナーを選ぶ。マイナーをピン留めすると AWS の EOL 廃止で create 時に弾かれる"
   type        = string
-  default     = "16.6"
+  default     = "16"
 }
 
 variable "instance_class" {
