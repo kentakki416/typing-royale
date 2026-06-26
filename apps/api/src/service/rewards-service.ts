@@ -1,8 +1,8 @@
 import { badRequestError, err, forbiddenError, ok, Result } from "@repo/errors"
 import { renderGradeUpCard } from "@repo/generate-image"
 import { logger } from "@repo/logger"
+import { Storage } from "@repo/storage"
 
-import { CardStorage } from "../lib/card-storage"
 import { calcGrade, GRADES } from "../lib/grade"
 import {
   RewardRepository,
@@ -12,7 +12,7 @@ import {
 } from "../repository/prisma"
 
 type CreateCardRepo = {
-    cardStorage: CardStorage
+    cardStorage: Storage
     rewardRepository: RewardRepository
     userLifetimeStatsRepository: UserLifetimeStatsRepository
     userRepository: UserRepository
@@ -30,7 +30,7 @@ export type CreateCardInput = {
  * 1. 同 (userId, type, payload) の既存 reward があり assetUrl が立っていれば即返す
  * 2. 条件チェック (grade_up: bestScore >= 閾値、card: 未対応で 400)
  * 3. satori + resvg で PNG 生成
- * 4. CardStorage に保存して URL を取得
+ * 4. Storage に保存して URL を取得
  * 5. rewards テーブルに upsert (assetUrl をセット)
  */
 export const createCard = async (

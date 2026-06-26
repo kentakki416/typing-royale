@@ -1,8 +1,8 @@
 import { GENERATE_REWARD_QUEUE_NAME, type JobConsumer, startBullMQWorker } from "@repo/queue"
 import type { Redis } from "@repo/redis"
+import type { Storage } from "@repo/storage"
 
 import { generateReward } from "../jobs/generate-reward"
-import type { CardStorage } from "../lib/card-storage"
 import type { RewardRepository, UserRepository } from "../repository/prisma"
 
 /**
@@ -16,7 +16,7 @@ import type { RewardRepository, UserRepository } from "../repository/prisma"
  * generation_status="failed" に落とし、UI のポーリング対象から外す。
  */
 export type StartGenerateRewardWorkerArgs = {
-    cardStorage: CardStorage
+    cardStorage: Storage
     concurrency: number
     redis: Redis
     rewardRepository: RewardRepository
