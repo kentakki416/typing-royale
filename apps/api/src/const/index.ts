@@ -19,6 +19,7 @@ export const PUBLIC_PATHS: readonly string[] = [
   "/api/crawled-repos",
   "/api/hall-of-fame",
   "/api/health",
+  "/api/languages",
   "/api/memo",
   /**
    * ゲストプレイ用のステートレス endpoint。Redis / DB を一切使わずに

@@ -18,6 +18,7 @@ import { CrawledRepoListController } from "./controller/crawled-repo/list"
 import { HallOfFameListController } from "./controller/hall-of-fame/list"
 import { HealthLivenessController } from "./controller/health/liveness"
 import { HealthReadinessController } from "./controller/health/readiness"
+import { LanguageListController } from "./controller/language/list"
 import { MemoCreateController } from "./controller/memo/create"
 import { MemoDeleteController } from "./controller/memo/delete"
 import { MemoDetailController } from "./controller/memo/detail"
@@ -70,6 +71,7 @@ import { badgeRouter } from "./routes/badge-router"
 import { crawledRepoRouter } from "./routes/crawled-repo-router"
 import { hallOfFameRouter } from "./routes/hall-of-fame-router"
 import { healthRouter } from "./routes/health-router"
+import { languageRouter } from "./routes/language-router"
 import { memoRouter } from "./routes/memo-router"
 import { playSessionRouter } from "./routes/play-session-router"
 import { playerRouter } from "./routes/player-router"
@@ -237,6 +239,11 @@ const crawledRepoListController = new CrawledRepoListController(
   crawledRepoRepository,
   languageRepository,
 )
+
+/**
+ * Language Controller のインスタンス化
+ */
+const languageListController = new LanguageListController(languageRepository)
 
 /**
  * Ranking Controller のインスタンス化
@@ -407,6 +414,12 @@ app.use(
   "/api/crawled-repos",
   crawledRepoRouter({
     list: crawledRepoListController,
+  })
+)
+app.use(
+  "/api/languages",
+  languageRouter({
+    list: languageListController,
   })
 )
 app.use(

@@ -5,12 +5,13 @@ import type { GetMonthlyRankingsResponse } from "@repo/api-schema"
 
 import { CrawledReposSection } from "@/components/crawled-repos-section"
 import { MissedRewardsPopup } from "@/components/missed-rewards-popup"
-import { MonthlyTopSection } from "@/components/monthly-top-section"
+import { MonthlyByLanguage, MonthlyTopSection } from "@/components/monthly-top-section"
 import { PendingRewardsPopup } from "@/components/pending-rewards-popup"
 import { Topbar } from "@/components/topbar"
 import { env } from "@/env"
 import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
+import { getLanguages } from "@/libs/languages"
 
 /** API 失敗時のフォールバック（year_month が空のとき MonthlyTopCard は「集計準備中」を出す） */
 const EMPTY_MONTHLY: GetMonthlyRankingsResponse = { entries: [], year_month: "" }
@@ -34,14 +35,21 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   const accessToken = await getAccessToken()
   const isAuthed = accessToken !== null
-  const [tsMonthly, jsMonthly] = await Promise.all([
-    apiClient
-      .get<GetMonthlyRankingsResponse>("/api/rankings/monthly?language=typescript&limit=5")
-      .catch(() => EMPTY_MONTHLY),
-    apiClient
-      .get<GetMonthlyRankingsResponse>("/api/rankings/monthly?language=javascript&limit=5")
-      .catch(() => EMPTY_MONTHLY),
-  ])
+  const languages = await getLanguages()
+
+  /**
+   * 言語マスタごとに当月 TOP 5 を並列 fetch する（言語タブはマスタ由来）
+   */
+  const monthlyByLanguage: MonthlyByLanguage[] = await Promise.all(
+    languages.map(async (language) => ({
+      language,
+      monthly: await apiClient
+        .get<GetMonthlyRankingsResponse>(
+          `/api/rankings/monthly?language=${language.slug}&limit=5`,
+        )
+        .catch(() => EMPTY_MONTHLY),
+    })),
+  )
 
   return (
     <>
@@ -107,7 +115,7 @@ export default async function HomePage() {
                 <div className="card-title">🏆 月間トップ</div>
                 <Link className="text-sm" href="/ranking">月間ランキング →</Link>
               </div>
-              <MonthlyTopSection jsMonthly={jsMonthly} tsMonthly={tsMonthly} />
+              <MonthlyTopSection items={monthlyByLanguage} />
             </div>
 
             <div className="card mb-24">

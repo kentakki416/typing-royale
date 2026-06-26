@@ -3,32 +3,17 @@ import Link from "next/link"
 
 import type { GetHallOfFameResponse } from "@repo/api-schema"
 
+import { EmptyLanguagesState } from "@/components/empty-languages-state"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
+import { getLanguages, resolveSelectedLanguage } from "@/libs/languages"
 
 import { ChallengeGodsButton } from "./challenge-gods-button"
 import { HofCards } from "./hof-cards"
 
 export const metadata: Metadata = {
   title: "殿堂入り - Typing Royale",
-}
-
-const SUPPORTED_LANGUAGES = ["typescript", "javascript"] as const
-type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]
-
-const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
-  javascript: "JavaScript",
-  typescript: "TypeScript",
-}
-
-/**
- * 言語 slug → DB の Language.id マップ。 packages/db/prisma/seed.ts と
- * apps/web/src/app/play/page.tsx の `SUPPORTED_LANGUAGES` と整合させる
- */
-const LANGUAGE_IDS: Record<SupportedLanguage, number> = {
-  javascript: 2,
-  typescript: 1,
 }
 
 /**
@@ -45,14 +30,31 @@ export default async function HallOfFamePage({
     searchParams: Promise<{ language?: string }>
 }) {
   const { language: rawLang } = await searchParams
-  const language: SupportedLanguage = SUPPORTED_LANGUAGES.includes(rawLang as SupportedLanguage)
-    ? (rawLang as SupportedLanguage)
-    : "typescript"
+  const languages = await getLanguages()
+  const accessToken = await getAccessToken()
 
-  const [data, accessToken] = await Promise.all([
-    apiClient.get<GetHallOfFameResponse>(`/api/hall-of-fame?language=${language}`),
-    getAccessToken(),
-  ])
+  const selectedSlug = resolveSelectedLanguage(languages, rawLang)
+  const selectedLanguage = languages.find((lang) => lang.slug === selectedSlug)
+
+  /**
+   * 言語マスタが無い場合の空状態（本来 migration で投入されるため発生しない）
+   */
+  if (selectedLanguage === undefined) {
+    return (
+      <>
+        <Topbar active="hall-of-fame" isAuthed={accessToken !== null} />
+        <div className="container">
+          <h1 className="text-center mb-24">殿堂入り — 神々の殿堂</h1>
+          <EmptyLanguagesState />
+        </div>
+      </>
+    )
+  }
+
+  const language = selectedLanguage.slug
+  const data = await apiClient.get<GetHallOfFameResponse>(
+    `/api/hall-of-fame?language=${language}`,
+  )
 
   return (
     <>
@@ -67,17 +69,17 @@ export default async function HallOfFamePage({
 
         <div className="flex-between mb-24" style={{ alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
           <div className="pills">
-            {SUPPORTED_LANGUAGES.map((lang) => (
+            {languages.map((lang) => (
               <Link
-                className={`pill ${language === lang ? "active" : ""}`}
-                href={`/hall-of-fame?language=${lang}`}
-                key={lang}
+                className={`pill ${language === lang.slug ? "active" : ""}`}
+                href={`/hall-of-fame?language=${lang.slug}`}
+                key={lang.slug}
               >
-                {LANGUAGE_LABELS[lang]}
+                {lang.name}
               </Link>
             ))}
           </div>
-          <ChallengeGodsButton languageId={LANGUAGE_IDS[language]} />
+          <ChallengeGodsButton languageId={selectedLanguage.id} />
         </div>
 
         {data.entries.length === 0 ? (

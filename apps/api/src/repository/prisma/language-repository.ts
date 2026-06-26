@@ -9,12 +9,22 @@ export type LanguageRef = {
 }
 
 /**
+ * 一覧表示用の Language（name を含む）
+ */
+export type LanguageListItem = {
+    id: number
+    name: string
+    slug: string
+}
+
+/**
  * Language リポジトリのインターフェース
  *
- * 書き込みは行わない（マスタは seed で投入）
+ * 書き込みは行わない（マスタは migration で投入）
  */
 export interface LanguageRepository {
     existsById(id: number): Promise<boolean>
+    findAll(): Promise<LanguageListItem[]>
     findById(id: number): Promise<LanguageRef | null>
     findBySlug(slug: string): Promise<LanguageRef | null>
 }
@@ -35,6 +45,13 @@ export class PrismaLanguageRepository implements LanguageRepository {
       where: { id },
     })
     return lang !== null
+  }
+
+  async findAll(): Promise<LanguageListItem[]> {
+    return this._prisma.language.findMany({
+      orderBy: { id: "asc" },
+      select: { id: true, name: true, slug: true },
+    })
   }
 
   async findBySlug(slug: string): Promise<LanguageRef | null> {
