@@ -124,7 +124,9 @@ module "vpc" {
       to_port             = 80
       protocol            = "tcp"
       cidr_blocks         = ["0.0.0.0/0"]
-      description         = "HTTP from internet (HTTPS 化後は ACM-only にする)"
+      # NOTE: SG rule description は ASCII のみ許可 (AWS 制約)。日本語は使えない。
+      # 意図: HTTPS 化 (ACM) 後はこの HTTP(80) 許可を外して ACM-only にする。
+      description = "HTTP from internet (drop after enabling HTTPS/ACM)"
     },
     {
       security_group_name = "alb"
