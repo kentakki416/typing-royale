@@ -103,7 +103,11 @@ if RDS_ADDRESS=$(terraform -chdir="$TF_DIR" output -raw rds_address 2>/dev/null)
 
   # パスワードに URL 不適合な文字が混じることがあるため percent-encode
   ENCODED_PW=$(jq -rn --arg p "$RDS_PASSWORD" '$p|@uri')
-  DATABASE_URL="postgresql://${RDS_USERNAME}:${ENCODED_PW}@${RDS_ADDRESS}:5432/${RDS_DB_NAME}?sslmode=require"
+  # sslmode=no-verify: 暗号化はするが CA 検証はしない。
+  # Prisma 7 の pg ドライバアダプタ(@prisma/adapter-pg)は sslmode=require を verify-full 扱いに
+  # するため、RDS の CA(自己署名チェーン)を弾いて TlsConnectionError(P1011) になる。RDS は VPC
+  # 内通信なので no-verify で運用する（CA 同梱で verify-full にするのは将来の hardening）。
+  DATABASE_URL="postgresql://${RDS_USERNAME}:${ENCODED_PW}@${RDS_ADDRESS}:5432/${RDS_DB_NAME}?sslmode=no-verify"
 
   NEW_VALUES=$(echo "$NEW_VALUES" | jq --arg url "$DATABASE_URL" '. + { DATABASE_URL: $url }')
   echo "  ✓ DATABASE_URL (constructed from RDS outputs)"

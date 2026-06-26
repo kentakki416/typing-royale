@@ -183,6 +183,7 @@ export FRONTEND_URL='https://typing-royale.com'      # フロント(apex)
 ```
 
 - 自動構築される（export 不要）: `DATABASE_URL` / `REDIS_HOST` / `REDIS_URL`(prd は `rediss://` = TLS)
+  - ⚠️ `DATABASE_URL` は **`?sslmode=no-verify`** で構築する（`require` だと Prisma の pg アダプタが TLS で落ちる。[落とし穴 9](#落とし穴-9-db-の-tls-が-pg-アダプタで-verify-full-扱いになり-rds-で落ちる)）
 - スクリプトは **merge 方式**（何度でも再実行可。値だけ上書き）
 - 確認:
 
@@ -214,6 +215,13 @@ curl http://<ALB_DNS>:9000/api/health
 ```
 green が 200 を返すのを確認 → Actions の「Review pending deployments」で **`prd-api-approval` を Approve**
 → SSM=approved → **本番トラフィックが green に切替** + 10 分 bake → 完了。
+
+### マスタデータ（seed）の扱い
+
+本番のマスタデータ（言語マスタ等）は **seed スクリプトではなく migration で管理**する（`packages/db/prisma/migrations/*_seed_master_languages` のように `INSERT ... ON CONFLICT DO NOTHING` を置く）。これにより上記 **migrate ステップで自動・冪等・バージョン管理**され、別ステップが不要になる。
+
+- `seed.ts` は **dev 専用データ**（dev users / ランキング fixtures）のみを扱い、`NODE_ENV=production` では何もしない
+- 新しいマスタを足すときは migration を 1 本追加する（`prisma migrate dev --create-only --name seed_xxx` → `migration.sql` に冪等 INSERT を記述）
 
 ---
 
@@ -286,3 +294,17 @@ terraform apply -replace="module.ecs_api.aws_ecs_service.this[0]"
 ### 落とし穴 8: 承認ゲートの二重化
 `prd` 環境に Required reviewers を付けると、build/migrate/deploy/Plan すべてが毎回承認待ちになり、キャンセルした run も `reject-api`(environment=prd) で詰まってデッドロックする。
 → **`prd` 環境のゲートは外し、承認は `prd-api-approval`（api 本番切替）だけ**にする。
+
+### 落とし穴 9: DB の TLS が pg アダプタで verify-full 扱いになり RDS で落ちる
+`createPrismaClient` は `new PrismaPg(DATABASE_URL)` を使う（Prisma 7 ドライバアダプタ）。
+DATABASE_URL が **`?sslmode=require`** だと、pg アダプタ（`@prisma/adapter-pg` / pg-connection-string）が
+これを **`verify-full` 扱い**にし、RDS の CA（公的 CA ではない自己署名チェーン）を弾いて
+`Error opening a TLS connection: self-signed certificate in certificate chain`（**P1011 / TlsConnectionError**）で落ちる。
+
+ハマりどころ:
+- **migration（`migrate deploy`）は通るのに、ランタイム / seed だけ落ちる**。migration は Rust 製エンジンで `require` を libpq 流（暗号化のみ・CA 検証なし）に解釈するため。pg アダプタだけ verify-full になる。
+- api の shallow な `/health`（`{"status":"ok"}`）は DB を見ないので、**DB アクセスが壊れていても 200 を返してしまう**（気づきにくい）。
+
+→ **`DATABASE_URL` を `?sslmode=no-verify`** にする（暗号化はするが CA 検証しない。RDS は VPC 内通信なので実用上のリスクは低い）。`seed-secrets.sh` がこの値で構築する。
+secret を直して **api/worker を再デプロイ**（ECS は secret をタスク起動時に注入するため、既存タスクは再起動するまで旧 URL のまま）。
+より厳格にするなら RDS CA を同梱して `verify-full` にする（`createPrismaClient` の改修が必要・将来の hardening）。
