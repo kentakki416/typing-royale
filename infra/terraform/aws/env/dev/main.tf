@@ -231,6 +231,17 @@ module "app_secrets" {
 
     NODE_ENV = "production"
     PORT     = "8080"
+
+    /**
+     * cron / worker が参照する値の「箱」を空文字で確保する placeholder。
+     * 実値は apply 後に scripts/seed-secrets.sh で投入する:
+     *   - REDIS_URL : worker が BullMQ 接続に使用 (dev は TLS なしなので redis://)
+     *   - GITHUB_PAT: cron crawler が GitHub API を叩くのに使用
+     * キーだけ先に作ることで、これらを参照しない api task が valueFrom 解決失敗で
+     * 起動不能になる事故を防ぐ。
+     */
+    GITHUB_PAT = ""
+    REDIS_URL  = ""
   }
 
   tags = local.common_tags
@@ -328,6 +339,10 @@ data "aws_ecr_repository" "migration" {
   name = "${var.project_name}-migration"
 }
 
+data "aws_ecr_repository" "cron" {
+  name = "${var.project_name}-cron"
+}
+
 # =============================================================================
 # ロードバランサー設定 (Application Load Balancer)
 # =============================================================================
@@ -354,9 +369,9 @@ module "alb" {
   enable_https    = false
   certificate_arn = null
 
-  # === SSE 対応 ===
-  # /api/matching/events の SSE が 60 秒で切れないよう 3600 秒に延長
-  idle_timeout = 3600
+  # === idle_timeout ===
+  # 現状 SSE / long-poll エンドポイントは無いため ALB デフォルト (60 秒) を使う。
+  # 将来 stream 系を足すときに modules/alb の idle_timeout を延長する。
 
   # === Blue/Greenデプロイ設定 ===
   # dev は素のローリングデプロイで運用する (検証コストを抑えるため)。
@@ -404,10 +419,10 @@ locals {
     # 全 workload で同じ secret 集合を共有 (最小権限より「forget しない」事故防止を優先)。
     secret_keys = [
       "DATABASE_URL",
-      "REDIS_HOST", "REDIS_PORT", "REDIS_DB",
+      "REDIS_HOST", "REDIS_PORT", "REDIS_DB", "REDIS_URL",
       "JWT_ACCESS_SECRET", "JWT_REFRESH_SECRET",
       "JWT_ACCESS_EXPIRATION", "JWT_REFRESH_EXPIRATION",
-      "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET",
+      "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET", "GITHUB_PAT",
       "FRONTEND_URL", "NODE_ENV", "PORT",
     ]
   }
@@ -446,7 +461,7 @@ module "ecs_api" {
 }
 
 # =============================================================================
-# ECS Workload: matching-worker (BullMQ ジョブ消化、ALB なし、Blue/Green なし)
+# ECS Workload: worker (generate-reward BullMQ ジョブ消化、ALB なし、Blue/Green なし)
 # =============================================================================
 
 module "ecs_worker" {
@@ -502,4 +517,78 @@ module "ecs_migration" {
   create_service        = false
   log_retention_in_days = var.log_retention_days
   tags                  = local.common_tags
+}
+
+# =============================================================================
+# ECS Workload: cron (crawler / batch、常駐 service なし)
+# =============================================================================
+# - service は作らず task definition だけを用意し (create_service = false)、
+#   EventBridge Scheduler (modules/ecs-scheduled-task) が発火時に RunTask する。
+# - 1 つの cron image を複数スケジュールで共有し、起動コマンドは schedule 側の
+#   command override で切り替える。prd/main.tf と同じ構造。
+
+module "ecs_cron" {
+  source = "../../modules/ecs-workload"
+
+  name   = "${local.name_prefix}-cron"
+  image  = "${data.aws_ecr_repository.cron.repository_url}:latest"
+  cpu    = 256
+  memory = 512
+
+  cluster_arn        = local.ecs_common.cluster_arn
+  execution_role_arn = local.ecs_common.execution_role_arn
+  subnets            = local.ecs_common.subnets
+  security_groups    = local.ecs_common.security_groups
+
+  secrets_arn = local.ecs_common.secrets_arn
+  secret_keys = local.ecs_common.secret_keys
+
+  create_service        = false
+  log_retention_in_days = var.log_retention_days
+  tags                  = local.common_tags
+}
+
+# =============================================================================
+# EventBridge Scheduler: cron スケジュール
+# =============================================================================
+# 稼働中の 2 タスクのみ登録 (batch:ranking は未実装スタブのため別 PR)。
+#   - crawler:run:typescript  : 週次 月曜 03:00 JST
+#   - crawler:license-recheck : 月初 1 日 04:00 JST
+
+module "schedule_crawler_typescript" {
+  source = "../../modules/ecs-scheduled-task"
+
+  name                = "${local.name_prefix}-crawler-typescript"
+  schedule_expression = "cron(0 3 ? * MON *)" # 毎週月曜 03:00 JST
+
+  cluster_arn            = module.ecs_cluster.cluster_arn
+  task_definition_family = module.ecs_cron.task_definition_family
+  execution_role_arn     = module.ecs_cluster.task_execution_role_arn
+
+  subnets         = local.ecs_common.subnets
+  security_groups = local.ecs_common.security_groups
+
+  container_name = "${local.name_prefix}-cron"
+  command        = ["node", "dist/task/crawler-run-typescript.js"]
+
+  tags = local.common_tags
+}
+
+module "schedule_license_recheck" {
+  source = "../../modules/ecs-scheduled-task"
+
+  name                = "${local.name_prefix}-license-recheck"
+  schedule_expression = "cron(0 4 1 * ? *)" # 毎月 1 日 04:00 JST
+
+  cluster_arn            = module.ecs_cluster.cluster_arn
+  task_definition_family = module.ecs_cron.task_definition_family
+  execution_role_arn     = module.ecs_cluster.task_execution_role_arn
+
+  subnets         = local.ecs_common.subnets
+  security_groups = local.ecs_common.security_groups
+
+  container_name = "${local.name_prefix}-cron"
+  command        = ["node", "dist/task/crawler-license-recheck.js"]
+
+  tags = local.common_tags
 }

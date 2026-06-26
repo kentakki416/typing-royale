@@ -57,7 +57,7 @@ resource "aws_ecr_lifecycle_policy" "api" {
 }
 
 /**
- * matching-worker (BullMQ ジョブ消化用) のコンテナイメージ用 ECR
+ * worker (generate-reward キューの BullMQ ジョブ消化用、reward カード生成) のコンテナイメージ用 ECR
  */
 resource "aws_ecr_repository" "worker" {
   name                 = "${var.project_name}-worker"
@@ -135,6 +135,61 @@ resource "aws_ecr_repository" "migration" {
 
 resource "aws_ecr_lifecycle_policy" "migration" {
   repository = aws_ecr_repository.migration.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 10 tagged images"
+        selection = {
+          tagStatus     = "tagged"
+          tagPrefixList = ["v"]
+          countType     = "imageCountMoreThan"
+          countNumber   = 10
+        }
+        action = { type = "expire" }
+      },
+      {
+        rulePriority = 2
+        description  = "Delete untagged images after 1 day"
+        selection = {
+          tagStatus   = "untagged"
+          countType   = "sinceImagePushed"
+          countUnit   = "days"
+          countNumber = 1
+        }
+        action = { type = "expire" }
+      }
+    ]
+  })
+}
+
+/**
+ * cron / batch (EventBridge Scheduler 起動の crawler / ライセンス再検証) 用 ECR。
+ * apps/cron の Dockerfile から build した image を push し、env 側の ECS scheduled task
+ * (modules/ecs-scheduled-task) が起動する。
+ */
+resource "aws_ecr_repository" "cron" {
+  name                 = "${var.project_name}-cron"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = {
+    Name    = "${var.project_name}-cron"
+    Project = var.project_name
+  }
+}
+
+resource "aws_ecr_lifecycle_policy" "cron" {
+  repository = aws_ecr_repository.cron.name
 
   policy = jsonencode({
     rules = [

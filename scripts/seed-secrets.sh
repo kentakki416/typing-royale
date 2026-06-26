@@ -18,7 +18,12 @@
 # 環境変数 (どれも未設定なら skip + warn、後で再実行で OK):
 #   GITHUB_CLIENT_ID
 #   GITHUB_CLIENT_SECRET
+#   GITHUB_PAT            (cron crawler が GitHub API を叩くための PAT。public_repo スコープ)
 #   FRONTEND_URL
+#
+# REDIS_URL は ElastiCache の terraform output から自動構築する (worker が使用)。
+#   - prd は TLS 有効 (transit_encryption_enabled=true) なので rediss://
+#   - dev は TLS 無効なので redis://
 #
 # direnv (.envrc) で上記を export しておくと毎回入力不要。
 # =============================================================================
@@ -79,6 +84,7 @@ add_kv() {
 echo "==> External secrets (from environment variables)"
 add_kv "GITHUB_CLIENT_ID"       "${GITHUB_CLIENT_ID:-}"       "env"
 add_kv "GITHUB_CLIENT_SECRET"   "${GITHUB_CLIENT_SECRET:-}"   "env"
+add_kv "GITHUB_PAT"             "${GITHUB_PAT:-}"             "env"
 add_kv "FRONTEND_URL"           "${FRONTEND_URL:-}"           "env"
 
 # ============================================================================
@@ -111,8 +117,22 @@ fi
 if REDIS_HOST=$(terraform -chdir="$TF_DIR" output -raw redis_address 2>/dev/null); then
   NEW_VALUES=$(echo "$NEW_VALUES" | jq --arg h "$REDIS_HOST" '. + { REDIS_HOST: $h }')
   echo "  ✓ REDIS_HOST (from terraform output)"
+
+  # worker は REDIS_URL のみ参照する。TLS の有無で scheme を変える:
+  #   - prd: transit_encryption_enabled=true → rediss://
+  #   - dev: TLS 無効                        → redis://
+  REDIS_PORT=$(terraform -chdir="$TF_DIR" output -raw redis_port 2>/dev/null || echo "6379")
+  if [ "$ENV" = "prd" ]; then
+    REDIS_SCHEME="rediss"
+  else
+    REDIS_SCHEME="redis"
+  fi
+  REDIS_URL="${REDIS_SCHEME}://${REDIS_HOST}:${REDIS_PORT}"
+  NEW_VALUES=$(echo "$NEW_VALUES" | jq --arg url "$REDIS_URL" '. + { REDIS_URL: $url }')
+  echo "  ✓ REDIS_URL (constructed as ${REDIS_SCHEME}://...)"
 else
   echo "  - REDIS_HOST (skipped, ElastiCache not deployed yet)"
+  echo "  - REDIS_URL  (skipped, ElastiCache not deployed yet)"
 fi
 
 # ============================================================================

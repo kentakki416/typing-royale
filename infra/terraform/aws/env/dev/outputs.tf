@@ -63,7 +63,7 @@ output "ecs_api_service_name" {
 }
 
 output "ecs_worker_service_name" {
-  description = "matching-worker ECS service 名"
+  description = "worker (generate-reward) ECS service 名"
   value       = module.ecs_worker.service_name
 }
 

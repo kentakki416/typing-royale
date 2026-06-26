@@ -53,6 +53,7 @@ ENTRYPOINT ["/usr/bin/tini", "--"]
 
 USER node
 
-# デフォルトは crawler:run。ECS Task Definition の command で
-# license-recheck / ranking-batch などに差し替える想定。
-CMD ["node", "dist/cli/run.js"]
+# デフォルトは起動確認用の boot エントリ (dist/index.js)。
+# 実際の cron は ECS scheduled task (EventBridge Scheduler) 側の command override で
+# dist/task/crawler-run-typescript.js / dist/task/crawler-license-recheck.js に差し替える。
+CMD ["node", "dist/index.js"]
