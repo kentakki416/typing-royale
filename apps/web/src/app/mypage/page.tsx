@@ -67,7 +67,6 @@ export default async function MyPage() {
         <div className="tabs">
           <Link className="tab active" href="/mypage">概要</Link>
           <Link className="tab" href="/mypage/rewards">特典</Link>
-          <a className="tab" href="#">プレイ履歴</a>
           <Link className="tab" href="/mypage/badge">バッジ</Link>
           <Link className="tab" href="/mypage/account">設定</Link>
         </div>
@@ -150,13 +149,6 @@ export default async function MyPage() {
                   <RankingRow badge="warning" label="JavaScript" ranking={jsRanking} />
                 </tbody>
               </table>
-            </div>
-
-            <div className="card mb-16">
-              <div className="card-header">
-                <div className="card-title">📜 最近のプレイ</div>
-              </div>
-              <p className="text-sm text-muted">プレイ履歴は別 step で実装します。</p>
             </div>
           </div>
 
