@@ -3,7 +3,6 @@ import Link from "next/link"
 
 import type { GetMonthlyRankingsResponse } from "@repo/api-schema"
 
-import { ChallengeGodsButton } from "@/components/challenge-gods-button"
 import { CrawledReposSection } from "@/components/crawled-repos-section"
 import { MissedRewardsPopup } from "@/components/missed-rewards-popup"
 import { MonthlyByLanguage, MonthlyTopSection } from "@/components/monthly-top-section"
@@ -107,15 +106,7 @@ export default async function HomePage() {
                     殿堂入りしたユーザーの中から <strong>ランダムに 1 人</strong> を選定して、そのユーザーに挑戦できます。
                   </p>
                 </div>
-                {languages[0] ? (
-                  <ChallengeGodsButton
-                    className="btn btn-gold"
-                    label="挑戦する →"
-                    languageId={languages[0].id}
-                  />
-                ) : (
-                  <Link className="btn btn-gold" href="/play">挑戦する →</Link>
-                )}
+                <Link className="btn btn-gold" href="/play">挑戦する →</Link>
               </div>
             </div>
 
