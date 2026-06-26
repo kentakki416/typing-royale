@@ -41,7 +41,17 @@ export default async function MyPage() {
 
       <div className="container">
         <div className="flex gap-16 mb-24" style={{ alignItems: "center" }}>
-          <span className="avatar lg">{initials}</span>
+          {me.avatar_url ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              alt={me.github_username ?? "avatar"}
+              className="avatar lg"
+              src={me.avatar_url}
+              style={{ objectFit: "cover" }}
+            />
+          ) : (
+            <span className="avatar lg">{initials}</span>
+          )}
           <div style={{ flex: 1 }}>
             <h1 style={{ marginBottom: "4px" }}>{me.github_username ?? "(no name)"}</h1>
             <div className="text-muted text-sm mb-8">
