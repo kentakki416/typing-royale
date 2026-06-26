@@ -233,3 +233,16 @@ resource "aws_iam_role_policy_attachment" "ssm_deploy_approval_prd" {
   role       = aws_iam_role.github_actions_prd.name
   policy_arn = aws_iam_policy.ssm_deploy_approval_prd.arn
 }
+
+# GitHub Actions から env/prd の terraform plan / apply を実行するために AdministratorAccess を attach。
+# plan は tfstate(S3) の read + 管理対象リソースの read、apply は read/write が必要。
+# terraform は IAM ロール (execution role / Blue-Green / scheduler 等) も作成するため、
+# 意味のある scoped policy は事実上 admin 相当になりメンテ負荷が高い。当面 dev と同様に
+# admin で運用し、CI plan/apply を通す。
+#
+# TODO: dev (github_actions_admin_dev) と合わせて CloudTrail から実使用 action を抽出し、
+#       dev / prd 共通の scoped policy に切り替えて本 attachment は両方剥がす。
+resource "aws_iam_role_policy_attachment" "github_actions_admin_prd" {
+  role       = aws_iam_role.github_actions_prd.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
