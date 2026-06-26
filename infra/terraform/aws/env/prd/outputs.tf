@@ -116,11 +116,11 @@ output "api_fqdn" {
 }
 
 # -----------------------------------------------------------------------------
-# Rewards 達成カード S3（rewards-storage.tf）
+# Rewards 達成カード S3（main.tf の module "rewards_bucket"）
 # -----------------------------------------------------------------------------
 output "rewards_bucket_name" {
   description = "達成カード PNG を保存する公開読み取り S3 バケット名"
-  value       = aws_s3_bucket.rewards.bucket
+  value       = module.rewards_bucket.bucket
 }
 
 output "rewards_public_url_base" {
