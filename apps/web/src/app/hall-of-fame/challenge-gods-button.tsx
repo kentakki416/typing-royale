@@ -3,26 +3,20 @@
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 
-import { startPlaySession } from "@/app/actions"
+import { startPlaySession } from "../actions"
 
 type Props = {
-  className?: string
-  label?: string
   languageId: number
 }
 
 /**
- * 言語選択 (/play) を経由せず、直接「神々に挑戦」を開始するボタン。
+ * 殿堂入りページから直接「神々に挑戦」を開始するボタン。
  *
- * 殿堂入りページ・ホーム画面から共有で使う。`startPlaySession` Server Action で
- * セッションを作って `/play/[sessionId]` に直接遷移する（LanguageSelector と同じ手順で
- * sessionStorage に詰めてから push）。label / className を渡して各画面の文言・装飾に合わせる。
+ * 言語選択 (/play) を経由せず、 startPlaySession Server Action でセッションを作って
+ * /play/[sessionId] に直接遷移する。 LanguageSelector と同じ手順で sessionStorage に
+ * 詰めてから push
  */
-export function ChallengeGodsButton({
-  className = "btn btn-gold",
-  label = "⚡ 神々に挑戦する",
-  languageId,
-}: Props) {
+export function ChallengeGodsButton({ languageId }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -55,13 +49,13 @@ export function ChallengeGodsButton({
   return (
     <div style={{ display: "inline-flex", flexDirection: "column", gap: "4px" }}>
       <button
-        className={className}
+        className="btn btn-gold"
         disabled={isPending}
         onClick={handleClick}
         style={{ whiteSpace: "nowrap" }}
         type="button"
       >
-        {isPending ? "準備中…" : label}
+        {isPending ? "準備中…" : "⚡ 神々に挑戦する"}
       </button>
       {error !== null && (
         <span className="text-xs" style={{ color: "var(--error)" }}>
