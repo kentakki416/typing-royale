@@ -360,8 +360,8 @@ module "elasticache" {
 # 値を入れると以下が一括作成される:
 #   1. data "aws_route53_zone" で Route 53 Domains 購入時に自動作成された
 #      hosted zone を lookup（Registrar 側の NS もこの zone を向くので追加の手動操作は不要）
-#   2. ACM ワイルドカード証明書 (*.<subdomain>.<domain_name>) を DNS 検証で発行
-#   3. <api_subdomain>.<subdomain>.<domain_name> の A レコード (ALB ALIAS)
+#   2. ACM ワイルドカード証明書を DNS 検証で発行 (本番=*.<domain_name> / 非本番=*.<subdomain>.<domain_name>)
+#   3. API の A レコード (ALB ALIAS) を作成 (本番=api.<domain_name> / 非本番=api.<subdomain>.<domain_name>)
 #
 # 前提:
 #   - Route 53 Domains で var.domain_name を購入済み（apex zone は自動作成されている）
@@ -370,6 +370,11 @@ module "elasticache" {
 
 locals {
   dns_enabled = var.domain_name != ""
+
+  # API の FQDN。subdomain が空 (本番) なら api.<domain>、値があれば api.<subdomain>.<domain>。
+  #   - 本番: subdomain="" → api.typing-royale.com
+  #   - stg : subdomain="stg" → api.stg.typing-royale.com
+  api_fqdn = var.subdomain == "" ? "${var.api_subdomain}.${var.domain_name}" : "${var.api_subdomain}.${var.subdomain}.${var.domain_name}"
 }
 
 data "aws_route53_zone" "main" {
@@ -446,7 +451,7 @@ module "route53_api" {
   source = "../../modules/route53"
 
   zone_id      = data.aws_route53_zone.main[0].zone_id
-  fqdn         = "${var.api_subdomain}.${var.subdomain}.${var.domain_name}"
+  fqdn         = local.api_fqdn
   alb_dns_name = module.alb.alb_dns_name
   alb_zone_id  = module.alb.alb_zone_id
 }

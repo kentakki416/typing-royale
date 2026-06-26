@@ -76,13 +76,13 @@ variable "domain_name" {
 }
 
 variable "subdomain" {
-  description = "サブドメイン (例: prd)。ACM ワイルドカード証明書は *.<subdomain>.<domain_name> のスコープで発行"
+  description = "環境サブドメイン。本番は空文字 (api.<domain> / ACM は *.<domain>)。stg/dev など非本番で値を入れると api.<subdomain>.<domain> / ACM は *.<subdomain>.<domain> になる"
   type        = string
-  default     = "prd"
+  default     = ""
 }
 
 variable "api_subdomain" {
-  description = "API ホスト用のサブドメインパーツ (例: api)。最終 FQDN は <api_subdomain>.<subdomain>.<domain_name> (例: api.prd.typing-royale.com)"
+  description = "API ホスト用のサブドメインパーツ (例: api)。最終 FQDN は subdomain 空なら <api_subdomain>.<domain_name> (例: api.typing-royale.com)、値ありなら <api_subdomain>.<subdomain>.<domain_name> (例: api.stg.typing-royale.com)"
   type        = string
   default     = "api"
 }
