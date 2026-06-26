@@ -272,8 +272,11 @@ module "app_secrets" {
 module "rds" {
   source = "../../modules/rds"
 
-  name              = "${local.name_prefix}-db"
-  engine_version    = "16.6"
+  name = "${local.name_prefix}-db"
+  # メジャーバージョンのみ指定。auto_minor_version_upgrade=true なので AWS が
+  # 利用可能な最新マイナーを選ぶ。マイナーピン留め (例: 16.6) は AWS が EOL で
+  # 廃止すると create 時に "Cannot find version" で落ちるため避ける。
+  engine_version    = "16"
   instance_class    = "db.t4g.micro"
   allocated_storage = 20
   storage_type      = "gp3"
