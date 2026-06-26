@@ -537,6 +537,10 @@ module "ecs_api" {
   secrets_arn = local.ecs_common.secrets_arn
   secret_keys = local.ecs_common.secret_keys
 
+  # S3 達成カードストレージ（rewards-storage.tf）。worker と同じ asset_url を生成する
+  task_role_arn = aws_iam_role.rewards_task.arn
+  environment   = local.rewards_s3_environment
+
   # ALB + Blue/Green
   target_group_arn             = module.alb.target_group_a_arn
   enable_blue_green            = true
@@ -568,6 +572,10 @@ module "ecs_worker" {
 
   secrets_arn = local.ecs_common.secrets_arn
   secret_keys = local.ecs_common.secret_keys
+
+  # S3 達成カードストレージ（rewards-storage.tf）。生成した PNG を S3 に保存する
+  task_role_arn = aws_iam_role.rewards_task.arn
+  environment   = local.rewards_s3_environment
 
   # 先に ECR へ image を push してから apply する前提で 1 固定。
   # image が未 push の状態で apply すると ECS task が CannotPullContainerError で
