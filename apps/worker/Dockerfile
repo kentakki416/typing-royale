@@ -31,8 +31,10 @@ RUN pnpm install --frozen-lockfile
 
 COPY --from=pruner /app/out/full/ ./
 
-RUN pnpm --filter @repo/db db:generate
-RUN pnpm --filter worker build
+# turbo 経由でビルド。build.dependsOn (^build + @repo/db#db:generate) により
+# @repo/* (db/redis/queue/logger/generate-image) が先にビルドされる。
+# pnpm --filter worker build だと @repo/* の dist が無く TS2307 で失敗する。
+RUN npx -y turbo@2.6.1 run build --filter=worker
 
 RUN pnpm deploy --filter worker --prod /app/deploy
 

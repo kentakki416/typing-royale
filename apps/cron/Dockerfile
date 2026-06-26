@@ -31,7 +31,10 @@ RUN pnpm install --frozen-lockfile
 
 COPY --from=pruner /app/out/full/ ./
 
-RUN pnpm --filter cron build
+# turbo 経由でビルド。build.dependsOn (^build + @repo/db#db:generate) により
+# @repo/* (db/logger 等) が先にビルド + Prisma client 生成される。
+# pnpm --filter cron build だと @repo/* の dist が無く TS2307 で失敗する。
+RUN npx -y turbo@2.6.1 run build --filter=cron
 
 RUN pnpm deploy --filter cron --prod /app/deploy
 
