@@ -25,6 +25,19 @@ resource "aws_s3_bucket_public_access_block" "rewards" {
   restrict_public_buckets = false
 }
 
+# フロントの「PNG をダウンロード」は cross-origin fetch → blob で行うため CORS が必要。
+# データは公開前提なので GET を全 origin に許可する（preview / prod 両対応）
+resource "aws_s3_bucket_cors_configuration" "rewards" {
+  bucket = aws_s3_bucket.rewards.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET"]
+    allowed_origins = ["*"]
+    max_age_seconds = 3600
+  }
+}
+
 # 誰でも GetObject 可能（カードは公開前提）。秘匿情報は載せない
 resource "aws_s3_bucket_policy" "rewards_public_read" {
   bucket     = aws_s3_bucket.rewards.id
