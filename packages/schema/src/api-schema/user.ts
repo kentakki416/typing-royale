@@ -30,10 +30,22 @@ const weakCharSchema = z.object({
 })
 
 /**
+ * 得意なリポジトリ（自分の play_session を repo ごとに集計し、平均スコアが最高の repo）
+ */
+const bestRepoSchema = z.object({
+  avg_score: z.number().nonnegative(),
+  full_name: z.string(),
+})
+
+/**
  * 認証中ユーザー取得のレスポンススキーマ。
- * マイページのサマリー用に weak_chars（苦手文字 top N、誤打数降順）を含める。
+ * マイページのサマリー用に avg_accuracy / best_repo / weak_chars（苦手文字 top N）を含める。
  */
 export const getUserResponseSchema = userSchema.extend({
+  /** 全 play_session の平均正確率（0〜1）。プレイ実績が無ければ 0 */
+  avg_accuracy: z.number().min(0).max(1),
+  /** 得意なリポジトリ（平均スコア最高）。プレイ実績が無ければ null */
+  best_repo: bestRepoSchema.nullable(),
   weak_chars: z.array(weakCharSchema),
 })
 

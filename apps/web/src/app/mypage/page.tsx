@@ -17,11 +17,10 @@ export const metadata: Metadata = {
  *
  * 表示要素:
  * - アバター + 表示名 + ランキング掲載 ON/OFF + 全言語通算グレード badge
- * - 4-stat (ベストスコア / 累計文字数 / 総プレイ数 / 平均正確率)
- *     ※ 累計文字数 / 総プレイ数 / 平均正確率 は /api/users/me 拡張までプレースホルダ
+ * - 3-stat (ベストスコア / 得意なリポジトリ / 平均正確率)。後者2つは /api/user 拡張で集計
  * - エンジニアグレード進捗カード（全言語通算 bestScore ベース）
+ * - 苦手文字 top10（生涯累計の誤打数降順）
  * - 全期間ランキング表（TS / JS 別ベスト + 順位 + 状態）
- * - 最近のプレイは別 step
  */
 export default async function MyPage() {
   const [me, tsRanking, jsRanking] = await Promise.all([
@@ -77,15 +76,32 @@ export default async function MyPage() {
                 <div className="stat-label">ベストスコア</div>
               </div>
               <div className="stat">
-                <div className="stat-value">—</div>
-                <div className="stat-label">累計文字数</div>
+                {me.best_repo ? (
+                  <a
+                    className="stat-value text-mono"
+                    href={`https://github.com/${me.best_repo.full_name}`}
+                    rel="noreferrer noopener"
+                    style={{
+                      display: "block",
+                      fontSize: "15px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                    target="_blank"
+                    title={`${me.best_repo.full_name}（平均スコア ${Math.round(me.best_repo.avg_score)}）`}
+                  >
+                    {me.best_repo.full_name}
+                  </a>
+                ) : (
+                  <div className="stat-value">—</div>
+                )}
+                <div className="stat-label">得意なリポジトリ</div>
               </div>
               <div className="stat">
-                <div className="stat-value">—</div>
-                <div className="stat-label">総プレイ数</div>
-              </div>
-              <div className="stat">
-                <div className="stat-value success">—</div>
+                <div className="stat-value success">
+                  {me.avg_accuracy > 0 ? `${(me.avg_accuracy * 100).toFixed(1)}%` : "—"}
+                </div>
                 <div className="stat-label">平均正確率</div>
               </div>
             </div>

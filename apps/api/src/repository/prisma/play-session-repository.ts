@@ -46,6 +46,16 @@ export type GhostSourceSession = {
  * 単一テーブル責務。複数テーブルの atomic 書き込みは Service が
  * TransactionRunner で境界を制御し、各 Repository に tx を渡す
  */
+/**
+ * マイページサマリー用の集計値。
+ * - avgAccuracy: 全 play_session の平均正確率（0〜1）。プレイ実績が無ければ 0
+ * - bestRepo: 平均スコアが最高の repo（得意なリポジトリ）。実績が無ければ null
+ */
+export type UserSummaryStats = {
+    avgAccuracy: number
+    bestRepo: { avgScore: number; fullName: string } | null
+}
+
 export interface PlaySessionRepository {
     create(input: CreatePlaySessionInput, tx?: TransactionContext): Promise<{ id: number }>
     /**
@@ -53,6 +63,10 @@ export interface PlaySessionRepository {
      * 神セッション削除済み等で見つからなければ null
      */
     findGhostSourceById(id: number): Promise<GhostSourceSession | null>
+    /**
+     * マイページサマリー用に、ユーザーの平均正確率と「平均スコア最高の repo」を集計する
+     */
+    getUserSummaryStats(userId: number): Promise<UserSummaryStats>
 }
 
 /**
@@ -128,6 +142,42 @@ export class PrismaPlaySessionRepository implements PlaySessionRepository {
       languageId: row.languageId,
       playedAt: row.playedAt,
       problemIds: row.problems.map((p) => p.problemId),
+    }
+  }
+
+  async getUserSummaryStats(userId: number): Promise<UserSummaryStats> {
+    const [accAgg, topRepo] = await Promise.all([
+      this._prisma.playSession.aggregate({
+        _avg: { accuracy: true },
+        where: { userId },
+      }),
+      this._prisma.playSession.groupBy({
+        _avg: { score: true },
+        by: ["crawledRepoId"],
+        orderBy: { _avg: { score: "desc" } },
+        take: 1,
+        where: { userId },
+      }),
+    ])
+
+    const avgAccuracy = accAgg._avg.accuracy ?? 0
+
+    const top = topRepo[0]
+    if (top === undefined || top._avg.score === null) {
+      return { avgAccuracy, bestRepo: null }
+    }
+
+    const repo = await this._prisma.crawledRepo.findUnique({
+      select: { fullName: true },
+      where: { id: top.crawledRepoId },
+    })
+    if (repo === null) {
+      return { avgAccuracy, bestRepo: null }
+    }
+
+    return {
+      avgAccuracy,
+      bestRepo: { avgScore: top._avg.score, fullName: repo.fullName },
     }
   }
 }
