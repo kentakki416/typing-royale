@@ -51,42 +51,16 @@ const seedDevUsers = async () => {
   }
 }
 
-/**
- * 問題プールが扱う言語マスタ
- *
- * `apps/cron` のクローラが `slug` を Search API の `language:` フィルタに
- * 渡して repo を絞り込むため、production でも本データは必要。
- * production 含めて全環境で upsert する（冪等なので何度実行しても安全）。
- */
-type LanguageSeed = {
-  name: string
-  slug: string
-}
-
-const languages: LanguageSeed[] = [
-  { name: "TypeScript", slug: "typescript" },
-  { name: "JavaScript", slug: "javascript" },
-]
-
-const seedLanguages = async () => {
-  for (const lang of languages) {
-    await prisma.language.upsert({
-      create: { name: lang.name, slug: lang.slug },
-      update: { name: lang.name },
-      where: { slug: lang.slug },
-    })
-    console.log(`Seeded language: ${lang.slug}`)
-  }
-}
-
 const main = async () => {
   /**
-   * languages は production でも投入する（クローラの動作に必要なマスタ）。
-   * dev users は production ではスキップ。
+   * 言語マスタなどの本番マスタデータは migration
+   * (例: 20260626120000_seed_master_languages) で管理する。migrate deploy に乗せて
+   * 自動・冪等・バージョン管理できるため、seed スクリプトでは扱わない。
+   * seed は dev 専用データ（dev users / ランキング fixtures）だけを担当し、
+   * production では何もしない。
    */
-  await seedLanguages()
   if (process.env.NODE_ENV === "production") {
-    console.log("Skip dev users seeding: NODE_ENV=production")
+    console.log("Skip seeding: NODE_ENV=production (master data is managed by migrations)")
     return
   }
   await seedDevUsers()
