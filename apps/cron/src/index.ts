@@ -7,9 +7,9 @@ import { logger } from "@repo/logger"
  *   - `pnpm crawler:run:typescript`  : TypeScript 週次クローラ
  *   - `pnpm crawler:license-recheck` : 月次ライセンス再検証（言語非依存）
  *
- * `pnpm batch:ranking` は未実装（src/task/ranking-batch.ts はスタブ）。
- * 月間ランキング集計は v2 で `/finish` 同期 UPSERT に移行したため、cron 廃止
- * (docs/spec/monthly-ranking/README.md v2 参照)
+ * ランキング集計は cron を持たない。月間ランキングは v2 で `/finish` 同期 UPSERT に、
+ * オールタイムランキングは `user_language_best` のリアルタイム集計に移行済み
+ * (docs/spec/monthly-ranking/README.md / docs/spec/score-ranking/README.md 参照)
  *
  * このファイルは `pnpm dev` で起動した際のエントリ。現時点では起動確認のみ。
  */
