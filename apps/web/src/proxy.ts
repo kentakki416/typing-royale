@@ -50,6 +50,10 @@ const PUBLIC_PATHS = [
    * ゲスト用 /finish の proxy Route Handler。/api 配下なので明示的に public 化
    */
   "/api/play-sessions/guest",
+  /**
+   * TEMP（PR スクショ用 debug ページ）。スクショ取得後に削除する
+   */
+  "/debug",
   ...DEV_ONLY_PUBLIC_PATHS,
 ]
 
