@@ -152,12 +152,6 @@ flowchart TB
 - Phase 2 ローンチ時点では TypeScript のみ。JavaScript / Go 等は同パターンで task を増やす
 - ENV：`GITHUB_PAT`（運営アカウント）、`DATABASE_URL`、`CRAWLER_REPOS_PER_RUN`、`CRAWLER_MIN_STARS`、`CRAWLER_PUSHED_AFTER`
 
-#### 毎時ランキングバッチ
-- スケジュール：毎時 00 分
-- エントリポイント：`pnpm batch:ranking`
-- 役割：[`docs/spec/score-ranking/`](spec/score-ranking/README.md) に従って言語別トップ 1000 を集計、Redis キャッシュ更新
-- ENV：`DATABASE_URL`、`REDIS_URL`
-
 #### 月次ライセンス再検証
 - スケジュール：月初 04:00 JST
 - エントリポイント：`pnpm crawler:license-recheck`

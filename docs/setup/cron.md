@@ -90,13 +90,12 @@ pnpm dev
 
 ## 6. cron タスクをローカル実行
 
-ECS Scheduled Task で本番運用される 3 つのジョブを、ローカルでも `pnpm <script>` で 1 回起動できる。Phase 0 ではエントリの雛形のみ。Phase 2 以降で実処理が入る:
+ECS Scheduled Task で本番運用される 2 つのジョブを、ローカルでも `pnpm <script>` で 1 回起動できる。Phase 0 ではエントリの雛形のみ。Phase 2 以降で実処理が入る:
 
 | コマンド | フェーズ | 用途 |
 |---|---|---|
 | `pnpm crawler:run:typescript` | Phase 2 | TypeScript 週次クローラ（GitHub API → AST → problem-pool 投入） |
 | `pnpm crawler:license-recheck` | Phase 2 | 月次ライセンス再検証（言語非依存） |
-| `pnpm batch:ranking` | Phase 4 | 毎時ランキング集計 |
 
 ローカルで apps/api / apps/web の動作確認用に problem-pool を埋めたいときは、まず TypeScript クローラを少数回数で回す:
 

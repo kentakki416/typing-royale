@@ -33,11 +33,10 @@ cron / EventBridge から定期実行されるタスク群（GitHub クローラ
 | --- | --- |
 | `pnpm crawler:run:typescript` | TypeScript 用週次クローラ（GitHub API → AST → 問題化） |
 | `pnpm crawler:license-recheck` | 月次ライセンス再検証（言語非依存） |
-| `pnpm batch:monthly-ranking` | 毎時月間ランキング集計（各 (年月, 言語) ごと上位 10 位までを `monthly_ranking_snapshots` に UPSERT） |
 
 **crawler は言語ごとに独立した task** として実装する：AST 抽出層が言語固有（現在は TypeScript Compiler API、将来追加する JavaScript / Go は別 parser）で、1 言語の rate limit / 障害を他言語に波及させないため。新言語追加時は `task/crawler-run-<slug>.ts` を新規作成し、`LANGUAGE_SLUG` と `RUN_TYPE = "crawler_<slug>"` をハードコードする。現時点では TypeScript のみ。
 
-> **ランキング集計（`batch:ranking`）は未実装**。`src/task/ranking-batch.ts` には起動エントリの雛形だけがあり、実処理は今後追加する。実装イメージは [新しい task を実装するときの例（ランキング集計の構成イメージ）](#新しい-task-を実装するときの例ランキング集計の構成イメージ) を参照。
+> **ランキング集計は cron では行わない**。月間ランキングは v2 で `/finish` 同期 UPSERT（[`docs/spec/monthly-ranking/`](../../docs/spec/monthly-ranking/README.md)）に、オールタイムランキングは `user_language_best` のリアルタイム集計（[`docs/spec/score-ranking/`](../../docs/spec/score-ranking/README.md)）に移行済みで、cron バッチ・snapshot テーブルは持たない。
 
 ## Commands
 
@@ -67,8 +66,7 @@ apps/cron/
 ├── src/
 │   ├── task/                        # cron 1 本 = 1 ファイル（package.json scripts と 1:1）
 │   │   ├── crawler-run-typescript.ts   # crawler:run:typescript  - 週次クローラ（TS）
-│   │   ├── crawler-license-recheck.ts  # crawler:license-recheck - 月次ライセンス再検証
-│   │   └── ranking-batch.ts            # batch:ranking           - 未実装スタブ（将来：毎時ランキング集計）
+│   │   └── crawler-license-recheck.ts  # crawler:license-recheck - 月次ライセンス再検証
 │   ├── runtime/                     # task 共通のランタイム（graceful shutdown など）
 │   │   └── graceful-shutdown.ts
 │   ├── service/                     # 業務ロジック（task 横断で再利用される単位、I/O は Repository / client 経由）
@@ -147,11 +145,11 @@ flowchart LR
 5. **lib は env も DB も知らない**
    引数だけで完結する純関数を置く。状態や I/O が必要な処理は `client/` か `service/` か `repository/` 側に持たせる。
 
-### 新しい task を実装するときの例（ランキング集計の構成イメージ）
+### 新しい task を実装するときの例（集計バッチの構成イメージ）
 
-未実装の `batch:ranking`（毎時、ranking_snapshots を更新）を例に、本ディレクトリ戦略に沿った task の組み立て方を示す。新しい task を実装する際の参考にする。
+仮に「言語別の集計バッチ」を追加するケースを例に、本ディレクトリ戦略に沿った task の組み立て方を示す（あくまで構成イメージ。実在の task ではない）。新しい task を実装する際の参考にする。
 
-**`src/task/ranking-batch.ts`** — 起動の薄い 1 ファイル：
+**`src/task/<例: aggregate-batch>.ts`** — 起動の薄い 1 ファイル：
 
 ```ts
 import { createPrismaClient } from "@repo/db"
