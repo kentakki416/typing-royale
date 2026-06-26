@@ -61,7 +61,6 @@ export default async function MyPage() {
               </>
             )}
           </div>
-          <Link className="btn" href="/mypage/account">⚙ 設定</Link>
         </div>
 
         <div className="tabs">

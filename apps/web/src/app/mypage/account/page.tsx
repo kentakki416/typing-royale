@@ -30,7 +30,6 @@ export default async function AccountSettingsPage() {
             <h1 style={{ marginBottom: "4px" }}>{me.github_username ?? "(no name)"}</h1>
             <div className="text-muted text-sm">アカウント設定</div>
           </div>
-          <Link className="btn" href="/mypage">← マイページに戻る</Link>
         </div>
 
         <div className="tabs">
