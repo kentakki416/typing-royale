@@ -9,6 +9,7 @@ import { CelebrationOverlay } from "@/components/celebration-overlay"
 import { GradeProgressBar } from "@/components/grade-progress-bar"
 import { TopTenAnnouncementModal, TopTenAnnouncementKind } from "@/components/top-ten-announcement-modal"
 import { Topbar } from "@/components/topbar"
+import { extractRepoAndPathFromGithubUrl } from "@/libs/github-source-url"
 import { gradeBadgeClass } from "@/libs/grade"
 
 import { GhostResultModal } from "./ghost-result-modal"
@@ -154,6 +155,13 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
 
+  /**
+   * 今回解いた問題（出題順に完了数ぶん）。各問題の source_url から OSS のファイルパスを出す
+   */
+  const solvedProblems = [...problems]
+    .sort((a, b) => a.order_index - b.order_index)
+    .slice(0, result.problems_played)
+
   return (
     <>
       <Topbar isAuthed={!isGuest} />
@@ -236,6 +244,46 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
             </p>
           )}
         </div>
+
+        {solvedProblems.length > 0 && (
+          <div className="card mb-16">
+            <div className="card-header">
+              <div className="card-title">
+                <span style={{ marginRight: "8px" }}>📂</span>今回解いたファイル（{solvedProblems.length}）
+              </div>
+            </div>
+            <div style={{ display: "grid", gap: "8px" }}>
+              {solvedProblems.map((problem, index) => {
+                const meta = extractRepoAndPathFromGithubUrl(problem.source_url)
+                return (
+                  <a
+                    className="text-sm flex-between"
+                    href={problem.source_url}
+                    key={problem.id}
+                    rel="noreferrer noopener"
+                    style={{ alignItems: "baseline", gap: "8px" }}
+                    target="_blank"
+                  >
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <span className="text-muted">{index + 1}.</span>{" "}
+                      {meta !== null ? (
+                        <>
+                          📦 {meta.repo} / <span className="text-mono">{meta.path}</span>
+                          {meta.lineRange !== null && (
+                            <span className="text-muted">:{meta.lineRange}</span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-mono">{problem.function_name}</span>
+                      )}
+                    </span>
+                    <span className="text-muted" style={{ flexShrink: 0 }}>↗</span>
+                  </a>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="card mb-16">
           <div className="card-header">
