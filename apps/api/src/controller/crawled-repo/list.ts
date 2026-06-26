@@ -32,10 +32,11 @@ export class CrawledRepoListController {
     logger.info("CrawledRepoListController: Listing crawled repos", {
       language: query.language,
       limit: query.limit,
+      offset: query.offset,
     })
 
     const result = await service.crawledRepo.listByLanguage(
-      { languageSlug: query.language, limit: query.limit },
+      { languageSlug: query.language, limit: query.limit, offset: query.offset },
       {
         crawledRepoRepository: this.crawledRepoRepository,
         languageRepository: this.languageRepository,
@@ -58,6 +59,7 @@ export class CrawledRepoListController {
         topics: e.topics,
       })),
       language: result.value.languageSlug,
+      total: result.value.total,
     })
     return res.status(200).json(response)
   }

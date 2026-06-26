@@ -8,11 +8,13 @@ import { z } from "zod"
  * GET /api/crawled-repos の query string
  *
  * - language: スラッグ（例: "typescript" / "javascript"）
- * - limit: 件数上限（指定なしなら全件相当の 1000 を上限）
+ * - limit: 1 ページの件数上限（ページング用。指定なしは 1000）
+ * - offset: 取得開始位置（ページング用。指定なしは 0）
  */
 export const getCrawledReposQueryStringSchema = z.object({
   language: z.string().min(1).max(32),
   limit: z.coerce.number().int().min(1).max(1000).default(1000),
+  offset: z.coerce.number().int().min(0).default(0),
 })
 
 /**
@@ -31,10 +33,13 @@ const crawledRepoEntrySchema = z.object({
 
 /**
  * GET /api/crawled-repos のレスポンス
+ *
+ * - total: 言語別の有効リポジトリ総数（ページ数算出用）
  */
 export const getCrawledReposResponseSchema = z.object({
   entries: z.array(crawledRepoEntrySchema),
   language: z.string(),
+  total: z.number().int().nonnegative(),
 })
 
 export type GetCrawledReposQueryString = z.infer<typeof getCrawledReposQueryStringSchema>
