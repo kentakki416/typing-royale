@@ -60,7 +60,8 @@
   --typed-char: var(--dracula-green);
   --typed-error: var(--dracula-red);
   --current-char-bg: var(--dracula-purple);
-  --untyped-char: #6272a4;
+  /** 打鍵前のコード文字。暗くて読みづらかったため明度を上げた */
+  --untyped-char: #8b97c9;
   --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", Menlo, Consolas, monospace;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", system-ui, sans-serif;
 }

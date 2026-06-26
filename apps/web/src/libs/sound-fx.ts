@@ -13,7 +13,7 @@
  *   resume が必要なので、初回 keydown で `resumeAudio()` を呼ぶ
  */
 
-const MASTER_VOLUME = 0.6
+const MASTER_VOLUME = 0.85
 
 let cachedContext: AudioContext | null = null
 let masterGain: GainNode | null = null
@@ -167,7 +167,7 @@ export const playTimeBonus = () => {
     osc.type = "triangle"
     osc.frequency.setValueAtTime(freq, t)
     gain.gain.setValueAtTime(0, t)
-    gain.gain.linearRampToValueAtTime(0.06, t + 0.01)
+    gain.gain.linearRampToValueAtTime(0.13, t + 0.01)
     gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18)
     osc.connect(gain).connect(master)
     osc.start(t)
