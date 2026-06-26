@@ -70,7 +70,7 @@
         "https://mcp.vercel.com"
       ]
     },
-    "_disabled_notion": {
+    "notion": {
       "command": "npx",
       "args": [
         "-y",
