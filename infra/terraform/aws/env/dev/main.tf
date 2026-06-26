@@ -369,9 +369,9 @@ module "alb" {
   enable_https    = false
   certificate_arn = null
 
-  # === SSE 対応 ===
-  # /api/matching/events の SSE が 60 秒で切れないよう 3600 秒に延長
-  idle_timeout = 3600
+  # === idle_timeout ===
+  # 現状 SSE / long-poll エンドポイントは無いため ALB デフォルト (60 秒) を使う。
+  # 将来 stream 系を足すときに modules/alb の idle_timeout を延長する。
 
   # === Blue/Greenデプロイ設定 ===
   # dev は素のローリングデプロイで運用する (検証コストを抑えるため)。

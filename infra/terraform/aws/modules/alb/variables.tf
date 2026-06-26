@@ -108,7 +108,7 @@ variable "test_listener_port" {
 }
 
 variable "idle_timeout" {
-  description = "ALB の idle timeout (秒)。SSE 等の長時間接続を維持するため 3600 推奨。デフォルト 60"
+  description = "ALB の idle timeout (秒)。SSE / long-poll 等の長時間接続がある場合のみ 3600 等に延長する。デフォルト 60"
   type        = number
   default     = 60
 }
