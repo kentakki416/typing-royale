@@ -71,8 +71,9 @@ variable "test_listener_allowed_cidrs" {
 variable "domain_name" {
   description = "サービスのルートドメイン (例: typing-royale.com)。Route53 hosted zone がこの名前で作成済みであること。空文字列にすると DNS / ACM / HTTPS をすべて無効化し HTTP ALB のみ作成する"
   type        = string
-  # TODO: hosted zone を作成したら本番ドメインに変更すること
-  default = ""
+  # Route53 Domains で typing-royale.com を登録済み (hosted zone 自動作成)。
+  # 空にすると DNS/ACM/HTTPS を無効化し HTTP ALB のみになる。
+  default = "typing-royale.com"
 }
 
 variable "subdomain" {
