@@ -18,6 +18,11 @@ type Options = {
    * 残り 30s / 10s の境界をまたいだ瞬間に 1 度だけ呼ばれる
    */
   onTierMilestone?: (kind: MilestoneKind) => void
+  /**
+   * 残り 10 秒以降、1 秒ごと（10,9,…,1）に呼ばれる。カウントダウン SE 用。
+   * extendDuration で 10 秒超に伸びた後、再び 10 秒を下回れば再度鳴り始める
+   */
+  onCountdownTick?: (secondsLeft: number) => void
 }
 
 type Result = {
@@ -43,7 +48,12 @@ type Result = {
  * - `startAtRef` を返すので、同じ tick 起点で `elapsedMs` を計算したい他フックが参照できる
  * - `extendDuration(extraMs)` を呼ぶと durationMs が動的に増え、残り時間も伸びる
  */
-export function useCountdown({ durationMs, onTierMilestone, onTimeUp }: Options): Result {
+export function useCountdown({
+  durationMs,
+  onCountdownTick,
+  onTierMilestone,
+  onTimeUp,
+}: Options): Result {
   const [remainingMs, setRemainingMs] = useState(durationMs)
 
   const startAtRef = useRef<number>(0)
@@ -58,15 +68,21 @@ export function useCountdown({ durationMs, onTierMilestone, onTimeUp }: Options)
   const fired30Ref = useRef(false)
   const fired10Ref = useRef(false)
   /**
+   * 直近に tick を鳴らした残り秒数。秒が変わるたびに 1 回だけ tick を鳴らすための gate
+   */
+  const lastTickSecRef = useRef(0)
+  /**
    * コールバックを最新参照に保つ（render 中に ref を書き換えるのは
    * React の警告対象なので useEffect で同期させる）
    */
   const onTimeUpRef = useRef(onTimeUp)
   const onTierMilestoneRef = useRef(onTierMilestone)
+  const onCountdownTickRef = useRef(onCountdownTick)
   useEffect(() => {
     onTimeUpRef.current = onTimeUp
     onTierMilestoneRef.current = onTierMilestone
-  }, [onTimeUp, onTierMilestone])
+    onCountdownTickRef.current = onCountdownTick
+  }, [onTimeUp, onTierMilestone, onCountdownTick])
 
   useEffect(() => {
     startAtRef.current = performance.now()
@@ -83,6 +99,15 @@ export function useCountdown({ durationMs, onTierMilestone, onTimeUp }: Options)
       if (!fired10Ref.current && remaining <= 10_000 && remaining > 0) {
         fired10Ref.current = true
         onTierMilestoneRef.current?.("urgent-10")
+      }
+
+      /**
+       * 残り 10 秒以降は秒が変わるたびに 1 回ずつ tick を鳴らす（10,9,…,1 のカウントダウン）
+       */
+      const secLeft = Math.ceil(remaining / 1000)
+      if (secLeft <= 10 && secLeft >= 1 && secLeft !== lastTickSecRef.current) {
+        lastTickSecRef.current = secLeft
+        onCountdownTickRef.current?.(secLeft)
       }
 
       if (remaining <= 0) {

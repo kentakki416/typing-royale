@@ -194,13 +194,14 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
 
   const { extendDuration, remainingMs, startAtRef } = useCountdown({
     durationMs: SESSION_DURATION_MS,
+    /**
+     * 残り 10 秒以降は毎秒（10,9,…,1）カウントダウン音を鳴らす
+     */
+    onCountdownTick: () => {
+      playUrgentTick()
+    },
     onTierMilestone: (kind) => {
-      if (kind === "urgent-30") {
-        triggerFlash("urgent", 600)
-      } else {
-        playUrgentTick()
-        triggerFlash("urgent", 800)
-      }
+      triggerFlash("urgent", kind === "urgent-30" ? 600 : 800)
     },
     onTimeUp: () => {
       void finish()
