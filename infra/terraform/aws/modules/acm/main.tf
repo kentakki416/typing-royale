@@ -1,11 +1,17 @@
 # =============================================================================
 # ACM ワイルドカード証明書 + DNS 検証
 # =============================================================================
-# *.<subdomain>.<domain> をカバー。<domain> 自体は SAN に含めず、
-# 環境別サブドメイン専用とする。
+# subdomain の有無で発行スコープを切り替える:
+#   - subdomain == ""  (本番想定): *.<domain>          を発行 (例: *.typing-royale.com → api.typing-royale.com)
+#   - subdomain != ""  (stg/dev) : *.<subdomain>.<domain> を発行 (例: *.stg.typing-royale.com → api.stg.typing-royale.com)
+# どちらも <domain> 自体 (apex) は SAN に含めない (apex はフロント=Vercel が別証明書で扱う)。
+
+locals {
+  cert_domain = var.subdomain == "" ? "*.${var.domain_name}" : "*.${var.subdomain}.${var.domain_name}"
+}
 
 resource "aws_acm_certificate" "wildcard" {
-  domain_name       = "*.${var.subdomain}.${var.domain_name}"
+  domain_name       = local.cert_domain
   validation_method = "DNS"
 
   lifecycle {

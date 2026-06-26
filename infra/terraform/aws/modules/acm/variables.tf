@@ -4,7 +4,7 @@ variable "domain_name" {
 }
 
 variable "subdomain" {
-  description = "サブドメイン (例: dev)。証明書は *.<subdomain>.<domain> のワイルドカードを発行"
+  description = "環境サブドメイン。空文字なら *.<domain> を発行 (本番想定)、値があれば *.<subdomain>.<domain> を発行 (例: stg / dev)"
   type        = string
 }
 

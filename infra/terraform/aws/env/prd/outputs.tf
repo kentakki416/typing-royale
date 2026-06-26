@@ -111,6 +111,6 @@ output "acm_certificate_arn" {
 }
 
 output "api_fqdn" {
-  description = "Route53 で作成された API の FQDN (例: api.prd.typing-royale.com)"
+  description = "Route53 で作成された API の FQDN (本番例: api.typing-royale.com)"
   value       = length(module.route53_api) > 0 ? module.route53_api[0].fqdn : null
 }
