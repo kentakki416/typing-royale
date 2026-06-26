@@ -2,49 +2,57 @@
 
 import { useState } from "react"
 
-import type { GetMonthlyRankingsResponse } from "@repo/api-schema"
+import type { GetMonthlyRankingsResponse, LanguageItem } from "@repo/api-schema"
 
 import { MonthlyTopCard } from "./monthly-top-card"
 
-type Language = "typescript" | "javascript"
-
-type Props = {
-  jsMonthly: GetMonthlyRankingsResponse
-  tsMonthly: GetMonthlyRankingsResponse
+export type MonthlyByLanguage = {
+  language: LanguageItem
+  monthly: GetMonthlyRankingsResponse
 }
 
-const LANGUAGES: { key: Language; label: string }[] = [
-  { key: "typescript", label: "TypeScript" },
-  { key: "javascript", label: "JavaScript" },
-]
+type Props = {
+  items: MonthlyByLanguage[]
+}
 
 /**
  * ホーム画面「月間トップ」カードの本体。
- * TypeScript / JavaScript をボタンで切り替える Client Component。
+ * 言語マスタ（API 取得）をボタンで切り替える Client Component。
  * カード見出し右側 (`page.tsx`) に「月間ランキング →」リンクが既にあるため、
  * ここに重複した CTA リンクは置かない
  */
-export function MonthlyTopSection({ jsMonthly, tsMonthly }: Props) {
-  const [active, setActive] = useState<Language>("typescript")
+export function MonthlyTopSection({ items }: Props) {
+  const [activeSlug, setActiveSlug] = useState(items[0]?.language.slug ?? "")
 
-  const data = active === "typescript" ? tsMonthly : jsMonthly
+  const active = items.find((item) => item.language.slug === activeSlug) ?? items[0]
+
+  /**
+   * 言語マスタが無い場合は何も描画しない（ホームの他コンテンツは残す）
+   */
+  if (active === undefined) {
+    return null
+  }
 
   return (
     <div>
       <div className="pills mb-16">
-        {LANGUAGES.map((lang) => (
+        {items.map((item) => (
           <button
-            className={`pill ${active === lang.key ? "active" : ""}`}
-            key={lang.key}
-            style={active === lang.key ? { border: 0 } : { background: "transparent", border: 0 }}
+            className={`pill ${activeSlug === item.language.slug ? "active" : ""}`}
+            key={item.language.slug}
+            style={
+              activeSlug === item.language.slug
+                ? { border: 0 }
+                : { background: "transparent", border: 0 }
+            }
             type="button"
-            onClick={() => setActive(lang.key)}
+            onClick={() => setActiveSlug(item.language.slug)}
           >
-            {lang.label}
+            {item.language.name}
           </button>
         ))}
       </div>
-      <MonthlyTopCard data={data} />
+      <MonthlyTopCard data={active.monthly} />
     </div>
   )
 }

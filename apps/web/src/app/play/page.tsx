@@ -1,7 +1,9 @@
 import type { Metadata } from "next"
 
+import { EmptyLanguagesState } from "@/components/empty-languages-state"
 import { Topbar } from "@/components/topbar"
 import { getAccessToken } from "@/libs/auth"
+import { getLanguages } from "@/libs/languages"
 
 import { LanguageSelector } from "../language-selector"
 
@@ -10,16 +12,21 @@ export const metadata: Metadata = {
 }
 
 /**
- * MVP では言語マスタを取得する API がまだ無いため、ハードコードで TypeScript /
- * JavaScript を出す。DB seed の id 1/2 と一致させること
- *
- * JavaScript は問題プールがまだ用意されていないため `comingSoon: true` で
- * カード自体を選択不可（disabled）にする。問題が追加され次第 false に戻す
+ * 言語マスタ（API）には無い「表示メタ」を slug で補う。
+ * - iconClass / iconText: カードのアイコン表示
+ * - comingSoon: 問題プールが未整備の言語（現状 JavaScript）はカードを選択不可にする。
+ *   問題が追加され次第 false に戻す（または将来は problems の有無で動的判定する）
+ * マスタにあるが本マップに無い言語は DEFAULT で comingSoon 扱い（誤って遊ばせない）
  */
-const SUPPORTED_LANGUAGES = [
-  { comingSoon: false, iconClass: "ts", iconText: "TS", id: 1, name: "TypeScript" },
-  { comingSoon: true, iconClass: "js", iconText: "JS", id: 2, name: "JavaScript" },
-] as const
+const LANGUAGE_PRESENTATION: Record<
+  string,
+  { comingSoon: boolean; iconClass: string; iconText: string }
+> = {
+  javascript: { comingSoon: true, iconClass: "js", iconText: "JS" },
+  typescript: { comingSoon: false, iconClass: "ts", iconText: "TS" },
+}
+
+const DEFAULT_PRESENTATION = { comingSoon: true, iconClass: "code", iconText: "?" }
 
 /**
  * 言語選択画面（mock: language-select.html 準拠）
@@ -28,6 +35,19 @@ const SUPPORTED_LANGUAGES = [
  */
 export default async function PlaySelectPage() {
   const accessToken = await getAccessToken()
+  const languages = await getLanguages()
+
+  const selectorLanguages = languages.map((language) => {
+    const presentation = LANGUAGE_PRESENTATION[language.slug] ?? DEFAULT_PRESENTATION
+    return {
+      comingSoon: presentation.comingSoon,
+      iconClass: presentation.iconClass,
+      iconText: presentation.iconText,
+      id: language.id,
+      name: language.name,
+    }
+  })
+
   return (
     <>
       <Topbar isAuthed={accessToken !== null} />
@@ -39,7 +59,11 @@ export default async function PlaySelectPage() {
           から自動取得した関数です。
         </p>
 
-        <LanguageSelector languages={SUPPORTED_LANGUAGES} />
+        {selectorLanguages.length === 0 ? (
+          <EmptyLanguagesState />
+        ) : (
+          <LanguageSelector languages={selectorLanguages} />
+        )}
 
         <div className="card god-frame mt-24">
           <div className="flex-center gap-12">

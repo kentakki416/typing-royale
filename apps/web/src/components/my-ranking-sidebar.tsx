@@ -6,14 +6,9 @@ import { GradeProgressBar } from "@/components/grade-progress-bar"
 import { gradeBadgeClass } from "@/libs/grade"
 
 type Props = {
-    language: "javascript" | "typescript"
+    languageLabel: string
     me: GetMyRankingResponse | null
     totalPlayers: number
-}
-
-const LANGUAGE_LABELS: Record<Props["language"], string> = {
-  javascript: "JavaScript",
-  typescript: "TypeScript",
 }
 
 /**
@@ -26,8 +21,8 @@ const LANGUAGE_LABELS: Record<Props["language"], string> = {
  *
  * デザイン: docs/mocks/ranking.html の sidebar「あなたの状況」
  */
-export function MyRankingSidebar({ language, me, totalPlayers }: Props) {
-  const langLabel = LANGUAGE_LABELS[language]
+export function MyRankingSidebar({ languageLabel, me, totalPlayers }: Props) {
+  const langLabel = languageLabel
 
   if (me === null) {
     return (

@@ -3,18 +3,11 @@ import Link from "next/link"
 
 import type { GetCrawledReposResponse } from "@repo/api-schema"
 
+import { EmptyLanguagesState } from "@/components/empty-languages-state"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
-
-const SUPPORTED_LANGUAGES = ["typescript", "javascript"] as const
-
-type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]
-
-const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
-  javascript: "JavaScript",
-  typescript: "TypeScript",
-}
+import { getLanguages, resolveSelectedLanguage } from "@/libs/languages"
 
 export const metadata: Metadata = {
   title: "クロール対象リポジトリ - Typing Royale",
@@ -38,11 +31,25 @@ export default async function CrawledReposPage({
     searchParams: Promise<Search>
 }) {
   const { language: rawLang } = await searchParams
-  const language: SupportedLanguage = SUPPORTED_LANGUAGES.includes(rawLang as SupportedLanguage)
-    ? (rawLang as SupportedLanguage)
-    : "typescript"
-
+  const languages = await getLanguages()
   const accessToken = await getAccessToken()
+
+  const language = resolveSelectedLanguage(languages, rawLang)
+
+  /**
+   * 言語マスタが無い場合の空状態（本来 migration で投入されるため発生しない）
+   */
+  if (language === null) {
+    return (
+      <>
+        <Topbar active="crawled-repos" isAuthed={accessToken !== null} />
+        <div className="container">
+          <h1 className="mb-24">📦 クロール対象リポジトリ</h1>
+          <EmptyLanguagesState />
+        </div>
+      </>
+    )
+  }
 
   const data = await apiClient
     .get<GetCrawledReposResponse>(`/api/crawled-repos?language=${language}&limit=1000`)
@@ -60,13 +67,13 @@ export default async function CrawledReposPage({
 
         <div className="mb-16">
           <div className="pills">
-            {SUPPORTED_LANGUAGES.map((lang) => (
+            {languages.map((lang) => (
               <Link
-                className={`pill ${language === lang ? "active" : ""}`}
-                href={`/crawled-repos?language=${lang}`}
-                key={lang}
+                className={`pill ${language === lang.slug ? "active" : ""}`}
+                href={`/crawled-repos?language=${lang.slug}`}
+                key={lang.slug}
               >
-                {LANGUAGE_LABELS[lang]}
+                {lang.name}
               </Link>
             ))}
           </div>

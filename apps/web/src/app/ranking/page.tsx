@@ -3,11 +3,13 @@ import Link from "next/link"
 
 import type { GetMonthlyRankingsResponse, GetMyRankingResponse } from "@repo/api-schema"
 
+import { EmptyLanguagesState } from "@/components/empty-languages-state"
 import { MyRankingSidebar } from "@/components/my-ranking-sidebar"
 import { RankingTable } from "@/components/ranking-table"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
+import { getLanguages, resolveSelectedLanguage } from "@/libs/languages"
 
 import { PlayNowButton } from "./play-now-button"
 
@@ -17,24 +19,6 @@ export const metadata: Metadata = {
 
 type Search = {
     language?: string
-}
-
-const SUPPORTED_LANGUAGES = ["typescript", "javascript"] as const
-
-type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]
-
-const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
-  javascript: "JavaScript",
-  typescript: "TypeScript",
-}
-
-/**
- * 言語 slug → DB の Language.id マップ。 packages/db/prisma/seed.ts と
- * apps/web/src/app/play/page.tsx の `SUPPORTED_LANGUAGES` と整合させる
- */
-const LANGUAGE_IDS: Record<SupportedLanguage, number> = {
-  javascript: 2,
-  typescript: 1,
 }
 
 /**
@@ -54,11 +38,28 @@ export default async function RankingPage({
     searchParams: Promise<Search>
 }) {
   const { language: rawLang } = await searchParams
-  const language: SupportedLanguage = SUPPORTED_LANGUAGES.includes(rawLang as SupportedLanguage)
-    ? (rawLang as SupportedLanguage)
-    : "typescript"
-
+  const languages = await getLanguages()
   const accessToken = await getAccessToken()
+
+  const selectedSlug = resolveSelectedLanguage(languages, rawLang)
+  const selectedLanguage = languages.find((lang) => lang.slug === selectedSlug)
+
+  /**
+   * 言語マスタが無い場合の空状態（本来 migration で投入されるため発生しない）
+   */
+  if (selectedLanguage === undefined) {
+    return (
+      <>
+        <Topbar active="ranking" isAuthed={accessToken !== null} />
+        <div className="container">
+          <h1 className="mb-24">🏆 今月のランキング</h1>
+          <EmptyLanguagesState />
+        </div>
+      </>
+    )
+  }
+
+  const language = selectedLanguage.slug
 
   const [monthly, me] = await Promise.all([
     apiClient.get<GetMonthlyRankingsResponse>(
@@ -88,13 +89,13 @@ export default async function RankingPage({
 
         <div className="flex-between mb-16">
           <div className="pills">
-            {SUPPORTED_LANGUAGES.map((lang) => (
+            {languages.map((lang) => (
               <Link
-                className={`pill ${language === lang ? "active" : ""}`}
-                href={`/ranking?language=${lang}`}
-                key={lang}
+                className={`pill ${language === lang.slug ? "active" : ""}`}
+                href={`/ranking?language=${lang.slug}`}
+                key={lang.slug}
               >
-                {LANGUAGE_LABELS[lang]}
+                {lang.name}
               </Link>
             ))}
           </div>
@@ -114,7 +115,7 @@ export default async function RankingPage({
                 </div>
                 <PlayNowButton
                   label="▶ 最初のプレイヤーになる"
-                  languageId={LANGUAGE_IDS[language]}
+                  languageId={selectedLanguage.id}
                 />
               </div>
             )}
@@ -122,14 +123,14 @@ export default async function RankingPage({
             <div className="text-center mt-16">
               <PlayNowButton
                 className="btn btn-primary btn-play btn-large"
-                languageId={LANGUAGE_IDS[language]}
+                languageId={selectedLanguage.id}
               />
             </div>
           </div>
 
           <aside className="col-sidebar">
             <MyRankingSidebar
-              language={language}
+              languageLabel={selectedLanguage.name}
               me={me}
               totalPlayers={me?.total_ranked_players ?? 0}
             />
