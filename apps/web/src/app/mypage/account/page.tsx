@@ -35,7 +35,7 @@ export default async function AccountSettingsPage() {
 
         <div className="tabs">
           <Link className="tab" href="/mypage">サマリー</Link>
-          <a className="tab" href="#">特典</a>
+          <Link className="tab" href="/mypage/rewards">特典</Link>
           <Link className="tab active" href="/mypage/account">設定</Link>
         </div>
 

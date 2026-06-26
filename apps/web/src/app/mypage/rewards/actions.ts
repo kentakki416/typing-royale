@@ -19,6 +19,6 @@ export const updateBadgeConfigAction = async (input: {
     display_items: input.displayItems,
   }
   const res = await apiClient.put<GetBadgeConfigResponse>("/api/user/badge-config", body)
-  revalidatePath("/mypage/badge")
+  revalidatePath("/mypage/rewards")
   return res
 }
