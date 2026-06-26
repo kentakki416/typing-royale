@@ -114,3 +114,16 @@ output "api_fqdn" {
   description = "Route53 で作成された API の FQDN (本番例: api.typing-royale.com)"
   value       = length(module.route53_api) > 0 ? module.route53_api[0].fqdn : null
 }
+
+# -----------------------------------------------------------------------------
+# Rewards 達成カード S3（main.tf の module "rewards_bucket"）
+# -----------------------------------------------------------------------------
+output "rewards_bucket_name" {
+  description = "達成カード PNG を保存する公開読み取り S3 バケット名"
+  value       = module.rewards_bucket.bucket
+}
+
+output "rewards_public_url_base" {
+  description = "達成カード PNG の公開 URL ベース（worker/api の REWARDS_PUBLIC_URL_BASE）"
+  value       = local.rewards_s3_environment.REWARDS_PUBLIC_URL_BASE
+}

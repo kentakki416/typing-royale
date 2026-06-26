@@ -515,6 +515,63 @@ locals {
 }
 
 # =============================================================================
+# Rewards 達成カード用 S3（公開読み取り）+ worker/api タスクロール
+# =============================================================================
+# worker(生成) と api(配信) が別 ECS コンテナ＝ filesystem 非共有のため、生成した
+# 達成カード PNG を共有できる公開 S3 バケットを用意する。アプリ側は env REWARDS_STORAGE=s3
+# で S3 を選択する（@repo/storage）。
+
+module "rewards_bucket" {
+  source = "../../modules/s3-public-bucket"
+
+  bucket_name = "${local.name_prefix}-rewards"
+  tags        = local.common_tags
+}
+
+# worker / api が PNG を Put / Delete するためのタスクロール（両 workload で共有）
+resource "aws_iam_role" "rewards_task" {
+  name = "${local.name_prefix}-rewards-task"
+  tags = local.common_tags
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { Service = "ecs-tasks.amazonaws.com" }
+        Action    = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "rewards_task_s3" {
+  name = "rewards-s3-write"
+  role = aws_iam_role.rewards_task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:PutObject", "s3:DeleteObject"]
+        Resource = "${module.rewards_bucket.arn}/*"
+      }
+    ]
+  })
+}
+
+# worker / api workload に渡す S3 ストレージ用の環境変数（下の module で参照）
+locals {
+  rewards_s3_environment = {
+    AWS_REGION              = var.aws_region
+    REWARDS_PUBLIC_URL_BASE = module.rewards_bucket.public_url_base
+    REWARDS_S3_BUCKET       = module.rewards_bucket.bucket
+    REWARDS_STORAGE         = "s3"
+  }
+}
+
+# =============================================================================
 # ECS Workload: API (Express on Fargate, ALB + Blue/Green デプロイ)
 # =============================================================================
 # prd: desired_count = 2 で AZ 冗長確保 + ローリングデプロイ余裕
@@ -536,6 +593,10 @@ module "ecs_api" {
 
   secrets_arn = local.ecs_common.secrets_arn
   secret_keys = local.ecs_common.secret_keys
+
+  # S3 達成カードストレージ（rewards-storage.tf）。worker と同じ asset_url を生成する
+  task_role_arn = aws_iam_role.rewards_task.arn
+  environment   = local.rewards_s3_environment
 
   # ALB + Blue/Green
   target_group_arn             = module.alb.target_group_a_arn
@@ -568,6 +629,10 @@ module "ecs_worker" {
 
   secrets_arn = local.ecs_common.secrets_arn
   secret_keys = local.ecs_common.secret_keys
+
+  # S3 達成カードストレージ（rewards-storage.tf）。生成した PNG を S3 に保存する
+  task_role_arn = aws_iam_role.rewards_task.arn
+  environment   = local.rewards_s3_environment
 
   # 先に ECR へ image を push してから apply する前提で 1 固定。
   # image が未 push の状態で apply すると ECS task が CannotPullContainerError で
