@@ -3,13 +3,13 @@ import Link from "next/link"
 
 import type { GetHallOfFameResponse } from "@repo/api-schema"
 
+import { ChallengeGodsButton } from "@/components/challenge-gods-button"
 import { EmptyLanguagesState } from "@/components/empty-languages-state"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
 import { getLanguages, resolveSelectedLanguage } from "@/libs/languages"
 
-import { ChallengeGodsButton } from "./challenge-gods-button"
 import { HofCards } from "./hof-cards"
 
 export const metadata: Metadata = {
