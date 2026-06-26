@@ -11,9 +11,7 @@ type Reward = GetMyRewardsResponse["rewards"][number]
 
 type Props = {
     apiUrl: string
-    appUrl: string
     rewards: Reward[]
-    username: string
 }
 
 type TabKey = "grade_up" | "hall_of_fame_in" | "monthly_top_ten"
@@ -28,7 +26,7 @@ const TABS: Array<{ icon: string; key: TabKey; label: string }> = [
  * マイページ「特典」タブの中身。3 種別タブで分類して表示。詳細は
  * docs/spec/special-badges/step6-web-mypage-rewards-tabs.md
  */
-export function RewardsTabs({ apiUrl, appUrl, rewards, username }: Props) {
+export function RewardsTabs({ apiUrl, rewards }: Props) {
   const [active, setActive] = useState<TabKey>(() => {
     /** 件数が多い種別を初期表示にする (空 → grade_up) */
     const counts: Record<TabKey, number> = {
@@ -90,13 +88,7 @@ export function RewardsTabs({ apiUrl, appUrl, rewards, username }: Props) {
           }}
         >
           {list.map((r) => (
-            <RewardCard
-              apiUrl={apiUrl}
-              appUrl={appUrl}
-              key={r.reward_id}
-              reward={r}
-              username={username}
-            />
+            <RewardCard apiUrl={apiUrl} key={r.reward_id} reward={r} />
           ))}
         </div>
       )}
@@ -106,14 +98,10 @@ export function RewardsTabs({ apiUrl, appUrl, rewards, username }: Props) {
 
 type CardProps = {
     apiUrl: string
-    appUrl: string
     reward: Reward
-    username: string
 }
 
-function RewardCard({ apiUrl, appUrl, reward, username }: CardProps) {
-  const [copied, setCopied] = useState(false)
-
+function RewardCard({ apiUrl, reward }: CardProps) {
   const fullAssetUrl = reward.asset_url === null
     ? null
     : reward.asset_url.startsWith("http")
@@ -125,19 +113,6 @@ function RewardCard({ apiUrl, appUrl, reward, username }: CardProps) {
 
   const grantedYmd = new Date(reward.granted_at).toISOString().slice(0, 10)
   const label = formatRewardLabel(reward)
-  const badgeUrl = buildBadgeUrl(reward, username, appUrl)
-
-  const onCopyMarkdown = async () => {
-    if (badgeUrl === null) return
-    const md = `![${label}](${badgeUrl})`
-    try {
-      await navigator.clipboard.writeText(md)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } catch {
-      /** clipboard 拒否時はサイレントに無視 */
-    }
-  }
 
   return (
     <div className="card">
@@ -195,11 +170,6 @@ function RewardCard({ apiUrl, appUrl, reward, username }: CardProps) {
             SVG DL
           </a>
         )}
-        {badgeUrl !== null && (
-          <button className="btn" onClick={onCopyMarkdown} type="button">
-            {copied ? "コピー済" : "README 用 Markdown をコピー"}
-          </button>
-        )}
       </div>
     </div>
   )
@@ -229,28 +199,6 @@ const formatRewardLabel = (reward: Reward): string => {
 
 const formatLanguage = (lang: string | undefined): string =>
   lang === "javascript" ? "JS" : lang === "typescript" ? "TS" : "?"
-
-/**
- * 動的 SVG バッジの URL (README 貼付け用)
- *
- * - hall_of_fame_in: `${appUrl}/badge/:username/hall-of-fame.svg?language=...`
- * - monthly_top_ten: `${appUrl}/badge/:username/monthly.svg?language=...`
- * - grade_up: 既存の /badge/:username.svg にフォールバック (グレード表示)
- */
-const buildBadgeUrl = (reward: Reward, username: string, appUrl: string): string | null => {
-  if (reward.type === "hall_of_fame_in") {
-    const lang = (reward.payload as { language?: string }).language ?? "typescript"
-    return `${appUrl}/badge/${encodeURIComponent(username)}/hall-of-fame.svg?language=${lang}`
-  }
-  if (reward.type === "monthly_top_ten") {
-    const lang = (reward.payload as { language?: string }).language ?? "typescript"
-    return `${appUrl}/badge/${encodeURIComponent(username)}/monthly.svg?language=${lang}`
-  }
-  if (reward.type === "grade_up") {
-    return `${appUrl}/badge/${encodeURIComponent(username)}.svg`
-  }
-  return null
-}
 
 const GRADE_NAMES: Record<string, string> = {
   distinguished: "Distinguished Engineer",

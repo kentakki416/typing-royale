@@ -12,9 +12,6 @@ import { AuthDevLoginController } from "./controller/auth/dev-login"
 import { AuthGithubController } from "./controller/auth/github"
 import { AuthLogoutController } from "./controller/auth/logout"
 import { AuthRefreshController } from "./controller/auth/refresh"
-import { BadgeConfigGetController } from "./controller/badge/config-get"
-import { BadgeConfigUpdateController } from "./controller/badge/config-update"
-import { BadgeSvgController } from "./controller/badge/svg"
 import { CrawledRepoListController } from "./controller/crawled-repo/list"
 import { HallOfFameListController } from "./controller/hall-of-fame/list"
 import { HealthLivenessController } from "./controller/health/liveness"
@@ -47,7 +44,6 @@ import { requestLogger } from "./middleware/request-logger"
 import { unhandledExceptionHandler } from "./middleware/unhandled-exception-handler"
 import {
   PrismaAuthAccountRepository,
-  PrismaBadgeConfigRepository,
   PrismaCrawledRepoRepository,
   PrismaDatabaseHealthRepository,
   PrismaKeystrokeLogRepository,
@@ -67,7 +63,6 @@ import {
 } from "./repository/prisma"
 import { IoRedisHealthRepository, IoRedisPlaySessionStateRepository, IoRedisRefreshTokenRepository } from "./repository/redis"
 import { authRouter } from "./routes/auth-router"
-import { badgeRouter } from "./routes/badge-router"
 import { crawledRepoRouter } from "./routes/crawled-repo-router"
 import { hallOfFameRouter } from "./routes/hall-of-fame-router"
 import { healthRouter } from "./routes/health-router"
@@ -107,7 +102,6 @@ const keystrokeLogRepository = new PrismaKeystrokeLogRepository(prisma)
 const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(prisma)
 const userLanguageBestRepository = new PrismaUserLanguageBestRepository(prisma)
 const monthlyRankingSnapshotRepository = new PrismaMonthlyRankingSnapshotRepository(prisma)
-const badgeConfigRepository = new PrismaBadgeConfigRepository(prisma)
 const rewardRepository = new PrismaRewardRepository(prisma)
 const replayRepository = new PrismaReplayRepository(prisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(redis)
@@ -286,19 +280,6 @@ const playerDetailController = new PlayerDetailController(
 )
 
 /**
- * Badge Controller のインスタンス化
- */
-const badgeSvgController = new BadgeSvgController(
-  badgeConfigRepository,
-  languageRepository,
-  userLanguageBestRepository,
-  userLifetimeStatsRepository,
-  userRepository,
-)
-const badgeConfigGetController = new BadgeConfigGetController(badgeConfigRepository)
-const badgeConfigUpdateController = new BadgeConfigUpdateController(badgeConfigRepository)
-
-/**
  * Hall of Fame Controller のインスタンス化
  */
 const hallOfFameListController = new HallOfFameListController(
@@ -371,17 +352,9 @@ app.use(
 app.use(
   "/api/user",
   userRouter({
-    badgeConfigGet: badgeConfigGetController,
-    badgeConfigUpdate: badgeConfigUpdateController,
     delete: userDeleteController,
     get: userGetController,
     update: userUpdateController,
-  })
-)
-app.use(
-  "/badge",
-  badgeRouter({
-    svg: badgeSvgController,
   })
 )
 app.use(

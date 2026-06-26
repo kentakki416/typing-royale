@@ -1,14 +1,10 @@
 import { Router } from "express"
 
-import { BadgeConfigGetController } from "../controller/badge/config-get"
-import { BadgeConfigUpdateController } from "../controller/badge/config-update"
 import { UserDeleteController } from "../controller/user/delete"
 import { UserGetController } from "../controller/user/get"
 import { UserUpdateController } from "../controller/user/update"
 
 type UserRouterControllers = {
-  badgeConfigGet?: BadgeConfigGetController
-  badgeConfigUpdate?: BadgeConfigUpdateController
   delete?: UserDeleteController
   get?: UserGetController
   update?: UserUpdateController
@@ -37,18 +33,6 @@ export const userRouter = (controllers: UserRouterControllers): Router => {
   if (controllers.delete) {
     const controller = controllers.delete
     router.delete("/", async (req, res) => controller.execute(req, res))
-  }
-
-  /** GET /api/user/badge-config */
-  if (controllers.badgeConfigGet) {
-    const controller = controllers.badgeConfigGet
-    router.get("/badge-config", async (req, res) => controller.execute(req, res))
-  }
-
-  /** PUT /api/user/badge-config */
-  if (controllers.badgeConfigUpdate) {
-    const controller = controllers.badgeConfigUpdate
-    router.put("/badge-config", async (req, res) => controller.execute(req, res))
   }
 
   return router

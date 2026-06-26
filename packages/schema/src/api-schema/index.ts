@@ -1,5 +1,4 @@
 export * from "./auth"
-export * from "./badge"
 export * from "./common"
 export * from "./crawled-repo"
 export * from "./hall-of-fame"

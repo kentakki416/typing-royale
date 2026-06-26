@@ -1,5 +1,4 @@
 export * as auth from "./auth-service"
-export * as badge from "./badge-service"
 export * as crawledRepo from "./crawled-repo-service"
 export * as hallOfFame from "./hall-of-fame-service"
 export * as health from "./health-service"

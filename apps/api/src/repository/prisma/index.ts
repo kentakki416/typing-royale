@@ -1,5 +1,4 @@
 export * from "./auth-account-repository"
-export * from "./badge-config-repository"
 export * from "./crawled-repo-repository"
 export * from "./healthcheck-repository"
 export * from "./keystroke-log-repository"
