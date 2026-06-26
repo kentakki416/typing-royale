@@ -5,6 +5,8 @@ import { useState } from "react"
 
 import type { GetMyRewardsResponse } from "@repo/api-schema"
 
+import { downloadFile } from "@/libs/download-file"
+
 type Reward = GetMyRewardsResponse["rewards"][number]
 
 type Props = {
@@ -168,13 +170,21 @@ function RewardCard({ apiUrl, appUrl, reward, username }: CardProps) {
       )}
       <div className="flex gap-8 mt-8" style={{ flexWrap: "wrap" }}>
         {fullAssetUrl !== null && (
-          <a
+          <button
             className="btn"
-            download={`typing-royale-${reward.type}-${reward.reward_id}.png`}
-            href={fullAssetUrl}
+            onClick={() => {
+              void downloadFile(
+                fullAssetUrl,
+                `typing-royale-${reward.type}-${reward.reward_id}.png`,
+              ).catch(() => {
+                /** CORS 未反映等で失敗したら画像を別タブで開くフォールバック */
+                window.open(fullAssetUrl, "_blank", "noopener,noreferrer")
+              })
+            }}
+            type="button"
           >
             PNG DL
-          </a>
+          </button>
         )}
         {svgDataUrl !== null && (
           <a

@@ -4,6 +4,8 @@ import { useState } from "react"
 
 import type { GetMyRewardsResponse } from "@repo/api-schema"
 
+import { downloadFile } from "@/libs/download-file"
+
 export type RewardPreview = GetMyRewardsResponse["rewards"][number]
 
 type Props = {
@@ -140,19 +142,25 @@ function RewardCard({ apiUrl, reward }: { apiUrl: string; reward: RewardPreview 
         />
       )}
       <div style={{ display: "flex", gap: 12 }}>
-        <a
-          download={`reward-${reward.reward_id}.png`}
-          href={fullAssetUrl}
+        <button
+          onClick={() => {
+            void downloadFile(fullAssetUrl, `reward-${reward.reward_id}.png`).catch(() => {
+              /** CORS 未反映等で失敗したら画像を別タブで開くフォールバック */
+              window.open(fullAssetUrl, "_blank", "noopener,noreferrer")
+            })
+          }}
           style={{
             background: "#2563eb",
+            border: "none",
             borderRadius: 6,
             color: "#fff",
+            cursor: "pointer",
             padding: "8px 16px",
-            textDecoration: "none",
           }}
+          type="button"
         >
           PNG をダウンロード
-        </a>
+        </button>
         {svgDataUrl !== null && (
           <a
             download={`reward-${reward.reward_id}.svg`}
