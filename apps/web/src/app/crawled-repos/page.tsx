@@ -65,7 +65,12 @@ export default async function CrawledReposPage({
     )
     .catch(() => EMPTY)
 
-  const totalPages = Math.max(1, Math.ceil(data.total / PAGE_SIZE))
+  /**
+   * total は本 PR で API に追加した項目。API 未デプロイ（旧レスポンスに total 無し）でも
+   * 500 にしないよう、欠落時は現ページ件数でフォールバックする
+   */
+  const total = data.total ?? data.entries.length
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
     <>
@@ -74,7 +79,7 @@ export default async function CrawledReposPage({
       <div className="container">
         <div className="flex-between mb-24">
           <h1>📦 クロール対象リポジトリ</h1>
-          <div className="text-sm text-muted">{data.total.toLocaleString()} 件</div>
+          <div className="text-sm text-muted">{total.toLocaleString()} 件</div>
         </div>
 
         <div className="mb-16">
@@ -91,7 +96,7 @@ export default async function CrawledReposPage({
           </div>
         </div>
 
-        {data.total === 0 ? (
+        {total === 0 ? (
           <div className="card text-center" style={{ padding: "48px 16px" }}>
             <div className="text-mono text-muted mb-16">
               まだクロール済みリポジトリがありません
