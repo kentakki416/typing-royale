@@ -41,7 +41,7 @@ import { UserDeleteController } from "./controller/user/delete"
 import { UserGetController } from "./controller/user/get"
 import { UserUpdateController } from "./controller/user/update"
 import { env } from "./env"
-import { LocalCardStorage } from "./lib/card-storage"
+import { LocalCardStorage, S3CardStorage } from "./lib/card-storage"
 import { authMiddleware } from "./middleware/auth"
 import { requestLogger } from "./middleware/request-logger"
 import { unhandledExceptionHandler } from "./middleware/unhandled-exception-handler"
@@ -113,9 +113,12 @@ const replayRepository = new PrismaReplayRepository(prisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(redis)
 
 /**
- * 達成カード PNG ストレージ (MVP: local filesystem)
+ * 達成カード PNG ストレージ。本番 (worker と api が別コンテナ = filesystem 非共有) は S3、
+ * ローカル開発は filesystem。worker と同じ asset_url 形式になるよう env を揃える
  */
-const cardStorage = new LocalCardStorage(env.REWARDS_CACHE_DIR, env.REWARDS_PUBLIC_URL_PREFIX)
+const cardStorage = env.REWARDS_STORAGE === "s3"
+  ? new S3CardStorage(env.REWARDS_S3_BUCKET!, env.REWARDS_PUBLIC_URL_BASE!, env.AWS_REGION)
+  : new LocalCardStorage(env.REWARDS_CACHE_DIR, env.REWARDS_PUBLIC_URL_PREFIX)
 
 /**
  * reward 画像生成ジョブの producer (rewards-worker step3)。

@@ -1,6 +1,8 @@
 import { promises as fs } from "node:fs"
 import { dirname, join } from "node:path"
 
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
+
 /**
  * 達成カード PNG を保存するストレージ抽象
  *
@@ -53,5 +55,41 @@ export class LocalCardStorage implements CardStorage {
        */
       if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err
     }
+  }
+}
+
+/**
+ * S3 実装。公開読み取りバケットに PutObject し公開 URL を返す。
+ * worker と api が filesystem を共有できない本番 (別 ECS コンテナ) 向け。
+ */
+export class S3CardStorage implements CardStorage {
+  private _client: S3Client
+  private _bucket: string
+  private _publicUrlBase: string
+
+  constructor(bucket: string, publicUrlBase: string, region?: string) {
+    this._client = new S3Client(region ? { region } : {})
+    this._bucket = bucket
+    /** 末尾スラッシュを除いて filename と二重スラッシュにならないようにする */
+    this._publicUrlBase = publicUrlBase.replace(/\/+$/, "")
+  }
+
+  async save(filename: string, buffer: Buffer): Promise<string> {
+    await this._client.send(
+      new PutObjectCommand({
+        Body: buffer,
+        Bucket: this._bucket,
+        CacheControl: "public, max-age=86400",
+        ContentType: "image/png",
+        Key: filename,
+      }),
+    )
+    return `${this._publicUrlBase}/${filename}`
+  }
+
+  async delete(filename: string): Promise<void> {
+    await this._client.send(
+      new DeleteObjectCommand({ Bucket: this._bucket, Key: filename }),
+    )
   }
 }

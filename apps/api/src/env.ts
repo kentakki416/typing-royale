@@ -17,6 +17,11 @@ const apiEnvSchema = z
       .default("false"),
 
     /**
+     * S3CardStorage 用の AWS リージョン (REWARDS_STORAGE=s3 のとき)。未指定なら SDK 既定解決
+     */
+    AWS_REGION: z.string().optional(),
+
+    /**
      * Postgres 接続文字列
      * 未指定時は packages/db 側でローカル開発用デフォルトにフォールバックする
      */
@@ -122,9 +127,25 @@ const apiEnvSchema = z
     REWARDS_CACHE_DIR: z.string().default("/tmp/typing-royale-rewards"),
 
     /**
+     * S3 保存時の公開 URL ベース (例: https://bucket.s3.region.amazonaws.com)。
+     * REWARDS_STORAGE=s3 のとき必須
+     */
+    REWARDS_PUBLIC_URL_BASE: z.string().url().optional(),
+
+    /**
      * Express の `/cache/rewards` 静的配信パス。クライアントはこの prefix で PNG を取得する
      */
     REWARDS_PUBLIC_URL_PREFIX: z.string().default("/cache/rewards"),
+
+    /**
+     * S3 保存時のバケット名。REWARDS_STORAGE=s3 のとき必須
+     */
+    REWARDS_S3_BUCKET: z.string().optional(),
+
+    /**
+     * 達成カード PNG の保存先。"s3" なら S3CardStorage、それ以外は LocalCardStorage
+     */
+    REWARDS_STORAGE: z.enum(["local", "s3"]).default("local"),
   })
   .superRefine((env, ctx) => {
     /**
@@ -146,6 +167,20 @@ const apiEnvSchema = z
           path: ["GITHUB_CLIENT_SECRET"],
         })
       }
+    }
+    if (env.REWARDS_STORAGE === "s3" && !env.REWARDS_S3_BUCKET) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "REWARDS_S3_BUCKET is required when REWARDS_STORAGE is 's3'",
+        path: ["REWARDS_S3_BUCKET"],
+      })
+    }
+    if (env.REWARDS_STORAGE === "s3" && !env.REWARDS_PUBLIC_URL_BASE) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "REWARDS_PUBLIC_URL_BASE is required when REWARDS_STORAGE is 's3'",
+        path: ["REWARDS_PUBLIC_URL_BASE"],
+      })
     }
   })
 

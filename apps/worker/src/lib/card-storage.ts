@@ -1,6 +1,8 @@
 import { promises as fs } from "node:fs"
 import { dirname, join } from "node:path"
 
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
+
 /**
  * 生成した PNG を保存するストレージ抽象。
  *
@@ -35,5 +37,35 @@ export class LocalCardStorage implements CardStorage {
     await fs.mkdir(dirname(fullPath), { recursive: true })
     await fs.writeFile(fullPath, buffer)
     return `${this._publicUrlPrefix}/${filename}`
+  }
+}
+
+/**
+ * S3 実装。生成した PNG を公開読み取りバケットに PutObject し、公開 URL を返す。
+ * worker と api が同じ filesystem を共有できない本番 (別 ECS コンテナ) 向け。
+ */
+export class S3CardStorage implements CardStorage {
+  private _client: S3Client
+  private _bucket: string
+  private _publicUrlBase: string
+
+  constructor(bucket: string, publicUrlBase: string, region?: string) {
+    this._client = new S3Client(region ? { region } : {})
+    this._bucket = bucket
+    /** 末尾スラッシュを除いて filename と二重スラッシュにならないようにする */
+    this._publicUrlBase = publicUrlBase.replace(/\/+$/, "")
+  }
+
+  public async save(filename: string, buffer: Buffer): Promise<string> {
+    await this._client.send(
+      new PutObjectCommand({
+        Body: buffer,
+        Bucket: this._bucket,
+        CacheControl: "public, max-age=86400",
+        ContentType: "image/png",
+        Key: filename,
+      }),
+    )
+    return `${this._publicUrlBase}/${filename}`
   }
 }
