@@ -31,6 +31,7 @@
     "@repo/logger": "workspace:^",
     "@repo/queue": "workspace:^",
     "@repo/redis": "workspace:^",
+    "@repo/storage": "workspace:^",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.3",

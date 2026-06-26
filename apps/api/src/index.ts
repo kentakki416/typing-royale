@@ -5,6 +5,7 @@ import { createPrismaClient } from "@repo/db"
 import { logger } from "@repo/logger"
 import { BullMQJobQueue, GENERATE_REWARD_QUEUE_NAME, type GenerateRewardJobData } from "@repo/queue"
 import { createRedisClient } from "@repo/redis"
+import { createStorage } from "@repo/storage"
 
 import { GithubOAuthClient } from "./client/github-oauth"
 import { AuthDevLoginController } from "./controller/auth/dev-login"
@@ -41,7 +42,6 @@ import { UserDeleteController } from "./controller/user/delete"
 import { UserGetController } from "./controller/user/get"
 import { UserUpdateController } from "./controller/user/update"
 import { env } from "./env"
-import { LocalCardStorage } from "./lib/card-storage"
 import { authMiddleware } from "./middleware/auth"
 import { requestLogger } from "./middleware/request-logger"
 import { unhandledExceptionHandler } from "./middleware/unhandled-exception-handler"
@@ -113,9 +113,23 @@ const replayRepository = new PrismaReplayRepository(prisma)
 const playSessionStateRepository = new IoRedisPlaySessionStateRepository(redis)
 
 /**
- * 達成カード PNG ストレージ (MVP: local filesystem)
+ * 達成カード PNG ストレージ。本番 (worker と api が別コンテナ = filesystem 非共有) は S3、
+ * ローカル開発は filesystem。worker と同じ asset_url 形式になるよう env を揃える
  */
-const cardStorage = new LocalCardStorage(env.REWARDS_CACHE_DIR, env.REWARDS_PUBLIC_URL_PREFIX)
+const cardStorage = createStorage(
+  env.REWARDS_STORAGE === "s3"
+    ? {
+      bucket: env.REWARDS_S3_BUCKET!,
+      publicUrlBase: env.REWARDS_PUBLIC_URL_BASE!,
+      region: env.AWS_REGION,
+      type: "s3",
+    }
+    : {
+      baseDir: env.REWARDS_CACHE_DIR,
+      publicUrlPrefix: env.REWARDS_PUBLIC_URL_PREFIX,
+      type: "local",
+    },
+)
 
 /**
  * reward 画像生成ジョブの producer (rewards-worker step3)。

@@ -5,8 +5,8 @@ import {
   createRewardCardResponseSchema,
 } from "@repo/api-schema"
 import { logger } from "@repo/logger"
+import { Storage } from "@repo/storage"
 
-import { CardStorage } from "../../lib/card-storage"
 import { parseRequest, parseResponse } from "../../lib/parse-schema"
 import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
@@ -24,7 +24,7 @@ import * as service from "../../service"
  */
 export class RewardsCardCreateController {
   constructor(
-        private cardStorage: CardStorage,
+        private cardStorage: Storage,
         private rewardRepository: RewardRepository,
         private userLifetimeStatsRepository: UserLifetimeStatsRepository,
         private userRepository: UserRepository,

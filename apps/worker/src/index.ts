@@ -1,9 +1,9 @@
 import { createPrismaClient } from "@repo/db"
 import { logger } from "@repo/logger"
 import { createRedisClient } from "@repo/redis"
+import { createStorage } from "@repo/storage"
 
 import { env } from "./env"
-import { LocalCardStorage } from "./lib/card-storage"
 import { PrismaRewardRepository, PrismaUserRepository } from "./repository/prisma"
 import { setupGracefulShutdown } from "./runtime/graceful-shutdown"
 import { startGenerateRewardWorker } from "./workers/generate-reward-worker"
@@ -29,9 +29,23 @@ const main = (): void => {
   })
 
   /**
-   * worker が PNG を書き込み、apps/api が同じ REWARDS_CACHE_DIR を static 配信する
+   * 本番 (worker と api が別コンテナ = filesystem 非共有) は S3、ローカル開発は filesystem。
+   * env から strategy の config を組み立てて factory に渡すだけ
    */
-  const cardStorage = new LocalCardStorage(env.REWARDS_CACHE_DIR, env.REWARDS_PUBLIC_URL_PREFIX)
+  const cardStorage = createStorage(
+    env.REWARDS_STORAGE === "s3"
+      ? {
+        bucket: env.REWARDS_S3_BUCKET!,
+        publicUrlBase: env.REWARDS_PUBLIC_URL_BASE!,
+        region: env.AWS_REGION,
+        type: "s3",
+      }
+      : {
+        baseDir: env.REWARDS_CACHE_DIR,
+        publicUrlPrefix: env.REWARDS_PUBLIC_URL_PREFIX,
+        type: "local",
+      },
+  )
   const rewardRepository = new PrismaRewardRepository(prisma)
   const userRepository = new PrismaUserRepository(prisma)
 

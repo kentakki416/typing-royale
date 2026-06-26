@@ -8,12 +8,12 @@ import {
 } from "@repo/generate-image"
 import { logger } from "@repo/logger"
 import type { GenerateRewardJobData, JobProcessor } from "@repo/queue"
+import type { Storage } from "@repo/storage"
 
-import type { CardStorage } from "../lib/card-storage"
 import type { RewardRepository, RewardRow, UserRepository } from "../repository/prisma"
 
 export type GenerateRewardDeps = {
-    cardStorage: CardStorage
+    cardStorage: Storage
     rewardRepository: RewardRepository
     userRepository: UserRepository
 }

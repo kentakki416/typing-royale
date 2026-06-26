@@ -40,10 +40,8 @@ env は dotenvx ではなく **process.env から直接読む**（ECS は Task D
 ```
 apps/worker/
   src/
-    index.ts                       # PrismaClient / Redis / CardStorage を生成し、各 startXxxWorker を呼んで graceful shutdown に登録
+    index.ts                       # PrismaClient / Redis / Storage を生成し、各 startXxxWorker を呼んで graceful shutdown に登録
     env.ts                         # Zod による env 検証 (safeParse → exit(1))
-    lib/
-      card-storage.ts              # PNG 保存ストレージ抽象（MVP: local filesystem）
     workers/                       # Queue 実装 + ハンドラを「結線」する組み立て層
       generate-reward-worker.ts    # startBullMQWorker(...) を呼んで JobConsumer を返す
     jobs/                          # 純粋なジョブハンドラ。Queue 実装を knows しない
