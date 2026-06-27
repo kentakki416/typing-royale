@@ -172,6 +172,26 @@ export function useTypingEngine({ finishedRef, onComboBonus, problems, startAtRe
       }
     }
 
+    /**
+     * カーソル以降が現在問題の末尾まで全て空白なら、その空白をまとめて skip 消費して
+     * 次の問題へ進める。
+     *
+     * `advanceAcrossNewlineAndIndent` はカーソルが改行上のときだけ発動するため、
+     * 関数本体が改行ではなく trailing space / tab で終わる問題だと、最後の非空白文字を
+     * 打ち終えてもカーソルが末尾空白の上で止まり「全部打ったのに次へ進めない」状態になる。
+     * 末尾が空白だけになった瞬間に必ず次問題へ送ることでこれを防ぐ。
+     * （残りに非空白が 1 つでもあれば末尾ではないので行中スペースは飛ばさない）
+     */
+    const advancePastTrailingWhitespace = () => {
+      const problem = problems[problemIndexRef.current]
+      if (!problem) return
+      const rest = problem.code_block.slice(cursorPosRef.current)
+      if (rest.length === 0 || /\S/.test(rest)) return
+      while (cursorPosRef.current < problem.code_block.length) {
+        consumeOneAsSkipped(problem, problem.code_block[cursorPosRef.current])
+      }
+    }
+
     const onKeyDown = (e: KeyboardEvent) => {
       if (finishedRef.current || imeOn) return
       /**
@@ -305,9 +325,11 @@ export function useTypingEngine({ finishedRef, onComboBonus, problems, startAtRe
         }
 
         /**
-         * 正解直後にカーソルが改行上に来ていれば、改行 + 後続インデントをまとめて飛ばす
+         * 正解直後にカーソルが改行上に来ていれば、改行 + 後続インデントをまとめて飛ばす。
+         * さらに、残りが末尾の空白だけになっていたら次問題へ送る（trailing space で詰まる防止）
          */
         advanceAcrossNewlineAndIndent()
+        advancePastTrailingWhitespace()
         setProblemIndex(problemIndexRef.current)
         setCursorPos(cursorPosRef.current)
         setTypedChars(typedCharsRef.current)
