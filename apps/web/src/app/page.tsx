@@ -166,15 +166,15 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* サイドバー広告（対応言語カードの下 / AdSense 未設定時は非表示） */}
-            <AdUnit minHeight={250} slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_SIDEBAR ?? ""} />
+            {/* サイドバー広告（対応言語カードの下 / 280px 列で自然と小さめ / 未設定時は非表示） */}
+            <AdUnit minHeight={200} slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_SIDEBAR ?? ""} />
           </aside>
         </div>
       </div>
 
-      {/* ディスプレイ広告（AdSense 未設定時は何も描画されない / プレイ画面には設置しない） */}
-      <div className="container container-narrow" style={{ marginTop: 32 }}>
-        <AdUnit slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME ?? ""} />
+      {/* メインカラム下部の大型バナー広告（幅広コンテナ / 未設定時は非表示 / プレイ画面には置かない） */}
+      <div className="container" style={{ marginTop: 32 }}>
+        <AdUnit minHeight={280} slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME ?? ""} />
       </div>
 
       <div className="footer">
