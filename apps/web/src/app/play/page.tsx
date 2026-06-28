@@ -22,6 +22,7 @@ const LANGUAGE_PRESENTATION: Record<
   string,
   { comingSoon: boolean; iconClass: string; iconText: string }
 > = {
+  go: { comingSoon: false, iconClass: "go", iconText: "Go" },
   javascript: { comingSoon: false, iconClass: "js", iconText: "JS" },
   typescript: { comingSoon: false, iconClass: "ts", iconText: "TS" },
 }
