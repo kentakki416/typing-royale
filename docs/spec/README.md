@@ -13,6 +13,7 @@
 | combo-time-bonus | 🟡 設計中 | combo マイルストーン（20 / 40 / 60 / 80 / ...）達成でプレイ時間に +1 / +2 / +3 秒のボーナスを動的に加算。HUD ポップアップ + gold グロー + 専用 SE。サーバーで cheat 検証 | [./combo-time-bonus/README.md](./combo-time-bonus/README.md) |
 | problem-pool | ✅ | 問題プール。週次 cron で GitHub Star 上位の寛容ライセンス OSS をクロールし AST で関数本体を抽出 | [./problem-pool/README.md](./problem-pool/README.md) |
 | javascript-support | 🟡 設計中 | 初期リリースの対応言語に JavaScript を追加。`languages` 行は既存・TS Compiler API が JS を直接パースできるため、`crawler-run-javascript.ts` task を 1 本足すだけ。DB / API 変更なし | [./javascript-support/README.md](./javascript-support/README.md) |
+| go-support | 🟡 設計中 | 初期リリースの対応言語に Go を追加。TS Compiler API では Go をパースできないため `tree-sitter-go`(WASM) を導入し、`process-repo` を `LanguageExtractor` strategy で言語非依存にリファクタ。`languages` に Go 行追加 | [./go-support/README.md](./go-support/README.md) |
 | language-master | 🟡 設計中 | 各画面の言語タブをハードコードから `languages` マスタの API 取得に動的化。`GET /api/languages` 新設 + Next.js Data Cache（tag: languages）で全画面共有・API は実質1回。空状態ハンドリング込み | [./language-master/README.md](./language-master/README.md) |
 | github-auth | ✅ | GitHub OAuth。読み取り最小スコープでのログイン・アカウント管理 | [./github-auth/README.md](./github-auth/README.md) |
 | score-ranking | ✅ | スコア記録・ランキング集計（言語×全期間トップ 1000）。**エンジニアグレード**（Intern → Fellow の 8 段階）で個人成長を可視化 | [./score-ranking/README.md](./score-ranking/README.md) |
