@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { useEffect, useState } from "react"
 
 import type { GetPlayerResponse } from "@repo/api-schema"
@@ -82,7 +81,7 @@ export function RankingPlayerModal({ languageName, languageSlug, onClose, rank, 
         {status === "error" && (
           <div className="text-center" style={{ padding: "32px 0" }}>
             <p className="text-muted mb-16">プロフィールの取得に失敗しました。</p>
-            <Link className="btn" href={`/players/${userId}`}>プレイヤー詳細を見る</Link>
+            <button className="btn" onClick={onClose} type="button">閉じる</button>
           </div>
         )}
 
@@ -96,7 +95,6 @@ export function RankingPlayerModal({ languageName, languageSlug, onClose, rank, 
             rankLabel={rankLabel}
             score={best?.score ?? 0}
             typedChars={best?.typed_chars ?? 0}
-            userId={data.user.id}
             username={formatUsername(data.user)}
           />
         )}
