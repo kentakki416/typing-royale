@@ -103,7 +103,6 @@ export function CurtainModal({ entry, languageName, onClose }: Props) {
           rankLabel={rankLabel}
           score={entry.score}
           typedChars={entry.typed_chars}
-          userId={entry.user.id}
           username={formatUsername(entry.user)}
         />
       </div>

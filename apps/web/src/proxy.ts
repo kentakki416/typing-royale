@@ -26,14 +26,12 @@ const PUBLIC_PATHS = [
   "/ads.txt",
   /**
    * score-ranking の公開画面: 未ログインでも閲覧可能
-   * step5 では /ranking を追加し忘れていたため、本 step (step7) で /players と同時に追加
    */
   "/ranking",
-  "/players",
   /**
-   * ランキングの選択モーダルがブラウザ fetch で叩くプレイヤー詳細の bridge。
-   * /ranking は公開ページなので未ログインでも叩けるよう明示的に public 化しないと
-   * 307 で /sign-in にリダイレクトされ、モーダルが取得失敗表示になる
+   * ランキング / 殿堂入りの選択モーダルがブラウザ fetch で叩くプレイヤー詳細の bridge。
+   * /ranking・/hall-of-fame は公開ページなので未ログインでも叩けるよう明示的に public
+   * 化しないと 307 で /sign-in にリダイレクトされ、モーダルが取得失敗表示になる
    */
   "/api/internal/players",
   /**

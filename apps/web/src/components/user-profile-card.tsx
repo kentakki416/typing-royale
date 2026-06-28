@@ -12,7 +12,6 @@ type Props = {
   rankLabel: string
   score: number
   typedChars: number
-  userId: number
   username: string
 }
 
@@ -33,7 +32,6 @@ export function UserProfileCard({
   rankLabel,
   score,
   typedChars,
-  userId,
   username,
 }: Props) {
   const repo = resolveRepoLink(favoriteRepoUrl, username)
@@ -78,16 +76,13 @@ export function UserProfileCard({
         </a>
       </div>
 
-      <div className="flex gap-12 mt-24" style={{ flexWrap: "wrap", justifyContent: "center" }}>
-        {bestPlaySessionId !== null && (
+      {bestPlaySessionId !== null && (
+        <div className="flex gap-12 mt-24" style={{ flexWrap: "wrap", justifyContent: "center" }}>
           <Link className="btn btn-primary" href={`/replay/${bestPlaySessionId}`}>
             ▶ リプレイを見る
           </Link>
-        )}
-        <Link className="btn" href={`/players/${userId}`}>
-          プレイヤー詳細を見る
-        </Link>
-      </div>
+        </div>
+      )}
     </>
   )
 }
