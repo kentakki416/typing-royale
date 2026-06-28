@@ -379,6 +379,7 @@ export function ReplayPlayer({ data }: Props) {
 }
 
 const LANGUAGE_LABEL: Record<string, string> = {
+  go: "Go",
   javascript: "JavaScript",
   typescript: "TypeScript",
 }
