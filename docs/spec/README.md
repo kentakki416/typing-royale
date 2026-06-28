@@ -22,7 +22,7 @@
 | rewards | ✅ | 特典（リワード）。SVG バッジ・達成カード・3D アイコン・Hall of Fame | [./rewards/README.md](./rewards/README.md) |
 | special-badges | 🟡 設計中 | 殿堂入り / 月間 TOP 10 専用の SVG バッジ + PNG 達成カード。/finish と生成を分離 + クライアント起点 + 自己修復。HoF は順位で配色（金/銀/銅/黒）、月間は青固定 | [./special-badges/README.md](./special-badges/README.md) |
 | rewards-worker | 🟡 設計中 | 報酬画像 (SVG/PNG) の生成を apps/worker + BullMQ (`generate-reward` queue) に移譲し /finish を高速化。リザルト UX を「集計中→結果→1.6秒後 popup」に再構成。ホーム再訪時の見逃し popup も追加 | [./rewards-worker/README.md](./rewards-worker/README.md) |
-| adsense | ✅ | 広告配信。Google AdSense のディスプレイ広告 | [./adsense/README.md](./adsense/README.md) |
+| adsense | 🟡 実装中 | 広告配信。Google AdSense のディスプレイ広告。配信基盤（env gate / AdUnit / ads.txt / privacy）実装済み、AdSense アカウント取得・審査・本番 env 設定は運用者対応待ち | [./adsense/README.md](./adsense/README.md) |
 | dev-login | ✅ | 開発用ログイン（既存） | [./dev-login/README.md](./dev-login/README.md) |
 | shared-packages | ✅ | api/cron 横断で共通利用する `@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/redis` の設計（テンプレート整備）。`@repo/config` は撤去済み（各 app の `src/env.ts` にインライン化） | [./shared-packages/README.md](./shared-packages/README.md) |
 

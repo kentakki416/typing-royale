@@ -19,6 +19,12 @@ const PUBLIC_PATHS = [
   "/sign-in",
   "/api/auth/callback/github",
   /**
+   * adsense: プライバシーポリシーは公開ページ（AdSense 審査でクローラがアクセスする）。
+   * /ads.txt は AdSense クローラが直接取得する Route Handler なので未ログインでも配信必須。
+   */
+  "/privacy",
+  "/ads.txt",
+  /**
    * score-ranking の公開画面: 未ログインでも閲覧可能
    * step5 では /ranking を追加し忘れていたため、本 step (step7) で /players と同時に追加
    */

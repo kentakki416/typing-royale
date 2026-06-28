@@ -3,6 +3,7 @@ import Link from "next/link"
 
 import type { GetMonthlyRankingsResponse } from "@repo/api-schema"
 
+import { AdUnit } from "@/components/ads/ad-unit"
 import { CrawledReposSection } from "@/components/crawled-repos-section"
 import { MissedRewardsPopup } from "@/components/missed-rewards-popup"
 import { MonthlyByLanguage, MonthlyTopSection } from "@/components/monthly-top-section"
@@ -168,8 +169,13 @@ export default async function HomePage() {
         </div>
       </div>
 
+      {/* ディスプレイ広告（AdSense 未設定時は何も描画されない / プレイ画面には設置しない） */}
+      <div className="container container-narrow" style={{ marginTop: 32 }}>
+        <AdUnit slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME ?? ""} />
+      </div>
+
       <div className="footer">
-        <a href="#">利用規約</a> · <a href="#">プライバシー</a> · <a href="#">ライセンス一覧</a>
+        <a href="#">利用規約</a> · <a href="/privacy">プライバシー</a> · <a href="#">ライセンス一覧</a>
       </div>
 
       {/* リザルト → ホーム遷移時の pending rewards 通知 (special-badges step5) */}
