@@ -153,7 +153,7 @@ export default async function HomePage() {
               <div className="card-header">
                 <div className="card-title">📦 クロール対象リポジトリ</div>
               </div>
-              <CrawledReposSection />
+              <CrawledReposSection languages={languages} />
             </div>
 
             <div className="card mb-16">

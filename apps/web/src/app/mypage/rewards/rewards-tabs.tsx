@@ -204,7 +204,7 @@ const formatRewardLabel = (reward: Reward): string => {
 }
 
 const formatLanguage = (lang: string | undefined): string =>
-  lang === "javascript" ? "JS" : lang === "typescript" ? "TS" : "?"
+  lang === "javascript" ? "JS" : lang === "typescript" ? "TS" : lang === "go" ? "Go" : "?"
 
 const GRADE_NAMES: Record<string, string> = {
   distinguished: "Distinguished Engineer",

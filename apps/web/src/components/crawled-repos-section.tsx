@@ -3,29 +3,23 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
-import type { GetCrawledReposResponse } from "@repo/api-schema"
+import type { GetCrawledReposResponse, LanguageItem } from "@repo/api-schema"
 
-type Language = "typescript" | "javascript"
-
-const LANGUAGES: { key: Language; label: string }[] = [
-  { key: "typescript", label: "TypeScript" },
-  { key: "javascript", label: "JavaScript" },
-]
+type Props = {
+  languages: ReadonlyArray<LanguageItem>
+}
 
 /**
  * ホーム画面サイドバーの「クロール対象リポジトリ」セクション。
  * 言語タブで切替、各タブで stars 上位 5 件を表示。「全件 →」リンクで /crawled-repos
- * 詳細ページに遷移する
+ * 詳細ページに遷移する。言語タブは languages マスタ由来（新言語は自動で増える）
  */
-export function CrawledReposSection() {
-  const [active, setActive] = useState<Language>("typescript")
-  const [data, setData] = useState<Record<Language, GetCrawledReposResponse | null>>({
-    javascript: null,
-    typescript: null,
-  })
+export function CrawledReposSection({ languages }: Props) {
+  const [active, setActive] = useState<string>(languages[0]?.slug ?? "")
+  const [data, setData] = useState<Record<string, GetCrawledReposResponse | null>>({})
 
   useEffect(() => {
-    if (data[active] !== null) return
+    if (active === "" || data[active] !== undefined) return
     const load = async () => {
       try {
         const res = await fetch(`/api/internal/crawled-repos?language=${active}&limit=5`)
@@ -39,20 +33,20 @@ export function CrawledReposSection() {
     void load()
   }, [active, data])
 
-  const current = data[active]
+  const current = data[active] ?? null
 
   return (
     <div>
       <div className="pills mb-16">
-        {LANGUAGES.map((lang) => (
+        {languages.map((lang) => (
           <button
-            className={`pill ${active === lang.key ? "active" : ""}`}
-            key={lang.key}
-            style={active === lang.key ? { border: 0 } : { background: "transparent", border: 0 }}
+            className={`pill ${active === lang.slug ? "active" : ""}`}
+            key={lang.slug}
+            style={active === lang.slug ? { border: 0 } : { background: "transparent", border: 0 }}
             type="button"
-            onClick={() => setActive(lang.key)}
+            onClick={() => setActive(lang.slug)}
           >
-            {lang.label}
+            {lang.name}
           </button>
         ))}
       </div>
