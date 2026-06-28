@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 /**
  * 言語マスタ（API）には無い「表示メタ」を slug で補う。
  * - iconClass / iconText: カードのアイコン表示
- * - comingSoon: 問題プールが未整備の言語（現状 JavaScript）はカードを選択不可にする。
+ * - comingSoon: 問題プールが未整備の言語はカードを選択不可にする。
  *   問題が追加され次第 false に戻す（または将来は problems の有無で動的判定する）
  * マスタにあるが本マップに無い言語は DEFAULT で comingSoon 扱い（誤って遊ばせない）
  */
@@ -22,7 +22,7 @@ const LANGUAGE_PRESENTATION: Record<
   string,
   { comingSoon: boolean; iconClass: string; iconText: string }
 > = {
-  javascript: { comingSoon: true, iconClass: "js", iconText: "JS" },
+  javascript: { comingSoon: false, iconClass: "js", iconText: "JS" },
   typescript: { comingSoon: false, iconClass: "ts", iconText: "TS" },
 }
 
