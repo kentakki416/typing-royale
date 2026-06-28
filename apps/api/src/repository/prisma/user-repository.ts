@@ -10,6 +10,7 @@ import { TransactionContext } from "./transaction-runner"
 export type CreateUserInput = {
     avatarUrl?: string
     canPublicRanking?: boolean
+    favoriteRepoUrl?: string
     githubUsername?: string
     email?: string
 }
@@ -36,6 +37,7 @@ export type PublicProfileUser = {
     avatarUrl: string | null
     canPublicRanking: boolean
     createdAt: Date
+    favoriteRepoUrl: string | null
     githubUsername: string
     id: number
 }
@@ -86,6 +88,7 @@ export class PrismaUserRepository implements UserRepository {
         avatarUrl: true,
         canPublicRanking: true,
         createdAt: true,
+        favoriteRepoUrl: true,
         githubUsername: true,
       },
       where: { githubUsername },
@@ -95,6 +98,7 @@ export class PrismaUserRepository implements UserRepository {
       avatarUrl: row.avatarUrl,
       canPublicRanking: row.canPublicRanking,
       createdAt: row.createdAt,
+      favoriteRepoUrl: row.favoriteRepoUrl,
       githubUsername: row.githubUsername ?? `user${row.id}`,
       id: row.id,
     }
@@ -107,6 +111,7 @@ export class PrismaUserRepository implements UserRepository {
         avatarUrl: true,
         canPublicRanking: true,
         createdAt: true,
+        favoriteRepoUrl: true,
         githubUsername: true,
       },
       where: { id: userId },
@@ -116,6 +121,7 @@ export class PrismaUserRepository implements UserRepository {
       avatarUrl: row.avatarUrl,
       canPublicRanking: row.canPublicRanking,
       createdAt: row.createdAt,
+      favoriteRepoUrl: row.favoriteRepoUrl,
       githubUsername: row.githubUsername ?? `user${row.id}`,
       id: row.id,
     }
@@ -127,6 +133,7 @@ export class PrismaUserRepository implements UserRepository {
       data: {
         avatarUrl: data.avatarUrl,
         canPublicRanking: data.canPublicRanking ?? true,
+        favoriteRepoUrl: data.favoriteRepoUrl,
         githubUsername: data.githubUsername,
         email: data.email,
       },

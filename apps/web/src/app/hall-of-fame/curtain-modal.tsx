@@ -1,17 +1,18 @@
 "use client"
 
-import Link from "next/link"
 import { useEffect } from "react"
 
 import type { GetHallOfFameResponse } from "@repo/api-schema"
 
 import { CrownSvg } from "@/components/crown-svg"
+import { UserProfileCard } from "@/components/user-profile-card"
 import { formatUsername } from "@/libs/format-username"
 
 type Entry = GetHallOfFameResponse["entries"][number]
 
 type Props = {
   entry: Entry
+  languageName: string
   onClose: () => void
 }
 
@@ -37,13 +38,15 @@ const slugForRank = (rank: number): RankSlug => {
  *
  * `.curtain-stage.active[data-rank=...]` 構造を 1.8 秒のカーテン演出付きで表示。
  * TOP 1〜3 はクラウン付き + 金 / 銀 / 銅 パレット、4 位以降はクラウン無し + 白色パレット。
- * バックドロップクリックまたは × ボタンで onClose を呼ぶ。 ESC キーでも閉じる
+ * バックドロップクリックまたは × ボタンで onClose を呼ぶ。 ESC キーでも閉じる。
+ *
+ * 中身（プロフィール表示）はランキングと共通の {@link UserProfileCard}。
+ * 演出（カーテン / クラウン）でのみ見せ方を変える。
  */
-export function CurtainModal({ entry, onClose }: Props) {
+export function CurtainModal({ entry, languageName, onClose }: Props) {
   const slug = slugForRank(entry.rank)
   const crowned = entry.rank <= 3
-  const username = formatUsername(entry.user)
-  const rankLabel = `TS オールタイム #${entry.rank}`
+  const rankLabel = `${languageName} オールタイム #${entry.rank}`
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -52,8 +55,6 @@ export function CurtainModal({ entry, onClose }: Props) {
     document.addEventListener("keydown", onKey)
     return () => document.removeEventListener("keydown", onKey)
   }, [onClose])
-
-  const repoLabel = formatRepoUrl(entry.user.favorite_repo_url)
 
   return (
     <div
@@ -92,97 +93,20 @@ export function CurtainModal({ entry, onClose }: Props) {
           </span>
         )}
 
-        <div className="text-center">
-          <PlayerAvatar avatarUrl={entry.user.avatar_url} githubUsername={username} />
-          <h2 style={{ fontSize: "28px", margin: "16px 0 6px" }}>@{username}</h2>
-          <div className="flex gap-8" style={{ flexWrap: "wrap", justifyContent: "center" }}>
-            <span className={`badge ${slug}`}>{rankLabel}</span>
-            <span
-              className={`badge-grade ${entry.user.current_grade}`}
-              data-level={GRADE_LEVELS[entry.user.current_grade] ?? 1}
-            >
-              {capitalizeGradeSlug(entry.user.current_grade)}
-            </span>
-          </div>
-        </div>
-
-        <div className="stat-row mt-24">
-          <div className="stat">
-            <div className="stat-value accent">{entry.score.toLocaleString()}</div>
-            <div className="stat-label">ベストスコア</div>
-          </div>
-          <div className="stat">
-            <div className="stat-value">{entry.typed_chars.toLocaleString()}</div>
-            <div className="stat-label">最高文字数</div>
-          </div>
-          <div className="stat">
-            <div className="stat-value success">{(entry.accuracy * 100).toFixed(1)}%</div>
-            <div className="stat-label">最高正確率</div>
-          </div>
-        </div>
-
-        {entry.user.favorite_repo_url !== null && repoLabel !== null && (
-          <div className="card mt-16" style={{ padding: "16px 18px" }}>
-            <div className="card-title text-sm mb-8" style={{ color: "var(--accent)" }}>🔗 GitHub</div>
-            <a
-              className="text-mono text-sm"
-              href={entry.user.favorite_repo_url}
-              rel="noreferrer noopener"
-              target="_blank"
-            >
-              {repoLabel}
-            </a>
-          </div>
-        )}
-
-        <div className="flex gap-12 mt-24" style={{ flexWrap: "wrap", justifyContent: "center" }}>
-          <Link className="btn btn-primary" href={`/replay/${entry.best_play_session_id}`}>
-            ▶ リプレイを見る
-          </Link>
-        </div>
+        <UserProfileCard
+          avatarUrl={entry.user.avatar_url}
+          accuracy={entry.accuracy}
+          bestPlaySessionId={entry.best_play_session_id}
+          favoriteRepoUrl={entry.user.favorite_repo_url}
+          gradeSlug={entry.user.current_grade}
+          rankBadgeClassName={`badge ${slug}`}
+          rankLabel={rankLabel}
+          score={entry.score}
+          typedChars={entry.typed_chars}
+          userId={entry.user.id}
+          username={formatUsername(entry.user)}
+        />
       </div>
     </div>
   )
 }
-
-/**
- * github.com の URL は `owner/repo` 形式で短縮表示し、それ以外は URL をそのまま見せる
- */
-const formatRepoUrl = (url: string | null): string | null => {
-  if (url === null) return null
-  try {
-    const u = new URL(url)
-    if (u.hostname === "github.com") {
-      const parts = u.pathname.split("/").filter((s) => s.length > 0)
-      if (parts.length >= 2) return `${parts[0]}/${parts[1]}`
-    }
-    return url
-  } catch {
-    return url
-  }
-}
-
-const PlayerAvatar = ({ avatarUrl, githubUsername }: { avatarUrl: string | null; githubUsername: string }) => {
-  const initials = githubUsername.slice(0, 2).toUpperCase()
-  const style = { fontSize: "30px", height: "96px", margin: "0 auto", width: "96px" }
-  if (avatarUrl === null) {
-    return <span className="avatar lg" style={style}>{initials}</span>
-  }
-  return (
-    /* eslint-disable-next-line @next/next/no-img-element */
-    <img alt={githubUsername} className="avatar lg" src={avatarUrl} style={style} />
-  )
-}
-
-const GRADE_LEVELS: Record<string, number> = {
-  distinguished: 7,
-  fellow: 8,
-  intern: 1,
-  junior: 2,
-  mid: 3,
-  principal: 6,
-  senior: 4,
-  staff: 5,
-}
-
-const capitalizeGradeSlug = (slug: string): string => slug.charAt(0).toUpperCase() + slug.slice(1)

@@ -92,7 +92,7 @@ export default async function HallOfFamePage({
             </Link>
           </div>
         ) : (
-          <HofCards entries={data.entries} />
+          <HofCards entries={data.entries} languageName={selectedLanguage.name} />
         )}
       </div>
 

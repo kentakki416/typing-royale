@@ -165,6 +165,7 @@ describe("authenticateWithGithub", () => {
       expect(mockUserCreate).toHaveBeenCalledWith(
         {
           avatarUrl: "https://avatars.githubusercontent.com/u/2?v=4",
+          favoriteRepoUrl: "https://github.com/newoctocat",
           githubUsername: "newoctocat",
         },
         undefined,

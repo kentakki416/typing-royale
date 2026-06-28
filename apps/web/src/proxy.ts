@@ -31,6 +31,12 @@ const PUBLIC_PATHS = [
   "/ranking",
   "/players",
   /**
+   * ランキングの選択モーダルがブラウザ fetch で叩くプレイヤー詳細の bridge。
+   * /ranking は公開ページなので未ログインでも叩けるよう明示的に public 化しないと
+   * 307 で /sign-in にリダイレクトされ、モーダルが取得失敗表示になる
+   */
+  "/api/internal/players",
+  /**
    * replay-viewer: 個別リプレイページは未ログインでも閲覧可能
    */
   "/replay",

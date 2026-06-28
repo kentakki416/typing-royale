@@ -71,6 +71,7 @@ export class PlayerDetailController {
       user: {
         id: result.value.user.id,
         avatar_url: result.value.user.avatarUrl,
+        favorite_repo_url: result.value.user.favoriteRepoUrl,
         github_username: result.value.user.githubUsername,
         joined_at: result.value.user.joinedAt.toISOString(),
       },
