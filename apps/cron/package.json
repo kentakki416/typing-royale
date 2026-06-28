@@ -7,6 +7,7 @@
     "build": "tsc --project tsconfig.build.json",
     "crawler:run:typescript": "dotenvx run -f .env.local -- tsx src/task/crawler-run-typescript.ts",
     "crawler:run:javascript": "dotenvx run -f .env.local -- tsx src/task/crawler-run-javascript.ts",
+    "crawler:run:go": "dotenvx run -f .env.local -- tsx src/task/crawler-run-go.ts",
     "crawler:license-recheck": "dotenvx run -f .env.local -- tsx src/task/crawler-license-recheck.ts",
     "dev": "dotenvx run -f .env.local -- tsx watch src/index.ts",
     "lint": "eslint 'src/**/*.ts' 'test/**/*.ts'",
@@ -19,7 +20,9 @@
     "@repo/api-schema": "workspace:^",
     "@repo/db": "workspace:^",
     "@repo/logger": "workspace:^",
+    "tree-sitter-go": "0.25.0",
     "typescript": "^5.9.3",
+    "web-tree-sitter": "0.25.10",
     "zod": "^3.25.76"
   },
   "devDependencies": {
