@@ -187,7 +187,15 @@ export function useTypingEngine({ finishedRef, onComboBonus, problems, startAtRe
       if (!problem) return
       const rest = problem.code_block.slice(cursorPosRef.current)
       if (rest.length === 0 || /\S/.test(rest)) return
-      while (cursorPosRef.current < problem.code_block.length) {
+      /**
+       * 末尾空白を消費して問題を打ち切ると consumeOneAsSkipped が problemIndexRef を
+       * 進めて cursorPosRef を 0 に戻す。捕捉済みの `problem`（＝この問題）の length で
+       * 判定し続けると「cursor=0 < この問題長」が永久に真となり無限ループする
+       * （メインスレッドが固まって次問題に進めず、rAF 駆動の神プレイバックも止まる）。
+       * 同じ問題に留まっている間だけ消費し、次問題へ進んだら抜ける。
+       */
+      const startIndex = problemIndexRef.current
+      while (problemIndexRef.current === startIndex && cursorPosRef.current < problem.code_block.length) {
         consumeOneAsSkipped(problem, problem.code_block[cursorPosRef.current])
       }
     }
