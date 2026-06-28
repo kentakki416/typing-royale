@@ -1,15 +1,16 @@
 /**
  * GET /ads.txt
  *
- * AdSense は配信前に `https://typing-royale.com/ads.txt` で
- * 「この広告枠を販売してよいのは誰か」を宣言することを要求する。
+ * Google のクローラが取得する text/plain ファイル。広告枠の正規の販売者を宣言する。
+ * 1 行 = カンマ区切り 4 フィールド（IAB ads.txt 仕様）:
+ *   1. 広告システムのドメイン … AdSense は `google.com`
+ *   2. パブリッシャー ID … `pub-XXXXXXXXXXXXXXXX`（env の `ca-` を除いた値）
+ *   3. 取引関係 … 枠を直接所有するので `DIRECT`（再販なら RESELLER）
+ *   4. 認証局 ID … Google 固定の `f08c47fec0942fa0`
+ * 出力例: `google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0`
  *
- * パブリッシャー ID（NEXT_PUBLIC_ADSENSE_CLIENT_ID）から動的に生成するため、
- * アカウント取得後に環境変数を設定するだけで有効になる（ハードコード不要）。
- * 未設定時は 404 を返す（審査前は ads.txt を露出しない）。
- *
- * 形式: `google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0`
- * 末尾の `f08c47fec0942fa0` は Google の固定 certification authority ID。
+ * 値は NEXT_PUBLIC_ADSENSE_CLIENT_ID から動的生成する（ハードコード不要）。
+ * 未設定時は 404（審査前は露出しない）。
  */
 const GOOGLE_CERTIFICATION_AUTHORITY_ID = "f08c47fec0942fa0"
 
