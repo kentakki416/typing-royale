@@ -3,6 +3,7 @@ import Link from "next/link"
 
 import type { GetMonthlyRankingsResponse } from "@repo/api-schema"
 
+import { AdUnit } from "@/components/ads/ad-unit"
 import { CrawledReposSection } from "@/components/crawled-repos-section"
 import { MissedRewardsPopup } from "@/components/missed-rewards-popup"
 import { MonthlyByLanguage, MonthlyTopSection } from "@/components/monthly-top-section"
@@ -155,7 +156,7 @@ export default async function HomePage() {
               <CrawledReposSection />
             </div>
 
-            <div className="card">
+            <div className="card mb-16">
               <div className="card-header"><div className="card-title">対応言語</div></div>
               <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
                 <span className="badge accent">TypeScript</span>
@@ -164,12 +165,20 @@ export default async function HomePage() {
                 <span className="badge success">Go (近日)</span>
               </div>
             </div>
+
+            {/* サイドバー広告（対応言語カードの下 / 280px 列で自然と小さめ / 未設定時は非表示） */}
+            <AdUnit minHeight={200} slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_SIDEBAR ?? ""} />
           </aside>
         </div>
       </div>
 
+      {/* メインカラム下部の大型バナー広告（幅広コンテナ / 未設定時は非表示 / プレイ画面には置かない） */}
+      <div className="container" style={{ marginTop: 32 }}>
+        <AdUnit minHeight={280} slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME ?? ""} />
+      </div>
+
       <div className="footer">
-        <a href="#">利用規約</a> · <a href="#">プライバシー</a> · <a href="#">ライセンス一覧</a>
+        <a href="#">利用規約</a> · <a href="/privacy">プライバシー</a> · <a href="#">ライセンス一覧</a>
       </div>
 
       {/* リザルト → ホーム遷移時の pending rewards 通知 (special-badges step5) */}

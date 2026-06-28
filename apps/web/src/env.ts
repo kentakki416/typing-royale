@@ -24,6 +24,25 @@ const webEnvSchema = z
     GITHUB_CLIENT_ID: z.string().default(""),
 
     /**
+     * Google AdSense のパブリッシャー ID（例: "ca-pub-1234567890123456"）
+     * 未設定（空文字）の場合は広告スクリプト・広告ユニットを一切描画しない。
+     * AdSense アカウント審査通過後に Vercel の環境変数として設定する。
+     * NEXT_PUBLIC_ prefix によりクライアント側でも参照可能（ビルド時にインライン化）。
+     */
+    NEXT_PUBLIC_ADSENSE_CLIENT_ID: z.string().default(""),
+
+    /**
+     * トップ画面メインカラム下部に設置する広告ユニットのスロット ID（AdSense 管理画面で発行）
+     * 未設定でも AdUnit 側で NEXT_PUBLIC_ADSENSE_CLIENT_ID を見て描画判定するため安全。
+     */
+    NEXT_PUBLIC_ADSENSE_SLOT_HOME: z.string().default(""),
+
+    /**
+     * トップ画面サイドバー（対応言語カードの下）に設置する広告ユニットのスロット ID
+     */
+    NEXT_PUBLIC_ADSENSE_SLOT_HOME_SIDEBAR: z.string().default(""),
+
+    /**
      * フロント自身の origin（OAuth redirect_uri 構築に使用）
      */
     NEXT_PUBLIC_APP_URL: z.string().url(),
