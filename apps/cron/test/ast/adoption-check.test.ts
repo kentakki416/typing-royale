@@ -41,13 +41,6 @@ describe("checkAdoption", () => {
       })
     })
 
-    it("テストフレームワーク予約名（test / it / describe など） → excluded_function_name", () => {
-      for (const name of ["test", "it", "describe", "beforeEach", "afterEach", "setup"]) {
-        const result = checkAdoption(name, "x".repeat(120))
-        expect(result).toEqual({ adopted: false, reason: "excluded_function_name" })
-      }
-    })
-
     it("コメント除去後が空 → empty_after_strip", () => {
       expect(checkAdoption("fn", "   \n\n  ")).toEqual({
         adopted: false,

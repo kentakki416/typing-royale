@@ -24,10 +24,11 @@ const SEARCH_LICENSE_FILTER =
 const MAX_FILE_SIZE = 100_000
 
 /**
- * tree からダウンロードしない（≒ AST 解析対象外）のパスパターン。
+ * tree からダウンロードしない（≒ AST 解析対象外）のパスパターンのデフォルト（TS / JS 向け）。
  * ダウンロード前に除外することで GitHub API のレート消費と AST パースコストを抑える。
+ * Go 等の言語別 task は GithubClientConfig.excludedPathPatterns で上書きする。
  */
-const EXCLUDED_TREE_PATTERNS = [
+const DEFAULT_EXCLUDED_TREE_PATTERNS = [
   /** 依存・ビルド成果物 */
   /^node_modules\//,
   /\/node_modules\//,
@@ -77,6 +78,11 @@ export type GithubClientConfig = {
    * crawler task では必須。listSourceFiles を使わない license-recheck では指定不要。
    */
   targetExtensions?: RegExp
+  /**
+   * listSourceFiles で除外するパスパターン。省略時は TS / JS 向けのデフォルト
+   * （node_modules / dist / *.test.* 等）。Go 等は vendor/ や *_test.go を弾くため上書きする。
+   */
+  excludedPathPatterns?: RegExp[]
   userAgent?: string
 }
 
@@ -103,6 +109,7 @@ export class GithubClient {
   private readonly minStars: number
   private readonly pushedAfter: string
   private readonly targetExtensions: RegExp | null
+  private readonly excludedPathPatterns: RegExp[]
   private readonly fetchTimeoutMs: number
 
   constructor(config: GithubClientConfig) {
@@ -111,6 +118,7 @@ export class GithubClient {
     this.minStars = config.minStars
     this.pushedAfter = config.pushedAfter ?? this._defaultPushedAfter()
     this.targetExtensions = config.targetExtensions ?? null
+    this.excludedPathPatterns = config.excludedPathPatterns ?? DEFAULT_EXCLUDED_TREE_PATTERNS
     this.fetchTimeoutMs = config.fetchTimeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS
   }
 
@@ -202,7 +210,7 @@ export class GithubClient {
       .filter((e): e is GithubTreeEntry => e !== null)
       .filter((e) => e.type === "blob")
       .filter((e) => extensions.test(e.path))
-      .filter((e) => !EXCLUDED_TREE_PATTERNS.some((p) => p.test(e.path)))
+      .filter((e) => !this.excludedPathPatterns.some((p) => p.test(e.path)))
       .filter((e) => (e.size ?? 0) <= MAX_FILE_SIZE)
   }
 

@@ -1,5 +1,6 @@
 import { logger } from "@repo/logger"
 
+import { TsFunctionExtractor } from "../ast/ts-function-extractor"
 import { GithubClient } from "../client/github"
 import { env } from "../env"
 import {
@@ -40,6 +41,7 @@ runAsCrawlerJob({
     const crawledRepoRepository = new PrismaCrawledRepoRepository(prisma)
     const problemRepository = new PrismaProblemRepository(prisma)
     const crawlerRunItemRepository = new PrismaCrawlerRunItemRepository(prisma)
+    const extractor = new TsFunctionExtractor()
 
     const lang = await languageRepository.findBySlug(LANGUAGE_SLUG)
     if (!lang) {
@@ -72,7 +74,8 @@ runAsCrawlerJob({
         const result = await processRepo(
           { languageId: lang.id, name: target.name, owner: target.owner },
           { crawledRepoRepository, problemRepository },
-          { github }
+          { github },
+          extractor
         )
         const added = result.adopted ? result.problemsAdded : 0
         await crawlerRunItemRepository.succeed(item.id, new Date(), added)
