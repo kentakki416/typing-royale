@@ -4,7 +4,7 @@
  * AdSense は配信前に `https://typing-royale.com/ads.txt` で
  * 「この広告枠を販売してよいのは誰か」を宣言することを要求する。
  *
- * パブリッシャー ID（NEXT_PUBLIC_ADSENSE_CLIENT）から動的に生成するため、
+ * パブリッシャー ID（NEXT_PUBLIC_ADSENSE_CLIENT_ID）から動的に生成するため、
  * アカウント取得後に環境変数を設定するだけで有効になる（ハードコード不要）。
  * 未設定時は 404 を返す（審査前は ads.txt を露出しない）。
  *
@@ -14,14 +14,14 @@
 const GOOGLE_CERTIFICATION_AUTHORITY_ID = "f08c47fec0942fa0"
 
 export function GET() {
-  const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? ""
+  const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID ?? ""
 
   if (adsenseClient.length === 0) {
     return new Response("ads.txt is not configured yet", { status: 404 })
   }
 
   /**
-   * NEXT_PUBLIC_ADSENSE_CLIENT は "ca-pub-..." 形式。
+   * NEXT_PUBLIC_ADSENSE_CLIENT_ID は "ca-pub-..." 形式。
    * ads.txt では "pub-..." 形式を使うため "ca-" prefix を除去する。
    */
   const publisherId = adsenseClient.replace(/^ca-/, "")

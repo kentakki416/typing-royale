@@ -8,7 +8,7 @@ declare global {
   }
 }
 
-const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? ""
+const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID ?? ""
 
 type AdUnitProps = {
   /**
@@ -30,7 +30,7 @@ type AdUnitProps = {
 /**
  * AdSense ディスプレイ広告ユニット 1 枠。
  *
- * `NEXT_PUBLIC_ADSENSE_CLIENT` 未設定時は何も描画しないため、
+ * `NEXT_PUBLIC_ADSENSE_CLIENT_ID` 未設定時は何も描画しないため、
  * 各ページに先行して埋め込んでおいても審査前は表示されない。
  *
  * 配置方針は [`docs/spec/adsense/README.md`](../../../../../docs/spec/adsense/README.md) を参照。

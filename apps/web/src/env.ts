@@ -29,11 +29,11 @@ const webEnvSchema = z
      * AdSense アカウント審査通過後に Vercel の環境変数として設定する。
      * NEXT_PUBLIC_ prefix によりクライアント側でも参照可能（ビルド時にインライン化）。
      */
-    NEXT_PUBLIC_ADSENSE_CLIENT: z.string().default(""),
+    NEXT_PUBLIC_ADSENSE_CLIENT_ID: z.string().default(""),
 
     /**
      * トップ画面に設置する広告ユニットのスロット ID（AdSense 管理画面で発行）
-     * 未設定でも AdUnit 側で NEXT_PUBLIC_ADSENSE_CLIENT を見て描画判定するため安全。
+     * 未設定でも AdUnit 側で NEXT_PUBLIC_ADSENSE_CLIENT_ID を見て描画判定するため安全。
      */
     NEXT_PUBLIC_ADSENSE_SLOT_HOME: z.string().default(""),
 
