@@ -13,7 +13,8 @@
 | 変数 | 例 | 用途 |
 | --- | --- | --- |
 | `NEXT_PUBLIC_ADSENSE_CLIENT_ID` | `ca-pub-1234567890123456` | パブリッシャー ID。未設定なら広告は描画されない |
-| `NEXT_PUBLIC_ADSENSE_SLOT_HOME` | `1234567890` | トップ画面の広告ユニットスロット ID |
+| `NEXT_PUBLIC_ADSENSE_SLOT_HOME` | `1234567890` | トップ画面メインカラム下部のスロット ID |
+| `NEXT_PUBLIC_ADSENSE_SLOT_HOME_SIDEBAR` | `1234567890` | トップ画面サイドバー（対応言語カードの下）のスロット ID |
 
 いずれも `NEXT_PUBLIC_` prefix のためビルド時にクライアントへインライン化される。
 `env.ts` は `server-only` のため、**クライアントコンポーネントからは `process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID` を直接参照**する

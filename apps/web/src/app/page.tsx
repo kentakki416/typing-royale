@@ -156,7 +156,7 @@ export default async function HomePage() {
               <CrawledReposSection />
             </div>
 
-            <div className="card">
+            <div className="card mb-16">
               <div className="card-header"><div className="card-title">対応言語</div></div>
               <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
                 <span className="badge accent">TypeScript</span>
@@ -165,6 +165,9 @@ export default async function HomePage() {
                 <span className="badge success">Go (近日)</span>
               </div>
             </div>
+
+            {/* サイドバー広告（対応言語カードの下 / AdSense 未設定時は非表示） */}
+            <AdUnit minHeight={250} slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_SIDEBAR ?? ""} />
           </aside>
         </div>
       </div>

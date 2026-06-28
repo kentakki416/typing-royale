@@ -32,10 +32,15 @@ const webEnvSchema = z
     NEXT_PUBLIC_ADSENSE_CLIENT_ID: z.string().default(""),
 
     /**
-     * トップ画面に設置する広告ユニットのスロット ID（AdSense 管理画面で発行）
+     * トップ画面メインカラム下部に設置する広告ユニットのスロット ID（AdSense 管理画面で発行）
      * 未設定でも AdUnit 側で NEXT_PUBLIC_ADSENSE_CLIENT_ID を見て描画判定するため安全。
      */
     NEXT_PUBLIC_ADSENSE_SLOT_HOME: z.string().default(""),
+
+    /**
+     * トップ画面サイドバー（対応言語カードの下）に設置する広告ユニットのスロット ID
+     */
+    NEXT_PUBLIC_ADSENSE_SLOT_HOME_SIDEBAR: z.string().default(""),
 
     /**
      * フロント自身の origin（OAuth redirect_uri 構築に使用）
