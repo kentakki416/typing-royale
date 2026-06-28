@@ -106,7 +106,11 @@ export default async function RankingPage({
 
         <div className="row">
           <div className="col">
-            <RankingTable entries={monthly.entries} />
+            <RankingTable
+              entries={monthly.entries}
+              languageName={selectedLanguage.name}
+              languageSlug={language}
+            />
 
             {monthly.entries.length === 0 && (
               <div className="card text-center mt-16" style={{ padding: "48px 16px" }}>

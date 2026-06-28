@@ -14,6 +14,7 @@ type Entry = GetHallOfFameResponse["entries"][number]
 
 type Props = {
   entries: Entry[]
+  languageName: string
 }
 
 type CrownedRank = 1 | 2 | 3
@@ -40,7 +41,7 @@ const slugForRank = (rank: number): RankSlug => {
  * - 4〜10 はクラウン無し + 白色の回転光リングで統一感を出す
  * - 全カードはクリックで CurtainModal を開く (タップ可)
  */
-export function HofCards({ entries }: Props) {
+export function HofCards({ entries, languageName }: Props) {
   const [open, setOpen] = useState<Entry | null>(null)
 
   return (
@@ -98,7 +99,7 @@ export function HofCards({ entries }: Props) {
       </div>
 
       {open !== null && (
-        <CurtainModal entry={open} onClose={() => setOpen(null)} />
+        <CurtainModal entry={open} languageName={languageName} onClose={() => setOpen(null)} />
       )}
     </>
   )

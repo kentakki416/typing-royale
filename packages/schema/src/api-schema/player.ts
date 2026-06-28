@@ -26,6 +26,7 @@ const playerGradeSchema = z.object({
 const playerUserSchema = z.object({
   id: z.number().int().positive(),
   avatar_url: z.string().url().nullable(),
+  favorite_repo_url: z.string().nullable(),
   github_username: z.string().nullable(),
   joined_at: z.string().datetime(),
 })

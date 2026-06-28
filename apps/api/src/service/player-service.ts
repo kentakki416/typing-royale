@@ -38,6 +38,7 @@ export type FindByIdOutput = {
     }
     user: {
         avatarUrl: string | null
+        favoriteRepoUrl: string | null
         githubUsername: string
         id: number
         joinedAt: Date
@@ -104,6 +105,7 @@ export const findById = async (
     },
     user: {
       avatarUrl: user.avatarUrl,
+      favoriteRepoUrl: user.favoriteRepoUrl,
       githubUsername: user.githubUsername,
       id: user.id,
       joinedAt: user.createdAt,

@@ -157,6 +157,20 @@ body::before {
 a { color: var(--accent); text-decoration: none; }
 a:hover { color: var(--accent-hover); text-decoration: underline; }
 
+/**
+ * アンカー風に見せるボタン（モーダルを開くプレイヤー名など）。
+ * button のデフォルト装飾をリセットしてリンク色を継承する。
+ */
+.link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+}
+.link-button:hover { color: var(--accent-hover); text-decoration: underline; }
+
 h1, h2, h3 { font-weight: 700; }
 h1 { font-size: 28px; margin-bottom: 16px; }
 h2 { font-size: 20px; margin-bottom: 12px; }

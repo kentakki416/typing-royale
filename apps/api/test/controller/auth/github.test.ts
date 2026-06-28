@@ -93,6 +93,7 @@ describe("POST /api/auth/github", () => {
       expect(createdAuthAccount?.user).toMatchObject({
         avatarUrl: "https://avatars.githubusercontent.com/u/100?v=4",
         canPublicRanking: true,
+        favoriteRepoUrl: "https://github.com/newoctocat",
         githubUsername: "newoctocat",
       })
 

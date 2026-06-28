@@ -71,11 +71,14 @@ export const authenticateWithGithub = async (
      * githubUsername は GitHub login (= username) を常に保存する。 本名 (githubUser.name)
      * は使わない (表示名はあくまで GitHub username で固定)。
      * email は MVP では収集しないため未保存（spec: github-auth/README.md「メールアドレス収集方針」）。
+     * favoriteRepoUrl は初期値として GitHub プロフィール URL (github.com/{login}) を保存する。
+     * ユーザーはマイページから任意のリポジトリ URL へ変更できる。
      */
     user = await repo.transactionRunner.run(async (tx) => {
       const newUser = await repo.userRepository.create(
         {
           avatarUrl: githubUser.avatarUrl ?? undefined,
+          favoriteRepoUrl: `https://github.com/${githubUser.login}`,
           githubUsername: githubUser.login,
         },
         tx,

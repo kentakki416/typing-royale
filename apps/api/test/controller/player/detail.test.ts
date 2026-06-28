@@ -110,6 +110,7 @@ describe("GET /api/players/:userId", () => {
         data: {
           avatarUrl: "https://example.com/a.jpg",
           canPublicRanking: true,
+          favoriteRepoUrl: "https://github.com/sakurai_dev",
           githubUsername: "sakurai_dev",
           email: "sakurai@example.com",
         },
@@ -160,6 +161,7 @@ describe("GET /api/players/:userId", () => {
         user: {
           id: user.id,
           avatar_url: "https://example.com/a.jpg",
+          favorite_repo_url: "https://github.com/sakurai_dev",
           github_username: "sakurai_dev",
           joined_at: expect.any(String),
         },
