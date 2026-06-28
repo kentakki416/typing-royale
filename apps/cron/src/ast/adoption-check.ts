@@ -1,15 +1,3 @@
-const EXCLUDED_NAMES = new Set([
-  "afterAll",
-  "afterEach",
-  "beforeAll",
-  "beforeEach",
-  "describe",
-  "it",
-  "setup",
-  "teardown",
-  "test",
-])
-
 /**
  * 採用サイズの上下限。
  * 旧値 (100-400 chars / 5-25 行) は「3 行ラッパー関数」が大量に通り、
@@ -42,11 +30,11 @@ export type AdoptionRejectReason =
  *   - 行数: 8〜40 行
  *   - 1 行最大文字数: 120 文字以下
  *   - 非 ASCII 文字: 0 文字（日本語コメント混入や非 ASCII 識別子を除外）
- *   - 関数名: 存在する、かつテストフレームワーク予約名でない
+ *   - 関数名: 存在する（テストフレームワーク予約名等の言語固有除外は LanguageExtractor.isExcludedName 側）
  *   - コメント除去後本文: 空でない
  */
 export const checkAdoption = (functionName: string, codeWithoutCommnet: string): AdoptionResult => {
-  if (!functionName || EXCLUDED_NAMES.has(functionName)) {
+  if (!functionName) {
     return { adopted: false, reason: "excluded_function_name" }
   }
   const trimmed = codeWithoutCommnet.trim()

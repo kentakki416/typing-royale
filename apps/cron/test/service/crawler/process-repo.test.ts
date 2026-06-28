@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import { TsFunctionExtractor } from "../../../src/ast/ts-function-extractor"
 import { type GithubClient, type GithubRepoMeta, type GithubTreeEntry , GithubApiError } from "../../../src/client/github"
 import type {
   CrawledRepoRepository,
@@ -100,7 +101,8 @@ describe("processRepo", () => {
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
         { crawledRepoRepository, problemRepository },
-        { github }
+        { github },
+        new TsFunctionExtractor()
       )
 
       expect(result).toEqual({
@@ -127,7 +129,8 @@ describe("processRepo", () => {
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
         { crawledRepoRepository, problemRepository },
-        { github }
+        { github },
+        new TsFunctionExtractor()
       )
 
       expect(result).toMatchObject({ adopted: true, candidatesCount: 150, storedCount: 100 })
@@ -149,7 +152,8 @@ describe("processRepo", () => {
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
         { crawledRepoRepository, problemRepository },
-        { github }
+        { github },
+        new TsFunctionExtractor()
       )
 
       /** dedupe 後 < 30 になるので too_few_problems で disabled になる */
@@ -171,7 +175,8 @@ describe("processRepo", () => {
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
         { crawledRepoRepository, problemRepository },
-        { github }
+        { github },
+        new TsFunctionExtractor()
       )
 
       expect(result).toMatchObject({ adopted: true, problemsAdded: 35, storedCount: 40 })
@@ -189,7 +194,8 @@ describe("processRepo", () => {
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
         { crawledRepoRepository, problemRepository },
-        { github }
+        { github },
+        new TsFunctionExtractor()
       )
 
       expect(result).toEqual({
@@ -213,7 +219,8 @@ describe("processRepo", () => {
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
         { crawledRepoRepository, problemRepository },
-        { github }
+        { github },
+        new TsFunctionExtractor()
       )
 
       expect(result).toMatchObject({ adopted: false, reason: "license_not_allowed" })
@@ -231,7 +238,8 @@ describe("processRepo", () => {
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
         { crawledRepoRepository, problemRepository },
-        { github }
+        { github },
+        new TsFunctionExtractor()
       )
 
       expect(result).toEqual({
@@ -257,7 +265,8 @@ describe("processRepo", () => {
         processRepo(
           { languageId: 1, name: "r", owner: "o" },
           { crawledRepoRepository, problemRepository },
-          { github }
+          { github },
+          new TsFunctionExtractor()
         )
       ).rejects.toMatchObject({ statusCode: 404 })
     })
@@ -277,7 +286,8 @@ describe("processRepo", () => {
       const result = await processRepo(
         { languageId: 1, name: "r", owner: "o" },
         { crawledRepoRepository, problemRepository },
-        { github }
+        { github },
+        new TsFunctionExtractor()
       )
 
       expect(result).toMatchObject({ adopted: true, candidatesCount: 35 })

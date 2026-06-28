@@ -1,11 +1,8 @@
-import * as ts from "typescript"
-
 import { logger } from "@repo/logger"
 
 import { checkAdoption } from "../../ast/adoption-check"
-import { extractFunctions } from "../../ast/extract-functions"
+import type { LanguageExtractor } from "../../ast/language-extractor"
 import { astHashOf } from "../../ast/normalize-for-hash"
-import { removeComments } from "../../ast/remove-comments"
 import { GithubFetchTimeoutError, type GithubClient, type GithubRepoMeta } from "../../client/github"
 import { retryWithBackoff } from "../../lib/retry"
 import { buildSourceUrl } from "../../lib/source-url"
@@ -65,7 +62,8 @@ export type ProcessRepoClient = {
 export const processRepo = async (
   target: ProcessRepoTarget,
   repo: ProcessRepoRepo,
-  client: ProcessRepoClient
+  client: ProcessRepoClient,
+  extractor: LanguageExtractor
 ): Promise<ProcessRepoResult> => {
   const fullName = `${target.owner}/${target.name}`
   const startedAt = performance.now()
@@ -150,33 +148,33 @@ export const processRepo = async (
     try {
       // ソースファイルのコードを取得
       const raw = await client.github.getRawContent(target.owner, target.name, meta.commitSha, file.path)
-      // ソースコード文字列を元にASTを作る
-      const sf = ts.createSourceFile(file.path, raw, ts.ScriptTarget.Latest, true)
-      for (const fn of extractFunctions(sf)) {
-        const stripped = removeComments(fn.rawText)
-        const adoption = checkAdoption(fn.functionName, stripped)
+      // 言語固有の extractor でコメント除去済みの関数候補を抽出する
+      for (const cand of extractor.extract(raw, file.path)) {
+        /** 言語固有の除外名（テスト関数等）を弾く */
+        if (extractor.isExcludedName(cand.functionName)) continue
+        const adoption = checkAdoption(cand.functionName, cand.codeStripped)
         if (!adoption.adopted) continue
-        const hash = astHashOf(stripped)
+        const hash = astHashOf(cand.codeStripped)
         /** repo 内の同 hash は最初の 1 件だけ採用 */
         if (candidateMap.has(hash)) continue
         candidateMap.set(hash, {
           astHash: hash,
           charCount: adoption.charCount,
-          codeBlock: stripped.trim(),
+          codeBlock: cand.codeStripped.trim(),
           crawledRepoId: 0,
-          functionName: fn.functionName,
+          functionName: cand.functionName,
           languageId: target.languageId,
           lineCount: adoption.lineCount,
           sourceFilePath: file.path,
-          sourceLineEnd: fn.sourceLineEnd,
-          sourceLineStart: fn.sourceLineStart,
+          sourceLineEnd: cand.sourceLineEnd,
+          sourceLineStart: cand.sourceLineStart,
           sourceUrl: buildSourceUrl(
             target.owner,
             target.name,
             meta.commitSha,
             file.path,
-            fn.sourceLineStart,
-            fn.sourceLineEnd
+            cand.sourceLineStart,
+            cand.sourceLineEnd
           ),
         })
       }
