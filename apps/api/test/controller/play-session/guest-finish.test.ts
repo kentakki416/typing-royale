@@ -108,7 +108,8 @@ describe("POST /api/play-sessions/guest/finish", () => {
         new_rank: 1,
         problems_played: 1,
         score: 3,
-        total_ranked_players: 0,
+        /** ゲスト自身を 1 人として数えるため、他に登録者が居なくても総数は 1 */
+        total_ranked_players: 1,
         typed_chars: 3,
       })
 
@@ -116,6 +117,60 @@ describe("POST /api/play-sessions/guest/finish", () => {
       expect(await testPrisma.playSession.count()).toBe(0)
       expect(await testPrisma.userLifetimeStats.count()).toBe(0)
       expect(await testPrisma.userLanguageBest.count()).toBe(0)
+    })
+
+    it("登録済みの上位プレイヤーが居る場合、rank=2 でも総数は自分を含めて 2 になる（2位/1人中にならない）", async () => {
+      const { language, problems } = await seedProblems(["abcdef"])
+
+      /** ゲストより高スコアの登録ユーザーを 1 人作る（user_language_best に保存） */
+      const topUser = await testPrisma.user.create({
+        data: { canPublicRanking: true, email: "top@example.com", githubUsername: "top" },
+      })
+      const topSession = await testPrisma.playSession.create({
+        data: {
+          accuracy: 1,
+          crawledRepoId: problems[0].crawledRepoId,
+          languageId: language.id,
+          mistypeStats: {},
+          mode: "solo",
+          playedAt: new Date("2026-01-01T00:00:00Z"),
+          problemsCompleted: 1,
+          problemsPlayed: 1,
+          score: 9999,
+          typedChars: 9999,
+          userId: topUser.id,
+        },
+      })
+      await testPrisma.userLanguageBest.create({
+        data: {
+          accuracy: 1,
+          bestPlaySessionId: topSession.id,
+          languageId: language.id,
+          playedAt: new Date("2026-01-01T00:00:00Z"),
+          score: 9999,
+          typedChars: 9999,
+          userId: topUser.id,
+        },
+      })
+
+      /** ゲストは 1 文字だけ正解 → 低スコアで topUser の下位になる */
+      const res = await request(app)
+        .post("/api/play-sessions/guest/finish")
+        .send({
+          accuracy: 1,
+          keystroke_logs: [
+            { elapsed_ms: 100, input_char: "a", is_correct: true, problem_index: 0 },
+          ],
+          problem_ids: [problems[0].id],
+          typed_chars: 1,
+        })
+
+      expect(res.status).toBe(200)
+      /** 上位に登録者 1 人 → rank=2、総数は登録者 1 + ゲスト自身 1 = 2（2位/1人中 にしない） */
+      expect(res.body.new_rank).toBe(2)
+      expect(res.body.total_ranked_players).toBe(2)
+      /** ゲストプレイは DB に保存されない */
+      expect(await testPrisma.userLanguageBest.count()).toBe(1)
     })
 
     it("誤打鍵が含まれていても mistype_stats が正解期待文字単位で集計される", async () => {

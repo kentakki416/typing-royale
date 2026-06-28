@@ -1097,7 +1097,14 @@ export const finishGuestSession = async (
   let newRank: number | null = null
   let totalRankedPlayers = 0
   if (languageId !== null) {
-    totalRankedPlayers = await repo.userLanguageBestRepository.countRankableByLanguage(languageId)
+    /**
+     * ゲストは user_language_best に保存されないため、登録済みランカー数に自分(ゲスト)を
+     * 1 人加えて総数とする。これをしないと「上位に N 人 → rank = N+1」なのに総数が登録者数の
+     * ままで rank > 総数（例: 2 位 / 1 人中）になってしまう。
+     * higher <= rankablePlayers なので rank = higher+1 <= rankablePlayers+1 = 総数 が常に成立する。
+     */
+    const rankablePlayers = await repo.userLanguageBestRepository.countRankableByLanguage(languageId)
+    totalRankedPlayers = rankablePlayers + 1
     const synthetic = {
       accuracy: input.accuracy,
       bestPlaySessionId: 0,
