@@ -706,8 +706,9 @@ module "ecs_cron" {
 # =============================================================================
 # EventBridge Scheduler: cron スケジュール
 # =============================================================================
-# 稼働中の 2 タスクのみ登録する (batch:ranking は未実装スタブのため別 PR)。
+# 稼働中の 3 タスクのみ登録する (batch:ranking は未実装スタブのため別 PR)。
 #   - crawler:run:typescript  : 週次 月曜 03:00 JST
+#   - crawler:run:javascript  : 週次 月曜 04:30 JST
 #   - crawler:license-recheck : 月初 1 日 04:00 JST
 # すべて JST (Asia/Tokyo) 基準。command は dist/task/<name>.js を直接起動する。
 
@@ -726,6 +727,25 @@ module "schedule_crawler_typescript" {
 
   container_name = "${local.name_prefix}-cron"
   command        = ["node", "dist/task/crawler-run-typescript.js"]
+
+  tags = local.common_tags
+}
+
+module "schedule_crawler_javascript" {
+  source = "../../modules/ecs-scheduled-task"
+
+  name                = "${local.name_prefix}-crawler-javascript"
+  schedule_expression = "cron(30 4 ? * MON *)" # 毎週月曜 04:30 JST (TS とずらす)
+
+  cluster_arn            = module.ecs_cluster.cluster_arn
+  task_definition_family = module.ecs_cron.task_definition_family
+  execution_role_arn     = module.ecs_cluster.task_execution_role_arn
+
+  subnets         = local.ecs_common.subnets
+  security_groups = local.ecs_common.security_groups
+
+  container_name = "${local.name_prefix}-cron"
+  command        = ["node", "dist/task/crawler-run-javascript.js"]
 
   tags = local.common_tags
 }
