@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState, useTransition } from "react"
+import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 
 import { startPlaySession } from "./actions"
 
@@ -19,8 +19,9 @@ type Props = {
 }
 
 /**
- * 言語選択カード + プレイ開始ボタン
+ * 言語選択カルーセル + プレイ開始ボタン
  *
+ * 横スクロール（中央寄せスナップ）で、中央に来たカードを少し拡大する。
  * Server Action の結果を sessionStorage に詰めてから /play/[sessionId] に遷移
  * （Server Action の戻り値は Router 遷移後に失われるため）
  */
@@ -28,6 +29,40 @@ export function LanguageSelector({ languages }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  const scrollRef = useRef<HTMLDivElement>(null)
+  /** スクロール位置から「中央に最も近いカード」の index を求めて拡大対象にする */
+  const [centeredIndex, setCenteredIndex] = useState(0)
+
+  const updateCentered = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const viewportCenter = el.scrollLeft + el.clientWidth / 2
+    let nearest = 0
+    let min = Number.POSITIVE_INFINITY
+    Array.from(el.children).forEach((child, index) => {
+      const card = child as HTMLElement
+      const cardCenter = card.offsetLeft + card.offsetWidth / 2
+      const distance = Math.abs(cardCenter - viewportCenter)
+      if (distance < min) {
+        min = distance
+        nearest = index
+      }
+    })
+    setCenteredIndex(nearest)
+  }, [])
+
+  useEffect(() => {
+    updateCentered()
+    const el = scrollRef.current
+    if (!el) return
+    el.addEventListener("scroll", updateCentered, { passive: true })
+    window.addEventListener("resize", updateCentered)
+    return () => {
+      el.removeEventListener("scroll", updateCentered)
+      window.removeEventListener("resize", updateCentered)
+    }
+  }, [updateCentered])
 
   const handleStart = (languageId: number, mode: "challenge_gods" | "solo") => {
     setError(null)
@@ -56,11 +91,11 @@ export function LanguageSelector({ languages }: Props) {
 
   return (
     <>
-      <div className="lang-grid">
-        {languages.map((lang) => (
+      <div className="lang-carousel" ref={scrollRef}>
+        {languages.map((lang, index) => (
           <div
             aria-disabled={lang.comingSoon ? true : undefined}
-            className="lang-card"
+            className={`lang-card ${index === centeredIndex ? "is-centered" : ""}`}
             key={lang.id}
             style={lang.comingSoon
               ? { cursor: "not-allowed", filter: "grayscale(0.8)", opacity: 0.55 }

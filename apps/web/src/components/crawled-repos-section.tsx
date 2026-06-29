@@ -10,6 +10,16 @@ type Props = {
 }
 
 /**
+ * サイドバーの幅は狭く、フルの言語名（TypeScript 等）だとタブがはみ出すため
+ * slug ごとの省略ラベルで描画する（マップに無い言語は name にフォールバック）。
+ */
+const SHORT_LABEL: Record<string, string> = {
+  go: "Go",
+  javascript: "JS",
+  typescript: "TS",
+}
+
+/**
  * ホーム画面サイドバーの「クロール対象リポジトリ」セクション。
  * 言語タブで切替、各タブで stars 上位 5 件を表示。「全件 →」リンクで /crawled-repos
  * 詳細ページに遷移する。言語タブは languages マスタ由来（新言語は自動で増える）
@@ -46,7 +56,7 @@ export function CrawledReposSection({ languages }: Props) {
             type="button"
             onClick={() => setActive(lang.slug)}
           >
-            {lang.name}
+            {SHORT_LABEL[lang.slug] ?? lang.name}
           </button>
         ))}
       </div>
