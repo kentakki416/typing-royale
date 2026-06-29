@@ -87,16 +87,61 @@ export default async function PlaySelectPage() {
         </div>
 
         <div className="card mt-16">
-          <div className="card-title mb-8">🎮 ルール</div>
-          <ul
-            className="text-sm text-muted"
-            style={{ display: "grid", gap: "4px", paddingLeft: "18px" }}
-          >
-            <li>制限時間 <strong>120 秒</strong>、1 関数終わると次が自動で出題</li>
-            <li>スコア = 正しく打てた累計文字数 × 正確率</li>
-            <li>スキップ機能はなし（引いた関数は完走するか時間切れまで打鍵）</li>
-            <li>ペースト無効、依存型は同梱なし（関数本体のみ表示）</li>
-          </ul>
+          <div className="card-title mb-8">🎮 詳しいルール</div>
+          <div className="text-sm text-muted" style={{ display: "grid", gap: "14px" }}>
+            <div>
+              <div style={{ color: "var(--text-primary)", fontWeight: 700, marginBottom: "4px" }}>
+                ⏱ 制限時間とコンボボーナス
+              </div>
+              <ul style={{ display: "grid", gap: "4px", margin: 0, paddingLeft: "18px" }}>
+                <li>持ち時間は <strong>120 秒</strong>。1 つの関数を打ち終えると自動で次の問題に進みます。</li>
+                <li>
+                  連続正解（コンボ）が続くとボーナス時間を獲得：
+                  <strong>30 コンボで +1 秒・60 コンボで +2 秒・90 コンボ以降は 30 コンボごとに +3 秒</strong>。
+                </li>
+                <li>コンボが途切れても、再びマイルストーンに達すれば<strong>何度でも</strong>加算されます（上限なし）。</li>
+              </ul>
+            </div>
+
+            <div>
+              <div style={{ color: "var(--text-primary)", fontWeight: 700, marginBottom: "4px" }}>
+                🏅 スコアの決まり方
+              </div>
+              <ul style={{ display: "grid", gap: "4px", margin: 0, paddingLeft: "18px" }}>
+                <li>スコア = <strong>正しく打てた累計文字数 × 正確率</strong>（正確率 = 正解打鍵 ÷ 総打鍵）。</li>
+                <li>速く・正確に打つほど高得点。同点の場合はより正確な方が上位です。</li>
+              </ul>
+            </div>
+
+            <div>
+              <div style={{ color: "var(--text-primary)", fontWeight: 700, marginBottom: "4px" }}>
+                ⌨️ 出題と入力
+              </div>
+              <ul style={{ display: "grid", gap: "4px", margin: 0, paddingLeft: "18px" }}>
+                <li>
+                  1 プレイは <strong>同じ OSS リポジトリから 20 問</strong>。問題は GitHub Star
+                  上位の寛容ライセンス OSS から自動抽出した関数本体です（コメント除去済み・依存型は同梱なし）。
+                </li>
+                <li><strong>スキップ不可</strong>。引いた関数は完走するか、時間切れまで打鍵します。</li>
+                <li><strong>ペースト無効</strong>。大文字小文字・記号・インデントも元コードのとおりに区別します。</li>
+              </ul>
+            </div>
+
+            <div>
+              <div style={{ color: "var(--text-primary)", fontWeight: 700, marginBottom: "4px" }}>
+                🏆 記録・ランキング・特典
+              </div>
+              <ul style={{ display: "grid", gap: "4px", margin: 0, paddingLeft: "18px" }}>
+                <li>
+                  ログインなしでも遊べますが、<strong>GitHub 連携でスコアが記録</strong>され、月間・全期間（殿堂入り）ランキングに参加できます。
+                </li>
+                <li>
+                  ベストスコアで <strong>エンジニアグレード（Intern → … → Fellow）</strong>
+                  が上がり、昇格や上位入賞で Typing Royale オリジナルの SVG バッジ・達成カードを獲得できます。
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
 
       </div>
