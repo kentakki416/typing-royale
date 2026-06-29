@@ -733,15 +733,16 @@ h3 { font-size: 16px; margin-bottom: 8px; }
  * 左右はやや縮小・減光する（中央寄せスナップ + JS で is-centered を付与）。
  */
 /**
- * 言語選択カードの中央寄せ折り返しグリッド。
- * グリッド幅を「列数 × カード幅 + gap」(= --lang-grid-max, JS で算出) に固定し、
- * `min(96vw, …)` + left/translateX で narrow コンテナを左右対称に突き破る (full-bleed)。
- * 列数ぴったりの幅なので flex-wrap で 1 行あたり列数枚に折り返り、最終行は中央寄せになる
- * (3 → 3 / 4 → 2+2 / 5 → 3+2 / 6 → 3+3)。狭い画面では自動で枚数が減る。
+ * 言語選択カードの列数固定グリッド。
+ * 列数 (--lang-cols, JS で算出) を `grid-template-columns` に直接渡して 1 行あたりの枚数を固定し、
+ * flex-wrap のように画面幅で勝手に折り返さない (3 言語は常に横一列 / 4 言語は 2×2)。
+ * グリッド幅は「列数 × カード幅 + gap」(= --lang-grid-max) を上限に `min(96vw, …)` + left/translateX で
+ * narrow コンテナを左右対称に突き破る (full-bleed)。各カードは minmax(200px, 1fr) で、
+ * 幅が足りなければ縮み、200px を下回るとはみ出す（縦積みより横並びを優先）。
  */
 .lang-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(var(--lang-cols, 3), minmax(200px, 1fr));
   gap: 20px;
   justify-content: center;
   margin: 24px 0 36px;
@@ -751,8 +752,7 @@ h3 { font-size: 16px; margin-bottom: 8px; }
   transform: translateX(-50%);
 }
 .lang-grid > .lang-card {
-  flex: 0 0 300px;
-  width: 300px;
+  width: 100%;
   max-width: 100%;
 }
 .lang-card {

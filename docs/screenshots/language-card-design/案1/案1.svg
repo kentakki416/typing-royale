@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="430" viewBox="0 0 960 430">
+  <defs>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#232a36"/>
+      <stop offset="1" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd54a"/>
+      <stop offset="1" stop-color="#e6b422"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="960" height="430" fill="#0d1117"/>
+  <text x="40" y="44" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22" font-weight="800" fill="#e6edf3">案1: 言語名カラー（アイコン廃止）</text>
+
+    <rect x="40" y="70" width="280" height="320" rx="20" fill="url(#card)" stroke="rgba(0,0,0,0.55)" stroke-width="2"/>
+    <text x="180" y="165" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="30" font-weight="800" fill="#4a9eff">TypeScript</text>
+    
+    <rect x="64" y="280" width="232" height="40" rx="10" fill="#1f6feb"/>
+    <text x="180" y="306" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700" fill="#ffffff">▶ 通常プレイ</text>
+    <rect x="64" y="328" width="232" height="40" rx="10" fill="url(#gold)"/>
+    <text x="180" y="354" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700" fill="#3a2c05">⚡ 神々に挑戦</text>
+
+    <rect x="340" y="70" width="280" height="320" rx="20" fill="url(#card)" stroke="rgba(0,0,0,0.55)" stroke-width="2"/>
+    <text x="480" y="165" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="30" font-weight="800" fill="#f7df1e">JavaScript</text>
+    
+    <rect x="364" y="280" width="232" height="40" rx="10" fill="#1f6feb"/>
+    <text x="480" y="306" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700" fill="#ffffff">▶ 通常プレイ</text>
+    <rect x="364" y="328" width="232" height="40" rx="10" fill="url(#gold)"/>
+    <text x="480" y="354" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700" fill="#3a2c05">⚡ 神々に挑戦</text>
+
+    <rect x="640" y="70" width="280" height="320" rx="20" fill="url(#card)" stroke="rgba(0,0,0,0.55)" stroke-width="2"/>
+    <text x="780" y="165" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="30" font-weight="800" fill="#6cbf3f">Go</text>
+    
+    <rect x="664" y="280" width="232" height="40" rx="10" fill="#1f6feb"/>
+    <text x="780" y="306" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700" fill="#ffffff">▶ 通常プレイ</text>
+    <rect x="664" y="328" width="232" height="40" rx="10" fill="url(#gold)"/>
+    <text x="780" y="354" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" font-weight="700" fill="#3a2c05">⚡ 神々に挑戦</text>
+</svg>

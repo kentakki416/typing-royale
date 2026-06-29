@@ -35,9 +35,10 @@ const GAP = 20
 /**
  * 言語選択グリッド + プレイ開始ボタン
  *
- * カードを中央寄せの折り返しグリッドで並べる（横スクロールは廃止）。列数は
- * {@link columnsFor} で決め、グリッド幅を「列数 × カード幅」に固定 + `min(96vw, …)`
- * で full-bleed させて narrow コンテナを左右対称に突き破る。
+ * カードを列数固定の grid で並べる（横スクロール・折り返しは廃止）。列数は
+ * {@link columnsFor} で決め、`--lang-cols` で CSS に渡して 1 行あたりの枚数を固定する
+ * （3 言語は横一列 / 4 言語は 2×2）。グリッド幅は「列数 × カード幅」を上限に
+ * `min(96vw, …)` で full-bleed させて narrow コンテナを左右対称に突き破る。
  * Server Action の結果は sessionStorage に詰めてから /play/[sessionId] に遷移する
  * （Server Action の戻り値は Router 遷移後に失われるため）。
  */
@@ -76,7 +77,10 @@ export function LanguageSelector({ languages }: Props) {
 
   return (
     <>
-      <div className="lang-grid" style={{ "--lang-grid-max": `${gridMax}px` } as React.CSSProperties}>
+      <div
+        className="lang-grid"
+        style={{ "--lang-cols": cols, "--lang-grid-max": `${gridMax}px` } as React.CSSProperties}
+      >
         {languages.map((lang) => (
           <div
             aria-disabled={lang.comingSoon ? true : undefined}
