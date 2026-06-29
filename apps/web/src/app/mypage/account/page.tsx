@@ -40,10 +40,6 @@ export default async function AccountSettingsPage() {
 
         <AccountForm initialUser={me} />
       </div>
-
-      <div className="footer">
-        <a href="#">利用規約</a> · <a href="#">プライバシー</a>
-      </div>
     </>
   )
 }

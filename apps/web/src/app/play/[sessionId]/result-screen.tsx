@@ -393,10 +393,6 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
         </div>
       </div>
 
-      <div className="footer">
-        <a href="#">利用規約</a> · <a href="#">プライバシー</a>
-      </div>
-
       {mode === "challenge_gods" && ghostSummary !== null && ghostUserDisplay !== null && (
         <GhostResultModal
           ghostSummary={ghostSummary}

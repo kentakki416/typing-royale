@@ -258,10 +258,6 @@ export default async function MyPage() {
           </aside>
         </div>
       </div>
-
-      <div className="footer">
-        <a href="#">利用規約</a> · <a href="#">プライバシー</a>
-      </div>
     </>
   )
 }

@@ -184,10 +184,6 @@ export default async function HomePage() {
         <AdUnit minHeight={280} slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME ?? ""} />
       </div>
 
-      <div className="footer">
-        <a href="#">利用規約</a> · <a href="/privacy">プライバシー</a> · <a href="#">ライセンス一覧</a>
-      </div>
-
       {/* リザルト → ホーム遷移時の pending rewards 通知 (special-badges step5) */}
       <PendingRewardsPopup apiUrl={env.API_URL} />
       {/* タブ閉じ→再訪などで取りこぼした完成済み reward の救済 (rewards-worker step4) */}

@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import { JetBrains_Mono } from "next/font/google"
 
 import { AdSenseScript } from "@/components/ads/adsense-script"
+import { Footer } from "@/components/footer"
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
@@ -24,6 +25,7 @@ export default function RootLayout({
     <html lang="ja">
       <body className={jetbrainsMono.variable}>
         {children}
+        <Footer />
         <AdSenseScript />
       </body>
     </html>
