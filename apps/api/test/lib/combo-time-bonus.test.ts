@@ -100,17 +100,17 @@ describe("detectBonuses", () => {
       ])
     })
 
-    it("同じマイルストーンは 1 セッション 1 回のみ発火 (リセット後の再達成は無視)", () => {
+    it("リセット後に同じマイルストーンへ再到達すると再び発火する (毎回加算・上限なし)", () => {
       const logs = [
         ...Array.from({ length: 30 }, (_, i) => ({ elapsedMs: (i + 1) * 100, isCorrect: true })),
         { elapsedMs: 3100, isCorrect: false },
         ...Array.from({ length: 30 }, (_, i) => ({ elapsedMs: 3200 + i * 100, isCorrect: true })),
       ]
-      /** 最初の combo 30 で発火、リセット後の 2 度目の combo 30 は発火しない */
-      const events = detectBonuses(logs)
-      expect(events).toHaveLength(1)
-      expect(events[0]?.milestoneCombo).toBe(30)
-      expect(events[0]?.elapsedMs).toBe(3000)
+      /** 1 回目の combo 30 と、リセット後 2 回目の combo 30 の両方で発火する */
+      expect(detectBonuses(logs)).toEqual([
+        { addedSec: 1, elapsedMs: 3000, milestoneCombo: 30 },
+        { addedSec: 1, elapsedMs: 6100, milestoneCombo: 30 },
+      ])
     })
 
     it("マイルストーン到達前に miss してもイベントは発火しない", () => {

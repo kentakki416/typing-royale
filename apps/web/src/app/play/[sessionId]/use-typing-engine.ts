@@ -97,11 +97,6 @@ export function useTypingEngine({ finishedRef, onComboBonus, problems, startAtRe
   const maxComboRef = useRef(0)
   const tierRef = useRef(1)
   /**
-   * 既発火の combo マイルストーン (20 / 40 / 60 / 80 / ...) を保持する。
-   * miss でリセット後に再度同じ combo に達しても 2 度目は発火させない (1 セッション 1 回)
-   */
-  const triggeredMilestonesRef = useRef<Set<number>>(new Set())
-  /**
    * onComboBonus の参照を最新に保つ
    */
   const onComboBonusRef = useRef(onComboBonus)
@@ -295,13 +290,13 @@ export function useTypingEngine({ finishedRef, onComboBonus, problems, startAtRe
         playKeyHit(comboRef.current)
 
         /**
-         * combo マイルストーン (20 / 40 / 60 以降 20 ごと) 到達で時間ボーナスを通知。
-         * 同じマイルストーンは 1 セッション 1 回のみ発火。判定ロジックは
-         * `@/libs/combo-time-bonus` の `comboToReward` (= サーバー側 cheat 検証と同一)
+         * combo マイルストーン (30 / 60 / 90 以降 30 ごと) 到達で時間ボーナスを通知。
+         * マイルストーンに達するたびに発火する（miss で途切れて再到達すれば再加算＝
+         * 何度でも取得可能・上限なし）。判定ロジックは `@/libs/combo-time-bonus` の
+         * `comboToReward` (= サーバー側 cheat 検証の detectBonuses と同一)
          */
         const bonusReward = comboToReward(comboRef.current)
-        if (bonusReward !== null && !triggeredMilestonesRef.current.has(comboRef.current)) {
-          triggeredMilestonesRef.current.add(comboRef.current)
+        if (bonusReward !== null) {
           onComboBonusRef.current({
             addedSec: bonusReward,
             elapsedMs: elapsed,

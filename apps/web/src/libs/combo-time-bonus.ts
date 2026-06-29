@@ -42,20 +42,18 @@ type Log = {
 /**
  * keystroke_logs を時系列に再生して各マイルストーンの発火イベントを検出する。
  *
- * - 同じマイルストーンは 1 セッション 1 回のみ発火（miss で combo 0 に戻った後
- *   再度同じ combo に達しても発火しない）
+ * - マイルストーンに達するたびに発火する（miss で combo 0 に戻った後、再び同じ combo
+ *   に達すれば再び加算される＝何度でも取得可能・上限なし）
  * - 判定は決定論的でフロント・サーバーの双方で同じ結果を返す
  */
 export const detectBonuses = (logs: ReadonlyArray<Log>): BonusEvent[] => {
   const events: BonusEvent[] = []
-  const triggered = new Set<number>()
   let combo = 0
   for (const entry of logs) {
     if (entry.is_correct) {
       combo += 1
       const reward = comboToReward(combo)
-      if (reward !== null && !triggered.has(combo)) {
-        triggered.add(combo)
+      if (reward !== null) {
         events.push({ addedSec: reward, elapsedMs: entry.elapsed_ms, milestoneCombo: combo })
       }
     } else {
