@@ -715,8 +715,11 @@ h3 { font-size: 16px; margin-bottom: 8px; }
 .hero p {
   color: var(--text-secondary);
   font-size: 17px;
-  max-width: 560px;
+  max-width: 720px;
   margin: 0 auto;
+  /* 行内で「プレ／ゼント」のように単語が割れないよう、改行は文節境界で */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 /* Language cards — heavy chunky panels */
