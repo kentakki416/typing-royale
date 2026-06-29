@@ -70,4 +70,31 @@ for (const [slug, name] of GRADES) {
   }))
 }
 
+// --- 言語カラー見本（順位テーマの代わりに言語ブランドカラーで配色した版）---
+const LANG_COLORS = {
+  typescript: {
+    badge: { accentFrom: "#6aa9f0", accentTo: "#2f6fc0", bgFrom: "#0d1b2e", bgTo: "#050b16" },
+    card: { accent: "#cfe3ff", from: "#3178c6", to: "#10243f" },
+  },
+  javascript: {
+    badge: { accentFrom: "#f7df1e", accentTo: "#b59a00", bgFrom: "#26220a", bgTo: "#120f04" },
+    card: { accent: "#fff4b8", from: "#c9b200", to: "#2a2405" },
+  },
+  go: {
+    badge: { accentFrom: "#5dd5f0", accentTo: "#00819e", bgFrom: "#06222a", bgTo: "#021016" },
+    card: { accent: "#cdf3fc", from: "#00add8", to: "#053842" },
+  },
+}
+
+await mkdir(`${OUT}/lang-colors/badges`, { recursive: true })
+await mkdir(`${OUT}/lang-colors/cards`, { recursive: true })
+
+for (const lang of LANGS) {
+  const c = LANG_COLORS[lang]
+  await save(`${OUT}/lang-colors/badges/hof-${lang}.svg`, buildHofBadgeSvg({ language: lang, rank: 1, username: USER, themeOverride: c.badge }))
+  await save(`${OUT}/lang-colors/badges/monthly-${lang}.svg`, buildMonthlyBadgeSvg({ language: lang, rank: 3, username: USER, yearMonth: "2026-06", themeOverride: c.badge }))
+  await save(`${OUT}/lang-colors/cards/hof-${lang}.png`, await renderHallOfFameCard({ language: lang, rank: 1, username: USER, themeOverride: c.card }))
+  await save(`${OUT}/lang-colors/cards/monthly-${lang}.png`, await renderMonthlyTopTenCard({ language: lang, rank: 3, username: USER, yearMonth: "2026-06", themeOverride: c.card }))
+}
+
 console.log(`generated ${count} files into ${OUT}`)

@@ -3,7 +3,8 @@
 `packages/generate-image` が**現状生成する**特典画像（殿堂入り / 月間 TOP10 バッジ、各種達成カード）のサンプルを書き出したもの。デザインをいつでも確認できるようにするための参照用で、実プロダクトの生成物と同一の renderer を使っている（モックではない）。
 
 - バッジ: `badges/`（SVG・360×80）
-- カード: `cards/`（PNG・1200×630）
+- カード: `cards/`（PNG・1200×630。SVG バッジと同様に**上ハイライト＋斜めシーンの光沢**入り）
+- 言語カラー見本: `lang-colors/`（順位テーマの代わりに言語ブランドカラーで配色した参考版）
 - 再生成スクリプト: [`generate.mjs`](./generate.mjs)
 
 > 言語は表示ラベル（TS / JS / Go）が変わるだけでデザインは共通。reward は言語マスタ駆動で、現状の対象は TypeScript / JavaScript / Go（新しい言語をマスタに追加すれば自動的に対象になる）。
@@ -57,6 +58,24 @@
 | <img src="./badges/hof-rank1-typescript.svg" width="300"> | <img src="./badges/hof-rank1-javascript.svg" width="300"> | <img src="./badges/hof-rank1-go.svg" width="300"> |
 
 JavaScript / Go 版のカードも `cards/*-javascript.png` / `cards/*-go.png` に同梱している。
+
+## 言語カラー版（見本）
+
+順位テーマ（金/銀/銅）の代わりに、各言語のブランドカラー（TS=青 / JS=黄 / Go=シアン）で配色した参考版。実プロダクトの特典は順位テーマのままで、これは比較用の見本（`lang-colors/`）。
+
+### バッジ（殿堂入り）
+
+| TypeScript | JavaScript | Go |
+|---|---|---|
+| <img src="./lang-colors/badges/hof-typescript.svg" width="300"> | <img src="./lang-colors/badges/hof-javascript.svg" width="300"> | <img src="./lang-colors/badges/hof-go.svg" width="300"> |
+
+### カード（殿堂入り）
+
+| TypeScript | JavaScript | Go |
+|---|---|---|
+| <img src="./lang-colors/cards/hof-typescript.png" width="300"> | <img src="./lang-colors/cards/hof-javascript.png" width="300"> | <img src="./lang-colors/cards/hof-go.png" width="300"> |
+
+月間 TOP10 の言語カラー版も `lang-colors/{badges,cards}/monthly-*` に同梱している。
 
 ## 再生成
 

@@ -53,6 +53,19 @@ describe("buildHofBadgeSvg", () => {
       const svg = buildHofBadgeSvg({ language: "go", rank: 1, username: "alice" })
       expect(svg).toContain("RANK #1 · Go")
     })
+
+    it("themeOverride を渡すと rank ベースの配色を上書きする（言語カラー見本用）", () => {
+      const svg = buildHofBadgeSvg({
+        language: "typescript",
+        rank: 1,
+        themeOverride: { accentFrom: "#6aa9f0", accentTo: "#2f6fc0", bgFrom: "#0d1b2e", bgTo: "#050b16" },
+        username: "alice",
+      })
+      expect(svg).toContain("#6aa9f0")
+      expect(svg).toContain("#0d1b2e")
+      /** 既定の金 (#ffd54a) は使われない */
+      expect(svg).not.toContain("#ffd54a")
+    })
   })
 
   describe("異常系", () => {

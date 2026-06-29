@@ -156,7 +156,7 @@ export const renderGradeUpCard = async (input: RenderGradeUpCardInput): Promise<
         ],
         style: {
           alignItems: "center",
-          background: `linear-gradient(180deg, ${gradient.from} 0%, ${gradient.to} 100%)`,
+          backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 38%), linear-gradient(100deg, rgba(255,255,255,0) 40%, rgba(255,255,255,0.13) 50%, rgba(255,255,255,0) 60%), linear-gradient(180deg, ${gradient.from} 0%, ${gradient.to} 100%)`,
           display: "flex",
           flexDirection: "column",
           height: "100%",
@@ -198,6 +198,8 @@ export type RenderHallOfFameCardInput = {
     language: RewardLanguage
     rank: number
     username: string
+    /** 配色テーマの上書き（省略時は順位ベースの金/銀/銅）。言語カラー見本用 */
+    themeOverride?: { accent?: string; from?: string; to?: string }
 }
 
 /**
@@ -206,7 +208,7 @@ export type RenderHallOfFameCardInput = {
  */
 export const renderHallOfFameCard = async (input: RenderHallOfFameCardInput): Promise<Buffer> => {
   const font = await loadFont()
-  const theme = getHofTheme(input.rank)
+  const theme = { ...getHofTheme(input.rank), ...input.themeOverride }
 
   logger.debug("card-renderer: rendering hall of fame card", {
     rank: input.rank,
@@ -290,7 +292,7 @@ export const renderHallOfFameCard = async (input: RenderHallOfFameCardInput): Pr
         ],
         style: {
           alignItems: "center",
-          background: `linear-gradient(180deg, ${theme.from} 0%, ${theme.to} 100%)`,
+          backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 38%), linear-gradient(100deg, rgba(255,255,255,0) 40%, rgba(255,255,255,0.13) 50%, rgba(255,255,255,0) 60%), linear-gradient(180deg, ${theme.from} 0%, ${theme.to} 100%)`,
           display: "flex",
           flexDirection: "column",
           height: "100%",
@@ -314,6 +316,8 @@ export type RenderMonthlyTopTenCardInput = {
     rank: number
     username: string
     yearMonth: string
+    /** 配色テーマの上書き（省略時は青固定）。言語カラー見本用 */
+    themeOverride?: { accent?: string; from?: string; to?: string }
 }
 
 /**
@@ -322,7 +326,7 @@ export type RenderMonthlyTopTenCardInput = {
  */
 export const renderMonthlyTopTenCard = async (input: RenderMonthlyTopTenCardInput): Promise<Buffer> => {
   const font = await loadFont()
-  const theme = MONTHLY_THEME
+  const theme = { ...MONTHLY_THEME, ...input.themeOverride }
   const yearMonthLabel = input.yearMonth.replace("-", ".")
 
   logger.debug("card-renderer: rendering monthly top ten card", {
@@ -423,7 +427,7 @@ export const renderMonthlyTopTenCard = async (input: RenderMonthlyTopTenCardInpu
         ],
         style: {
           alignItems: "center",
-          background: `linear-gradient(180deg, ${theme.from} 0%, ${theme.to} 100%)`,
+          backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 38%), linear-gradient(100deg, rgba(255,255,255,0) 40%, rgba(255,255,255,0.13) 50%, rgba(255,255,255,0) 60%), linear-gradient(180deg, ${theme.from} 0%, ${theme.to} 100%)`,
           display: "flex",
           flexDirection: "column",
           height: "100%",
