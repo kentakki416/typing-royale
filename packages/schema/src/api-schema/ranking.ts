@@ -96,11 +96,13 @@ export type GetMyRankingResponse = z.infer<typeof getMyRankingResponseSchema>
 /**
  * GET /api/rankings/monthly の query string
  *
- * - language: typescript / javascript の 2 値
+ * - language: 言語マスタ (languages テーブル) の slug。enum で固定せず任意の slug を
+ *   受け付け、実在チェックは service が languageRepository.findBySlug で行う
+ *   （他のランキング API と同じ方針。新言語がマスタに増えればコード変更なしで対応）
  * - limit:    1〜10、デフォルト 5 (ホーム画面は 5 件表示、最大でも 10 件まで)
  */
 export const getMonthlyRankingsQueryStringSchema = z.object({
-  language: z.enum(["typescript", "javascript"]),
+  language: z.string().min(1).max(32),
   limit: z.coerce.number().int().min(1).max(10).default(5),
 })
 

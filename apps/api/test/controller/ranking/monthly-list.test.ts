@@ -125,6 +125,18 @@ describe("GET /api/rankings/monthly", () => {
       expect(res.body.year_month).toMatch(/^\d{4}-\d{2}$/)
     })
 
+    it("言語マスタにある go は 200 を返す（言語 enum 撤廃の汎用化）", async () => {
+      await testPrisma.language.create({ data: { name: "Go", slug: "go" } })
+
+      const res = await request(app)
+        .get("/api/rankings/monthly")
+        .query({ language: "go" })
+
+      expect(res.status).toBe(200)
+      expect(res.body.entries).toEqual([])
+      expect(res.body.year_month).toMatch(/^\d{4}-\d{2}$/)
+    })
+
     it("limit を指定すると上位 N 件まで返す", async () => {
       await seedMonthlySnapshots([
         { accuracy: 0.99, githubUsername: "u1", playedAt: new Date("2026-06-10T03:00:00Z"), score: 300 },
@@ -149,7 +161,7 @@ describe("GET /api/rankings/monthly", () => {
       expect(res.body.error).toBeDefined()
     })
 
-    it("language が enum 外（python）は 400", async () => {
+    it("言語マスタに無い language（python）は 400", async () => {
       const res = await request(app)
         .get("/api/rankings/monthly")
         .query({ language: "python" })

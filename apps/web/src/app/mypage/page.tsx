@@ -7,6 +7,8 @@ import { GradeProgressBar } from "@/components/grade-progress-bar"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
 import { gradeBadgeClass } from "@/libs/grade"
+import { languageBadgeClass } from "@/libs/language-badge"
+import { getLanguages } from "@/libs/languages"
 
 export const metadata: Metadata = {
   title: "マイページ - Typing Royale",
@@ -20,20 +22,28 @@ export const metadata: Metadata = {
  * - 3-stat (ベストスコア / 得意なリポジトリ / 平均正確率)。後者2つは /api/user 拡張で集計
  * - エンジニアグレード進捗カード（全言語通算 bestScore ベース）
  * - 苦手文字 top10（生涯累計の誤打数降順）
- * - 全期間ランキング表（TS / JS 別ベスト + 順位 + 状態）
+ * - 全期間ランキング表（言語マスタの各言語別ベスト + 順位 + 状態）
  */
 export default async function MyPage() {
-  const [me, tsRanking, jsRanking] = await Promise.all([
+  const languages = await getLanguages()
+  /** 言語マスタごとに自分の順位を並列 fetch する（特定言語に固定しない） */
+  const [me, languageRankings] = await Promise.all([
     apiClient.get<GetUserResponse>("/api/user"),
-    apiClient.get<GetMyRankingResponse>("/api/rankings/me?language=typescript").catch(() => null),
-    apiClient.get<GetMyRankingResponse>("/api/rankings/me?language=javascript").catch(() => null),
+    Promise.all(
+      languages.map((language) =>
+        apiClient
+          .get<GetMyRankingResponse>(`/api/rankings/me?language=${language.slug}`)
+          .then((ranking) => ({ language, ranking }))
+          .catch(() => ({ language, ranking: null as GetMyRankingResponse | null })),
+      ),
+    ),
   ])
 
   const initials = (me.github_username ?? "??").slice(0, 2).toUpperCase()
-  /** グレードは全言語通算で同じなので TS / JS どちらかから取り出す（両方 null なら null）*/
-  const grade = tsRanking?.grade ?? jsRanking?.grade ?? null
-  const nextGrade = tsRanking?.next_grade ?? jsRanking?.next_grade ?? null
-  const bestScore = Math.max(tsRanking?.best_score ?? 0, jsRanking?.best_score ?? 0)
+  /** グレードは全言語通算で同じなので、取得できた最初の言語から取り出す（全滅なら null）*/
+  const grade = languageRankings.find((r) => r.ranking)?.ranking?.grade ?? null
+  const nextGrade = languageRankings.find((r) => r.ranking)?.ranking?.next_grade ?? null
+  const bestScore = Math.max(0, ...languageRankings.map((r) => r.ranking?.best_score ?? 0))
 
   return (
     <>
@@ -169,8 +179,14 @@ export default async function MyPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  <RankingRow badge="accent" label="TypeScript" ranking={tsRanking} />
-                  <RankingRow badge="warning" label="JavaScript" ranking={jsRanking} />
+                  {languageRankings.map(({ language, ranking }, index) => (
+                    <RankingRow
+                      key={language.id}
+                      badge={languageBadgeClass(language.slug, index)}
+                      label={language.name}
+                      ranking={ranking}
+                    />
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -265,7 +281,7 @@ const displayChar = (char: string): string => {
  * 「圏内 / 圏外」境界は UX 都合で 1000 位（リアルタイム集計でも閾値表記は残す）
  */
 const RankingRow = ({ badge, label, ranking }: {
-    badge: "accent" | "warning"
+    badge: string
     label: string
     ranking: GetMyRankingResponse | null
 }) => {

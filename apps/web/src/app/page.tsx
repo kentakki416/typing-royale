@@ -12,6 +12,7 @@ import { Topbar } from "@/components/topbar"
 import { env } from "@/env"
 import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
+import { languageBadgeClass } from "@/libs/language-badge"
 import { getLanguages } from "@/libs/languages"
 
 /** API 失敗時のフォールバック（year_month が空のとき MonthlyTopCard は「集計準備中」を出す） */
@@ -160,10 +161,15 @@ export default async function HomePage() {
             <div className="card mb-16">
               <div className="card-header"><div className="card-title">対応言語</div></div>
               <div className="flex gap-8" style={{ flexWrap: "wrap" }}>
-                <span className="badge accent">TypeScript</span>
-                <span className="badge warning">JavaScript</span>
-                <span className="badge success">Go</span>
-                <span className="badge pink">Python (近日)</span>
+                {languages.length === 0 ? (
+                  <span className="text-sm text-muted">対応言語を準備中です</span>
+                ) : (
+                  languages.map((language, index) => (
+                    <span key={language.id} className={`badge ${languageBadgeClass(language.slug, index)}`}>
+                      {language.name}
+                    </span>
+                  ))
+                )}
               </div>
             </div>
 
