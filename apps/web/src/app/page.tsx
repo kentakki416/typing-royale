@@ -73,7 +73,7 @@ export default async function HomePage() {
           <br />
           Type real <span className="accent">OSS code</span>.
         </h1>
-        <p>
+        <p style={{ fontSize: "14px" }}>
           OSSの実コードでバトルするエンジニア向けタイピングゲーム。<br />
           さあ、エンジニア業界のタイピング王を決めましょう
         </p>
@@ -182,10 +182,6 @@ export default async function HomePage() {
       {/* メインカラム下部の大型バナー広告（幅広コンテナ / 未設定時は非表示 / プレイ画面には置かない） */}
       <div className="container" style={{ marginTop: 32 }}>
         <AdUnit minHeight={280} slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME ?? ""} />
-      </div>
-
-      <div className="footer">
-        <a href="#">利用規約</a> · <a href="/privacy">プライバシー</a> · <a href="#">ライセンス一覧</a>
       </div>
 
       {/* リザルト → ホーム遷移時の pending rewards 通知 (special-badges step5) */}
