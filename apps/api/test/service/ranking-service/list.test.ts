@@ -31,6 +31,7 @@ const buildRepoCollection = () => ({
 const buildTopEntry = (overrides?: Partial<UserLanguageBestWithUser>): UserLanguageBestWithUser => ({
   accuracy: 0.95,
   bestPlaySessionId: 100,
+  crawledRepo: { fullName: "owner/repo", name: "repo", owner: "owner" },
   playedAt: new Date("2026-06-01T00:00:00.000Z"),
   score: 500,
   typedChars: 600,

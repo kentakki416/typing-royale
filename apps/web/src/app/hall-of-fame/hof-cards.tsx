@@ -87,6 +87,19 @@ export function HofCards({ entries, languageName }: Props) {
                     <div className="text-xs text-muted" style={{ marginTop: "4px" }}>
                       達成: {formatPlayedAtDate(e.played_at)}
                     </div>
+                    {e.crawled_repo?.full_name !== undefined && (
+                      <div className="text-xs text-muted" style={{ marginTop: "2px" }}>
+                        📦 出題:{" "}
+                        <a
+                          href={`https://github.com/${e.crawled_repo.full_name}`}
+                          rel="noreferrer noopener"
+                          target="_blank"
+                          onClick={(ev) => ev.stopPropagation()}
+                        >
+                          {e.crawled_repo.full_name}
+                        </a>
+                      </div>
+                    )}
                     {e.user.favorite_repo_url !== null && (
                       <GithubLink url={e.user.favorite_repo_url} />
                     )}

@@ -46,6 +46,11 @@ export class HallOfFameListController {
       entries: result.value.entries.map((e) => ({
         accuracy: e.accuracy,
         best_play_session_id: e.bestPlaySessionId,
+        crawled_repo: {
+          full_name: e.crawledRepo.fullName,
+          name: e.crawledRepo.name,
+          owner: e.crawledRepo.owner,
+        },
         played_at: e.playedAt.toISOString(),
         rank: e.rank,
         score: e.score,
