@@ -54,11 +54,7 @@ export default async function PlaySelectPage() {
       <Topbar isAuthed={accessToken !== null} />
 
       <div className="container container-narrow">
-        <h1 className="text-center mt-24">言語を選択</h1>
-        <p className="text-muted text-center mb-24">
-          120 秒で何文字打てるかを競います。問題は週次クローラが GitHub Star 上位 OSS
-          から自動取得した関数です。
-        </p>
+        <h1 className="text-center mt-24 mb-24">言語を選択</h1>
 
         {selectorLanguages.length === 0 ? (
           <EmptyLanguagesState />
@@ -80,7 +76,7 @@ export default async function PlaySelectPage() {
                 神々に挑戦とは？
               </h3>
               <p className="text-sm text-muted">
-                殿堂入りしたユーザーの中から <strong>ランダムに 1 人</strong> を選定して、そのユーザーに挑戦できます。相手は指名できません（運命）。
+                殿堂入りしたユーザーの中から <strong>ランダムに 1 人</strong> を選定して、そのユーザーに挑戦できます。あなたは神々に勝てますか？
               </p>
             </div>
           </div>
@@ -122,8 +118,12 @@ export default async function PlaySelectPage() {
                   1 プレイは <strong>同じ OSS リポジトリから 20 問</strong>。問題は GitHub Star
                   上位の寛容ライセンス OSS から自動抽出した関数本体です（コメント除去済み・依存型は同梱なし）。
                 </li>
+                <li>
+                  <strong>改行は自動</strong>で次の行へ進みます（Enter 不要・行頭のインデントもまとめてスキップ）。
+                  ただし<strong>行の途中にあるスペース</strong>は自分で打つ必要があります。
+                </li>
                 <li><strong>スキップ不可</strong>。引いた関数は完走するか、時間切れまで打鍵します。</li>
-                <li><strong>ペースト無効</strong>。大文字小文字・記号・インデントも元コードのとおりに区別します。</li>
+                <li><strong>ペースト無効</strong>。大文字小文字・記号はそのまま区別します。</li>
               </ul>
             </div>
 
