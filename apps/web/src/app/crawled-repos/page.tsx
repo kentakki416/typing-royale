@@ -4,6 +4,7 @@ import Link from "next/link"
 import type { GetCrawledReposResponse } from "@repo/api-schema"
 
 import { EmptyLanguagesState } from "@/components/empty-languages-state"
+import { PageHero } from "@/components/page-hero"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
@@ -50,7 +51,11 @@ export default async function CrawledReposPage({
       <>
         <Topbar active="crawled-repos" isAuthed={accessToken !== null} />
         <div className="container">
-          <h1 className="mb-24">📦 クロール対象リポジトリ</h1>
+          <PageHero
+            icon="📦"
+            subtitle="出題に使われている GitHub リポジトリ一覧"
+            title="クロール対象リポジトリ"
+          />
           <EmptyLanguagesState />
         </div>
       </>
@@ -77,10 +82,11 @@ export default async function CrawledReposPage({
       <Topbar active="crawled-repos" isAuthed={accessToken !== null} />
 
       <div className="container">
-        <div className="flex-between mb-24">
-          <h1>📦 クロール対象リポジトリ</h1>
-          <div className="text-sm text-muted">{total.toLocaleString()} 件</div>
-        </div>
+        <PageHero
+          icon="📦"
+          subtitle={`出題に使われている ${total.toLocaleString()} 件のリポジトリ`}
+          title="クロール対象リポジトリ"
+        />
 
         <div className="mb-16">
           <div className="pills">
@@ -153,10 +159,6 @@ export default async function CrawledReposPage({
             </div>
           </>
         )}
-      </div>
-
-      <div className="footer">
-        <a href="#">利用規約</a> · <a href="#">プライバシー</a> · <a href="#">ライセンス一覧</a>
       </div>
     </>
   )
