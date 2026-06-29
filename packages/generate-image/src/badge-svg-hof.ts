@@ -1,3 +1,4 @@
+import { languageShortLabel } from "./language-label"
 import type { RewardLanguage } from "./types"
 
 /**
@@ -44,15 +45,13 @@ const escapeXml = (value: string): string =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;")
 
-const langLabel = (lang: RewardLanguage): string => lang === "typescript" ? "TS" : "JS"
-
 /**
  * Hall of Fame バッジ SVG を生成する。サイズは 360×80（README 用、既存
  * /badge/:username.svg と並べて貼れるサイズ）
  */
 export const buildHofBadgeSvg = (input: HofBadgeInput): string => {
   const theme = getTheme(input.rank)
-  const label = `RANK #${input.rank} · ${langLabel(input.language)}`
+  const label = `RANK #${input.rank} · ${languageShortLabel(input.language)}`
   const username = escapeXml(input.username)
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="80" viewBox="0 0 360 80">

@@ -104,9 +104,11 @@ const mockUserRepository: UserRepository = {
 }
 
 const mockRewardRepository: RewardRepository = {
+  findByKey: vi.fn(),
   findByUserId: vi.fn(),
   findOneByUserTypePayload: vi.fn(),
   upsert: vi.fn(),
+  upsertByKey: vi.fn(),
 }
 
 /**
@@ -166,6 +168,12 @@ const validLog: KeystrokeLogs = [
 describe("finishSession", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    /**
+     * 言語マスタはデフォルトで null（言語不明 = special-badges 対象外）に戻す。
+     * vi.clearAllMocks() は実装を初期化しないため、個別テストで findById を上書きした
+     * 後でも他テストへ漏れないよう beforeEach で明示的に再設定する
+     */
+    mockLanguageRepository.findById.mockResolvedValue(null)
     /**
      * デフォルトでは run の中身を実行する fake tx を渡す
      */
@@ -294,6 +302,64 @@ describe("finishSession", () => {
       /** rewards-worker step3: 同期生成せず generate-reward キューに enqueue する */
       expect(mockEnqueue).toHaveBeenCalledWith(
         { rewardId: 777 },
+        expect.objectContaining({ jobId: expect.any(String) }),
+      )
+    })
+
+    it("override の無い言語 (go) で 10 位以内に入賞すると hall_of_fame_in の pending reward が確保され enqueue される（言語マスタ駆動の汎用化）", async () => {
+      // Arrange
+      mockFindById.mockResolvedValue(buildState())
+      mockFindManyByIds.mockResolvedValue([
+        { codeBlock: "abc", id: 100 },
+        { codeBlock: "def", id: 101 },
+      ])
+      mockCreatePlaySession.mockResolvedValue({ id: 999 })
+      /** 言語マスタが go を返す → toRewardLanguage が "go" を通す */
+      mockLanguageRepository.findById.mockResolvedValue({ id: 1, name: "Go", slug: "go" })
+      /** ベスト更新 + 上位 2 人 → newRank 3 (<= 10 で殿堂入り) */
+      mockUpsertIfBest.mockResolvedValue({ updated: true })
+      mockFindMineBest.mockResolvedValue({
+        accuracy: 0.95,
+        bestPlaySessionId: 999,
+        playedAt: new Date(),
+        score: 304,
+        typedChars: 320,
+      })
+      mockCountHigherRanked.mockResolvedValue(2)
+      /** 月間 TOP 10 路は対象外にする（cap 到達 + boundary がスコアより高い） */
+      mockMonthlyCountByLanguage.mockResolvedValue(10)
+      mockMonthlyFindBoundaryScore.mockResolvedValue(100_000)
+      ;(mockRewardRepository.findByKey as ReturnType<typeof vi.fn>).mockResolvedValue(null)
+      ;(mockRewardRepository.upsertByKey as ReturnType<typeof vi.fn>).mockResolvedValue({
+        assetSvgUrl: null,
+        assetUrl: null,
+        generationStatus: "pending",
+        grantedAt: new Date(),
+        id: 888,
+        payload: { language: "go", rank: 3 },
+        type: "hall_of_fame_in",
+        userId: 42,
+      })
+
+      // Act
+      const result = await finishSession(
+        { accuracy: 0.95, keystrokeLogs: validLog, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 320 },
+        buildRepoCollection(),
+      )
+
+      // Assert
+      expect(result.ok).toBe(true)
+      if (result.ok) {
+        expect(result.value.newRank).toBe(3)
+        expect(result.value.pendingRewards).toContainEqual({
+          language: "go",
+          rank: 3,
+          rewardId: 888,
+          type: "hall_of_fame_in",
+        })
+      }
+      expect(mockEnqueue).toHaveBeenCalledWith(
+        { rewardId: 888 },
         expect.objectContaining({ jobId: expect.any(String) }),
       )
     })

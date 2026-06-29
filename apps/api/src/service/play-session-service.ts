@@ -864,13 +864,13 @@ export const finishSession = async (
 }
 
 /**
- * 言語 slug を special-badges の対象言語 ("typescript" | "javascript") に
- * narrowing する。MVP では他言語は special-badges 対象外
+ * 言語 slug を special-badges の対象言語に解決する。reward は言語マスタ駆動で汎用化
+ * されており、言語マスタに存在する言語はすべて special-badges 対象になる（slug が
+ * 取れなければ言語不明として null = 対象外）。新しい言語がマスタに追加されても
+ * コード変更なしで自動的に reward が発行される。
  */
-const toRewardLanguage = (slug: string | undefined): RewardLanguage | null => {
-  if (slug === "typescript" || slug === "javascript") return slug
-  return null
-}
+const toRewardLanguage = (slug: string | undefined): RewardLanguage | null =>
+  slug !== undefined && slug.length > 0 ? slug : null
 
 /**
  * 殿堂入りバッジの pending 行を確保する。

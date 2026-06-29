@@ -4,6 +4,7 @@ import satori from "satori"
 import { logger } from "@repo/logger"
 
 import { EMOJI_DATA_URI_BY_CODEPOINT } from "./emoji-assets"
+import { languageDisplayName } from "./language-label"
 import type { RewardLanguage } from "./types"
 
 /**
@@ -193,9 +194,6 @@ const getHofTheme = (rank: number) => {
   return HOF_THEMES.rest
 }
 
-const langDisplayName = (lang: RewardLanguage): string =>
-  lang === "typescript" ? "TypeScript" : "JavaScript"
-
 export type RenderHallOfFameCardInput = {
     language: RewardLanguage
     rank: number
@@ -264,7 +262,7 @@ export const renderHallOfFameCard = async (input: RenderHallOfFameCardInput): Pr
           {
             type: "div",
             props: {
-              children: langDisplayName(input.language),
+              children: languageDisplayName(input.language),
               style: {
                 border: "1.5px solid rgba(255,255,255,0.5)",
                 borderRadius: 23,
@@ -397,7 +395,7 @@ export const renderMonthlyTopTenCard = async (input: RenderMonthlyTopTenCardInpu
           {
             type: "div",
             props: {
-              children: langDisplayName(input.language),
+              children: languageDisplayName(input.language),
               style: {
                 border: "1.5px solid rgba(255,255,255,0.5)",
                 borderRadius: 22,

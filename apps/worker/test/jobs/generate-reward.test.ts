@@ -114,6 +114,24 @@ describe("generateReward (worker job)", () => {
       })
     })
 
+    it("override の無い言語 (go) の hall_of_fame_in reward も生成できる（言語マスタ駆動の汎用化）", async () => {
+      const reward = buildReward({
+        id: 11,
+        payload: { language: "go", rank: 2 },
+        type: "hall_of_fame_in",
+        userId: 40,
+      })
+      const { cardStorage, deps, rewardRepository } = buildDeps(reward)
+
+      await generateReward(deps)(buildMessage(11))
+
+      expect(cardStorage.save).toHaveBeenCalledWith("special-badges/40-hof-go.png", expect.any(Buffer))
+      expect(rewardRepository.updateAssetsAndComplete).toHaveBeenCalledWith(11, {
+        assetSvgUrl: "<svg>hof</svg>",
+        assetUrl: "/cache/rewards/special-badges/40-hof-go.png",
+      })
+    })
+
     it("既に completed かつ asset 済みなら no-op", async () => {
       const reward = buildReward({
         assetUrl: "/cache/rewards/10-1.png",
