@@ -13,11 +13,6 @@ export type HofBadgeInput = {
     language: RewardLanguage
     rank: number
     username: string
-    /**
-     * 配色テーマの上書き（省略時は rank ベースの金/銀/銅/黒）。
-     * 言語カラー見本など、順位以外の配色でレンダリングする用途に使う
-     */
-    themeOverride?: Partial<Omit<Theme, "emoji">>
 }
 
 type Theme = {
@@ -55,7 +50,7 @@ const escapeXml = (value: string): string =>
  * /badge/:username.svg と並べて貼れるサイズ）
  */
 export const buildHofBadgeSvg = (input: HofBadgeInput): string => {
-  const theme = { ...getTheme(input.rank), ...input.themeOverride }
+  const theme = getTheme(input.rank)
   const label = `RANK #${input.rank} · ${languageShortLabel(input.language)}`
   const username = escapeXml(input.username)
 

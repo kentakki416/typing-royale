@@ -14,11 +14,6 @@ export type MonthlyBadgeInput = {
     rank: number
     username: string
     yearMonth: string
-    /**
-     * 配色テーマの上書き（省略時は青固定）。言語カラー見本など、別配色で
-     * レンダリングする用途に使う
-     */
-    themeOverride?: Partial<typeof THEME>
 }
 
 const THEME = {
@@ -43,21 +38,20 @@ export const buildMonthlyBadgeSvg = (input: MonthlyBadgeInput): string => {
   const ym = input.yearMonth.replace("-", ".")
   const label = `${ym} #${input.rank} · ${languageShortLabel(input.language)}`
   const username = escapeXml(input.username)
-  const theme = { ...THEME, ...input.themeOverride }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="80" viewBox="0 0 360 80">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="${theme.bgFrom}"/>
-      <stop offset="100%" stop-color="${theme.bgTo}"/>
+      <stop offset="0%" stop-color="${THEME.bgFrom}"/>
+      <stop offset="100%" stop-color="${THEME.bgTo}"/>
     </linearGradient>
     <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="${theme.accentFrom}"/>
-      <stop offset="100%" stop-color="${theme.accentTo}"/>
+      <stop offset="0%" stop-color="${THEME.accentFrom}"/>
+      <stop offset="100%" stop-color="${THEME.accentTo}"/>
     </linearGradient>
     <linearGradient id="topHi" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${theme.accentFrom}" stop-opacity="0.22"/>
-      <stop offset="100%" stop-color="${theme.accentFrom}" stop-opacity="0"/>
+      <stop offset="0%" stop-color="${THEME.accentFrom}" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="${THEME.accentFrom}" stop-opacity="0"/>
     </linearGradient>
     <linearGradient id="shimmer" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#e0f2fe" stop-opacity="0"/>
@@ -81,9 +75,9 @@ export const buildMonthlyBadgeSvg = (input: MonthlyBadgeInput): string => {
   <rect x="0" y="0" width="6" height="80" rx="3" fill="url(#accent)">
     <animate attributeName="opacity" values="0.85;1;0.85" dur="2.4s" repeatCount="indefinite"/>
   </rect>
-  <text x="22" y="24" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="11" font-weight="700" fill="${theme.accentFrom}" letter-spacing="2" style="filter: drop-shadow(0 0 4px ${theme.accentFrom})">🏆 MONTHLY TOP 10</text>
-  <text x="22" y="52" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="22" font-weight="900" fill="#fff" style="filter: drop-shadow(0 0 6px ${theme.accentFrom})">${label}</text>
-  <text x="22" y="71" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="12" font-weight="700" fill="${theme.accentFrom}" opacity="0.9">@${username}</text>
-  <text x="338" y="72" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="9" fill="${theme.accentFrom}" opacity="0.55" text-anchor="end">typing-royale</text>
+  <text x="22" y="24" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="11" font-weight="700" fill="${THEME.accentFrom}" letter-spacing="2" style="filter: drop-shadow(0 0 4px ${THEME.accentFrom})">🏆 MONTHLY TOP 10</text>
+  <text x="22" y="52" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="22" font-weight="900" fill="#fff" style="filter: drop-shadow(0 0 6px ${THEME.accentFrom})">${label}</text>
+  <text x="22" y="71" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="12" font-weight="700" fill="${THEME.accentFrom}" opacity="0.9">@${username}</text>
+  <text x="338" y="72" font-family="'Noto Sans JP','Helvetica',sans-serif" font-size="9" fill="${THEME.accentFrom}" opacity="0.55" text-anchor="end">typing-royale</text>
 </svg>`
 }

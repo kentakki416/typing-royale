@@ -198,8 +198,6 @@ export type RenderHallOfFameCardInput = {
     language: RewardLanguage
     rank: number
     username: string
-    /** 配色テーマの上書き（省略時は順位ベースの金/銀/銅）。言語カラー見本用 */
-    themeOverride?: { accent?: string; from?: string; to?: string }
 }
 
 /**
@@ -208,7 +206,7 @@ export type RenderHallOfFameCardInput = {
  */
 export const renderHallOfFameCard = async (input: RenderHallOfFameCardInput): Promise<Buffer> => {
   const font = await loadFont()
-  const theme = { ...getHofTheme(input.rank), ...input.themeOverride }
+  const theme = getHofTheme(input.rank)
 
   logger.debug("card-renderer: rendering hall of fame card", {
     rank: input.rank,
@@ -316,8 +314,6 @@ export type RenderMonthlyTopTenCardInput = {
     rank: number
     username: string
     yearMonth: string
-    /** 配色テーマの上書き（省略時は青固定）。言語カラー見本用 */
-    themeOverride?: { accent?: string; from?: string; to?: string }
 }
 
 /**
@@ -326,7 +322,7 @@ export type RenderMonthlyTopTenCardInput = {
  */
 export const renderMonthlyTopTenCard = async (input: RenderMonthlyTopTenCardInput): Promise<Buffer> => {
   const font = await loadFont()
-  const theme = { ...MONTHLY_THEME, ...input.themeOverride }
+  const theme = MONTHLY_THEME
   const yearMonthLabel = input.yearMonth.replace("-", ".")
 
   logger.debug("card-renderer: rendering monthly top ten card", {
