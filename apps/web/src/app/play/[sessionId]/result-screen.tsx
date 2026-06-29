@@ -261,10 +261,10 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
                     href={problem.source_url}
                     key={problem.id}
                     rel="noreferrer noopener"
-                    style={{ alignItems: "baseline", gap: "8px" }}
+                    style={{ alignItems: "flex-start", gap: "8px" }}
                     target="_blank"
                   >
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ flex: 1, minWidth: 0, overflowWrap: "anywhere", wordBreak: "break-word" }}>
                       <span className="text-muted">{index + 1}.</span>{" "}
                       {meta !== null ? (
                         <>
