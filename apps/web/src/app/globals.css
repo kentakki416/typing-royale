@@ -727,6 +727,39 @@ h3 { font-size: 16px; margin-bottom: 8px; }
   margin: 36px auto;
   max-width: 760px;
 }
+
+/**
+ * 言語選択をスクロール可能な横並びカルーセルにする。中央に来たカードが少し拡大し、
+ * 左右はやや縮小・減光する（中央寄せスナップ + JS で is-centered を付与）。
+ */
+.lang-carousel {
+  display: flex;
+  gap: 20px;
+  margin: 24px 0 36px;
+  padding: 28px max(16px, calc(50% - 150px));
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.lang-carousel::-webkit-scrollbar {
+  display: none;
+}
+.lang-carousel > .lang-card {
+  flex: 0 0 300px;
+  width: 300px;
+  scroll-snap-align: center;
+  transition: transform 0.25s ease, filter 0.25s ease, opacity 0.25s ease;
+}
+.lang-carousel > .lang-card.is-centered {
+  transform: scale(1.06);
+  z-index: 1;
+}
+.lang-carousel > .lang-card:not(.is-centered) {
+  transform: scale(0.9);
+  filter: brightness(0.82);
+  opacity: 0.85;
+}
 .lang-card {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 14%, transparent 86%, rgba(0, 0, 0, 0.25) 100%),
@@ -762,9 +795,13 @@ h3 { font-size: 16px; margin-bottom: 8px; }
   font-size: 64px;
   margin-bottom: 18px;
   letter-spacing: -0.04em;
+  /* 黒い影を下に重ねて押し出し（立体感）を出す */
   text-shadow:
-    0 3px 0 rgba(0, 0, 0, 0.55),
-    0 6px 20px rgba(0, 0, 0, 0.5);
+    0 2px 0 rgba(0, 0, 0, 0.65),
+    0 4px 0 rgba(0, 0, 0, 0.55),
+    0 6px 0 rgba(0, 0, 0, 0.45),
+    0 8px 0 rgba(0, 0, 0, 0.35),
+    0 12px 18px rgba(0, 0, 0, 0.6);
 }
 .lang-icon.ts { color: #4a9eff; }
 .lang-icon.js { color: #f7df1e; }
