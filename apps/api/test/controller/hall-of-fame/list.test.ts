@@ -125,6 +125,12 @@ describe("GET /api/hall-of-fame", () => {
         { rank: 2, score: 600 },
         { rank: 3, score: 400 },
       ])
+      /** 各エントリにベストを出した repo（出題元）が含まれる */
+      expect(res.body.entries[0].crawled_repo).toEqual({
+        full_name: "owner/repo",
+        name: "repo",
+        owner: "owner",
+      })
     })
 
     it("entry が無くても空配列で 200", async () => {

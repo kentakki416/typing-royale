@@ -31,6 +31,12 @@ export type UpsertIfBestResult = {
 export type UserLanguageBestWithUser = {
     accuracy: number
     bestPlaySessionId: number
+    /** このベストを出したときの出題元 repo（bestPlaySessionId → crawledRepo 由来） */
+    crawledRepo: {
+        fullName: string
+        name: string
+        owner: string
+    }
     playedAt: Date
     score: number
     typedChars: number
@@ -94,6 +100,7 @@ export class PrismaUserLanguageBestRepository implements UserLanguageBestReposit
   ): Promise<UserLanguageBestWithUser[]> {
     const rows = await this._prisma.userLanguageBest.findMany({
       include: {
+        playSession: { include: { crawledRepo: { select: { fullName: true, name: true, owner: true } } } },
         user: {
           include: { lifetimeStats: { select: { currentGrade: true } } },
         },
@@ -113,6 +120,11 @@ export class PrismaUserLanguageBestRepository implements UserLanguageBestReposit
     return rows.map((row) => ({
       accuracy: row.accuracy,
       bestPlaySessionId: row.bestPlaySessionId,
+      crawledRepo: {
+        fullName: row.playSession.crawledRepo.fullName,
+        name: row.playSession.crawledRepo.name,
+        owner: row.playSession.crawledRepo.owner,
+      },
       playedAt: row.playedAt,
       score: row.score,
       typedChars: row.typedChars,
