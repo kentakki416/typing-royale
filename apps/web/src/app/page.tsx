@@ -73,7 +73,7 @@ export default async function HomePage() {
           <br />
           Type real <span className="accent">OSS code</span>.
         </h1>
-        <p>
+        <p style={{ fontSize: "14px" }}>
           OSSの実コードでバトルするエンジニア向けタイピングゲーム。<br />
           さあ、エンジニア業界のタイピング王を決めましょう
         </p>
