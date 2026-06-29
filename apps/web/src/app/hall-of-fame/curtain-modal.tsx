@@ -94,6 +94,7 @@ export function CurtainModal({ entry, languageName, onClose }: Props) {
         )}
 
         <UserProfileCard
+          achievedAt={entry.played_at}
           avatarUrl={entry.user.avatar_url}
           accuracy={entry.accuracy}
           bestPlaySessionId={entry.best_play_session_id}

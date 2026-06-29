@@ -23,6 +23,10 @@ const PUBLIC_PATHS = [
    * /ads.txt は AdSense クローラが直接取得する Route Handler なので未ログインでも配信必須。
    */
   "/privacy",
+  /**
+   * ライセンス一覧: 出題 OSS のライセンス表記。未ログインでもフッターから到達可能にする
+   */
+  "/licenses",
   "/ads.txt",
   /**
    * score-ranking の公開画面: 未ログインでも閲覧可能

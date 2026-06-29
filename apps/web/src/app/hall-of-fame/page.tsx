@@ -4,6 +4,7 @@ import Link from "next/link"
 import type { GetHallOfFameResponse } from "@repo/api-schema"
 
 import { EmptyLanguagesState } from "@/components/empty-languages-state"
+import { PageHero } from "@/components/page-hero"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
@@ -44,7 +45,7 @@ export default async function HallOfFamePage({
       <>
         <Topbar active="hall-of-fame" isAuthed={accessToken !== null} />
         <div className="container">
-          <h1 className="text-center mb-24">殿堂入り — 神々の殿堂</h1>
+          <PageHero icon="🏛" subtitle="言語別オールタイムトップ 10。" title="殿堂入り — 神々の殿堂" />
           <EmptyLanguagesState />
         </div>
       </>
@@ -61,11 +62,7 @@ export default async function HallOfFamePage({
       <Topbar active="hall-of-fame" isAuthed={accessToken !== null} />
 
       <div className="container">
-        <div className="text-center mb-24">
-          <div style={{ fontSize: "56px" }}>🏛</div>
-          <h1>殿堂入り — 神々の殿堂</h1>
-          <p className="text-muted">言語別オールタイムトップ 10。</p>
-        </div>
+        <PageHero icon="🏛" subtitle="言語別オールタイムトップ 10。" title="殿堂入り — 神々の殿堂" />
 
         <div className="flex-between mb-24" style={{ alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
           <div className="pills">
@@ -94,10 +91,6 @@ export default async function HallOfFamePage({
         ) : (
           <HofCards entries={data.entries} languageName={selectedLanguage.name} />
         )}
-      </div>
-
-      <div className="footer">
-        <Link href="/">トップに戻る</Link>
       </div>
     </>
   )

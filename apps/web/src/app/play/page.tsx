@@ -145,10 +145,6 @@ export default async function PlaySelectPage() {
         </div>
 
       </div>
-
-      <div className="footer">
-        <a href="#">利用規約</a> · <a href="#">プライバシー</a> · <a href="#">ライセンス一覧</a>
-      </div>
     </>
   )
 }

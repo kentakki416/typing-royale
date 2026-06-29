@@ -38,10 +38,6 @@ export default async function MyPageRewards() {
 
         <RewardsTabs apiUrl={env.API_URL} rewards={rewardsRes.rewards} />
       </div>
-
-      <div className="footer">
-        <a href="#">利用規約</a> · <a href="#">プライバシー</a>
-      </div>
     </>
   )
 }

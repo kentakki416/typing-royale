@@ -46,10 +46,6 @@ export default async function ReplayPage({
         </div>
         <ReplayPlayer data={data} />
       </div>
-
-      <div className="footer">
-        <a href="#">利用規約</a> · <a href="#">プライバシー</a>
-      </div>
     </>
   )
 }

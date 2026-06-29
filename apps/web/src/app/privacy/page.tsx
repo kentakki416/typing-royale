@@ -101,10 +101,6 @@ export default async function PrivacyPolicyPage() {
           </p>
         </section>
       </div>
-
-      <div className="footer">
-        <a href="/privacy">プライバシー</a>
-      </div>
     </>
   )
 }
