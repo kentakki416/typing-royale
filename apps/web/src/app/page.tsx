@@ -73,15 +73,15 @@ export default async function HomePage() {
           Type real <span className="accent">OSS code</span>.
         </h1>
         <p>
-          OSS の実コードを 120 秒で打鍵するエンジニア向けタイピングゲーム。スコアに応じて
-          README に貼れる動的バッジ・達成カードがもらえる。
+          OSSの実コードでバトルするエンジニア向けタイピングゲーム。<br />
+          さあ、エンジニア業界のタイピング王を決めましょう
         </p>
         <div className="flex-center gap-12 mt-24" style={{ justifyContent: "center" }}>
           <Link className="btn btn-primary btn-play btn-large" href="/play">▶ プレイ開始</Link>
           <Link className="btn btn-large" href="/sign-in">GitHub で記録を残す</Link>
         </div>
         <div className="text-sm text-muted mt-16">
-          ログインなしでも遊べます · 記録を残したいときだけ GitHub 連携
+          ログインなしでも遊べます。GitHub 連携すると、ランキング・スコアを記録可能。
         </div>
       </div>
 
@@ -127,21 +127,22 @@ export default async function HomePage() {
                 <div className="col">
                   <h3>📦 リアル OSS のコード</h3>
                   <p className="text-sm text-muted">
-                    週次クローラが GitHub Star 上位の寛容ライセンス OSS から AST で
-                    関数を自動抽出。手で選別されたカスタム問題ではないリアル。
-                  </p>
-                </div>
-                <div className="col">
-                  <h3>🏆 言語別ランキング</h3>
-                  <p className="text-sm text-muted">
-                    言語ごとの全期間トップ。リプレイ視聴と「神々に挑戦」モードで観戦も可能。
+                    クローラーが GitHub Star 上位の OSS から AST で関数を問題として自動抽出。
+                    OSS の実コードに触れるチャンス。
                   </p>
                 </div>
                 <div className="col">
                   <h3>✨ GitHub に映える特典</h3>
                   <p className="text-sm text-muted">
-                    動的 SVG バッジ・達成カード・殿堂入り。
-                    README が豪華になる。
+                    月間トップ・殿堂入り・レベルアップで Typing Royale オリジナルの動的 SVG
+                    バッジ・達成カードを獲得。GitHub に是非貼って下さい。
+                  </p>
+                </div>
+                <div className="col">
+                  <h3>🔗 GitHub で繋がる</h3>
+                  <p className="text-sm text-muted">
+                    ランクインしたエンジニアの GitHub は閲覧可能。
+                    エンジニア同士の交流が広がる。
                   </p>
                 </div>
               </div>
