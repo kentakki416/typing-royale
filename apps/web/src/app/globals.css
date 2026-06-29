@@ -732,33 +732,28 @@ h3 { font-size: 16px; margin-bottom: 8px; }
  * 言語選択をスクロール可能な横並びカルーセルにする。中央に来たカードが少し拡大し、
  * 左右はやや縮小・減光する（中央寄せスナップ + JS で is-centered を付与）。
  */
-.lang-carousel {
+/**
+ * 言語選択カードの中央寄せ折り返しグリッド。
+ * グリッド幅を「列数 × カード幅 + gap」(= --lang-grid-max, JS で算出) に固定し、
+ * `min(96vw, …)` + left/translateX で narrow コンテナを左右対称に突き破る (full-bleed)。
+ * 列数ぴったりの幅なので flex-wrap で 1 行あたり列数枚に折り返り、最終行は中央寄せになる
+ * (3 → 3 / 4 → 2+2 / 5 → 3+2 / 6 → 3+3)。狭い画面では自動で枚数が減る。
+ */
+.lang-grid {
   display: flex;
+  flex-wrap: wrap;
   gap: 20px;
+  justify-content: center;
   margin: 24px 0 36px;
-  padding: 28px max(16px, calc(50% - 150px));
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+  width: min(96vw, var(--lang-grid-max, 940px));
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
 }
-.lang-carousel::-webkit-scrollbar {
-  display: none;
-}
-.lang-carousel > .lang-card {
+.lang-grid > .lang-card {
   flex: 0 0 300px;
   width: 300px;
-  scroll-snap-align: center;
-  transition: transform 0.25s ease, filter 0.25s ease, opacity 0.25s ease;
-}
-.lang-carousel > .lang-card.is-centered {
-  transform: scale(1.06);
-  z-index: 1;
-}
-.lang-carousel > .lang-card:not(.is-centered) {
-  transform: scale(0.9);
-  filter: brightness(0.82);
-  opacity: 0.85;
+  max-width: 100%;
 }
 .lang-card {
   background:

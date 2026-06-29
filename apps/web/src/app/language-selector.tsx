@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useCallback, useEffect, useRef, useState, useTransition } from "react"
+import React, { useState, useTransition } from "react"
 
 import { startPlaySession } from "./actions"
 
@@ -19,50 +19,35 @@ type Props = {
 }
 
 /**
- * 言語選択カルーセル + プレイ開始ボタン
+ * 1 行あたりの列数を決める。
+ * - 3 以下はその数だけ横に並べる（3 → 3 列）
+ * - 4 は 2 列（2 × 2 で揃える）
+ * - 5 以上は 3 列（5 → 3+2 / 6 → 3+3）
+ */
+const columnsFor = (count: number): number => {
+  if (count === 4) return 2
+  return Math.min(3, Math.max(1, count))
+}
+
+const CARD_WIDTH = 300
+const GAP = 20
+
+/**
+ * 言語選択グリッド + プレイ開始ボタン
  *
- * 横スクロール（中央寄せスナップ）で、中央に来たカードを少し拡大する。
- * Server Action の結果を sessionStorage に詰めてから /play/[sessionId] に遷移
- * （Server Action の戻り値は Router 遷移後に失われるため）
+ * カードを中央寄せの折り返しグリッドで並べる（横スクロールは廃止）。列数は
+ * {@link columnsFor} で決め、グリッド幅を「列数 × カード幅」に固定 + `min(96vw, …)`
+ * で full-bleed させて narrow コンテナを左右対称に突き破る。
+ * Server Action の結果は sessionStorage に詰めてから /play/[sessionId] に遷移する
+ * （Server Action の戻り値は Router 遷移後に失われるため）。
  */
 export function LanguageSelector({ languages }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
-  const scrollRef = useRef<HTMLDivElement>(null)
-  /** スクロール位置から「中央に最も近いカード」の index を求めて拡大対象にする */
-  const [centeredIndex, setCenteredIndex] = useState(0)
-
-  const updateCentered = useCallback(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const viewportCenter = el.scrollLeft + el.clientWidth / 2
-    let nearest = 0
-    let min = Number.POSITIVE_INFINITY
-    Array.from(el.children).forEach((child, index) => {
-      const card = child as HTMLElement
-      const cardCenter = card.offsetLeft + card.offsetWidth / 2
-      const distance = Math.abs(cardCenter - viewportCenter)
-      if (distance < min) {
-        min = distance
-        nearest = index
-      }
-    })
-    setCenteredIndex(nearest)
-  }, [])
-
-  useEffect(() => {
-    updateCentered()
-    const el = scrollRef.current
-    if (!el) return
-    el.addEventListener("scroll", updateCentered, { passive: true })
-    window.addEventListener("resize", updateCentered)
-    return () => {
-      el.removeEventListener("scroll", updateCentered)
-      window.removeEventListener("resize", updateCentered)
-    }
-  }, [updateCentered])
+  const cols = columnsFor(languages.length)
+  const gridMax = cols * CARD_WIDTH + (cols - 1) * GAP
 
   const handleStart = (languageId: number, mode: "challenge_gods" | "solo") => {
     setError(null)
@@ -91,11 +76,11 @@ export function LanguageSelector({ languages }: Props) {
 
   return (
     <>
-      <div className="lang-carousel" ref={scrollRef}>
-        {languages.map((lang, index) => (
+      <div className="lang-grid" style={{ "--lang-grid-max": `${gridMax}px` } as React.CSSProperties}>
+        {languages.map((lang) => (
           <div
             aria-disabled={lang.comingSoon ? true : undefined}
-            className={`lang-card ${index === centeredIndex ? "is-centered" : ""}`}
+            className="lang-card"
             key={lang.id}
             style={lang.comingSoon
               ? { cursor: "not-allowed", filter: "grayscale(0.8)", opacity: 0.55 }
@@ -109,9 +94,9 @@ export function LanguageSelector({ languages }: Props) {
               </div>
             )}
 
-            <div className="flex gap-8 mt-16" style={{ justifyContent: "center" }}>
+            <div className="mt-16" style={{ display: "grid", gap: "8px" }}>
               <button
-                className="btn btn-primary btn-play"
+                className="btn btn-primary btn-play btn-block"
                 disabled={isPending || lang.comingSoon}
                 type="button"
                 onClick={() => handleStart(lang.id, "solo")}
@@ -119,7 +104,7 @@ export function LanguageSelector({ languages }: Props) {
                 ▶ 通常プレイ
               </button>
               <button
-                className="btn btn-gold"
+                className="btn btn-gold btn-block"
                 disabled={isPending || lang.comingSoon}
                 type="button"
                 onClick={() => handleStart(lang.id, "challenge_gods")}
