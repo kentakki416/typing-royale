@@ -720,32 +720,22 @@ h3 { font-size: 16px; margin-bottom: 8px; }
 }
 
 /* Language cards — heavy chunky panels */
-.lang-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  margin: 36px auto;
-  max-width: 760px;
-}
-
 /**
- * 言語選択をスクロール可能な横並びカルーセルにする。中央に来たカードが少し拡大し、
- * 左右はやや縮小・減光する（中央寄せスナップ + JS で is-centered を付与）。
- */
-/**
- * 言語選択カードの中央寄せ折り返しグリッド。
+ * 言語選択カードのグリッド。
  * グリッド幅を「列数 × カード幅 + gap」(= --lang-grid-max, JS で算出) に固定し、
- * `min(96vw, …)` + left/translateX で narrow コンテナを左右対称に突き破る (full-bleed)。
- * 列数ぴったりの幅なので flex-wrap で 1 行あたり列数枚に折り返り、最終行は中央寄せになる
- * (3 → 3 / 4 → 2+2 / 5 → 3+2 / 6 → 3+3)。狭い画面では自動で枚数が減る。
+ * left/translateX で narrow コンテナを左右対称に突き破る (full-bleed)。
+ * 1 行あたりの列数は {@link columnsFor} に従い flex-wrap で折り返る
+ * (3 以下 → 1 行 / 4 → 2+2 / 5 → 3+2 / 6 → 3+3)。
+ * 幅は 96vw でキャップせず、列数ぶんの実幅にする。狭い画面でははみ出すが、
+ * 「3 言語までは必ず横一列」を優先する（はみ出しは許容）。
  */
 .lang-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
   justify-content: center;
-  margin: 24px 0 36px;
-  width: min(96vw, var(--lang-grid-max, 940px));
+  margin: 24px auto 36px;
+  width: var(--lang-grid-max, 940px);
   position: relative;
   left: 50%;
   transform: translateX(-50%);
@@ -1143,6 +1133,39 @@ h3 { font-size: 16px; margin-bottom: 8px; }
     0 2px 0 #1f4d99,
     0 3px 8px rgba(31, 95, 191, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/**
+ * 言語セグメント切替（クロール対象リポジトリ等、サイドバーの狭いボックス用）。
+ * `.pills` の固定幅タブと違い、ボタンを等幅 (flex:1) でボックス幅に収める。
+ * 言語が増えても各ボタンが縮んで 1 行に収まる。
+ */
+.lang-seg {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.lang-seg > button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  transition: filter 0.15s ease, color 0.15s ease;
+}
+.lang-seg > button:hover { color: var(--text-primary); }
+.lang-seg > button.active {
+  color: #0a1a2e;
+  font-weight: 700;
+  border-color: transparent;
+  background: linear-gradient(180deg, #79b8ff 0%, #2f7fe0 100%);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 /* Modal — floating panel */

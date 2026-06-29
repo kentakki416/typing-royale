@@ -47,12 +47,11 @@ export function CrawledReposSection({ languages }: Props) {
 
   return (
     <div>
-      <div className="pills mb-16">
+      <div className="lang-seg">
         {languages.map((lang) => (
           <button
-            className={`pill ${active === lang.slug ? "active" : ""}`}
+            className={active === lang.slug ? "active" : ""}
             key={lang.slug}
-            style={active === lang.slug ? { border: 0 } : { background: "transparent", border: 0 }}
             type="button"
             onClick={() => setActive(lang.slug)}
           >
