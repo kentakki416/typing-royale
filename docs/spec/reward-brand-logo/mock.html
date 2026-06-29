@@ -1,0 +1,71 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  body { background:#0d0d0f; margin:0; padding:24px; font-family:'Noto Sans JP','Helvetica',sans-serif; width:600px; }
+  .cand { margin-bottom:22px; }
+  .h { color:#e2e8f0; font-size:14px; font-weight:800; margin-bottom:2px; }
+  .d { color:#64748b; font-size:11px; margin-bottom:8px; }
+  .pair { display:flex; gap:14px; }
+</style></head><body>
+<div id="root"></div>
+<script>
+const LOGO_PATHS = `
+  <path d="M0 8.42105C0 3.77023 3.77023 0 8.42105 0H23.5789C28.2298 0 32 3.77023 32 8.42105V23.5789C32 28.2298 28.2298 32 23.5789 32H8.42105C3.77023 32 0 28.2298 0 23.5789V8.42105Z" fill="SQ"/>
+  <path d="M8.42383 8.42152C8.42383 7.49135 9.17787 6.7373 10.108 6.7373C11.0382 6.7373 11.7922 7.49135 11.7922 8.42152V23.5794C11.7922 24.5096 11.0382 25.2636 10.108 25.2636C9.17787 25.2636 8.42383 24.5096 8.42383 23.5794V8.42152Z" fill="BAR" fill-opacity="1"/>
+  <path d="M14.7422 15.1569C14.7422 14.2267 15.4962 13.4727 16.4264 13.4727C17.3566 13.4727 18.1106 14.2267 18.1106 15.1569V23.5779C18.1106 24.5081 17.3566 25.2621 16.4264 25.2621C15.4962 25.2621 14.7422 24.5081 14.7422 23.5779V15.1569Z" fill="BAR" fill-opacity="0.9"/>
+  <path d="M21.0547 10.9459C21.0547 10.0158 21.8087 9.26172 22.7389 9.26172C23.6691 9.26172 24.4231 10.0158 24.4231 10.9459V23.5775C24.4231 24.5077 23.6691 25.2617 22.7389 25.2617C21.8087 25.2617 21.0547 24.5077 21.0547 23.5775V10.9459Z" fill="BAR" fill-opacity="0.7"/>`;
+
+function logo(placement, mode, theme) {
+  const sq = mode === 'brand' ? '#465FFF' : theme.accentFrom;
+  const bar = mode === 'brand' ? '#ffffff' : theme.bgTo;
+  const paths = LOGO_PATHS.replaceAll('SQ', sq).replaceAll('BAR', bar);
+  const t = placement === 'A' ? 'translate(18,20) scale(1.25)' : 'translate(316,12) scale(0.875)';
+  return `<g transform="${t}">${paths}</g>`;
+}
+
+function badge(theme, placement, mode, id) {
+  const hasLogo = placement !== 'none';
+  const left = placement === 'A' ? 70 : 22;            // テキスト左位置
+  const accentBar = placement === 'A' ? '' :            // 案A はアクセントバー無し
+    `<rect x="0" y="0" width="6" height="80" rx="3" fill="url(#ac${id})"/>`;
+  const wordmark = `<text x="338" y="72" font-size="9" fill="${theme.accentFrom}" opacity="0.55" text-anchor="end">typing-royale</text>`;
+  return `
+  <svg xmlns="http://www.w3.org/2000/svg" width="360" height="80" viewBox="0 0 360 80">
+    <defs>
+      <linearGradient id="bg${id}" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="${theme.bgFrom}"/><stop offset="100%" stop-color="${theme.bgTo}"/></linearGradient>
+      <linearGradient id="ac${id}" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="${theme.accentFrom}"/><stop offset="100%" stop-color="${theme.accentTo}"/></linearGradient>
+      <clipPath id="cl${id}"><rect width="360" height="80" rx="10"/></clipPath>
+    </defs>
+    <g clip-path="url(#cl${id})"><rect width="360" height="80" fill="url(#bg${id})"/></g>
+    <rect width="360" height="80" rx="10" fill="none" stroke="url(#ac${id})" stroke-width="1.5"/>
+    ${accentBar}
+    ${hasLogo ? logo(placement, mode, theme) : ''}
+    <text x="${left}" y="24" font-size="11" font-weight="700" fill="${theme.accentFrom}" letter-spacing="2">${theme.emoji} ${theme.head}</text>
+    <text x="${left}" y="52" font-size="22" font-weight="900" fill="#fff">${theme.main}</text>
+    <text x="${left}" y="71" font-size="12" font-weight="700" fill="${theme.accentFrom}" opacity="0.9">@kenta</text>
+    ${wordmark}
+  </svg>`;
+}
+
+const GOLD = { accentFrom:'#ffd54a', accentTo:'#d2992a', bgFrom:'#1a1208', bgTo:'#0d0a04', emoji:'👑', head:'HALL OF FAME', main:'RANK #1 · Go' };
+const BLUE = { accentFrom:'#7dd3fc', accentTo:'#0c4a6e', bgFrom:'#0a1a26', bgTo:'#04101a', emoji:'🏆', head:'MONTHLY TOP 10', main:'2026.06 #3 · Go' };
+
+const candidates = [
+  { h:'現行（ロゴなし）', d:'ベースライン。小さな typing-royale テキストのみ', placement:'none', mode:'brand' },
+  { h:'案1: 右上 × ブランド青', d:'28px を右上に。現行レイアウト維持・変更最小（あなたの初回選択）', placement:'B', mode:'brand' },
+  { h:'案2: 右上 × テーマ色', d:'28px を右上に。ロゴをバッジのテーマ色で単色化（金/青）', placement:'B', mode:'theme' },
+  { h:'案3: 左 × ブランド青', d:'40px を左に置きテキストを右へ。ブランド前面・存在感大', placement:'A', mode:'brand' },
+  { h:'案4: 左 × テーマ色', d:'40px を左。ロゴをテーマ色で単色化', placement:'A', mode:'theme' },
+];
+
+const root = document.getElementById('root');
+let i = 0;
+for (const c of candidates) {
+  const div = document.createElement('div');
+  div.className = 'cand';
+  div.innerHTML = `<div class="h">${c.h}</div><div class="d">${c.d}</div>
+    <div class="pair">${badge(GOLD, c.placement, c.mode, 'g'+i)}${badge(BLUE, c.placement, c.mode, 'b'+i)}</div>`;
+  root.appendChild(div);
+  i++;
+}
+</script>
+</body></html>
