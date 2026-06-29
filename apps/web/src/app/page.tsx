@@ -74,7 +74,6 @@ export default async function HomePage() {
         </h1>
         <p>
           OSSの実コードでバトルするエンジニア向けタイピングゲーム。<br />
-          ランキング上位にはTyping RoyaleオリジナルのREADME用バッジをプレゼント<br />
           さあ、エンジニア業界のタイピング王を決めましょう
         </p>
         <div className="flex-center gap-12 mt-24" style={{ justifyContent: "center" }}>
