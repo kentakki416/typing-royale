@@ -151,7 +151,7 @@ type ListMonthlyRepo = {
 }
 
 export type ListMonthlyInput = {
-    languageSlug: "javascript" | "typescript"
+    languageSlug: string
     limit: number
 }
 

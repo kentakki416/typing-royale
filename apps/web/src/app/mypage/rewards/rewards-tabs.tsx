@@ -6,6 +6,7 @@ import { useState } from "react"
 import type { GetMyRewardsResponse } from "@repo/api-schema"
 
 import { downloadFile } from "@/libs/download-file"
+import { languageShortLabel } from "@/libs/language-badge"
 
 type Reward = GetMyRewardsResponse["rewards"][number]
 
@@ -189,12 +190,12 @@ const formatRewardLabel = (reward: Reward): string => {
   }
   if (reward.type === "hall_of_fame_in") {
     const p = reward.payload as { language?: string; rank?: number }
-    return `👑 殿堂入り #${p.rank ?? "?"} (${formatLanguage(p.language)})`
+    return `👑 殿堂入り #${p.rank ?? "?"} (${languageShortLabel(p.language)})`
   }
   if (reward.type === "monthly_top_ten") {
     const p = reward.payload as { language?: string; rank?: number; year_month?: string }
     const ym = (p.year_month ?? "").replace("-", ".")
-    return `🏆 ${ym} 月間 #${p.rank ?? "?"} (${formatLanguage(p.language)})`
+    return `🏆 ${ym} 月間 #${p.rank ?? "?"} (${languageShortLabel(p.language)})`
   }
   if (reward.type === "card") {
     const labelStr = (reward.payload as { milestone_label?: string }).milestone_label ?? "達成"
@@ -202,9 +203,6 @@ const formatRewardLabel = (reward: Reward): string => {
   }
   return reward.type
 }
-
-const formatLanguage = (lang: string | undefined): string =>
-  lang === "javascript" ? "JS" : lang === "typescript" ? "TS" : lang === "go" ? "Go" : "?"
 
 const GRADE_NAMES: Record<string, string> = {
   distinguished: "Distinguished Engineer",
