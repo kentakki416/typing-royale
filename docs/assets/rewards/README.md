@@ -6,7 +6,7 @@
 - カード: `cards/`（PNG・1200×630）
 - 再生成スクリプト: [`generate.mjs`](./generate.mjs)
 
-> 言語は表示ラベル（TS / JS）が変わるだけでデザインは共通。現状 reward 対象言語は TypeScript / JavaScript のみ（Go はマスタにあるが reward 生成対象外）。
+> 言語は表示ラベル（TS / JS / Go）が変わるだけでデザインは共通。reward は言語マスタ駆動で、現状の対象は TypeScript / JavaScript / Go（新しい言語をマスタに追加すれば自動的に対象になる）。
 
 ## バッジ（SVG）
 
@@ -52,11 +52,11 @@
 
 デザインは共通でラベルのみ変化（例: 殿堂入り 1位）。
 
-| TypeScript | JavaScript |
-|---|---|
-| <img src="./badges/hof-rank1-typescript.svg" width="320"> | <img src="./badges/hof-rank1-javascript.svg" width="320"> |
+| TypeScript | JavaScript | Go |
+|---|---|---|
+| <img src="./badges/hof-rank1-typescript.svg" width="300"> | <img src="./badges/hof-rank1-javascript.svg" width="300"> | <img src="./badges/hof-rank1-go.svg" width="300"> |
 
-JavaScript 版のカードも `cards/*-javascript.png` に同梱している。
+JavaScript / Go 版のカードも `cards/*-javascript.png` / `cards/*-go.png` に同梱している。
 
 ## 再生成
 

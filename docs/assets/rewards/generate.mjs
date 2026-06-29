@@ -25,7 +25,7 @@ const {
 } = await import(resolve(REPO_ROOT, "packages/generate-image/dist/index.js"))
 
 const USER = "kenta"
-const LANGS = ["typescript", "javascript"]
+const LANGS = ["typescript", "javascript", "go"]
 const HOF_RANKS = [1, 2, 3, 5]
 const GRADES = [
   ["intern", "Intern"],
