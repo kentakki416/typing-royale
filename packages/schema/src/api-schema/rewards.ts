@@ -4,7 +4,12 @@ import { z } from "zod"
 // 共通定数 / 共通スキーマ
 // ========================================================
 
-const REWARD_LANGUAGES = ["javascript", "typescript"] as const
+/**
+ * reward の対象言語 slug。reward は言語マスタ (languages テーブル) 駆動で汎用化されて
+ * おり、特定の言語に enum で限定しない。新しい言語がマスタに追加されればコード変更
+ * なしで reward 対象になる。値の正当性は /finish が言語マスタを参照して担保する。
+ */
+const rewardLanguageSchema = z.string().min(1)
 
 /**
  * type ごとに payload の shape が異なる
@@ -55,12 +60,12 @@ const yearMonthRegex = /^\d{4}-\d{2}$/
 
 export const generateRewardRequestSchema = z.discriminatedUnion("type", [
   z.object({
-    language: z.enum(REWARD_LANGUAGES),
+    language: rewardLanguageSchema,
     rank: z.number().int().min(1).max(10),
     type: z.literal("hall_of_fame_in"),
   }),
   z.object({
-    language: z.enum(REWARD_LANGUAGES),
+    language: rewardLanguageSchema,
     rank: z.number().int().min(1).max(10),
     type: z.literal("monthly_top_ten"),
     year_month: z.string().regex(yearMonthRegex),
@@ -103,13 +108,13 @@ export type GetMyRewardsResponse = z.infer<typeof getMyRewardsResponseSchema>
  */
 export const pendingRewardSchema = z.discriminatedUnion("type", [
   z.object({
-    language: z.enum(REWARD_LANGUAGES),
+    language: rewardLanguageSchema,
     rank: z.number().int().min(1).max(10),
     reward_id: z.number().int().positive(),
     type: z.literal("hall_of_fame_in"),
   }),
   z.object({
-    language: z.enum(REWARD_LANGUAGES),
+    language: rewardLanguageSchema,
     rank: z.number().int().min(1).max(10),
     reward_id: z.number().int().positive(),
     type: z.literal("monthly_top_ten"),

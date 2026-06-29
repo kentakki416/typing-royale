@@ -7,7 +7,13 @@
  */
 export type RewardType = "grade_up" | "hall_of_fame_in" | "monthly_top_ten"
 
-export type RewardLanguage = "javascript" | "typescript"
+/**
+ * reward の対象言語 slug（例: "javascript" / "typescript" / "go"）。
+ *
+ * reward は言語マスタ (languages テーブル) 駆動で汎用化されており、特定の言語に
+ * 限定しない。新しい言語がマスタに追加されればコード変更なしで reward 対象になる。
+ */
+export type RewardLanguage = string
 
 export type GradeUpPayload = {
     grade_slug: string

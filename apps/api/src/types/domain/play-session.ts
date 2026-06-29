@@ -1,3 +1,5 @@
+import type { RewardLanguage } from "./reward"
+
 /**
  * プレイセッションのモード
  * step2 では "solo" のみ。"challenge_gods" は step6 で追加
@@ -133,13 +135,13 @@ export type FinishResult = {
  */
 export type PendingReward =
     | {
-        language: "javascript" | "typescript"
+        language: RewardLanguage
         rank: number
         rewardId: number
         type: "hall_of_fame_in"
     }
     | {
-        language: "javascript" | "typescript"
+        language: RewardLanguage
         rank: number
         rewardId: number
         type: "monthly_top_ten"

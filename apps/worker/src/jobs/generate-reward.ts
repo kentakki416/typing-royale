@@ -152,8 +152,13 @@ const readSpecialBadgePayload = (
 ): { language: RewardLanguage; rank: number } => {
   const language = readString(reward.payload.language)
   const rank = readNumber(reward.payload.rank)
-  if (language !== "javascript" && language !== "typescript") {
-    throw new Error(`generateReward: reward ${reward.id} has invalid language "${String(language)}"`)
+  /**
+   * reward は言語マスタ駆動で汎用化されており、特定の言語に限定しない。
+   * payload.language に非空の slug があればそのまま採用する（表示ラベルは
+   * generate-image 側の languageShortLabel / languageDisplayName が解決する）。
+   */
+  if (language === null) {
+    throw new Error(`generateReward: reward ${reward.id} has missing language`)
   }
   if (rank === null) {
     throw new Error(`generateReward: reward ${reward.id} has invalid rank`)

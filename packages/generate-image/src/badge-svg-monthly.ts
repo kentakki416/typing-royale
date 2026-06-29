@@ -1,3 +1,4 @@
+import { languageShortLabel } from "./language-label"
 import type { RewardLanguage } from "./types"
 
 /**
@@ -30,14 +31,12 @@ const escapeXml = (value: string): string =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;")
 
-const langLabel = (lang: RewardLanguage): string => lang === "typescript" ? "TS" : "JS"
-
 /**
  * 月間 TOP 10 バッジ SVG を生成する。サイズは 360×80
  */
 export const buildMonthlyBadgeSvg = (input: MonthlyBadgeInput): string => {
   const ym = input.yearMonth.replace("-", ".")
-  const label = `${ym} #${input.rank} · ${langLabel(input.language)}`
+  const label = `${ym} #${input.rank} · ${languageShortLabel(input.language)}`
   const username = escapeXml(input.username)
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="80" viewBox="0 0 360 80">

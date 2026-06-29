@@ -48,6 +48,11 @@ describe("buildHofBadgeSvg", () => {
       const svg = buildHofBadgeSvg({ language: "javascript", rank: 1, username: "alice" })
       expect(svg).toContain("RANK #1 · JS")
     })
+
+    it("override の無い language (go) は先頭大文字の Go ラベルを使う", () => {
+      const svg = buildHofBadgeSvg({ language: "go", rank: 1, username: "alice" })
+      expect(svg).toContain("RANK #1 · Go")
+    })
   })
 
   describe("異常系", () => {
