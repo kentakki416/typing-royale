@@ -1505,10 +1505,27 @@ body.play-screen {
 .play-screen .editor-area > .code-block {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
+  /**
+   * 横方向は折り返しで全文字を必ず見せる（overflow:hidden + white-space:pre だと
+   * エディタ幅を超える長い行が右端で見切れ、カーソルが画面外に出て打てなくなる）。
+   * 縦は溢れたらスクロール。
+   */
+  overflow-x: hidden;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   font-size: 16px;
   padding: 22px 28px;
   line-height: 1.7;
+}
+/**
+ * 神々モードは 2 エディタを横並び（各 ~48vw）で表示するため 1 行に収まる文字数が少ない。
+ * まずフォントを少し小さくして長い行を 1 行のまま収め、それでも超える行だけ上の
+ * pre-wrap で折り返す（折り返しは保険。読める範囲で縮小して構造を保つ方針）。
+ */
+.play-screen .challenge-editors .editor-area > .code-block {
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 /* Row layout used by play-ghost */
