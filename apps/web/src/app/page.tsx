@@ -134,8 +134,8 @@ export default async function HomePage() {
                 <div className="col">
                   <h3>✨ GitHub に映える特典</h3>
                   <p className="text-sm text-muted">
-                    月間トップ・殿堂入り・レベルアップで動的 SVG バッジ・達成カードを獲得可能。
-                    README に是非貼って下さい。
+                    月間トップ・殿堂入り・レベルアップで Typing Royale オリジナルの動的 SVG
+                    バッジ・達成カードを獲得。GitHub に是非貼って下さい。
                   </p>
                 </div>
                 <div className="col">
