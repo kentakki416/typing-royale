@@ -1,8 +1,10 @@
 import Link from "next/link"
 
+import { formatPlayedAtDate } from "@/libs/format-date"
 import { resolveRepoLink } from "@/libs/repo-link"
 
 type Props = {
+  achievedAt?: string | null
   avatarUrl: string | null
   bestPlaySessionId: number | null
   accuracy: number
@@ -23,6 +25,7 @@ type Props = {
  * 外側のラッパー（カーテン演出 or プレーンモーダル）でのみ見せ方を変える。
  */
 export function UserProfileCard({
+  achievedAt = null,
   avatarUrl,
   bestPlaySessionId,
   accuracy,
@@ -74,6 +77,11 @@ export function UserProfileCard({
         >
           {repo.label}
         </a>
+        {achievedAt !== null && (
+          <div className="text-xs text-muted" style={{ marginTop: "10px" }}>
+            📅 達成日: {formatPlayedAtDate(achievedAt)}
+          </div>
+        )}
       </div>
 
       {bestPlaySessionId !== null && (

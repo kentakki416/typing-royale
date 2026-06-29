@@ -5,6 +5,7 @@ import type { GetMonthlyRankingsResponse, GetMyRankingResponse } from "@repo/api
 
 import { EmptyLanguagesState } from "@/components/empty-languages-state"
 import { MyRankingSidebar } from "@/components/my-ranking-sidebar"
+import { PageHero } from "@/components/page-hero"
 import { RankingTable } from "@/components/ranking-table"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
@@ -52,7 +53,7 @@ export default async function RankingPage({
       <>
         <Topbar active="ranking" isAuthed={accessToken !== null} />
         <div className="container">
-          <h1 className="mb-24">🏆 今月のランキング</h1>
+          <PageHero icon="🏆" subtitle="言語別の今月のスコア・月初にリセット" title="今月のランキング" />
           <EmptyLanguagesState />
         </div>
       </>
@@ -82,10 +83,11 @@ export default async function RankingPage({
       <Topbar active="ranking" isAuthed={accessToken !== null} />
 
       <div className="container">
-        <div className="flex-between mb-24">
-          <h1>🏆 今月のランキング</h1>
-          <div className="text-sm text-muted">{monthLabel} のスコア・月初にリセット</div>
-        </div>
+        <PageHero
+          icon="🏆"
+          subtitle={`${monthLabel} のスコア・月初にリセット`}
+          title="今月のランキング"
+        />
 
         <div className="flex-between mb-16">
           <div className="pills">
@@ -156,10 +158,6 @@ export default async function RankingPage({
             </div>
           </aside>
         </div>
-      </div>
-
-      <div className="footer">
-        <Link href="/">トップに戻る</Link>
       </div>
     </>
   )
