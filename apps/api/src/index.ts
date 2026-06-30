@@ -1,5 +1,6 @@
 import cors from "cors"
 import express from "express"
+import helmet from "helmet"
 
 import { createPrismaClient } from "@repo/db"
 import { logger } from "@repo/logger"
@@ -35,6 +36,7 @@ import { UserGetController } from "./controller/user/get"
 import { UserUpdateController } from "./controller/user/update"
 import { env } from "./env"
 import { authMiddleware } from "./middleware/auth"
+import { authRateLimiter, guestPlayRateLimiter } from "./middleware/rate-limit"
 import { requestLogger } from "./middleware/request-logger"
 import { unhandledExceptionHandler } from "./middleware/unhandled-exception-handler"
 import {
@@ -289,6 +291,23 @@ const replayGetController = new ReplayGetController(keystrokeLogRepository, repl
 const app = express()
 
 /**
+ * ALB / リバースプロキシ配下で動くため、X-Forwarded-For から実クライアント IP を取得する。
+ * これが無いとレート制限のキーが ALB の IP に集約され、全ユーザーが 1 つの枠を共有してしまう。
+ * `1` = 直前のプロキシ（ALB）1 ホップのみ信頼。
+ */
+app.set("trust proxy", 1)
+
+/**
+ * セキュリティヘッダー（HSTS / X-Content-Type-Options: nosniff / X-Frame-Options 等）。
+ * 達成カード PNG を web（別オリジン）から <img> で読めるよう CORP は cross-origin に緩める。
+ */
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+)
+
+/**
  * cors設定のミドルウェア
  */
 app.use(
@@ -325,6 +344,7 @@ app.use(
 )
 app.use(
   "/api/auth",
+  authRateLimiter,
   authRouter({
     devLogin: authDevLoginController,
     github: authGithubController,
@@ -359,6 +379,11 @@ app.use(
  * (REWARDS_PUBLIC_URL_PREFIX 直下 = REWARDS_CACHE_DIR)
  */
 app.use(env.REWARDS_PUBLIC_URL_PREFIX, express.static(env.REWARDS_CACHE_DIR))
+/**
+ * ゲストプレイ（未認証・ステートレス）のみレート制限。認証必須の通常プレイ・/finish は対象外。
+ * play-session ルーター本体より前に登録してプレフィックス一致で先に通す。
+ */
+app.use("/api/play-sessions/guest", guestPlayRateLimiter)
 app.use(
   "/api/play-sessions",
   playSessionRouter({
