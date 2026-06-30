@@ -88,6 +88,20 @@ export default async function PlaySelectPage() {
           <div className="text-sm text-muted" style={{ display: "grid", gap: "14px" }}>
             <div>
               <div style={{ color: "var(--text-primary)", fontWeight: 700, marginBottom: "4px" }}>
+                ⌨️ 入力
+              </div>
+              <ul style={{ display: "grid", gap: "4px", margin: 0, paddingLeft: "18px" }}>
+                <li>
+                  <strong>改行は自動</strong>で次の行へ進みます（Enter 不要・行頭のインデントもまとめてスキップ）。
+                  ただし<strong>行の途中にあるスペース</strong>は自分で打つ必要があります。
+                </li>
+                <li><strong>スキップ不可</strong>。引いた関数は完走するか、時間切れまで打鍵します。</li>
+                <li><strong>ペースト無効</strong>。大文字小文字・記号はそのまま区別します。</li>
+              </ul>
+            </div>
+
+            <div>
+              <div style={{ color: "var(--text-primary)", fontWeight: 700, marginBottom: "4px" }}>
                 ⏱ 制限時間とコンボボーナス
               </div>
               <ul style={{ display: "grid", gap: "4px", margin: 0, paddingLeft: "18px" }}>
@@ -96,7 +110,6 @@ export default async function PlaySelectPage() {
                   連続正解（コンボ）が続くとボーナス時間を獲得：
                   <strong>30 コンボで +1 秒・60 コンボで +2 秒・90 コンボ以降は 30 コンボごとに +3 秒</strong>。
                 </li>
-                <li>コンボが途切れても、再びマイルストーンに達すれば<strong>何度でも</strong>加算されます（上限なし）。</li>
               </ul>
             </div>
 
@@ -107,24 +120,6 @@ export default async function PlaySelectPage() {
               <ul style={{ display: "grid", gap: "4px", margin: 0, paddingLeft: "18px" }}>
                 <li>スコア = <strong>正しく打てた累計文字数 × 正確率</strong>（正確率 = 正解打鍵 ÷ 総打鍵）。</li>
                 <li>速く・正確に打つほど高得点。同点の場合はより正確な方が上位です。</li>
-              </ul>
-            </div>
-
-            <div>
-              <div style={{ color: "var(--text-primary)", fontWeight: 700, marginBottom: "4px" }}>
-                ⌨️ 出題と入力
-              </div>
-              <ul style={{ display: "grid", gap: "4px", margin: 0, paddingLeft: "18px" }}>
-                <li>
-                  1 プレイは <strong>同じ OSS リポジトリから 20 問</strong>。問題は GitHub Star
-                  上位の寛容ライセンス OSS から自動抽出した関数本体です（コメント除去済み・依存型は同梱なし）。
-                </li>
-                <li>
-                  <strong>改行は自動</strong>で次の行へ進みます（Enter 不要・行頭のインデントもまとめてスキップ）。
-                  ただし<strong>行の途中にあるスペース</strong>は自分で打つ必要があります。
-                </li>
-                <li><strong>スキップ不可</strong>。引いた関数は完走するか、時間切れまで打鍵します。</li>
-                <li><strong>ペースト無効</strong>。大文字小文字・記号はそのまま区別します。</li>
               </ul>
             </div>
 
