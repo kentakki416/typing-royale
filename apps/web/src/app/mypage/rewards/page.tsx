@@ -1,11 +1,12 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 
 import type { GetMyRewardsResponse } from "@repo/api-schema"
 
+import { MyPageHeader } from "@/components/mypage-header"
 import { Topbar } from "@/components/topbar"
 import { env } from "@/env"
 import { apiClient } from "@/libs/api-client"
+import { getMyPageHeaderData } from "@/libs/mypage"
 
 import { RewardsTabs } from "./rewards-tabs"
 
@@ -21,20 +22,17 @@ export const metadata: Metadata = {
  * 詳細: docs/spec/special-badges/step6-web-mypage-rewards-tabs.md
  */
 export default async function MyPageRewards() {
-  const rewardsRes = await apiClient.get<GetMyRewardsResponse>("/api/rewards/me")
+  const [{ grade, me }, rewardsRes] = await Promise.all([
+    getMyPageHeaderData(),
+    apiClient.get<GetMyRewardsResponse>("/api/rewards/me"),
+  ])
 
   return (
     <>
       <Topbar isAuthed={true} />
 
       <div className="container">
-        <h1 className="mb-16">獲得した特典</h1>
-
-        <div className="tabs">
-          <Link className="tab" href="/mypage">サマリー</Link>
-          <Link className="tab active" href="/mypage/rewards">特典</Link>
-          <Link className="tab" href="/mypage/account">設定</Link>
-        </div>
+        <MyPageHeader active="rewards" grade={grade} me={me} />
 
         <RewardsTabs apiUrl={env.API_URL} rewards={rewardsRes.rewards} />
       </div>

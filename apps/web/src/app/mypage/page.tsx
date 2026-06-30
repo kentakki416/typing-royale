@@ -4,6 +4,7 @@ import Link from "next/link"
 import { GetMyRankingResponse, GetUserResponse } from "@repo/api-schema"
 
 import { GradeProgressBar } from "@/components/grade-progress-bar"
+import { MyPageHeader } from "@/components/mypage-header"
 import { Topbar } from "@/components/topbar"
 import { apiClient } from "@/libs/api-client"
 import { gradeBadgeClass } from "@/libs/grade"
@@ -39,7 +40,6 @@ export default async function MyPage() {
     ),
   ])
 
-  const initials = (me.github_username ?? "??").slice(0, 2).toUpperCase()
   /** グレードは全言語通算で同じなので、取得できた最初の言語から取り出す（全滅なら null）*/
   const grade = languageRankings.find((r) => r.ranking)?.ranking?.grade ?? null
   const nextGrade = languageRankings.find((r) => r.ranking)?.ranking?.next_grade ?? null
@@ -50,43 +50,7 @@ export default async function MyPage() {
       <Topbar isAuthed={true} />
 
       <div className="container">
-        <div className="flex gap-16 mb-24" style={{ alignItems: "center" }}>
-          {me.avatar_url ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              alt={me.github_username ?? "avatar"}
-              className="avatar lg"
-              src={me.avatar_url}
-              style={{ objectFit: "cover" }}
-            />
-          ) : (
-            <span className="avatar lg">{initials}</span>
-          )}
-          <div style={{ flex: 1 }}>
-            <h1 style={{ marginBottom: "4px" }}>{me.github_username ?? "(no name)"}</h1>
-            <div className="text-muted text-sm mb-8">
-              ランキング掲載: <strong style={{ color: me.can_public_ranking ? "var(--success)" : "var(--text-muted)" }}>
-                {me.can_public_ranking ? "ON" : "OFF"}
-              </strong>
-            </div>
-            {grade !== null ? (
-              <span className={`badge-grade ${gradeBadgeClass(grade.name)}`} data-level={grade.level}>
-                {grade.name}
-              </span>
-            ) : (
-              <>
-                <span className="badge-grade intern" data-level={1}>Intern</span>
-                <span className="text-sm text-muted" style={{ marginLeft: "8px" }}>(まだプレイ実績がありません)</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="tabs">
-          <Link className="tab active" href="/mypage">サマリー</Link>
-          <Link className="tab" href="/mypage/rewards">特典</Link>
-          <Link className="tab" href="/mypage/account">設定</Link>
-        </div>
+        <MyPageHeader active="summary" grade={grade} me={me} />
 
         <div className="row">
           <div className="col">
