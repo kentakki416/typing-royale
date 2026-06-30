@@ -13,14 +13,19 @@ const mockCountRankableByLanguage = vi.fn<(_0: number) => Promise<number>>()
 
 const mockLanguageRepository: LanguageRepository = {
   existsById: vi.fn(),
+  findAll: vi.fn(),
+  findById: vi.fn(),
   findBySlug: mockFindBySlug,
 }
 
 const mockUserLanguageBestRepository: UserLanguageBestRepository = {
   countHigherRanked: vi.fn<(_0: number, _1: MyLanguageBest) => Promise<number>>(),
   countRankableByLanguage: mockCountRankableByLanguage,
+  findAllByUserId: vi.fn(),
   findMine: vi.fn<(_0: number, _1: number) => Promise<MyLanguageBest | null>>(),
+  findTenthScore: vi.fn(),
   findTopByLanguage: mockFindTopByLanguage,
+  upsertIfBest: vi.fn(),
 }
 
 const buildRepoCollection = () => ({
@@ -39,6 +44,7 @@ const buildTopEntry = (overrides?: Partial<UserLanguageBestWithUser>): UserLangu
     avatarUrl: null,
     currentGrade: "senior",
     githubUsername: "tester",
+    favoriteRepoUrl: null,
     id: 1,
   },
   ...overrides,
@@ -53,9 +59,9 @@ describe("ranking.list", () => {
     it("ベストありの言語で TOP N と rank を 1..N で採番して返す", async () => {
       mockFindBySlug.mockResolvedValue({ id: 1, slug: "typescript" })
       mockFindTopByLanguage.mockResolvedValue([
-        buildTopEntry({ score: 800, user: { avatarUrl: null, currentGrade: "principal", githubUsername: "u1", id: 1 } }),
-        buildTopEntry({ score: 600, user: { avatarUrl: null, currentGrade: "staff", githubUsername: "u2", id: 2 } }),
-        buildTopEntry({ score: 400, user: { avatarUrl: null, currentGrade: "senior", githubUsername: "u3", id: 3 } }),
+        buildTopEntry({ score: 800, user: { avatarUrl: null, currentGrade: "principal", githubUsername: "u1", favoriteRepoUrl: null, id: 1 } }),
+        buildTopEntry({ score: 600, user: { avatarUrl: null, currentGrade: "staff", githubUsername: "u2", favoriteRepoUrl: null, id: 2 } }),
+        buildTopEntry({ score: 400, user: { avatarUrl: null, currentGrade: "senior", githubUsername: "u3", favoriteRepoUrl: null, id: 3 } }),
       ])
       mockCountRankableByLanguage.mockResolvedValue(3)
 

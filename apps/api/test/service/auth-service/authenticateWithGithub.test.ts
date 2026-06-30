@@ -32,7 +32,9 @@ const mockUserRepository: UserRepository = {
   create: mockUserCreate,
   delete: vi.fn(),
   findByEmail: vi.fn(),
+  findByGithubUsername: vi.fn(),
   findById: vi.fn(),
+  findPublicProfile: vi.fn(),
   update: vi.fn(),
 }
 
@@ -82,6 +84,7 @@ describe("authenticateWithGithub", () => {
         createdAt: new Date(),
         githubUsername: "The Octocat",
         email: null,
+        favoriteRepoUrl: null,
         id: 1,
         updatedAt: new Date(),
       }
@@ -136,6 +139,7 @@ describe("authenticateWithGithub", () => {
         createdAt: new Date(),
         githubUsername: "newoctocat",
         email: null,
+        favoriteRepoUrl: null,
         id: 2,
         updatedAt: new Date(),
       }

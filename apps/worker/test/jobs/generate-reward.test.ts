@@ -1,7 +1,7 @@
 import type { GenerateRewardJobData, JobMessage } from "@repo/queue"
+import type { Storage } from "@repo/storage"
 
 import { generateReward, type GenerateRewardDeps } from "../../src/jobs/generate-reward"
-import type { CardStorage } from "../../src/lib/card-storage"
 import type {
   RewardRepository,
   RewardRow,
@@ -48,7 +48,8 @@ const buildDeps = (reward: RewardRow | null) => {
   const userRepository: UserRepository = {
     findPublicProfile: vi.fn(async () => ({ githubUsername: "octocat", id: 10 })),
   }
-  const cardStorage: CardStorage = {
+  const cardStorage: Storage = {
+    delete: vi.fn(async () => undefined),
     save: vi.fn(async (filename: string) => `/cache/rewards/${filename}`),
   }
   const deps: GenerateRewardDeps = { cardStorage, rewardRepository, userRepository }

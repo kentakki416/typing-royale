@@ -11,7 +11,9 @@ const mockUserRepository: UserRepository = {
   create: vi.fn(),
   delete: mockUserDelete,
   findByEmail: vi.fn(),
+  findByGithubUsername: vi.fn(),
   findById: mockFindById,
+  findPublicProfile: vi.fn(),
   update: vi.fn(),
 }
 const mockRefreshTokenRepository: RefreshTokenRepository = {
@@ -27,6 +29,7 @@ const baseUser: User = {
   createdAt: new Date(),
   githubUsername: "x",
   email: null,
+  favoriteRepoUrl: null,
   id: 7,
   updatedAt: new Date(),
 }

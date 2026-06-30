@@ -13,11 +13,17 @@ const mockFindTopByLanguage = vi.fn<
 
 const mockLanguageRepository: LanguageRepository = {
   existsById: vi.fn(),
+  findAll: vi.fn(),
+  findById: vi.fn(),
   findBySlug: mockFindBySlug,
 }
 
 const mockMonthlyRankingSnapshotRepository: MonthlyRankingSnapshotRepository = {
+  countByLanguage: vi.fn(),
+  deleteLowestExcluding: vi.fn(),
+  findBoundaryScore: vi.fn(),
   findTopByLanguage: mockFindTopByLanguage,
+  upsertForUser: vi.fn(),
 }
 
 const buildRepoCollection = () => ({
@@ -28,7 +34,6 @@ const buildRepoCollection = () => ({
 const buildEntry = (overrides?: Partial<MonthlyRankingTopEntry>): MonthlyRankingTopEntry => ({
   accuracy: 0.95,
   playedAt: new Date("2026-06-10T03:00:00.000Z"),
-  rank: 1,
   score: 250,
   user: {
     avatarUrl: null,
@@ -46,10 +51,10 @@ describe("listMonthly", () => {
 
   describe("正常系", () => {
     it("対象言語のスナップショットが返り、yearMonth は YYYY-MM 形式", async () => {
-      mockFindBySlug.mockResolvedValueOnce({ id: 1, name: "TypeScript", slug: "typescript" })
+      mockFindBySlug.mockResolvedValueOnce({ id: 1, slug: "typescript" })
       mockFindTopByLanguage.mockResolvedValueOnce([
-        buildEntry({ rank: 1, score: 300 }),
-        buildEntry({ rank: 2, score: 250, user: { ...buildEntry().user, id: 2, githubUsername: "bob" } }),
+        buildEntry({ score: 300 }),
+        buildEntry({ score: 250, user: { ...buildEntry().user, id: 2, githubUsername: "bob" } }),
       ])
 
       const result = await listMonthly(
@@ -71,7 +76,7 @@ describe("listMonthly", () => {
     })
 
     it("当月のスナップショットが 0 件でも空 entries を返す", async () => {
-      mockFindBySlug.mockResolvedValueOnce({ id: 1, name: "TypeScript", slug: "typescript" })
+      mockFindBySlug.mockResolvedValueOnce({ id: 1, slug: "typescript" })
       mockFindTopByLanguage.mockResolvedValueOnce([])
 
       const result = await listMonthly(
@@ -104,7 +109,7 @@ describe("listMonthly", () => {
     })
 
     it("DB 障害時にエラーをスローする", async () => {
-      mockFindBySlug.mockResolvedValueOnce({ id: 1, name: "TypeScript", slug: "typescript" })
+      mockFindBySlug.mockResolvedValueOnce({ id: 1, slug: "typescript" })
       mockFindTopByLanguage.mockRejectedValueOnce(new Error("db down"))
 
       await expect(

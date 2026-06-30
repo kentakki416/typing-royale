@@ -8,7 +8,9 @@ const mockUserRepository: UserRepository = {
   create: vi.fn(),
   delete: vi.fn(),
   findByEmail: vi.fn(),
+  findByGithubUsername: vi.fn(),
   findById: mockFindById,
+  findPublicProfile: vi.fn(),
   update: vi.fn(),
 }
 
@@ -25,6 +27,7 @@ describe("getUserById", () => {
         createdAt: new Date(),
         githubUsername: "Test User",
         email: "test@example.com",
+        favoriteRepoUrl: null,
         id: 1,
         updatedAt: new Date(),
       }

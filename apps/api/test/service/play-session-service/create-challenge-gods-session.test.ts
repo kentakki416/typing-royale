@@ -19,11 +19,17 @@ const mockFindByPlaySessionId = vi.fn<(_0: number) => Promise<KeystrokeLogs | nu
 const mockFindManyByIds = vi.fn<(_0: number[]) => Promise<FoundProblem[]>>()
 const mockSave = vi.fn<(_0: string, _1: PlaySessionState, _2: number) => Promise<void>>()
 
-const mockLanguageRepository: LanguageRepository = { existsById: mockExistsById }
+const mockLanguageRepository: LanguageRepository = {
+  existsById: mockExistsById,
+  findAll: vi.fn(),
+  findById: vi.fn(),
+  findBySlug: vi.fn(),
+}
 const mockRankingSnapshotRepository: RankingSnapshotRepository = { getTopByLanguage: mockGetTopByLanguage }
 const mockPlaySessionRepository: PlaySessionRepository = {
   create: vi.fn(),
   findGhostSourceById: mockFindGhostSourceById,
+  getUserSummaryStats: vi.fn(),
 }
 const mockKeystrokeLogRepository: KeystrokeLogRepository = {
   create: vi.fn(),
@@ -73,6 +79,7 @@ const buildProblem = (id: number): FoundProblem => ({
   codeBlock: `const f${id} = () => ${id}`,
   functionName: `f${id}`,
   id,
+  languageId: 1,
   lineCount: 1,
   sourceUrl: `https://github.com/owner/repo/blob/main/f${id}.ts`,
 })

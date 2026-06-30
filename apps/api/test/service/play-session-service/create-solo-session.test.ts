@@ -15,11 +15,19 @@ const mockPickRandomEligibleByLanguageId = vi.fn<(_0: number) => Promise<{
 const mockPickRandomByCrawledRepoId = vi.fn<(_0: number, _1: number) => Promise<PlaySessionProblem[]>>()
 const mockSave = vi.fn<(_0: string, _1: PlaySessionState, _2: number) => Promise<void>>()
 
-const mockLanguageRepository: LanguageRepository = { existsById: mockExistsById }
+const mockLanguageRepository: LanguageRepository = {
+  existsById: mockExistsById,
+  findAll: vi.fn(),
+  findById: vi.fn(),
+  findBySlug: vi.fn(),
+}
 const mockCrawledRepoRepository: CrawledRepoRepository = {
+  countActiveByLanguageId: vi.fn(),
+  findActiveByLanguageId: vi.fn(),
   pickRandomEligibleByLanguageId: mockPickRandomEligibleByLanguageId,
 }
 const mockProblemRepository: ProblemRepository = {
+  findManyByIds: vi.fn(),
   pickRandomByCrawledRepoId: mockPickRandomByCrawledRepoId,
 }
 const mockPlaySessionStateRepository: PlaySessionStateRepository = {
