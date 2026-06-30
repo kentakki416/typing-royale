@@ -11,6 +11,7 @@ import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
 import {
   LanguageRepository,
+  PlaySessionRepository,
   UserLanguageBestRepository,
   UserLifetimeStatsRepository,
 } from "../../repository/prisma"
@@ -24,6 +25,7 @@ import * as service from "../../service"
 export class RankingMeController {
   constructor(
         private languageRepository: LanguageRepository,
+        private playSessionRepository: PlaySessionRepository,
         private userLanguageBestRepository: UserLanguageBestRepository,
         private userLifetimeStatsRepository: UserLifetimeStatsRepository,
   ) {}
@@ -40,6 +42,7 @@ export class RankingMeController {
       { languageSlug: query.language, userId: req.userId! },
       {
         languageRepository: this.languageRepository,
+        playSessionRepository: this.playSessionRepository,
         userLanguageBestRepository: this.userLanguageBestRepository,
         userLifetimeStatsRepository: this.userLifetimeStatsRepository,
       },
@@ -68,6 +71,7 @@ export class RankingMeController {
           score_needed: result.value.nextGrade.scoreNeeded,
           slug: result.value.nextGrade.slug,
         },
+      play_count: result.value.playCount,
       rank: result.value.rank,
       total_ranked_players: result.value.totalRankedPlayers,
     })

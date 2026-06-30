@@ -3,6 +3,7 @@ import request from "supertest"
 import { RankingMeController } from "../../../src/controller/ranking/me"
 import {
   PrismaLanguageRepository,
+  PrismaPlaySessionRepository,
   PrismaUserLanguageBestRepository,
   PrismaUserLifetimeStatsRepository,
 } from "../../../src/repository/prisma"
@@ -15,6 +16,7 @@ import {
 } from "../setup"
 
 const languageRepository = new PrismaLanguageRepository(testPrisma)
+const playSessionRepository = new PrismaPlaySessionRepository(testPrisma)
 const userLanguageBestRepository = new PrismaUserLanguageBestRepository(testPrisma)
 const userLifetimeStatsRepository = new PrismaUserLifetimeStatsRepository(testPrisma)
 
@@ -24,6 +26,7 @@ app.use(
   rankingRouter({
     me: new RankingMeController(
       languageRepository,
+      playSessionRepository,
       userLanguageBestRepository,
       userLifetimeStatsRepository,
     ),
@@ -122,6 +125,7 @@ describe("GET /api/rankings/me", () => {
         grade: { level: 1, name: "Intern", slug: "intern" },
         language: "typescript",
         next_grade: { level: 2, name: "Junior Developer", score_needed: 100, slug: "junior" },
+        play_count: 0,
         rank: null,
         total_ranked_players: 0,
       })
@@ -149,6 +153,24 @@ describe("GET /api/rankings/me", () => {
       await testPrisma.userLifetimeStats.create({
         data: { bestScore: 732, currentGrade: "staff", userId: user.id },
       })
+      /**
+       * ベスト未満の 2 回目プレイ。play_count はベストの有無に関わらず全 play_session を数えるため 2 になる
+       */
+      await testPrisma.playSession.create({
+        data: {
+          accuracy: 0.9,
+          crawledRepoId: repo.id,
+          languageId: language.id,
+          mistypeStats: {},
+          mode: "solo",
+          playedAt: new Date("2026-06-04T00:00:00Z"),
+          problemsCompleted: 3,
+          problemsPlayed: 6,
+          score: 400,
+          typedChars: 400,
+          userId: user.id,
+        },
+      })
 
       const res = await request(app)
         .get("/api/rankings/me")
@@ -165,6 +187,8 @@ describe("GET /api/rankings/me", () => {
         language: "typescript",
         /** 732 → 次 Principal(800) まで 68pt */
         next_grade: { level: 6, name: "Principal Engineer", score_needed: 68, slug: "principal" },
+        /** ベスト 1 回 + ベスト未満 1 回 = 累計 2 回 */
+        play_count: 2,
         rank: 3,
         total_ranked_players: 3,
       })
