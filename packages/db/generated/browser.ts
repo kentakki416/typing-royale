@@ -23,11 +23,6 @@ export * from './enums.js';
  */
 export type AuthAccount = Prisma.AuthAccountModel
 /**
- * Model Memo
- * 
- */
-export type Memo = Prisma.MemoModel
-/**
  * Model User
  * 
  */

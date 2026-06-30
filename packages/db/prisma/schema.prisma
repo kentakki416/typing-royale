@@ -29,17 +29,6 @@ model AuthAccount {
   @@map("auth_accounts")
 }
 
-// メモ
-model Memo {
-  id        Int      @id @default(autoincrement())
-  title     String   @db.VarChar(255)
-  body      String   @db.Text
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("memos")
-}
-
 // ユーザー（認証プロバイダー非依存）
 model User {
   id               Int      @id @default(autoincrement())

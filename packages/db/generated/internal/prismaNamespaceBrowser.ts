@@ -52,7 +52,6 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   AuthAccount: 'AuthAccount',
-  Memo: 'Memo',
   User: 'User',
   Language: 'Language',
   CrawledRepo: 'CrawledRepo',
@@ -95,17 +94,6 @@ export const AuthAccountScalarFieldEnum = {
 } as const
 
 export type AuthAccountScalarFieldEnum = (typeof AuthAccountScalarFieldEnum)[keyof typeof AuthAccountScalarFieldEnum]
-
-
-export const MemoScalarFieldEnum = {
-  id: 'id',
-  title: 'title',
-  body: 'body',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type MemoScalarFieldEnum = (typeof MemoScalarFieldEnum)[keyof typeof MemoScalarFieldEnum]
 
 
 export const UserScalarFieldEnum = {

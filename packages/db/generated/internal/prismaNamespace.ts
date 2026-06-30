@@ -385,7 +385,6 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   AuthAccount: 'AuthAccount',
-  Memo: 'Memo',
   User: 'User',
   Language: 'Language',
   CrawledRepo: 'CrawledRepo',
@@ -415,7 +414,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "authAccount" | "memo" | "user" | "language" | "crawledRepo" | "problem" | "crawlerRun" | "crawlerRunItem" | "playSession" | "playSessionProblem" | "keystrokeLog" | "userLifetimeStats" | "userLanguageBest" | "monthlyRankingSnapshot" | "reward" | "badgeConfig"
+    modelProps: "authAccount" | "user" | "language" | "crawledRepo" | "problem" | "crawlerRun" | "crawlerRunItem" | "playSession" | "playSessionProblem" | "keystrokeLog" | "userLifetimeStats" | "userLanguageBest" | "monthlyRankingSnapshot" | "reward" | "badgeConfig"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -490,80 +489,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.AuthAccountCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.AuthAccountCountAggregateOutputType> | number
-        }
-      }
-    }
-    Memo: {
-      payload: Prisma.$MemoPayload<ExtArgs>
-      fields: Prisma.MemoFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.MemoFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.MemoFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoPayload>
-        }
-        findFirst: {
-          args: Prisma.MemoFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.MemoFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoPayload>
-        }
-        findMany: {
-          args: Prisma.MemoFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoPayload>[]
-        }
-        create: {
-          args: Prisma.MemoCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoPayload>
-        }
-        createMany: {
-          args: Prisma.MemoCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.MemoCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoPayload>[]
-        }
-        delete: {
-          args: Prisma.MemoDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoPayload>
-        }
-        update: {
-          args: Prisma.MemoUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoPayload>
-        }
-        deleteMany: {
-          args: Prisma.MemoDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.MemoUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.MemoUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoPayload>[]
-        }
-        upsert: {
-          args: Prisma.MemoUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$MemoPayload>
-        }
-        aggregate: {
-          args: Prisma.MemoAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateMemo>
-        }
-        groupBy: {
-          args: Prisma.MemoGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.MemoGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.MemoCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.MemoCountAggregateOutputType> | number
         }
       }
     }
@@ -1654,17 +1579,6 @@ export const AuthAccountScalarFieldEnum = {
 export type AuthAccountScalarFieldEnum = (typeof AuthAccountScalarFieldEnum)[keyof typeof AuthAccountScalarFieldEnum]
 
 
-export const MemoScalarFieldEnum = {
-  id: 'id',
-  title: 'title',
-  body: 'body',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type MemoScalarFieldEnum = (typeof MemoScalarFieldEnum)[keyof typeof MemoScalarFieldEnum]
-
-
 export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
@@ -2158,7 +2072,6 @@ export type PrismaClientOptions = ({
 }
 export type GlobalOmitConfig = {
   authAccount?: Prisma.AuthAccountOmit
-  memo?: Prisma.MemoOmit
   user?: Prisma.UserOmit
   language?: Prisma.LanguageOmit
   crawledRepo?: Prisma.CrawledRepoOmit

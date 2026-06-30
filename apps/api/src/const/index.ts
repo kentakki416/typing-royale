@@ -20,7 +20,6 @@ export const PUBLIC_PATHS: readonly string[] = [
   "/api/hall-of-fame",
   "/api/health",
   "/api/languages",
-  "/api/memo",
   /**
    * ゲストプレイ用のステートレス endpoint。Redis / DB を一切使わずに
    * 問題抽選とスコア集計を行うため、認証なしで公開する。

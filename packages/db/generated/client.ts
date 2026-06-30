@@ -45,11 +45,6 @@ export { Prisma }
  */
 export type AuthAccount = Prisma.AuthAccountModel
 /**
- * Model Memo
- * 
- */
-export type Memo = Prisma.MemoModel
-/**
  * Model User
  * 
  */
