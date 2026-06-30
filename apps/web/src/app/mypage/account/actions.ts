@@ -35,7 +35,14 @@ export const updateProfileAction = async (
       return { error: "お気に入りリポジトリ URL は 200 文字以下で入力してください。" }
     }
     try {
-      new URL(favoriteRepoUrl)
+      const parsed = new URL(favoriteRepoUrl)
+      /**
+       * `new URL()` は `javascript:` / `data:` スキームも有効として通すため、
+       * http(s) のみに明示制限する（公開プロフィールでの stored XSS 防止）
+       */
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        return { error: "お気に入りリポジトリ URL は http(s) 形式で入力してください。" }
+      }
     } catch {
       return { error: "お気に入りリポジトリ URL は http(s) 形式で入力してください。" }
     }

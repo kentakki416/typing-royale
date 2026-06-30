@@ -66,9 +66,20 @@ export const updateUserRequestSchema = z
     can_public_ranking: z.boolean().optional(),
     /**
      * プロフィール公開用のお気に入りリポジトリ URL。
-     * null で空欄リセット、undefined で変更なし。汎用 URL を許容（github.com 限定にしない）
+     * null で空欄リセット、undefined で変更なし。汎用 URL を許容（github.com 限定にしない）。
+     * ただしスキームは http(s) のみに限定する（`javascript:` / `data:` 等を弾く＝公開
+     * プロフィールでの stored XSS 防止。`.url()` だけでは javascript: スキームを通すため）。
      */
-    favorite_repo_url: z.string().trim().max(200).url().nullable().optional(),
+    favorite_repo_url: z
+      .string()
+      .trim()
+      .max(200)
+      .url()
+      .refine((value) => /^https?:\/\//i.test(value), {
+        message: "favorite_repo_url must be an http(s) URL",
+      })
+      .nullable()
+      .optional(),
   })
   .refine(
     (v) =>

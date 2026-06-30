@@ -61,5 +61,20 @@ describe("PATCH /api/user", () => {
       expect(res.status).toBe(401)
       expect(res.body).toEqual({ error: expect.any(String), status_code: 401 })
     })
+
+    it("favorite_repo_url が javascript: スキームの場合、400 を返す（stored XSS 防止）", async () => {
+      const { token, user } = await createTestUser()
+
+      const res = await request(app)
+        .patch("/api/user")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ favorite_repo_url: "javascript:alert(document.cookie)" })
+
+      expect(res.status).toBe(400)
+      expect(res.body).toEqual({ error: expect.any(String), status_code: 400 })
+
+      const updated = await testPrisma.user.findUnique({ where: { id: user.id } })
+      expect(updated).toMatchObject({ favoriteRepoUrl: null })
+    })
   })
 })
