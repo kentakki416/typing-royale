@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react"
 
-import { FinishGuestPlaySessionResponse, FinishPlaySessionResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
+import { FinishGuestPlaySessionResponse, FinishPlaySessionResponse, LanguageItem, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { Topbar } from "@/components/topbar"
 import type { BonusEvent } from "@/libs/combo-time-bonus"
@@ -47,6 +47,10 @@ type Props = {
    * 未ログインプレイ。/finish の endpoint と body 形を切替えるのに使う
    */
   isGuest: boolean
+  /**
+   * プレイ言語。Topbar の言語バッジ表示に使う（マスタ未解決時は null）
+   */
+  language: LanguageItem | null
   mode: "challenge_gods" | "solo"
   /**
    * /finish のレスポンスを ResultScreen に渡すため、結果データ付きで通知
@@ -82,7 +86,7 @@ type FlashKind = "hit" | "miss" | "tier-up" | "urgent"
  * このコンポーネント自身は `finish` (POST /finish を 1 度だけ叩く) + フラッシュ演出の
  * 集約 + HUD / エディタ / 神サイドバーの描画のみを担当する
  */
-export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, onFinished, onResultPhaseStart, problemIds, problems, sessionId }: Props) {
+export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, language, mode, onFinished, onResultPhaseStart, problemIds, problems, sessionId }: Props) {
   /**
    * tier アップ / Miss / 残り 10 秒以下で短時間の演出 class を付与
    */
@@ -314,7 +318,7 @@ export function PlayLoop({ ghostKeystrokeLogs, ghostUserDisplay, isGuest, mode, 
         ))}
       </div>
 
-      <Topbar isAuthed={!isGuest} languageBadge="TypeScript" modeBadge={modeBadge} />
+      <Topbar isAuthed={!isGuest} languageBadge={language?.name} modeBadge={modeBadge} />
 
       <div className={`container ${screenClass}`} style={{ position: "relative", zIndex: 1 }}>
         <div className="play-hud">

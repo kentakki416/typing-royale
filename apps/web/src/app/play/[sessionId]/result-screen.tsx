@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
-import { FinishPlaySessionResponse, GetMyRankingResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
+import { FinishPlaySessionResponse, GetMyRankingResponse, LanguageItem, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { CelebrationOverlay } from "@/components/celebration-overlay"
 import { GradeProgressBar } from "@/components/grade-progress-bar"
@@ -24,6 +24,10 @@ type Props = {
    * 神々モードの神情報（sessionStorage 復元）
    */
   ghostUserDisplay: GhostUserDisplay | null
+  /**
+   * プレイ言語。言語バッジ表示と /api/internal/my-ranking のクエリに使う（未解決時 null）
+   */
+  language: LanguageItem | null
   mode: "challenge_gods" | "solo"
   problems: StartSoloPlaySessionResponse["problems"]
   repoInfo: StartSoloPlaySessionResponse["repo_info"]
@@ -47,7 +51,7 @@ type Props = {
  * - リポジトリコメント
  * - もう一度プレイ / 言語を変える / シェアボタン
  */
-export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, repoInfo, result }: Props) {
+export function ResultScreen({ ghostSummary, ghostUserDisplay, language, mode, problems, repoInfo, result }: Props) {
   const [me, setMe] = useState<GetMyRankingResponse | null>(null)
   /** リザルト到達時に 1 度だけ祝福 overlay を再生 */
   const [showCelebration, setShowCelebration] = useState(true)
@@ -101,14 +105,15 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
     if (result === null) return
     /** ゲストは /api/rankings/me が 401 になるためフェッチをスキップ */
     if (isGuest) return
+    /** 言語マスタ未解決時はグレード進捗の取得をスキップ（誤った言語で引かない） */
+    if (language === null) return
     /**
-     * TS 固定でフェッチ（言語選択を引き継ぐ仕組みは後続 step で対応）。
-     * me は GradeProgressBar のグレード進捗表示に使う補助情報。
-     * 取得失敗時は単に未表示で、リザルト全体の体験には影響しない
+     * プレイした言語の slug でフェッチする。me は GradeProgressBar のグレード進捗
+     * 表示に使う補助情報で、取得失敗時は単に未表示。リザルト全体の体験には影響しない
      */
     const loadMyRanking = async () => {
       try {
-        const res = await fetch("/api/internal/my-ranking?language=typescript")
+        const res = await fetch(`/api/internal/my-ranking?language=${encodeURIComponent(language.slug)}`)
         if (!res.ok) return
         const data = await res.json() as GetMyRankingResponse
         setMe(data)
@@ -117,7 +122,7 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
       }
     }
     void loadMyRanking()
-  }, [isGuest, result])
+  }, [isGuest, language, result])
 
   /**
    * rewards-worker (step3): /finish レスポンスに pending_rewards があれば
@@ -185,7 +190,7 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, mode, problems, r
             {result.score} <span className="text-muted" style={{ fontSize: "18px" }}>pts</span>
           </h1>
           <div className="flex gap-8" style={{ flexWrap: "wrap", justifyContent: "center" }}>
-            <span className="badge accent">TypeScript</span>
+            {language !== null && <span className="badge accent">{language.name}</span>}
             <span className={`badge ${mode === "challenge_gods" ? "gold" : ""}`}>
               {mode === "challenge_gods" ? "⚡ 神々に挑戦" : "通常モード"}
             </span>

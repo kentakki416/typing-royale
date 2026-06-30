@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 
-import { FinishPlaySessionResponse, StartChallengeGodsResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
+import { FinishPlaySessionResponse, LanguageItem, StartChallengeGodsResponse, StartSoloPlaySessionResponse } from "@repo/api-schema"
 
 import { PlayLoop } from "./play-loop"
 import { ResultScreen, ResultScreenLoading } from "./result-screen"
@@ -17,6 +17,11 @@ type CachedStart = {
    * Server Action でログイン状態を判定済み。/finish 呼び出し時に endpoint を切替
    */
   isGuest: boolean
+  /**
+   * プレイ言語（バッジ表示・リザルトのグレード進捗フェッチに使う）。
+   * 旧セッション（language 未保存）からの復元に備え optional + null 許容
+   */
+  language?: LanguageItem | null
   mode?: "challenge_gods" | "solo"
   /**
    * このセッションで実際に出題された problem.id を出題順で並べたもの。
@@ -88,6 +93,7 @@ export function PlayScreen({ sessionId }: { sessionId: string }) {
         ghostKeystrokeLogs={start.ghostKeystrokeLogs ?? null}
         ghostUserDisplay={start.ghostUserDisplay ?? null}
         isGuest={start.isGuest}
+        language={start.language ?? null}
         mode={start.mode ?? "solo"}
         problemIds={start.problemIds}
         problems={start.problems}
@@ -114,6 +120,7 @@ export function PlayScreen({ sessionId }: { sessionId: string }) {
     <ResultScreen
       ghostSummary={ghostSummary}
       ghostUserDisplay={start.ghostUserDisplay ?? null}
+      language={start.language ?? null}
       mode={start.mode ?? "solo"}
       problems={start.problems}
       repoInfo={start.repoInfo}

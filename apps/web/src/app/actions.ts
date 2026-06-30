@@ -3,6 +3,7 @@
 import { randomUUID } from "node:crypto"
 
 import {
+  LanguageItem,
   StartChallengeGodsResponse,
   StartGuestChallengeGodsResponse,
   StartGuestSoloPlaySessionResponse,
@@ -11,6 +12,7 @@ import {
 
 import { apiClient } from "@/libs/api-client"
 import { getAccessToken } from "@/libs/auth"
+import { getLanguages } from "@/libs/languages"
 
 /**
  * セッション開始の共通レスポンス（mode 問わず）
@@ -26,6 +28,11 @@ type StartSessionResult =
       ghostSessionId: number | null
       ghostUserDisplay: StartChallengeGodsResponse["ghost_user_display"] | null
       isGuest: boolean
+      /**
+       * プレイ中バッジ・リザルトの言語表示・グレード進捗フェッチに使う言語マスタ。
+       * languageId から解決する。マスタ取得に失敗した場合のみ null。
+       */
+      language: LanguageItem | null
       mode: "challenge_gods" | "solo"
       problemIds: number[]
       problems: StartSoloPlaySessionResponse["problems"]
@@ -51,6 +58,12 @@ export const startPlaySession = async (
   mode: "challenge_gods" | "solo",
 ): Promise<StartSessionResult> => {
   const isGuest = (await getAccessToken()) === null
+  /**
+   * 各エントリポイント（言語選択 / ランキング / 殿堂入りボタン）は languageId しか
+   * 持たないため、ここで言語マスタ（キャッシュ済み）を引いて slug/name を解決し、
+   * sessionStorage 経由で play-loop / result-screen まで伝搬させる。
+   */
+  const language = (await getLanguages()).find((lang) => lang.id === languageId) ?? null
 
   if (mode === "challenge_gods") {
     try {
@@ -64,6 +77,7 @@ export const startPlaySession = async (
           ghostSessionId: res.ghost_session_id,
           ghostUserDisplay: res.ghost_user_display,
           isGuest: true,
+          language,
           mode: "challenge_gods",
           problemIds: res.problems.map((p) => p.id),
           problems: res.problems,
@@ -81,6 +95,7 @@ export const startPlaySession = async (
         ghostSessionId: res.ghost_session_id,
         ghostUserDisplay: res.ghost_user_display,
         isGuest: false,
+        language,
         mode: "challenge_gods",
         problemIds: res.problems.map((p) => p.id),
         problems: res.problems,
@@ -106,6 +121,7 @@ export const startPlaySession = async (
         ghostSessionId: null,
         ghostUserDisplay: null,
         isGuest: true,
+        language,
         mode: "solo",
         problemIds: res.problems.map((p) => p.id),
         problems: res.problems,
@@ -123,6 +139,7 @@ export const startPlaySession = async (
       ghostSessionId: null,
       ghostUserDisplay: null,
       isGuest: false,
+      language,
       mode: "solo",
       problemIds: res.problems.map((p) => p.id),
       problems: res.problems,
