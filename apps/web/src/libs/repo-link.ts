@@ -12,11 +12,29 @@ export type RepoLink = {
   label: string
 }
 
+/**
+ * href として安全に出力できる http(s) URL かを判定する。
+ * `javascript:` / `data:` 等のスキームは false（公開プロフィールでの XSS を防ぐ多層防御）。
+ */
+const isSafeHttpUrl = (url: string): boolean => {
+  try {
+    const { protocol } = new URL(url)
+    return protocol === "http:" || protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
 export const resolveRepoLink = (
   favoriteRepoUrl: string | null,
   username: string,
 ): RepoLink => {
-  const href = favoriteRepoUrl ?? `https://github.com/${username}`
+  /**
+   * 入力検証をすり抜けて保存された不正スキームの値に備え、出力直前にも http(s) を強制する。
+   * 安全でなければ GitHub プロフィール URL にフォールバックする。
+   */
+  const safeUrl = favoriteRepoUrl !== null && isSafeHttpUrl(favoriteRepoUrl) ? favoriteRepoUrl : null
+  const href = safeUrl ?? `https://github.com/${username}`
   return { href, label: formatRepoLabel(href) }
 }
 
