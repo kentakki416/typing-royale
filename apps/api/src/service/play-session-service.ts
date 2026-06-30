@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 
-import { badRequestError, conflictError, err, notFoundError, ok, Result } from "@repo/errors"
+import { badRequestError, conflictError, err, forbiddenError, notFoundError, ok, Result } from "@repo/errors"
 import { logger } from "@repo/logger"
 import { buildGenerateRewardJobId, type GenerateRewardJobData, type JobQueue } from "@repo/queue"
 
@@ -627,6 +627,11 @@ const currentYearMonthJst = (now: Date): string => {
 export type FinishSessionInput = {
     accuracy: number
     keystrokeLogs: KeystrokeLogs
+    /**
+     * 認証済みリクエスト元のユーザー ID。state.userId と一致しない場合は拒否する
+     * （他人の sessionId での書き込み防止）。
+     */
+    requestUserId: number
     sessionId: string
     typedChars: number
 }
@@ -653,6 +658,15 @@ export const finishSession = async (
     return err(notFoundError("Play session not found or expired"))
   }
 
+  /**
+   * 所有者検証: state の所有者と認証済みユーザーが一致しなければ拒否する。
+   * 先に findById で確認することで、不一致時に他人の state を消してしまうのを防ぐ
+   * （state はここでは削除しない）。
+   */
+  if (state.userId !== input.requestUserId) {
+    return err(forbiddenError("Play session does not belong to the authenticated user"))
+  }
+
   const agg = await computeServerAggregate(
     {
       accuracy: input.accuracy,
@@ -664,6 +678,17 @@ export const finishSession = async (
   )
   if (!agg.ok) return agg
   const { mistypeStats, problemProgress, problemsCompleted, problemsPlayed, score } = agg.value
+
+  /**
+   * アトミック claim: 入力検証を通過した直後、永続化の直前に GETDEL で state を取得即削除する。
+   * 二重送信（ダブルクリック / ネットワークリトライ）では最初の 1 回だけ取得でき、2 回目以降は
+   * null になるため、play_sessions の二重 INSERT や user_lifetime_stats の二重加算を防げる。
+   * 検証前に消さないことで、不正入力（400）時は state を残してリトライ可能にする。
+   */
+  const claimed = await repo.playSessionStateRepository.getAndDelete(input.sessionId)
+  if (claimed === null) {
+    return err(conflictError("Play session already finished"))
+  }
 
   const playedAt = new Date()
   const { bestScoreUpdated, gradeUp } = await persistFinishedSessionAtomic(
@@ -682,9 +707,10 @@ export const finishSession = async (
     repo,
   )
 
-  await repo.playSessionStateRepository.delete(input.sessionId)
-
   /**
+   * Redis state は上の getAndDelete（アトミック claim）で既に削除済みのため、ここでの
+   * 明示削除は不要。
+   *
    * ランキング系の追加クエリ（トランザクション後）
    * - 自分の最新ベスト + 自分より上位の数 → new_rank
    * - 10 位スコア（10 件未満なら null）

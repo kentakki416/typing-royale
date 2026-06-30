@@ -42,6 +42,7 @@ const mockProblemRepository: ProblemRepository = {
 const mockPlaySessionStateRepository: PlaySessionStateRepository = {
   delete: vi.fn(),
   findById: vi.fn(),
+  getAndDelete: vi.fn(),
   save: mockSave,
 }
 

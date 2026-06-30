@@ -25,6 +25,7 @@ import { KeystrokeLogs, PlaySessionState } from "../../../src/types/domain"
 
 const mockFindById = vi.fn<(_0: string) => Promise<PlaySessionState | null>>()
 const mockDeleteState = vi.fn<(_0: string) => Promise<void>>()
+const mockGetAndDeleteState = vi.fn<(_0: string) => Promise<PlaySessionState | null>>()
 const mockFindManyByIds = vi.fn<(_0: number[]) => Promise<FoundProblem[]>>()
 
 /**
@@ -58,6 +59,7 @@ const mockTxRun = vi.fn<<T>(fn: (tx: TransactionContext) => Promise<T>) => Promi
 const mockPlaySessionStateRepository: PlaySessionStateRepository = {
   delete: mockDeleteState,
   findById: mockFindById,
+  getAndDelete: mockGetAndDeleteState,
   save: vi.fn(),
 }
 
@@ -202,6 +204,11 @@ describe("finishSession", () => {
      */
     mockTxRun.mockImplementation(async (fn) => fn({} as TransactionContext))
     /**
+     * アトミック claim はデフォルトで成功（state を返す）させ、正常系を通す。
+     * 二重送信テストでは個別に null を返させる
+     */
+    mockGetAndDeleteState.mockResolvedValue(buildState())
+    /**
      * step3 で追加された Repository 群のデフォルト戻り値（gradeUp なし / ベスト未更新 / 順位無し）
      */
     mockUpsertOnFinish.mockResolvedValue({ gradeUp: null })
@@ -247,7 +254,7 @@ describe("finishSession", () => {
 
       // Act
       const result = await finishSession(
-        { accuracy: 0.95, keystrokeLogs: validLog, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 320 },
+        { accuracy: 0.95, keystrokeLogs: validLog, requestUserId: 42, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 320 },
         buildRepoCollection(),
       )
 
@@ -271,7 +278,8 @@ describe("finishSession", () => {
       expect(mockCreateKeystrokeLogs).toHaveBeenCalledTimes(1)
       expect(mockUpsertOnFinish).toHaveBeenCalledTimes(1)
       expect(mockUpsertIfBest).toHaveBeenCalledTimes(1)
-      expect(mockDeleteState).toHaveBeenCalledWith("550e8400-e29b-41d4-a716-446655440000")
+      /** state はアトミック claim（getAndDelete）で取得即削除される */
+      expect(mockGetAndDeleteState).toHaveBeenCalledWith("550e8400-e29b-41d4-a716-446655440000")
     })
 
     it("ベスト更新 + gradeUp が発生したケース、レスポンスに new_rank / grade_up / top_ten_boundary_score が乗る", async () => {
@@ -301,7 +309,7 @@ describe("finishSession", () => {
 
       // Act
       const result = await finishSession(
-        { accuracy: 0.95, keystrokeLogs: validLog, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 632 },
+        { accuracy: 0.95, keystrokeLogs: validLog, requestUserId: 42, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 632 },
         buildRepoCollection(),
       )
 
@@ -366,7 +374,7 @@ describe("finishSession", () => {
 
       // Act
       const result = await finishSession(
-        { accuracy: 0.95, keystrokeLogs: validLog, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 320 },
+        { accuracy: 0.95, keystrokeLogs: validLog, requestUserId: 42, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 320 },
         buildRepoCollection(),
       )
 
@@ -405,6 +413,7 @@ describe("finishSession", () => {
             { elapsedMs: 500, inputChar: "l", isCorrect: true, problemIndex: 0 },
             { elapsedMs: 600, inputChar: "o", isCorrect: true, problemIndex: 0 },
           ],
+          requestUserId: 42,
           sessionId: "550e8400-e29b-41d4-a716-446655440000",
           typedChars: 5,
         },
@@ -426,7 +435,7 @@ describe("finishSession", () => {
     it("typedChars=1501 の場合、ok: false / 400 を返し transaction が実行されない", async () => {
       // Act
       const result = await finishSession(
-        { accuracy: 0.5, keystrokeLogs: [], sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 1501 },
+        { accuracy: 0.5, keystrokeLogs: [], requestUserId: 42, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 1501 },
         buildRepoCollection(),
       )
 
@@ -441,7 +450,7 @@ describe("finishSession", () => {
     it("accuracy=1.5 の場合、400 を返す", async () => {
       // Act
       const result = await finishSession(
-        { accuracy: 1.5, keystrokeLogs: [], sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 100 },
+        { accuracy: 1.5, keystrokeLogs: [], requestUserId: 42, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 100 },
         buildRepoCollection(),
       )
 
@@ -458,7 +467,7 @@ describe("finishSession", () => {
 
       // Act
       const result = await finishSession(
-        { accuracy: 0.5, keystrokeLogs: [], sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 100 },
+        { accuracy: 0.5, keystrokeLogs: [], requestUserId: 42, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 100 },
         buildRepoCollection(),
       )
 
@@ -469,6 +478,53 @@ describe("finishSession", () => {
         expect(result.error.type).toBe("NOT_FOUND")
       }
       expect(mockTxRun).not.toHaveBeenCalled()
+    })
+
+    it("state の所有者と requestUserId が一致しない場合、403 を返し state を消費しない（なりすまし書き込み防止）", async () => {
+      // Arrange: state.userId は 42、リクエスト元は別ユーザー
+      mockFindById.mockResolvedValue(buildState({ userId: 42 }))
+
+      // Act
+      const result = await finishSession(
+        { accuracy: 0.95, keystrokeLogs: validLog, requestUserId: 999, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 320 },
+        buildRepoCollection(),
+      )
+
+      // Assert
+      expect(result.ok).toBe(false)
+      if (!result.ok) {
+        expect(result.error.statusCode).toBe(403)
+        expect(result.error.type).toBe("FORBIDDEN")
+      }
+      /** 不一致時は他人の state を消さない（getAndDelete を呼ばない）。書き込みも走らない */
+      expect(mockGetAndDeleteState).not.toHaveBeenCalled()
+      expect(mockTxRun).not.toHaveBeenCalled()
+    })
+
+    it("二重送信で 2 回目の getAndDelete が null の場合、409 を返し二重計上しない", async () => {
+      // Arrange: 検証は通るが claim に失敗（既に別リクエストが claim 済み）
+      mockFindById.mockResolvedValue(buildState())
+      mockFindManyByIds.mockResolvedValue([
+        buildFound(100, "abc"),
+        buildFound(101, "def"),
+      ])
+      mockGetAndDeleteState.mockResolvedValue(null)
+
+      // Act
+      const result = await finishSession(
+        { accuracy: 0.95, keystrokeLogs: validLog, requestUserId: 42, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 320 },
+        buildRepoCollection(),
+      )
+
+      // Assert
+      expect(result.ok).toBe(false)
+      if (!result.ok) {
+        expect(result.error.statusCode).toBe(409)
+        expect(result.error.type).toBe("CONFLICT")
+      }
+      /** claim に失敗したら書き込みは一切走らない（二重計上しない） */
+      expect(mockTxRun).not.toHaveBeenCalled()
+      expect(mockCreatePlaySession).not.toHaveBeenCalled()
     })
 
     it("問題セット mismatch の場合、404 を返す", async () => {
@@ -484,7 +540,7 @@ describe("finishSession", () => {
 
       // Act
       const result = await finishSession(
-        { accuracy: 0.95, keystrokeLogs: validLog, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 320 },
+        { accuracy: 0.95, keystrokeLogs: validLog, requestUserId: 42, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 320 },
         buildRepoCollection(),
       )
 
@@ -514,7 +570,7 @@ describe("finishSession", () => {
 
       // Act
       const result = await finishSession(
-        { accuracy: 1, keystrokeLogs: cheatLogs, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 30 },
+        { accuracy: 1, keystrokeLogs: cheatLogs, requestUserId: 42, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 30 },
         buildRepoCollection(),
       )
 
@@ -545,7 +601,7 @@ describe("finishSession", () => {
 
       // Act
       const result = await finishSession(
-        { accuracy: 1, keystrokeLogs: validBonusLogs, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 31 },
+        { accuracy: 1, keystrokeLogs: validBonusLogs, requestUserId: 42, sessionId: "550e8400-e29b-41d4-a716-446655440000", typedChars: 31 },
         buildRepoCollection(),
       )
 

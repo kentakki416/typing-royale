@@ -70,7 +70,7 @@ export class PlaySessionFinishController {
     })
 
     const result = await service.playSession.finishSession(
-      { accuracy, keystrokeLogs, sessionId: id, typedChars },
+      { accuracy, keystrokeLogs, requestUserId: req.userId!, sessionId: id, typedChars },
       {
         generateRewardQueue: this.generateRewardQueue,
         keystrokeLogRepository: this.keystrokeLogRepository,
