@@ -4,6 +4,7 @@
   "private": true,
   "main": "dist/index.js",
   "scripts": {
+    "backfill:strip-blank-lines": "dotenvx run -f .env.local -- tsx src/script/backfill-strip-blank-lines.ts",
     "build": "tsc --project tsconfig.build.json",
     "crawler:run:typescript": "dotenvx run -f .env.local -- tsx src/task/crawler-run-typescript.ts",
     "crawler:run:javascript": "dotenvx run -f .env.local -- tsx src/task/crawler-run-javascript.ts",
