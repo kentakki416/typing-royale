@@ -64,6 +64,12 @@ export type MyLanguageBest = {
  * プレイヤー詳細ページ用の言語別ベスト（言語情報込み）
  */
 export type UserLanguageBestWithLanguage = MyLanguageBest & {
+    /** このベストを出したときの出題元 repo（bestPlaySessionId → crawledRepo 由来） */
+    crawledRepo: {
+        fullName: string
+        name: string
+        owner: string
+    }
     language: { id: number; name: string; slug: string }
     languageId: number
 }
@@ -142,6 +148,7 @@ export class PrismaUserLanguageBestRepository implements UserLanguageBestReposit
     const rows = await this._prisma.userLanguageBest.findMany({
       include: {
         language: { select: { id: true, name: true, slug: true } },
+        playSession: { include: { crawledRepo: { select: { fullName: true, name: true, owner: true } } } },
       },
       orderBy: { language: { id: "asc" } },
       where: { userId },
@@ -149,6 +156,11 @@ export class PrismaUserLanguageBestRepository implements UserLanguageBestReposit
     return rows.map((row) => ({
       accuracy: row.accuracy,
       bestPlaySessionId: row.bestPlaySessionId,
+      crawledRepo: {
+        fullName: row.playSession.crawledRepo.fullName,
+        name: row.playSession.crawledRepo.name,
+        owner: row.playSession.crawledRepo.owner,
+      },
       language: row.language,
       languageId: row.languageId,
       playedAt: row.playedAt,

@@ -22,6 +22,7 @@ export type FindByIdOutput = {
     languageBests: Array<{
         accuracy: number
         bestPlaySessionId: number
+        crawledRepo: { fullName: string; name: string; owner: string }
         language: { id: number; name: string; slug: string }
         playedAt: Date
         rank: number
@@ -84,6 +85,7 @@ export const findById = async (
       return {
         accuracy: b.accuracy,
         bestPlaySessionId: b.bestPlaySessionId,
+        crawledRepo: b.crawledRepo,
         language: b.language,
         playedAt: b.playedAt,
         rank: higher + 1,

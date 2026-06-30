@@ -992,6 +992,24 @@ h3 { font-size: 16px; margin-bottom: 8px; }
   flex: 0 1 200px;
   min-width: 140px;
 }
+/**
+ * モーダル内（プロフィールカード）はベストスコア / 正解率 / 最高打点数 の 3 つを
+ * 常に横一列に収める。幅を均等配分し、最小幅を解放して折り返さないようにする。
+ */
+.stat-row-compact {
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+.stat-row-compact > .stat {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 16px 6px;
+}
+.stat-row-compact > .stat .stat-value {
+  font-size: clamp(15px, 4.6vw, 28px);
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
 .stat {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 18%, rgba(0, 0, 0, 0.2) 100%),

@@ -98,6 +98,7 @@ export function CurtainModal({ entry, languageName, onClose }: Props) {
           avatarUrl={entry.user.avatar_url}
           accuracy={entry.accuracy}
           bestPlaySessionId={entry.best_play_session_id}
+          crawledRepoFullName={entry.crawled_repo.full_name}
           favoriteRepoUrl={entry.user.favorite_repo_url}
           gradeSlug={entry.user.current_grade}
           rankBadgeClassName={`badge ${slug}`}

@@ -71,6 +71,7 @@ describe("player.findById", () => {
         {
           accuracy: 0.98,
           bestPlaySessionId: 8732,
+          crawledRepo: { fullName: "owner/awesome", name: "awesome", owner: "owner" },
           language: { id: 1, name: "TypeScript", slug: "typescript" },
           languageId: 1,
           playedAt: new Date("2026-06-03T02:14:08Z"),
@@ -91,6 +92,11 @@ describe("player.findById", () => {
         expect(result.value.lifetimeStats.totalTypedChars).toBe(512847)
         expect(result.value.languageBests).toHaveLength(1)
         expect(result.value.languageBests[0].rank).toBe(1)
+        expect(result.value.languageBests[0].crawledRepo).toEqual({
+          fullName: "owner/awesome",
+          name: "awesome",
+          owner: "owner",
+        })
       }
     })
 

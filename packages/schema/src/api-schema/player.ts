@@ -54,6 +54,12 @@ const playerLanguageBestSchema = z.object({
   }),
   accuracy: z.number().min(0).max(1),
   best_play_session_id: z.number().int().positive(),
+  /** このベストスコアを出したときの出題元 OSS リポジトリ */
+  crawled_repo: z.object({
+    full_name: z.string(),
+    name: z.string(),
+    owner: z.string(),
+  }),
   played_at: z.string().datetime(),
   rank: z.number().int().min(1),
   score: z.number().int().nonnegative(),
