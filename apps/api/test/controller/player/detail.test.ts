@@ -143,6 +143,7 @@ describe("GET /api/players/:userId", () => {
           {
             accuracy: 0.98,
             best_play_session_id: expect.any(Number),
+            crawled_repo: { full_name: "owner/repo", name: "repo", owner: "owner" },
             language: { id: language.id, name: "TypeScript", slug: "typescript" },
             played_at: "2026-06-03T02:14:08.000Z",
             rank: 1,

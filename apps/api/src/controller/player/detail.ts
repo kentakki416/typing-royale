@@ -50,6 +50,11 @@ export class PlayerDetailController {
       language_bests: result.value.languageBests.map((b) => ({
         accuracy: b.accuracy,
         best_play_session_id: b.bestPlaySessionId,
+        crawled_repo: {
+          full_name: b.crawledRepo.fullName,
+          name: b.crawledRepo.name,
+          owner: b.crawledRepo.owner,
+        },
         language: b.language,
         played_at: b.playedAt.toISOString(),
         rank: b.rank,

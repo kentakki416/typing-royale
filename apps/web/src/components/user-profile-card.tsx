@@ -8,6 +8,8 @@ type Props = {
   avatarUrl: string | null
   bestPlaySessionId: number | null
   accuracy: number
+  /** このベストを出したときの出題元 OSS リポジトリ (owner/repo) */
+  crawledRepoFullName?: string | null
   favoriteRepoUrl: string | null
   gradeSlug: string
   rankBadgeClassName?: string
@@ -20,15 +22,17 @@ type Props = {
 /**
  * ランキング / 殿堂入りで「他ユーザーを選択したとき」に表示する共通プロフィールカード。
  *
- * 中身（ベストスコア / 正解率 / 最高打点数 / グレードラベル / リポジトリリンク /
- * リプレイ・詳細リンク）はランキングからでも殿堂入りからでも同一にし、
- * 外側のラッパー（カーテン演出 or プレーンモーダル）でのみ見せ方を変える。
+ * 上から、出題リポジトリ + 達成日（どこでいつベストを出したか）→ ベストスコア /
+ * 正解率 / 最高打点数の横一列スタッツ → お気に入りリポジトリ → リプレイリンク、
+ * の順で並べる。中身はランキングからでも殿堂入りからでも同一にし、外側のラッパー
+ * （カーテン演出 or プレーンモーダル）でのみ見せ方を変える。
  */
 export function UserProfileCard({
   achievedAt = null,
   avatarUrl,
   bestPlaySessionId,
   accuracy,
+  crawledRepoFullName = null,
   favoriteRepoUrl,
   gradeSlug,
   rankBadgeClassName = "badge",
@@ -52,7 +56,30 @@ export function UserProfileCard({
         </div>
       </div>
 
-      <div className="stat-row mt-24">
+      {(crawledRepoFullName !== null || achievedAt !== null) && (
+        <div className="card mt-24" style={{ display: "grid", gap: "10px", padding: "16px 18px" }}>
+          {crawledRepoFullName !== null && (
+            <div>
+              <div className="card-title text-sm mb-8" style={{ color: "var(--accent)" }}>📦 出題リポジトリ</div>
+              <a
+                className="text-mono text-sm"
+                href={`https://github.com/${crawledRepoFullName}`}
+                rel="noreferrer noopener"
+                target="_blank"
+              >
+                {crawledRepoFullName}
+              </a>
+            </div>
+          )}
+          {achievedAt !== null && (
+            <div className="text-xs text-muted">
+              📅 達成日: {formatPlayedAtDate(achievedAt)}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="stat-row stat-row-compact mt-16">
         <div className="stat">
           <div className="stat-value accent">{score.toLocaleString()}</div>
           <div className="stat-label">ベストスコア</div>
@@ -68,7 +95,7 @@ export function UserProfileCard({
       </div>
 
       <div className="card mt-16" style={{ padding: "16px 18px" }}>
-        <div className="card-title text-sm mb-8" style={{ color: "var(--accent)" }}>🔗 リポジトリ</div>
+        <div className="card-title text-sm mb-8" style={{ color: "var(--accent)" }}>🔗 お気に入りリポジトリ</div>
         <a
           className="text-mono text-sm"
           href={repo.href}
@@ -77,11 +104,6 @@ export function UserProfileCard({
         >
           {repo.label}
         </a>
-        {achievedAt !== null && (
-          <div className="text-xs text-muted" style={{ marginTop: "10px" }}>
-            📅 達成日: {formatPlayedAtDate(achievedAt)}
-          </div>
-        )}
       </div>
 
       {bestPlaySessionId !== null && (

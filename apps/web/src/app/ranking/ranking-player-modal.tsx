@@ -87,9 +87,11 @@ export function RankingPlayerModal({ languageName, languageSlug, onClose, rank, 
 
         {status === "ready" && data !== null && (
           <UserProfileCard
+            achievedAt={best?.played_at ?? null}
             avatarUrl={data.user.avatar_url}
             accuracy={best?.accuracy ?? 0}
             bestPlaySessionId={best?.best_play_session_id ?? null}
+            crawledRepoFullName={best?.crawled_repo.full_name ?? null}
             favoriteRepoUrl={data.user.favorite_repo_url}
             gradeSlug={data.lifetime_stats.current_grade.slug}
             rankLabel={rankLabel}
