@@ -1,5 +1,7 @@
 import * as ts from "typescript"
 
+import { removeBlankLines } from "./remove-blank-lines"
+
 /**
  * ソースコードからコメントを除去する。
  *
@@ -68,6 +70,6 @@ export const removeComments = (rawText: string): string => {
     result = result.slice(0, start) + result.slice(end)
   }
 
-  /** 連続空行を 1 行に折り畳む（コメント跡地の空白を抑える） */
-  return result.replace(/\n{3,}/g, "\n\n")
+  /** コメント跡地の空行・元からの空行をすべて詰める（タイピング中のノイズ防止） */
+  return removeBlankLines(result)
 }

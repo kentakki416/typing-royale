@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import { Language, type Node, Parser } from "web-tree-sitter"
 
 import type { ExtractedCandidate, LanguageExtractor } from "./language-extractor"
+import { removeBlankLines } from "./remove-blank-lines"
 
 const requireFrom = createRequire(__filename)
 
@@ -72,8 +73,8 @@ export class GoFunctionExtractor implements LanguageExtractor {
  * 関数ノード配下の comment ノードのレンジを本文から除去する。
  *
  * 文字列リテラル内の `//` は comment ノードにならないため自動的に保護される。
- * 後ろから削除してインデックスのズレを防ぎ、跡地の連続空行を 1 つに折り畳む
- * （remove-comments.ts の TypeScript 版と同じ方針）。
+ * 後ろから削除してインデックスのズレを防ぎ、跡地の空行・元からの空行を
+ * すべて詰める（remove-comments.ts の TypeScript 版と同じ方針）。
  */
 const stripGoComments = (fnNode: Node, source: string): string => {
   const base = fnNode.startIndex
@@ -94,5 +95,5 @@ const stripGoComments = (fnNode: Node, source: string): string => {
   for (const [start, end] of ranges) {
     text = text.slice(0, start - base) + text.slice(end - base)
   }
-  return text.replace(/\n{3,}/g, "\n\n")
+  return removeBlankLines(text)
 }
