@@ -31,6 +31,41 @@ describe("removeComments", () => {
       expect(result).toContain("https://example.com")
     })
 
+    it("`${...}` を含むテンプレートリテラルの後ろにあるコメントを除去する", () => {
+      const input = [
+        "function f() {",
+        "  const msg = `id ${id} end`",
+        "  // should be removed",
+        "  return msg",
+        "}",
+      ].join("\n")
+      const result = removeComments(input)
+      expect(result).not.toContain("should be removed")
+      expect(result).not.toContain("//")
+      expect(result).toContain("`id ${id} end`")
+      expect(result).toContain("return msg")
+    })
+
+    it("`${...}` テンプレートリテラルを 2 回使う関数で挟まれたコメントを除去する", () => {
+      const input = [
+        "function deleteFolder(id) {",
+        "  if (!folder) {",
+        "    throw new Error(`Folder with id ${id} not found`)",
+        "  }",
+        "  try {",
+        "    rm(folderPath)",
+        "  } catch (error) {",
+        "    // If folder doesn't exist, still throw the original error",
+        "    throw new Error(`Folder with id ${id} not found`)",
+        "  }",
+        "}",
+      ].join("\n")
+      const result = removeComments(input)
+      expect(result).not.toContain("If folder doesn't exist")
+      expect(result).not.toContain("//")
+      expect(result).toContain("throw new Error(`Folder with id ${id} not found`)")
+    })
+
     it("正規表現リテラル内の `//` パターンは保護される", () => {
       const result = removeComments("const re = /\\/\\/ comment/g\n")
       expect(result).toContain("/\\/\\/ comment/g")
