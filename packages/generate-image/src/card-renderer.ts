@@ -156,7 +156,7 @@ export const renderGradeUpCard = async (input: RenderGradeUpCardInput): Promise<
         ],
         style: {
           alignItems: "center",
-          background: `linear-gradient(180deg, ${gradient.from} 0%, ${gradient.to} 100%)`,
+          backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 38%), linear-gradient(100deg, rgba(255,255,255,0) 40%, rgba(255,255,255,0.13) 50%, rgba(255,255,255,0) 60%), linear-gradient(180deg, ${gradient.from} 0%, ${gradient.to} 100%)`,
           display: "flex",
           flexDirection: "column",
           height: "100%",
@@ -290,7 +290,7 @@ export const renderHallOfFameCard = async (input: RenderHallOfFameCardInput): Pr
         ],
         style: {
           alignItems: "center",
-          background: `linear-gradient(180deg, ${theme.from} 0%, ${theme.to} 100%)`,
+          backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 38%), linear-gradient(100deg, rgba(255,255,255,0) 40%, rgba(255,255,255,0.13) 50%, rgba(255,255,255,0) 60%), linear-gradient(180deg, ${theme.from} 0%, ${theme.to} 100%)`,
           display: "flex",
           flexDirection: "column",
           height: "100%",
@@ -423,7 +423,7 @@ export const renderMonthlyTopTenCard = async (input: RenderMonthlyTopTenCardInpu
         ],
         style: {
           alignItems: "center",
-          background: `linear-gradient(180deg, ${theme.from} 0%, ${theme.to} 100%)`,
+          backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 38%), linear-gradient(100deg, rgba(255,255,255,0) 40%, rgba(255,255,255,0.13) 50%, rgba(255,255,255,0) 60%), linear-gradient(180deg, ${theme.from} 0%, ${theme.to} 100%)`,
           display: "flex",
           flexDirection: "column",
           height: "100%",
