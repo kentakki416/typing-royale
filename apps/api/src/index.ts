@@ -36,7 +36,7 @@ import { UserGetController } from "./controller/user/get"
 import { UserUpdateController } from "./controller/user/update"
 import { env } from "./env"
 import { authMiddleware } from "./middleware/auth"
-import { authRateLimiter, guestPlayRateLimiter } from "./middleware/rate-limit"
+import { apiRateLimiter } from "./middleware/rate-limit"
 import { requestLogger } from "./middleware/request-logger"
 import { unhandledExceptionHandler } from "./middleware/unhandled-exception-handler"
 import {
@@ -291,9 +291,15 @@ const replayGetController = new ReplayGetController(keystrokeLogRepository, repl
 const app = express()
 
 /**
- * ALB / リバースプロキシ配下で動くため、X-Forwarded-For から実クライアント IP を取得する。
- * これが無いとレート制限のキーが ALB の IP に集約され、全ユーザーが 1 つの枠を共有してしまう。
- * `1` = 直前のプロキシ（ALB）1 ホップのみ信頼。
+ * ALB（ロードバランサ）の裏で動くため、ALB が付与する X-Forwarded-For ヘッダーから
+ * 本当のクライアント IP を取得できるようにする。
+ *
+ * これを設定しないと、Express が見る IP は「直接の接続元 = ALB の内部 IP」になり、
+ * 全ユーザーが同じ IP として扱われてしまう。その結果、IP 単位のレート制限が
+ * 「全ユーザーで 1 つの枠を共有」する状態になり、ほぼ機能しなくなる。
+ *
+ * 値 `1` は「自分の手前にある信頼できるプロキシ 1 段（= ALB）だけを信頼する」という意味。
+ * プロキシの段数に一致させる（今回は ALB 1 段なので 1。CloudFront 等を挟むなら増やす）。
  */
 app.set("trust proxy", 1)
 
@@ -342,9 +348,14 @@ app.use(
     readiness: healthReadinessController,
   })
 )
+/**
+ * レート制限を API 全体に適用する。
+ * ヘルスチェック（/api/health）は ALB の死活監視で高頻度に叩かれるため、本ミドルウェアより
+ * 前に登録して対象外にしている（制限に巻き込むと target が unhealthy 判定される恐れがあるため）。
+ */
+app.use(apiRateLimiter)
 app.use(
   "/api/auth",
-  authRateLimiter,
   authRouter({
     devLogin: authDevLoginController,
     github: authGithubController,
@@ -379,11 +390,6 @@ app.use(
  * (REWARDS_PUBLIC_URL_PREFIX 直下 = REWARDS_CACHE_DIR)
  */
 app.use(env.REWARDS_PUBLIC_URL_PREFIX, express.static(env.REWARDS_CACHE_DIR))
-/**
- * ゲストプレイ（未認証・ステートレス）のみレート制限。認証必須の通常プレイ・/finish は対象外。
- * play-session ルーター本体より前に登録してプレフィックス一致で先に通す。
- */
-app.use("/api/play-sessions/guest", guestPlayRateLimiter)
 app.use(
   "/api/play-sessions",
   playSessionRouter({

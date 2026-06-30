@@ -1,34 +1,22 @@
 import rateLimit from "express-rate-limit"
 
 /**
- * レート制限の共通レスポンス（アプリの ErrorResponse 形に合わせる）。
- * express-rate-limit が 429 ステータスと共に返却する。
- */
-const tooManyRequestsBody = { error: "Too many requests", status_code: 429 }
-
-/**
- * 認証系（`POST /api/auth/github` の code 交換 / `/api/auth/refresh` / dev-login）の
- * ブルートフォース・乱打対策。IP 単位で 15 分あたり 50 回に制限する。
+ * API 全体のレート制限。
  *
- * 注意: 複数 ECS タスク構成ではインスタンスごとのカウントになる（実効上限はタスク数倍）。
- * 厳密な分散制限・WAF は後続で検討する（本ミドルウェアは最低限の緩和層）。
+ * 同一クライアント（IP 単位）が一定時間内に送れるリクエスト数に上限を設け、
+ * ブルートフォースやアプリ層 DoS を緩和する。上限を超えたら 429 を返す。
+ * 認証の有無で基準を変える必要は無いため、全エンドポイントに同じ上限を適用する。
+ *
+ * 上限値（1 分あたり 300 リクエスト）は、ログインユーザーがマイページ等で複数 API を
+ * 並列取得しても引っかからない程度に緩く、かつ機械的な連打は止まる水準。必要に応じ調整可。
+ *
+ * 注意: カウントは in-memory（ECS タスク単位）。複数タスク構成では実効上限がタスク数倍に
+ * なるため、厳密な分散制限が要る場合は Redis ストア化や AWS WAF を後続で検討する。
  */
-export const authRateLimiter = rateLimit({
+export const apiRateLimiter = rateLimit({
   legacyHeaders: false,
-  limit: 50,
-  message: tooManyRequestsBody,
-  standardHeaders: "draft-7",
-  windowMs: 15 * 60 * 1000,
-})
-
-/**
- * 未認証で叩けるステートレスなゲストプレイ endpoint（`/api/play-sessions/guest/*`）への
- * アプリ層 DoS 対策。IP 単位で 1 分あたり 60 回に制限する。
- */
-export const guestPlayRateLimiter = rateLimit({
-  legacyHeaders: false,
-  limit: 60,
-  message: tooManyRequestsBody,
+  limit: 300,
+  message: { error: "Too many requests", status_code: 429 },
   standardHeaders: "draft-7",
   windowMs: 60 * 1000,
 })
