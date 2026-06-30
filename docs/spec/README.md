@@ -27,6 +27,7 @@
 | adsense | 🟡 実装中 | 広告配信。Google AdSense のディスプレイ広告。配信基盤（env gate / AdUnit / ads.txt / privacy）実装済み、AdSense アカウント取得・審査・本番 env 設定は運用者対応待ち | [./adsense/README.md](./adsense/README.md) |
 | dev-login | ✅ | 開発用ログイン（既存） | [./dev-login/README.md](./dev-login/README.md) |
 | shared-packages | ✅ | api/cron 横断で共通利用する `@repo/db` / `@repo/logger` / `@repo/errors` / `@repo/redis` の設計（テンプレート整備）。`@repo/config` は撤去済み（各 app の `src/env.ts` にインライン化） | [./shared-packages/README.md](./shared-packages/README.md) |
+| mistype-confusion | 🟡 設計中 | 苦手文字に「期待文字 → 実際に打った文字」の誤入力内訳を併記。`mistypeStats` を flat→nested(`期待→{実際→回数}`) に拡張。集計はサーバー権威（keystroke_logs の `inputChar` 既存・エンジン改修不要）。マイページ＋リザルトに表示、過去分は keystroke_logs 再集計でバックフィル | [./mistype-confusion/README.md](./mistype-confusion/README.md) |
 
 ## ステータスの定義
 

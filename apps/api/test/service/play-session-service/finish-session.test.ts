@@ -424,9 +424,9 @@ describe("finishSession", () => {
       expect(result.ok).toBe(true)
       if (result.ok) {
         /**
-         * 「l を打つべきところを k で誤入力」→ 期待文字 "l" を加算
+         * 「l を打つべきところを k で誤入力」→ 期待文字 "l" × 実際 "k" を加算
          */
-        expect(result.value.mistypeStats).toEqual({ l: 1 })
+        expect(result.value.mistypeStats).toEqual({ l: { k: 1 } })
       }
     })
   })

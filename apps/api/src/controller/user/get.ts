@@ -3,12 +3,12 @@ import { Response } from "express"
 import { getUserResponseSchema } from "@repo/api-schema"
 import { logger } from "@repo/logger"
 
+import { normalizeMistypeStats, totalMistypeCount } from "../../lib/mistype-stats"
 import { parseResponse } from "../../lib/parse-schema"
 import { sendError } from "../../lib/send-error"
 import { AuthRequest } from "../../middleware/auth"
 import { PlaySessionRepository, UserLifetimeStatsRepository, UserRepository } from "../../repository/prisma"
 import * as service from "../../service"
-import { MistypeStats } from "../../types/domain"
 
 /**
  * マイページに出す苦手文字の件数（誤打数の多い順）
@@ -16,13 +16,32 @@ import { MistypeStats } from "../../types/domain"
 const WEAK_CHARS_LIMIT = 10
 
 /**
- * 生涯通算の文字ごと誤打数を「苦手文字 top N（誤打数降順）」に整形する
+ * 各苦手文字に併記する「実際に打った文字」の内訳件数（回数降順）
  */
-const toWeakChars = (stats: MistypeStats): { char: string; count: number }[] =>
-  Object.entries(stats)
-    .sort(([, a], [, b]) => b - a)
+const MISTYPED_BREAKDOWN_LIMIT = 3
+
+type WeakChar = {
+  char: string
+  count: number
+  mistyped: { char: string; count: number }[]
+}
+
+/**
+ * 生涯通算の誤打集計（flat / nested 混在可）を
+ * 「苦手文字 top N（合計誤打数降順）+ 各誤入力内訳 top M」に整形する
+ */
+const toWeakChars = (raw: unknown): WeakChar[] =>
+  Object.entries(normalizeMistypeStats(raw))
+    .map(([char, inner]) => ({
+      char,
+      count: totalMistypeCount(inner),
+      mistyped: Object.entries(inner)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, MISTYPED_BREAKDOWN_LIMIT)
+        .map(([mistypedChar, count]) => ({ char: mistypedChar, count })),
+    }))
+    .sort((a, b) => b.count - a.count)
     .slice(0, WEAK_CHARS_LIMIT)
-    .map(([char, count]) => ({ char, count }))
 
 /**
  * GET /api/user
@@ -65,7 +84,7 @@ export class UserGetController {
       email: result.value.email,
       favorite_repo_url: result.value.favoriteRepoUrl,
       id: result.value.id,
-      weak_chars: toWeakChars(lifetime?.lifetimeMistypeStats ?? {}),
+      weak_chars: toWeakChars(lifetime?.lifetimeMistypeStats),
     })
 
     return res.status(200).json(response)

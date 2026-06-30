@@ -1,6 +1,7 @@
 import { PrismaClient } from "@repo/db"
 
 import { calcGrade, Grade } from "../../lib/grade"
+import { mergeMistypeStats, normalizeMistypeStats } from "../../lib/mistype-stats"
 import { MistypeStats } from "../../types/domain"
 
 import { TransactionContext } from "./transaction-runner"
@@ -132,11 +133,12 @@ export class PrismaUserLifetimeStatsRepository implements UserLifetimeStatsRepos
       ...currentByLang,
       [langKey]: Math.max(currentByLang[langKey] ?? 0, input.score),
     }
-    const currentMistype = (existing.lifetimeMistypeStats ?? {}) as MistypeStats
-    const newMistype: MistypeStats = { ...currentMistype }
-    for (const [key, count] of Object.entries(input.mistypeStats)) {
-      newMistype[key] = (newMistype[key] ?? 0) + count
-    }
+    /**
+     * 既存値は legacy flat の可能性があるので正規化してからネスト加算する
+     * （input.mistypeStats は集計済みで既に nested）
+     */
+    const currentMistype = normalizeMistypeStats(existing.lifetimeMistypeStats)
+    const newMistype: MistypeStats = mergeMistypeStats(currentMistype, input.mistypeStats)
 
     const gradeLeveledUp = newGrade.level > prevGrade.level
 

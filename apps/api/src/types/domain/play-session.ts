@@ -79,9 +79,9 @@ export type KeystrokeEntry = {
 export type KeystrokeLogs = KeystrokeEntry[]
 
 /**
- * ニガテ文字集計（key=正解期待文字、value=誤打鍵回数）
+ * ニガテ文字集計（key=正解期待文字、value={ 実際に打った文字 → 誤打鍵回数 }）
  */
-export type MistypeStats = Record<string, number>
+export type MistypeStats = Record<string, Record<string, number>>
 
 /**
  * /finish のレスポンスに含むグレード（score-ranking step3 で追加）

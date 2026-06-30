@@ -157,7 +157,15 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, language, mode, p
   }
 
   const topMistypes = Object.entries(result.mistype_stats)
-    .sort(([, a], [, b]) => b - a)
+    .map(([char, inner]) => ({
+      char,
+      count: Object.values(inner).reduce((sum, n) => sum + n, 0),
+      mistyped: Object.entries(inner)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([mistypedChar, count]) => ({ char: mistypedChar, count })),
+    }))
+    .sort((a, b) => b.count - a.count)
     .slice(0, 5)
 
   /**
@@ -295,11 +303,23 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, language, mode, p
             <div className="card-title"><span style={{ marginRight: "8px" }}>❌</span>よく間違える文字</div>
           </div>
           {topMistypes.length > 0 ? (
-            <div className="flex gap-12" style={{ flexWrap: "wrap" }}>
-              {topMistypes.map(([char, count]) => (
-                <div className="flex-center gap-8" key={char}>
-                  <code className="inline" style={{ fontSize: "16px" }}>{char === " " ? "␣" : char}</code>
-                  <span className="text-muted text-sm">× {count}</span>
+            <div style={{ display: "grid", gap: "10px" }}>
+              {topMistypes.map((mistype) => (
+                <div className="flex-center gap-8" key={mistype.char} style={{ justifyContent: "flex-start" }}>
+                  <code className="inline" style={{ fontSize: "16px" }}>{displayMistypeChar(mistype.char)}</code>
+                  <span className="text-muted text-sm">× {mistype.count}</span>
+                  {mistype.mistyped.length > 0 && (
+                    <span className="text-muted text-sm">
+                      （実際は{" "}
+                      {mistype.mistyped.map((m, i) => (
+                        <span key={m.char}>
+                          {i > 0 ? " ・ " : ""}
+                          <code className="inline">{displayMistypeChar(m.char)}</code> ×{m.count}
+                        </span>
+                      ))}
+                      ）
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -424,6 +444,17 @@ export function ResultScreen({ ghostSummary, ghostUserDisplay, language, mode, p
       )}
     </>
   )
+}
+
+/**
+ * ミスタイプ表示用の文字変換。空白・タブ・改行・内訳不明は見やすい記号に置き換える
+ */
+const displayMistypeChar = (char: string): string => {
+  if (char === " ") return "␣"
+  if (char === "\t") return "⇥"
+  if (char === "\n") return "⏎"
+  if (char === "?") return "不明"
+  return char
 }
 
 /**
