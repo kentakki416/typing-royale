@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
 import { EmptyLanguagesState } from "@/components/empty-languages-state"
+import { PageHero } from "@/components/page-hero"
 import { Topbar } from "@/components/topbar"
 import { getAccessToken } from "@/libs/auth"
 import { getLanguages } from "@/libs/languages"
@@ -54,7 +55,7 @@ export default async function PlaySelectPage() {
       <Topbar isAuthed={accessToken !== null} />
 
       <div className="container container-narrow">
-        <h1 className="text-center mt-24 mb-24">言語を選択</h1>
+        <PageHero icon="⌨️" subtitle="プレイする言語を選んでスタート" title="言語を選択" />
 
         {selectorLanguages.length === 0 ? (
           <EmptyLanguagesState />
