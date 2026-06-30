@@ -38,6 +38,7 @@ export function PlayNowButton({ className, label, languageId }: Props) {
           ghostSessionId: result.ghostSessionId,
           ghostUserDisplay: result.ghostUserDisplay,
           isGuest: result.isGuest,
+          language: result.language,
           mode: result.mode,
           problemIds: result.problemIds,
           problems: result.problems,
