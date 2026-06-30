@@ -80,15 +80,27 @@ describe("removeComments", () => {
       expect(result).toContain("return a")
     })
 
-    it("連続する空行を 2 行に折り畳む", () => {
+    it("連続する空行をすべて詰める", () => {
       const input = "const a = 1\n\n\n\n\nconst b = 2\n"
       const result = removeComments(input)
-      expect(result).toBe("const a = 1\n\nconst b = 2\n")
+      expect(result).toBe("const a = 1\nconst b = 2\n")
     })
 
-    it("コメントだけのファイルは（連続空行畳み込み後の）空白文字列だけが残る", () => {
+    it("元から存在する 1 行の空行も詰める", () => {
+      const input = "const a = 1\n\nconst b = 2\n"
+      const result = removeComments(input)
+      expect(result).toBe("const a = 1\nconst b = 2\n")
+    })
+
+    it("コメント跡地のインデントだけの空行も詰める", () => {
+      const input = "function f() {\n  const a = 1\n  // second\n  return a\n}\n"
+      const result = removeComments(input)
+      expect(result).toBe("function f() {\n  const a = 1\n  return a\n}\n")
+    })
+
+    it("コメントだけのファイルは空文字列になる", () => {
       const result = removeComments("// only comment\n/* another */\n")
-      expect(result.trim()).toBe("")
+      expect(result).toBe("")
     })
   })
 
@@ -97,7 +109,7 @@ describe("removeComments", () => {
       expect(removeComments("")).toBe("")
     })
 
-    it("コメントを含まないコードはそのまま返る（連続空行畳み込みのみ）", () => {
+    it("コメントも空行も無いコードはそのまま返る", () => {
       const input = "const x = 1\nconst y = 2\n"
       expect(removeComments(input)).toBe(input)
     })

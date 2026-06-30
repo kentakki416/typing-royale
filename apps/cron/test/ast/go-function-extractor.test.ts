@@ -41,6 +41,8 @@ describe("GoFunctionExtractor", () => {
       expect(cand!.codeStripped).not.toContain("inline")
       expect(cand!.codeStripped).not.toContain("行末")
       expect(cand!.codeStripped).toContain("return a + b")
+      /** コメント跡地の空白だけの行も詰める */
+      expect(cand!.codeStripped.split("\n").some((line) => line.trim() === "")).toBe(false)
     })
 
     it("1-indexed の行範囲を返す", () => {
