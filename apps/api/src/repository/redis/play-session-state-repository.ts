@@ -14,6 +14,12 @@ import { PlaySessionState } from "../../types/domain"
 export interface PlaySessionStateRepository {
     delete(sessionId: string): Promise<void>
     findById(sessionId: string): Promise<PlaySessionState | null>
+    /**
+     * state を取得すると同時に削除する（Redis GETDEL によるアトミック claim）。
+     * 二重送信時に最初の 1 回だけ state を取得でき、2 回目以降は null になるため
+     * /finish の二重計上を防げる。
+     */
+    getAndDelete(sessionId: string): Promise<PlaySessionState | null>
     save(sessionId: string, state: PlaySessionState, ttlSeconds: number): Promise<void>
 }
 
@@ -41,5 +47,11 @@ export class IoRedisPlaySessionStateRepository implements PlaySessionStateReposi
 
   async delete(sessionId: string): Promise<void> {
     await this._redis.del(keyOf(sessionId))
+  }
+
+  async getAndDelete(sessionId: string): Promise<PlaySessionState | null> {
+    const raw = await this._redis.getdel(keyOf(sessionId))
+    if (raw === null) return null
+    return JSON.parse(raw) as PlaySessionState
   }
 }
