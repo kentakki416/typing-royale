@@ -62,13 +62,13 @@ describe("GET /api/user", () => {
       })
     })
 
-    it("生涯統計がある場合、苦手文字を誤打数降順で top10 返す", async () => {
+    it("legacy flat な生涯統計でも苦手文字を誤打数降順で top10 返す（内訳は不明扱い）", async () => {
       const user = await testPrisma.user.create({
         data: { githubUsername: "weakchar", email: "weak@example.com" },
       })
       await testPrisma.userLifetimeStats.create({
         data: {
-          /** 12 種類 → top10 で count 1,2 の k,l が除外される */
+          /** 旧 flat 形式（実際に打った文字の記録なし）。12 種類 → top10 で count 1,2 の k,l が除外される */
           lifetimeMistypeStats: { a: 12, b: 11, c: 10, d: 9, e: 8, f: 7, g: 6, h: 5, i: 4, j: 3, k: 2, l: 1 },
           userId: user.id,
         },
@@ -80,17 +80,45 @@ describe("GET /api/user", () => {
         .set("Authorization", `Bearer ${token}`)
 
       expect(res.status).toBe(200)
+      /** legacy flat は内訳不明 "?" に正規化される */
       expect(res.body.weak_chars).toEqual([
-        { char: "a", count: 12 },
-        { char: "b", count: 11 },
-        { char: "c", count: 10 },
-        { char: "d", count: 9 },
-        { char: "e", count: 8 },
-        { char: "f", count: 7 },
-        { char: "g", count: 6 },
-        { char: "h", count: 5 },
-        { char: "i", count: 4 },
-        { char: "j", count: 3 },
+        { char: "a", count: 12, mistyped: [{ char: "?", count: 12 }] },
+        { char: "b", count: 11, mistyped: [{ char: "?", count: 11 }] },
+        { char: "c", count: 10, mistyped: [{ char: "?", count: 10 }] },
+        { char: "d", count: 9, mistyped: [{ char: "?", count: 9 }] },
+        { char: "e", count: 8, mistyped: [{ char: "?", count: 8 }] },
+        { char: "f", count: 7, mistyped: [{ char: "?", count: 7 }] },
+        { char: "g", count: 6, mistyped: [{ char: "?", count: 6 }] },
+        { char: "h", count: 5, mistyped: [{ char: "?", count: 5 }] },
+        { char: "i", count: 4, mistyped: [{ char: "?", count: 4 }] },
+        { char: "j", count: 3, mistyped: [{ char: "?", count: 3 }] },
+      ])
+    })
+
+    it("nested な生涯統計は合計降順 + 誤入力内訳 top3 を返す", async () => {
+      const user = await testPrisma.user.create({
+        data: { githubUsername: "nestedchar", email: "nested@example.com" },
+      })
+      await testPrisma.userLifetimeStats.create({
+        data: {
+          /** "{" を 6 回（( ×3, [ ×2, < ×1）、";" を 4 回（' ×4） */
+          lifetimeMistypeStats: {
+            "{": { "(": 3, "[": 2, "<": 1 },
+            ";": { "'": 4 },
+          },
+          userId: user.id,
+        },
+      })
+
+      const token = generateAccessToken(user.id)
+      const res = await request(app)
+        .get("/api/user")
+        .set("Authorization", `Bearer ${token}`)
+
+      expect(res.status).toBe(200)
+      expect(res.body.weak_chars).toEqual([
+        { char: "{", count: 6, mistyped: [{ char: "(", count: 3 }, { char: "[", count: 2 }, { char: "<", count: 1 }] },
+        { char: ";", count: 4, mistyped: [{ char: "'", count: 4 }] },
       ])
     })
 

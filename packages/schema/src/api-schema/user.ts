@@ -22,11 +22,18 @@ const userSchema = z.object({
 // ========================================================
 
 /**
- * 苦手文字 1 件（生涯通算の文字ごと誤打数）
+ * 苦手文字 1 件（生涯通算の文字ごと誤打数 + 誤入力の内訳 top N）
+ * mistyped: 期待文字に対して実際に打った文字の内訳（回数降順）
  */
 const weakCharSchema = z.object({
   char: z.string(),
   count: z.number().int().nonnegative(),
+  mistyped: z.array(
+    z.object({
+      char: z.string(),
+      count: z.number().int().nonnegative(),
+    }),
+  ),
 })
 
 /**

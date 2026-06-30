@@ -193,8 +193,8 @@ describe("POST /api/play-sessions/guest/finish", () => {
         })
 
       expect(res.status).toBe(200)
-      /** 「l を打つべきところを k で誤入力」→ 期待文字 "l" を加算 */
-      expect(res.body.mistype_stats).toEqual({ l: 1 })
+      /** 「l を打つべきところを k で誤入力」→ 期待文字 "l" × 実際 "k" を加算 */
+      expect(res.body.mistype_stats).toEqual({ l: { k: 1 } })
     })
   })
 

@@ -112,7 +112,7 @@ describe("aggregateProblemProgress", () => {
 
 describe("aggregateMistypeStats", () => {
   describe("正常系", () => {
-    it("isCorrect=false 時に「正解期待文字」をキーに加算する", () => {
+    it("isCorrect=false 時に「期待文字 → 実際に打った文字」で加算する", () => {
       const codeBlocks = new Map([[0, "hello"]])
       const log = [
         { elapsedMs: 100, inputChar: "h", isCorrect: true, problemIndex: 0 },
@@ -123,7 +123,7 @@ describe("aggregateMistypeStats", () => {
         { elapsedMs: 600, inputChar: "o", isCorrect: true, problemIndex: 0 },
       ]
       const result = aggregateMistypeStats(log, codeBlocks)
-      expect(result).toEqual({ l: 1 })
+      expect(result).toEqual({ l: { k: 1 } })
     })
 
     it("複数の誤打鍵が累積される", () => {
@@ -136,7 +136,7 @@ describe("aggregateMistypeStats", () => {
         { elapsedMs: 300, inputChar: "b", isCorrect: true, problemIndex: 0 },
       ]
       const result = aggregateMistypeStats(log, codeBlocks)
-      expect(result).toEqual({ a: 2, b: 1 })
+      expect(result).toEqual({ a: { x: 1, y: 1 }, b: { z: 1 } })
     })
 
     it("複数問題でも cursor が problemIndex ごとに独立管理される", () => {
@@ -149,7 +149,7 @@ describe("aggregateMistypeStats", () => {
         { elapsedMs: 500, inputChar: "z", isCorrect: false, problemIndex: 1 },
       ]
       const result = aggregateMistypeStats(log, codeBlocks)
-      expect(result).toEqual({ x: 1, y: 1 })
+      expect(result).toEqual({ x: { z: 1 }, y: { z: 1 } })
     })
 
     it("ログが空なら空オブジェクトを返す", () => {
@@ -168,7 +168,7 @@ describe("aggregateMistypeStats", () => {
       ]
       const result = aggregateMistypeStats(log, codeBlocks)
       /** "a" の位置で "x" を誤入力したと判定される */
-      expect(result).toEqual({ a: 1 })
+      expect(result).toEqual({ a: { x: 1 } })
     })
   })
 })

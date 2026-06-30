@@ -69,8 +69,11 @@ export const aggregateProblemProgress = (
  * +1 する。クライアントの `isCorrect` は信用せず、`inputChar === expected` で
  * サーバー権威に判定する（codeBlock はサーバー所有）
  *
+ * 誤入力時は「期待されていた文字」だけでなく「実際に打った文字 (inputChar)」も
+ * 記録し、`期待文字 → { 実際に打った文字 → 回数 }` の nested 構造で集計する。
+ *
  * 例: codeBlock="hello" / 打鍵 h→e→l→k(誤)→l→o
- *   cursor=3 のとき k が到着 → expected = code[3] = "l" → mistypeStats["l"] += 1
+ *   cursor=3 のとき k が到着 → expected = code[3] = "l" → mistypeStats["l"]["k"] += 1
  */
 export const aggregateMistypeStats = (
   logs: KeystrokeLogs,
@@ -99,7 +102,9 @@ export const aggregateMistypeStats = (
     if (entry.inputChar === expected) {
       cursor.set(entry.problemIndex, pos + 1)
     } else {
-      mistypeStats[expected] = (mistypeStats[expected] ?? 0) + 1
+      /** 期待文字 × 実際に打った文字 で二段カウントする */
+      const inner = (mistypeStats[expected] ??= {})
+      inner[entry.inputChar] = (inner[entry.inputChar] ?? 0) + 1
     }
   }
 

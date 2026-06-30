@@ -31,7 +31,7 @@ export default async function MyPage() {
   const [me, languageRankings] = await Promise.all([
     apiClient.get<GetUserResponse>("/api/user"),
     Promise.all(
-      languages.map((language) =>
+      languages.map(async (language) =>
         apiClient
           .get<GetMyRankingResponse>(`/api/rankings/me?language=${language.slug}`)
           .then((ranking) => ({ language, ranking }))
@@ -175,52 +175,64 @@ export default async function MyPage() {
               ) : (
                 <div style={{ display: "grid", gap: "10px" }}>
                   {me.weak_chars.map((weak, index) => (
-                    <div
-                      key={weak.char}
-                      className="flex-between"
-                      style={{ alignItems: "center", gap: "10px" }}
-                    >
-                      <span
-                        className="text-mono"
-                        style={{
-                          color: "var(--text-secondary)",
-                          minWidth: "16px",
-                          textAlign: "right",
-                        }}
-                      >
-                        {index + 1}
-                      </span>
-                      <span
-                        className="text-mono"
-                        style={{
-                          background: "var(--bg-base)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "6px",
-                          minWidth: "28px",
-                          padding: "2px 8px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {displayChar(weak.char)}
-                      </span>
+                    <div key={weak.char} style={{ display: "grid", gap: "4px" }}>
                       <div
-                        style={{
-                          background: "var(--bg-base)",
-                          borderRadius: "4px",
-                          flex: 1,
-                          height: "8px",
-                          overflow: "hidden",
-                        }}
+                        className="flex-between"
+                        style={{ alignItems: "center", gap: "10px" }}
                       >
+                        <span
+                          className="text-mono"
+                          style={{
+                            color: "var(--text-secondary)",
+                            minWidth: "16px",
+                            textAlign: "right",
+                          }}
+                        >
+                          {index + 1}
+                        </span>
+                        <span
+                          className="text-mono"
+                          style={{
+                            background: "var(--bg-base)",
+                            border: "1px solid var(--border)",
+                            borderRadius: "6px",
+                            minWidth: "28px",
+                            padding: "2px 8px",
+                            textAlign: "center",
+                          }}
+                        >
+                          {displayChar(weak.char)}
+                        </span>
                         <div
                           style={{
-                            background: "var(--error)",
-                            height: "100%",
-                            width: `${(weak.count / me.weak_chars[0].count) * 100}%`,
+                            background: "var(--bg-base)",
+                            borderRadius: "4px",
+                            flex: 1,
+                            height: "8px",
+                            overflow: "hidden",
                           }}
-                        />
+                        >
+                          <div
+                            style={{
+                              background: "var(--error)",
+                              height: "100%",
+                              width: `${(weak.count / me.weak_chars[0].count) * 100}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-sm text-muted text-mono">{weak.count}</span>
                       </div>
-                      <span className="text-sm text-muted text-mono">{weak.count}</span>
+                      {weak.mistyped.length > 0 && (
+                        <div className="text-sm text-muted" style={{ paddingLeft: "26px" }}>
+                          実際は{" "}
+                          {weak.mistyped.map((m, i) => (
+                            <span className="text-mono" key={m.char}>
+                              {i > 0 ? " ・ " : ""}
+                              {displayChar(m.char)} ×{m.count}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -234,12 +246,13 @@ export default async function MyPage() {
 }
 
 /**
- * 苦手文字の表示用変換。空白・タブ・改行は見やすい記号に置き換える
+ * 苦手文字の表示用変換。空白・タブ・改行・内訳不明は見やすい記号に置き換える
  */
 const displayChar = (char: string): string => {
   if (char === " ") return "␣"
   if (char === "\t") return "⇥"
   if (char === "\n") return "⏎"
+  if (char === "?") return "不明"
   return char
 }
 

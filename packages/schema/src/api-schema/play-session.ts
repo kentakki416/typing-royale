@@ -45,9 +45,13 @@ const keystrokeEntrySchema = z.object({
 })
 
 /**
- * mistype_stats のレスポンス形式（key=正解期待文字、value=誤打鍵回数）
+ * mistype_stats のレスポンス形式
+ * key=正解期待文字、value={ 実際に打った文字 → 誤打鍵回数 }
  */
-const mistypeStatsSchema = z.record(z.string(), z.number().int().nonnegative())
+const mistypeStatsSchema = z.record(
+  z.string(),
+  z.record(z.string(), z.number().int().nonnegative()),
+)
 
 // ========================================================
 // POST /api/play-sessions/solo - 通常モードのセッション開始
