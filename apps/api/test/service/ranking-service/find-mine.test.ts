@@ -2,6 +2,7 @@ import {
   LanguageRef,
   LanguageRepository,
   MyLanguageBest,
+  PlaySessionRepository,
   UserLanguageBestRepository,
   UserLanguageBestWithUser,
   UserLifetimeStatsRepository,
@@ -14,12 +15,20 @@ const mockFindMine = vi.fn<(_0: number, _1: number) => Promise<MyLanguageBest | 
 const mockCountHigherRanked = vi.fn<(_0: number, _1: MyLanguageBest) => Promise<number>>()
 const mockCountRankableByLanguage = vi.fn<(_0: number) => Promise<number>>()
 const mockFindByUserId = vi.fn<(_0: number) => Promise<UserLifetimeStatsSummary | null>>()
+const mockCountByUserAndLanguage = vi.fn<(_0: number, _1: number) => Promise<number>>()
 
 const mockLanguageRepository: LanguageRepository = {
   existsById: vi.fn(),
   findAll: vi.fn(),
   findById: vi.fn(),
   findBySlug: mockFindBySlug,
+}
+
+const mockPlaySessionRepository: PlaySessionRepository = {
+  countByUserAndLanguage: mockCountByUserAndLanguage,
+  create: vi.fn(),
+  findGhostSourceById: vi.fn(),
+  getUserSummaryStats: vi.fn(),
 }
 
 const mockUserLanguageBestRepository: UserLanguageBestRepository = {
@@ -39,6 +48,7 @@ const mockUserLifetimeStatsRepository: UserLifetimeStatsRepository = {
 
 const buildRepoCollection = () => ({
   languageRepository: mockLanguageRepository,
+  playSessionRepository: mockPlaySessionRepository,
   userLanguageBestRepository: mockUserLanguageBestRepository,
   userLifetimeStatsRepository: mockUserLifetimeStatsRepository,
 })
@@ -69,6 +79,7 @@ describe("ranking.findMine", () => {
       })
       mockCountHigherRanked.mockResolvedValue(86)
       mockCountRankableByLanguage.mockResolvedValue(53871)
+      mockCountByUserAndLanguage.mockResolvedValue(24)
 
       const result = await findMine(
         { languageSlug: "typescript", userId: 10 },
@@ -85,6 +96,7 @@ describe("ranking.findMine", () => {
         /** Staff threshold 600 + bestScore 732 → next Principal 800 までは 68pt */
         expect(result.value.nextGrade?.scoreNeeded).toBe(68)
         expect(result.value.totalRankedPlayers).toBe(53871)
+        expect(result.value.playCount).toBe(24)
       }
     })
 
@@ -93,6 +105,7 @@ describe("ranking.findMine", () => {
       mockFindMine.mockResolvedValue(null)
       mockFindByUserId.mockResolvedValue(null)
       mockCountRankableByLanguage.mockResolvedValue(0)
+      mockCountByUserAndLanguage.mockResolvedValue(0)
 
       const result = await findMine(
         { languageSlug: "typescript", userId: 10 },
@@ -109,6 +122,7 @@ describe("ranking.findMine", () => {
         expect(result.value.grade.slug).toBe("intern")
         expect(result.value.nextGrade?.slug).toBe("junior")
         expect(result.value.nextGrade?.scoreNeeded).toBe(100)
+        expect(result.value.playCount).toBe(0)
       }
       expect(mockCountHigherRanked).not.toHaveBeenCalled()
     })

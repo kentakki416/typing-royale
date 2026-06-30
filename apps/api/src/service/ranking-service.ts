@@ -6,6 +6,7 @@ import {
   LanguageRepository,
   MonthlyRankingSnapshotRepository,
   MonthlyRankingTopEntry,
+  PlaySessionRepository,
   UserLanguageBestRepository,
   UserLanguageBestWithUser,
   UserLifetimeStatsRepository,
@@ -60,6 +61,7 @@ export const list = async (
 
 type FindMineRepo = {
     languageRepository: LanguageRepository
+    playSessionRepository: PlaySessionRepository
     userLanguageBestRepository: UserLanguageBestRepository
     userLifetimeStatsRepository: UserLifetimeStatsRepository
 }
@@ -77,6 +79,7 @@ export type FindMineOutput = {
     grade: Grade
     language: string
     nextGrade: (Grade & { scoreNeeded: number }) | null
+    playCount: number
     rank: number | null
     totalRankedPlayers: number
 }
@@ -113,6 +116,12 @@ export const findMine = async (
     language.id,
   )
 
+  /** この言語の累計プレイ回数（play_sessions の件数）。ベストの有無に関わらず数える */
+  const playCount = await repo.playSessionRepository.countByUserAndLanguage(
+    input.userId,
+    language.id,
+  )
+
   if (myBest === null) {
     return ok({
       bestAccuracy: null,
@@ -122,6 +131,7 @@ export const findMine = async (
       grade,
       language: input.languageSlug,
       nextGrade,
+      playCount,
       rank: null,
       totalRankedPlayers,
     })
@@ -136,6 +146,7 @@ export const findMine = async (
     grade,
     language: input.languageSlug,
     nextGrade,
+    playCount,
     rank: higher + 1,
     totalRankedPlayers,
   })

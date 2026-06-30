@@ -57,6 +57,10 @@ export type UserSummaryStats = {
 }
 
 export interface PlaySessionRepository {
+    /**
+     * 言語別の累計プレイ回数（play_sessions の件数）。マイページ全期間ランキングの行に表示する
+     */
+    countByUserAndLanguage(userId: number, languageId: number): Promise<number>
     create(input: CreatePlaySessionInput, tx?: TransactionContext): Promise<{ id: number }>
     /**
      * /challenge-gods で神セッションの problemIds + repoInfo を引く。
@@ -77,6 +81,12 @@ export class PrismaPlaySessionRepository implements PlaySessionRepository {
 
   constructor(prisma: PrismaClient) {
     this._prisma = prisma
+  }
+
+  async countByUserAndLanguage(userId: number, languageId: number): Promise<number> {
+    return this._prisma.playSession.count({
+      where: { languageId, userId },
+    })
   }
 
   async create(input: CreatePlaySessionInput, tx?: TransactionContext): Promise<{ id: number }> {

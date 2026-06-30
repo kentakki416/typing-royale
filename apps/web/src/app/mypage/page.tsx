@@ -66,8 +66,14 @@ export default async function MyPage() {
                     href={`https://github.com/${me.best_repo.full_name}`}
                     rel="noreferrer noopener"
                     style={{
+                      /**
+                       * リポジトリ名は長くなり得るので 34px のままだと折り返す。
+                       * フォントは小さくしつつ line-height を数値 stat（34px・行高さ約41px）
+                       * に合わせて縦中央寄せし、3 つの stat のラベル位置を揃える
+                       */
                       display: "block",
-                      fontSize: "15px",
+                      fontSize: "18px",
+                      lineHeight: "41px",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -139,6 +145,7 @@ export default async function MyPage() {
                     <th>言語</th>
                     <th className="numeric">ベスト</th>
                     <th className="numeric">順位</th>
+                    <th className="numeric">プレイ回数</th>
                     <th>状態</th>
                   </tr>
                 </thead>
@@ -251,6 +258,7 @@ const RankingRow = ({ badge, label, ranking }: {
         <td><span className={`badge ${badge}`}>{label}</span></td>
         <td className="numeric text-muted">—</td>
         <td className="numeric text-muted">—</td>
+        <td className="numeric text-muted">—</td>
         <td><span className="badge">未プレイ</span></td>
       </tr>
     )
@@ -263,6 +271,7 @@ const RankingRow = ({ badge, label, ranking }: {
       <td className="numeric">
         <strong style={{ color: "var(--accent)" }}>#{ranking.rank}</strong>
       </td>
+      <td className="numeric">{ranking.play_count.toLocaleString()} 回</td>
       <td>
         <span className={`badge ${inRange ? "success" : "warning"}`}>
           {inRange ? "圏内" : "圏外（1000位以下）"}

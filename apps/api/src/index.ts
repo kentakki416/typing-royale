@@ -247,6 +247,7 @@ const rankingListController = new RankingListController(
 )
 const rankingMeController = new RankingMeController(
   languageRepository,
+  playSessionRepository,
   userLanguageBestRepository,
   userLifetimeStatsRepository,
 )

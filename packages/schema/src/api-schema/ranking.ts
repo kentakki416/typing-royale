@@ -82,6 +82,8 @@ export const getMyRankingResponseSchema = z.object({
   grade: gradeSchema,
   language: z.string(),
   next_grade: nextGradeSchema.nullable(),
+  /** この言語の累計プレイ回数（play_sessions の件数。未プレイなら 0） */
+  play_count: z.number().int().nonnegative(),
   rank: z.number().int().min(1).nullable(),
   total_ranked_players: z.number().int().nonnegative(),
 })
