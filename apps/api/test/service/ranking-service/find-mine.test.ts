@@ -17,14 +17,19 @@ const mockFindByUserId = vi.fn<(_0: number) => Promise<UserLifetimeStatsSummary 
 
 const mockLanguageRepository: LanguageRepository = {
   existsById: vi.fn(),
+  findAll: vi.fn(),
+  findById: vi.fn(),
   findBySlug: mockFindBySlug,
 }
 
 const mockUserLanguageBestRepository: UserLanguageBestRepository = {
   countHigherRanked: mockCountHigherRanked,
   countRankableByLanguage: mockCountRankableByLanguage,
+  findAllByUserId: vi.fn(),
   findMine: mockFindMine,
+  findTenthScore: vi.fn(),
   findTopByLanguage: vi.fn<(_0: number, _1: number) => Promise<UserLanguageBestWithUser[]>>(),
+  upsertIfBest: vi.fn(),
 }
 
 const mockUserLifetimeStatsRepository: UserLifetimeStatsRepository = {
@@ -53,7 +58,15 @@ describe("ranking.findMine", () => {
         score: 732,
         typedChars: 752,
       })
-      mockFindByUserId.mockResolvedValue({ bestScore: 732, currentGrade: "staff" })
+      mockFindByUserId.mockResolvedValue({
+        bestScore: 732,
+        currentGrade: "staff",
+        currentGradeReachedAt: new Date("2026-06-01T00:00:00.000Z"),
+        lifetimeMistypeStats: {},
+        streakDays: 3,
+        totalSessions: 12,
+        totalTypedChars: 1234n,
+      })
       mockCountHigherRanked.mockResolvedValue(86)
       mockCountRankableByLanguage.mockResolvedValue(53871)
 
@@ -103,7 +116,15 @@ describe("ranking.findMine", () => {
     it("Fellow グレード（bestScore >= 1200）なら nextGrade は null", async () => {
       mockFindBySlug.mockResolvedValue({ id: 1, slug: "typescript" })
       mockFindMine.mockResolvedValue(null)
-      mockFindByUserId.mockResolvedValue({ bestScore: 1500, currentGrade: "fellow" })
+      mockFindByUserId.mockResolvedValue({
+        bestScore: 1500,
+        currentGrade: "fellow",
+        currentGradeReachedAt: new Date("2026-06-01T00:00:00.000Z"),
+        lifetimeMistypeStats: {},
+        streakDays: 3,
+        totalSessions: 12,
+        totalTypedChars: 1234n,
+      })
       mockCountRankableByLanguage.mockResolvedValue(10)
 
       const result = await findMine(

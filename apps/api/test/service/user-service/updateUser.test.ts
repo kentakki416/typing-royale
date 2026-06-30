@@ -6,7 +6,7 @@ const mockFindById = vi.fn<(_0: number) => Promise<User | null>>()
 const mockUpdate = vi.fn<
   (
     _0: number,
-    _1: { canPublicRanking?: boolean; githubUsername?: string },
+    _1: { canPublicRanking?: boolean; favoriteRepoUrl?: string | null },
   ) => Promise<User>
 >()
 
@@ -14,7 +14,9 @@ const mockUserRepository: UserRepository = {
   create: vi.fn(),
   delete: vi.fn(),
   findByEmail: vi.fn(),
+  findByGithubUsername: vi.fn(),
   findById: mockFindById,
+  findPublicProfile: vi.fn(),
   update: mockUpdate,
 }
 
@@ -24,6 +26,7 @@ const baseUser: User = {
   createdAt: new Date(),
   githubUsername: "Old",
   email: null,
+  favoriteRepoUrl: null,
   id: 1,
   updatedAt: new Date(),
 }
@@ -34,17 +37,21 @@ describe("updateUser", () => {
   })
 
   describe("正常系", () => {
-    it("githubUsername を更新する", async () => {
+    it("favoriteRepoUrl を更新する", async () => {
       mockFindById.mockResolvedValue(baseUser)
-      mockUpdate.mockResolvedValue({ ...baseUser, githubUsername: "New" })
+      mockUpdate.mockResolvedValue({ ...baseUser, favoriteRepoUrl: "https://github.com/foo/bar" })
 
-      const result = await updateUser(1, { githubUsername: "New" }, { userRepository: mockUserRepository })
+      const result = await updateUser(
+        1,
+        { favoriteRepoUrl: "https://github.com/foo/bar" },
+        { userRepository: mockUserRepository },
+      )
 
       expect(result.ok).toBe(true)
       if (result.ok) {
-        expect(result.value.githubUsername).toBe("New")
+        expect(result.value.favoriteRepoUrl).toBe("https://github.com/foo/bar")
       }
-      expect(mockUpdate).toHaveBeenCalledWith(1, { githubUsername: "New" })
+      expect(mockUpdate).toHaveBeenCalledWith(1, { favoriteRepoUrl: "https://github.com/foo/bar" })
     })
   })
 
@@ -52,7 +59,11 @@ describe("updateUser", () => {
     it("ユーザーが存在しない場合、NOT_FOUND を返す", async () => {
       mockFindById.mockResolvedValue(null)
 
-      const result = await updateUser(999, { githubUsername: "x" }, { userRepository: mockUserRepository })
+      const result = await updateUser(
+        999,
+        { favoriteRepoUrl: "https://github.com/foo/bar" },
+        { userRepository: mockUserRepository },
+      )
 
       expect(result.ok).toBe(false)
       if (!result.ok) {

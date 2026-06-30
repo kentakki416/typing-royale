@@ -1,4 +1,5 @@
-import { CardStorage } from "../../../src/lib/card-storage"
+import { Storage } from "@repo/storage"
+
 import {
   PublicProfileUser,
   RewardRepository,
@@ -17,9 +18,15 @@ const mockFindPublicProfile = vi.fn<(_0: number) => Promise<PublicProfileUser | 
 const mockSave = vi.fn<(_0: string, _1: Buffer) => Promise<string>>()
 
 const mockRewardRepository: RewardRepository = {
+  findByIds: vi.fn(),
+  findByKey: vi.fn(),
   findByUserId: vi.fn(),
   findOneByUserTypePayload: mockFindOne,
+  findPendingByUserId: vi.fn(),
+  findRecentCompletedByUserId: vi.fn(),
+  updateGenerationStatus: vi.fn(),
   upsert: mockUpsert,
+  upsertByKey: vi.fn(),
 }
 
 const mockUserLifetimeStatsRepository: UserLifetimeStatsRepository = {
@@ -30,14 +37,14 @@ const mockUserLifetimeStatsRepository: UserLifetimeStatsRepository = {
 const mockUserRepository: UserRepository = {
   create: vi.fn(),
   delete: vi.fn(),
-  findByDisplayName: vi.fn(),
   findByEmail: vi.fn(),
+  findByGithubUsername: vi.fn(),
   findById: vi.fn(),
   findPublicProfile: mockFindPublicProfile,
   update: vi.fn(),
 }
 
-const mockCardStorage: CardStorage = {
+const mockCardStorage: Storage = {
   delete: vi.fn(),
   save: mockSave,
 }
@@ -57,7 +64,9 @@ describe("rewards.createCard", () => {
   describe("正常系", () => {
     it("既存 reward があり assetUrl が立っていれば PNG 再生成せず冪等返却", async () => {
       const existing: RewardRow = {
+        assetSvgUrl: null,
         assetUrl: "/cache/rewards/1-42.png",
+        generationStatus: "completed",
         grantedAt: new Date(),
         id: 42,
         payload: { grade_slug: "senior" },
@@ -114,6 +123,7 @@ describe("rewards.createCard", () => {
         bestScore: 50,
         currentGrade: "intern",
         currentGradeReachedAt: null,
+        lifetimeMistypeStats: {},
         streakDays: 0,
         totalSessions: 1,
         totalTypedChars: BigInt(50),

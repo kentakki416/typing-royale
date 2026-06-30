@@ -1,6 +1,7 @@
 import type { GenerateRewardJobData, JobQueue } from "@repo/queue"
 
 import {
+  FoundProblem,
   KeystrokeLogRepository,
   MonthlyRankingSnapshotRepository,
   MyLanguageBest,
@@ -24,7 +25,21 @@ import { KeystrokeLogs, PlaySessionState } from "../../../src/types/domain"
 
 const mockFindById = vi.fn<(_0: string) => Promise<PlaySessionState | null>>()
 const mockDeleteState = vi.fn<(_0: string) => Promise<void>>()
-const mockFindManyByIds = vi.fn<(_0: number[]) => Promise<Array<{ id: number; codeBlock: string }>>>()
+const mockFindManyByIds = vi.fn<(_0: number[]) => Promise<FoundProblem[]>>()
+
+/**
+ * /finish では codeBlock のみ使うため、それ以外の FoundProblem 必須フィールドは
+ * ダミー値で埋めるヘルパ（型を現行ソースに揃える）
+ */
+const buildFound = (id: number, codeBlock: string): FoundProblem => ({
+  charCount: codeBlock.length,
+  codeBlock,
+  functionName: `f${id}`,
+  id,
+  languageId: 1,
+  lineCount: 1,
+  sourceUrl: `https://github.com/owner/repo/blob/main/f${id}.ts`,
+})
 const mockCreatePlaySession = vi.fn<(_0: unknown, _1?: TransactionContext) => Promise<{ id: number }>>()
 const mockCreateProblems = vi.fn<(_0: number, _1: unknown[], _2?: TransactionContext) => Promise<void>>()
 const mockCreateKeystrokeLogs = vi.fn<(_0: number, _1: KeystrokeLogs, _2?: TransactionContext) => Promise<void>>()
@@ -53,6 +68,8 @@ const mockProblemRepository: ProblemRepository = {
 
 const mockPlaySessionRepository: PlaySessionRepository = {
   create: mockCreatePlaySession,
+  findGhostSourceById: vi.fn(),
+  getUserSummaryStats: vi.fn(),
 }
 
 const mockPlaySessionProblemRepository: PlaySessionProblemRepository = {
@@ -61,6 +78,7 @@ const mockPlaySessionProblemRepository: PlaySessionProblemRepository = {
 
 const mockKeystrokeLogRepository: KeystrokeLogRepository = {
   create: mockCreateKeystrokeLogs,
+  findByPlaySessionId: vi.fn(),
 }
 
 const mockUserLifetimeStatsRepository: UserLifetimeStatsRepository = {
@@ -96,17 +114,21 @@ const mockTransactionRunner: TransactionRunner = {
 const mockUserRepository: UserRepository = {
   create: vi.fn(),
   delete: vi.fn(),
-  findByDisplayName: vi.fn(),
   findByEmail: vi.fn(),
+  findByGithubUsername: vi.fn(),
   findById: vi.fn(),
   findPublicProfile: vi.fn(),
   update: vi.fn(),
 }
 
 const mockRewardRepository: RewardRepository = {
+  findByIds: vi.fn(),
   findByKey: vi.fn(),
   findByUserId: vi.fn(),
   findOneByUserTypePayload: vi.fn(),
+  findPendingByUserId: vi.fn(),
+  findRecentCompletedByUserId: vi.fn(),
+  updateGenerationStatus: vi.fn(),
   upsert: vi.fn(),
   upsertByKey: vi.fn(),
 }
@@ -139,6 +161,7 @@ const buildState = (overrides?: Partial<PlaySessionState>): PlaySessionState => 
  */
 const mockLanguageRepository = {
   existsById: vi.fn(),
+  findAll: vi.fn(),
   findById: vi.fn().mockResolvedValue(null),
   findBySlug: vi.fn(),
 }
@@ -217,8 +240,8 @@ describe("finishSession", () => {
       // Arrange
       mockFindById.mockResolvedValue(buildState())
       mockFindManyByIds.mockResolvedValue([
-        { codeBlock: "abc", id: 100 },
-        { codeBlock: "def", id: 101 },
+        buildFound(100, "abc"),
+        buildFound(101, "def"),
       ])
       mockCreatePlaySession.mockResolvedValue({ id: 999 })
 
@@ -255,8 +278,8 @@ describe("finishSession", () => {
       // Arrange
       mockFindById.mockResolvedValue(buildState())
       mockFindManyByIds.mockResolvedValue([
-        { codeBlock: "abc", id: 100 },
-        { codeBlock: "def", id: 101 },
+        buildFound(100, "abc"),
+        buildFound(101, "def"),
       ])
       mockCreatePlaySession.mockResolvedValue({ id: 999 })
       mockUpsertIfBest.mockResolvedValue({ updated: true })
@@ -310,8 +333,8 @@ describe("finishSession", () => {
       // Arrange
       mockFindById.mockResolvedValue(buildState())
       mockFindManyByIds.mockResolvedValue([
-        { codeBlock: "abc", id: 100 },
-        { codeBlock: "def", id: 101 },
+        buildFound(100, "abc"),
+        buildFound(101, "def"),
       ])
       mockCreatePlaySession.mockResolvedValue({ id: 999 })
       /** 言語マスタが go を返す → toRewardLanguage が "go" を通す */
@@ -367,7 +390,7 @@ describe("finishSession", () => {
     it("isCorrect=false のキーストロークから正解期待文字単位で mistypeStats が集計される", async () => {
       // Arrange
       mockFindById.mockResolvedValue(buildState({ problemIds: [100] }))
-      mockFindManyByIds.mockResolvedValue([{ codeBlock: "hello", id: 100 }])
+      mockFindManyByIds.mockResolvedValue([buildFound(100, "hello")])
       mockCreatePlaySession.mockResolvedValue({ id: 999 })
 
       // Act
@@ -455,8 +478,8 @@ describe("finishSession", () => {
        * 期待 3 件のうち 2 件しか取れない
        */
       mockFindManyByIds.mockResolvedValue([
-        { codeBlock: "abc", id: 100 },
-        { codeBlock: "def", id: 101 },
+        buildFound(100, "abc"),
+        buildFound(101, "def"),
       ])
 
       // Act
@@ -476,7 +499,7 @@ describe("finishSession", () => {
     it("combo マイルストーン未達成で elapsed_ms が 120s + tolerance を超える log は 400 で reject される", async () => {
       // Arrange: combo 29 までしか積んでいないのに elapsed_ms = 130_000 の打鍵が紛れている
       mockFindById.mockResolvedValue(buildState({ problemIds: [100] }))
-      mockFindManyByIds.mockResolvedValue([{ codeBlock: "a".repeat(40), id: 100 }])
+      mockFindManyByIds.mockResolvedValue([buildFound(100, "a".repeat(40))])
 
       const cheatLogs: KeystrokeLogs = [
         ...Array.from({ length: 29 }, (_, i) => ({
@@ -507,7 +530,7 @@ describe("finishSession", () => {
     it("combo 30 達成済みなら 120_500 ms 程度の elapsed_ms は許容される (+1s 延長分が考慮される)", async () => {
       // Arrange: combo 30 達成 → 累積延長 +1s → 許容 121_500ms。 121_400 ms の打鍵は通る
       mockFindById.mockResolvedValue(buildState({ problemIds: [100] }))
-      mockFindManyByIds.mockResolvedValue([{ codeBlock: "a".repeat(40), id: 100 }])
+      mockFindManyByIds.mockResolvedValue([buildFound(100, "a".repeat(40))])
       mockCreatePlaySession.mockResolvedValue({ id: 999 })
 
       const validBonusLogs: KeystrokeLogs = [

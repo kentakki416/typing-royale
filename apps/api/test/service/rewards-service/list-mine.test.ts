@@ -7,9 +7,15 @@ import { listMine } from "../../../src/service/rewards-service"
 const mockFindByUserId = vi.fn<(_0: number) => Promise<RewardRow[]>>()
 
 const mockRepo: RewardRepository = {
+  findByIds: vi.fn(),
+  findByKey: vi.fn(),
   findByUserId: mockFindByUserId,
   findOneByUserTypePayload: vi.fn(),
+  findPendingByUserId: vi.fn(),
+  findRecentCompletedByUserId: vi.fn(),
+  updateGenerationStatus: vi.fn(),
   upsert: vi.fn(),
+  upsertByKey: vi.fn(),
 }
 
 describe("rewards.listMine", () => {
@@ -21,7 +27,9 @@ describe("rewards.listMine", () => {
     it("Repository.findByUserId に userId を渡し戻り値を返す", async () => {
       const rows: RewardRow[] = [
         {
+          assetSvgUrl: null,
           assetUrl: "/cache/rewards/1-42.png",
+          generationStatus: "completed",
           grantedAt: new Date("2026-06-08T00:00:00Z"),
           id: 42,
           payload: { grade_slug: "senior" },
