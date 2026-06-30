@@ -17,11 +17,6 @@ import { HallOfFameListController } from "./controller/hall-of-fame/list"
 import { HealthLivenessController } from "./controller/health/liveness"
 import { HealthReadinessController } from "./controller/health/readiness"
 import { LanguageListController } from "./controller/language/list"
-import { MemoCreateController } from "./controller/memo/create"
-import { MemoDeleteController } from "./controller/memo/delete"
-import { MemoDetailController } from "./controller/memo/detail"
-import { MemoListController } from "./controller/memo/list"
-import { MemoUpdateController } from "./controller/memo/update"
 import { PlaySessionFinishController } from "./controller/play-session/finish"
 import { PlaySessionGuestFinishController } from "./controller/play-session/guest-finish"
 import { PlaySessionGuestStartChallengeGodsController } from "./controller/play-session/guest-start-challenge-gods"
@@ -48,7 +43,6 @@ import {
   PrismaDatabaseHealthRepository,
   PrismaKeystrokeLogRepository,
   PrismaLanguageRepository,
-  PrismaMemoRepository,
   PrismaMonthlyRankingSnapshotRepository,
   PrismaPlaySessionProblemRepository,
   PrismaPlaySessionRepository,
@@ -67,7 +61,6 @@ import { crawledRepoRouter } from "./routes/crawled-repo-router"
 import { hallOfFameRouter } from "./routes/hall-of-fame-router"
 import { healthRouter } from "./routes/health-router"
 import { languageRouter } from "./routes/language-router"
-import { memoRouter } from "./routes/memo-router"
 import { playSessionRouter } from "./routes/play-session-router"
 import { playerRouter } from "./routes/player-router"
 import { rankingRouter } from "./routes/ranking-router"
@@ -89,7 +82,6 @@ const redis = createRedisClient()
 const userRepository = new PrismaUserRepository(prisma)
 const authAccountRepository = new PrismaAuthAccountRepository(prisma)
 const transactionRunner = new PrismaTransactionRunner(prisma)
-const memoRepository = new PrismaMemoRepository(prisma)
 const databaseHealthRepository = new PrismaDatabaseHealthRepository(prisma)
 const redisHealthRepository = new IoRedisHealthRepository(redis)
 const refreshTokenRepository = new IoRedisRefreshTokenRepository(redis)
@@ -181,15 +173,6 @@ const userDeleteController = new UserDeleteController(userRepository, refreshTok
 const authDevLoginController = process.env.NODE_ENV !== "production"
   ? new AuthDevLoginController(userRepository, refreshTokenRepository)
   : undefined
-
-/**
- * Memo Controller のインスタンス化
- */
-const memoListController = new MemoListController(memoRepository)
-const memoDetailController = new MemoDetailController(memoRepository)
-const memoCreateController = new MemoCreateController(memoRepository)
-const memoUpdateController = new MemoUpdateController(memoRepository)
-const memoDeleteController = new MemoDeleteController(memoRepository)
 
 /**
  * PlaySession Controller のインスタンス化
@@ -376,16 +359,6 @@ app.use(
  * (REWARDS_PUBLIC_URL_PREFIX 直下 = REWARDS_CACHE_DIR)
  */
 app.use(env.REWARDS_PUBLIC_URL_PREFIX, express.static(env.REWARDS_CACHE_DIR))
-app.use(
-  "/api/memo",
-  memoRouter({
-    create: memoCreateController,
-    delete: memoDeleteController,
-    detail: memoDetailController,
-    list: memoListController,
-    update: memoUpdateController,
-  })
-)
 app.use(
   "/api/play-sessions",
   playSessionRouter({
