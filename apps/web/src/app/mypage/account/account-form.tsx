@@ -50,13 +50,13 @@ export function AccountForm({ initialUser }: Props) {
           </div>
 
           <div className="mb-16">
-            <label className="text-sm" htmlFor="favorite_repo_url">GitHub リンク</label>
+            <label className="text-sm" htmlFor="favorite_repo_url">お気に入りの GitHub リンク</label>
             <input
               defaultValue={displayUser.favorite_repo_url ?? ""}
               id="favorite_repo_url"
               maxLength={200}
               name="favorite_repo_url"
-              placeholder="https://github.com/yourname"
+              placeholder="https://github.com/owner/repo"
               style={{
                 background: "var(--bg-base)",
                 border: "1px solid var(--border)",
